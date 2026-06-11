@@ -282,37 +282,34 @@ export default function GameCanvas({
 
         async function loadGameAssets() {
             try {
-                setLoadingMessage('Loading player configuration...');
-                const playerConfigRes = await fetch('/assets/entities/player/main.json');
-                const playerConfig = await playerConfigRes.json();
-                const playerColorKey = playerConfig.color_to_be_erased ?? '#C8BFE7';
-
-                setLoadingMessage('Loading player sprites...');
+                setLoadingMessage('Loading configuration...');
+                
                 const playerImg = new Image();
                 playerImg.crossOrigin = "anonymous";
                 playerImg.src = '/assets/entities/player/sprites.png';
-                await new Promise((res) => {
+                const playerImgPromise = new Promise((res) => {
                     playerImg.onload = res;
                     playerImg.onerror = res;
                 });
+
+                // Load player config, player sprites, and map JSON in parallel
+                const [playerConfig, _, mapJson] = await Promise.all([
+                    fetch('/assets/entities/player/main.json').then(r => r.json()),
+                    playerImgPromise,
+                    fetch(currentMapPath).then(r => r.json())
+                ]);
+
+                const playerColorKey = playerConfig.color_to_be_erased ?? '#C8BFE7';
                 playerSpriteRef.current = makeColorTransparent(playerImg, playerColorKey);
 
-                setLoadingMessage('Loading map configuration...');
-                const mapRes = await fetch(currentMapPath);
-                const mapJson = await mapRes.json();
-                
-                const gridPath = mapJson.map.replace('src/assets/', '/assets/');
-                const gridRes = await fetch(gridPath);
-                const gridText = await gridRes.text();
-                
-                const grid = gridText.trim().split('\n').map(line => line.trim().split(/\s+/));
-                const tileSize = mapJson.tile_size ?? 32;
-                const height = grid.length * tileSize;
-                const width = grid[0] ? grid[0].length * tileSize : 0;
+                setLoadingMessage('Preloading map grid and sprites...');
 
-                setLoadingMessage('Preloading tile sprites...');
+                const gridPath = mapJson.map.replace('src/assets/', '/assets/');
+                const tileSize = mapJson.tile_size ?? 32;
+
+                // Prepare tile components preloading
                 const tileComponents: Record<string, TileComponent> = {};
-                for (const comp of mapJson.components) {
+                const componentPromises = mapJson.components.map(async (comp: any) => {
                     const img = new Image();
                     const cleanPath = comp.image.startsWith('data:') ? comp.image : comp.image.replace('src/assets/', '/assets/');
                     if (!comp.image.startsWith('data:')) {
@@ -329,9 +326,38 @@ export default function GameCanvas({
                         image: cleanPath,
                         imgElement: img
                     };
-                }
+                });
 
-                setLoadingMessage('Loading structures and characters...');
+                // Prepare entity config & sprite preloading
+                const entityDataPromises = mapJson.entities.map(async (ent: any) => {
+                    const cleanLoc = ent.location.replace('src/assets/', '/assets/');
+                    const entRes = await fetch(cleanLoc);
+                    const entMeta = await entRes.json();
+
+                    const cleanImgPath = entMeta.img.replace('src/assets/', '/assets/');
+                    const entImg = new Image();
+                    entImg.crossOrigin = "anonymous";
+                    entImg.src = cleanImgPath;
+                    await new Promise((res) => {
+                        entImg.onload = res;
+                        entImg.onerror = res;
+                    });
+
+                    return { ent, entMeta, entImg };
+                });
+
+                // Fetch grid text, preload tiles, and preload entities all in parallel!
+                const [gridText, _tileComponentResults, entityDatas] = await Promise.all([
+                    fetch(gridPath).then(r => r.text()),
+                    Promise.all(componentPromises),
+                    Promise.all(entityDataPromises)
+                ]);
+
+                // Synchronous processing begins
+                const grid = gridText.trim().split('\n').map(line => line.trim().split(/\s+/));
+                const height = grid.length * tileSize;
+                const width = grid[0] ? grid[0].length * tileSize : 0;
+
                 const preloadedEntities: MapEntity[] = [];
                 const colliders: typeof mapDataRef.current.colliders = [];
 
@@ -351,20 +377,8 @@ export default function GameCanvas({
                     }
                 }
 
-                for (const ent of mapJson.entities) {
-                    const cleanLoc = ent.location.replace('src/assets/', '/assets/');
-                    const entRes = await fetch(cleanLoc);
-                    const entMeta = await entRes.json();
-
-                    const cleanImgPath = entMeta.img.replace('src/assets/', '/assets/');
-                    const entImg = new Image();
-                    entImg.crossOrigin = "anonymous";
-                    entImg.src = cleanImgPath;
-                    await new Promise((res) => {
-                        entImg.onload = res;
-                        entImg.onerror = res;
-                    });
-
+                // Setup preloaded entities and their colliders
+                for (const { ent, entMeta, entImg } of entityDatas) {
                     const colorKey = entMeta.color_to_be_erased ?? '#000000';
                     const transparentEntImg = makeColorTransparent(entImg, colorKey);
 
