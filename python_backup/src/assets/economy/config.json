@@ -1,0 +1,14 @@
+{
+    "coins_to_pusdt_rate": 10000,
+    "max_team_size": 6,
+    "passive_claim_interval_hours": 24,
+    "passive_unclaimed_expires": true,
+    "trainer_rebattle_cooldown_hours": 6,
+    "gym_rebattle_cooldown_hours": 24,
+    "login_streak_reset_on_miss": true,
+    "starting_coins": 500,
+    "starting_items": {
+        "pokeball": 5,
+        "potion": 3
+    }
+}

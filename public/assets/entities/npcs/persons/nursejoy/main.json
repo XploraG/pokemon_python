@@ -1,0 +1,17 @@
+{
+    "name": "Nurse Joy",
+    "img": "src/assets/entities/npcs/persons/childmary/sprites.png",
+    "scale": 2,
+    "type": "npc",
+    "color_to_be_erased": "#559262",
+    "dialog": "Welcome to the Pokémon Center! I have healed all of your creatures.",
+    "valid_moves": ["down"],
+    "down": [
+        {
+            "y": 36,
+            "x": 39,
+            "w": 17,
+            "h": 27
+        }
+    ]
+}

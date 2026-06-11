@@ -1,0 +1,17 @@
+{
+    "name": "Gym Leader Brock",
+    "img": "src/assets/entities/npcs/persons/athletemike/sprites.png",
+    "scale": 2,
+    "type": "npc",
+    "color_to_be_erased": "#40B068",
+    "dialog": "I specialize in Rock-type Pokemon. Are you ready for a battle?",
+    "valid_moves": ["down"],
+    "down": [
+        {
+            "y": 36,
+            "x": 39,
+            "w": 17,
+            "h": 27
+        }
+    ]
+}

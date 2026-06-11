@@ -1,0 +1,17 @@
+{
+    "name": "Gym",
+    "img": "src/assets/entities/structures/gym/gym.png",
+    "scale": 2,
+    "type": "npc",
+    "dialog": "Closed,\n It's weekend",
+    "color_to_be_erased": "#000000",
+    "valid_moves": ["down"],
+    "down": [
+        {
+            "y": 0,
+            "x": 0,
+            "w": 96,
+            "h": 77
+        }
+    ]
+}

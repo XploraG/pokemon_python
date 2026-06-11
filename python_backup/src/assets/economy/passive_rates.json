@@ -1,0 +1,38 @@
+{
+    "common": {
+        "drop_rate_range": [60, 100],
+        "coins_per_day": 500,
+        "evolution_bonus": 1.25,
+        "description": "Pokemon comun"
+    },
+    "uncommon": {
+        "drop_rate_range": [30, 59],
+        "coins_per_day": 800,
+        "evolution_bonus": 1.25,
+        "description": "Pokemon poco comun"
+    },
+    "rare": {
+        "drop_rate_range": [10, 29],
+        "coins_per_day": 1500,
+        "evolution_bonus": 1.25,
+        "description": "Pokemon raro"
+    },
+    "epic": {
+        "drop_rate_range": [3, 9],
+        "coins_per_day": 3000,
+        "evolution_bonus": 1.25,
+        "description": "Pokemon epico"
+    },
+    "legendary": {
+        "drop_rate_range": [0.5, 2],
+        "coins_per_day": 5000,
+        "evolution_bonus": 1.25,
+        "description": "Pokemon legendario"
+    },
+    "mythic": {
+        "drop_rate_range": [0.1, 0.4],
+        "coins_per_day": 8000,
+        "evolution_bonus": 1.25,
+        "description": "Pokemon mitico"
+    }
+}

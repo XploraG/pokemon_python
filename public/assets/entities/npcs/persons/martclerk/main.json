@@ -1,0 +1,17 @@
+{
+    "name": "Clerk",
+    "img": "src/assets/entities/npcs/persons/buisnessman/sprites.png",
+    "scale": 2,
+    "type": "npc",
+    "color_to_be_erased": "#559262",
+    "dialog": "Welcome to the PokeMart! Talk to me to buy items.",
+    "valid_moves": ["down"],
+    "down": [
+        {
+            "y": 36,
+            "x": 39,
+            "w": 17,
+            "h": 27
+        }
+    ]
+}

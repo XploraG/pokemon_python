@@ -1,0 +1,37 @@
+{
+    "potion": {
+        "name": "Pocion",
+        "price": 300,
+        "heal_amount": 20,
+        "description": "Cura 20 HP",
+        "sprite": "src/assets/items/sprites/potion.png"
+    },
+    "super_potion": {
+        "name": "Super Pocion",
+        "price": 700,
+        "heal_amount": 50,
+        "description": "Cura 50 HP",
+        "sprite": "src/assets/items/sprites/super_potion.png"
+    },
+    "hyper_potion": {
+        "name": "Hyper Pocion",
+        "price": 1500,
+        "heal_amount": 120,
+        "description": "Cura 120 HP",
+        "sprite": "src/assets/items/sprites/hyper_potion.png"
+    },
+    "revive": {
+        "name": "Revivir",
+        "price": 2000,
+        "heal_percent": 0.50,
+        "description": "Revive con 50% HP",
+        "sprite": "src/assets/items/sprites/revive.png"
+    },
+    "max_revive": {
+        "name": "Revivir Max",
+        "price": 5000,
+        "heal_percent": 1.00,
+        "description": "Revive con 100% HP",
+        "sprite": "src/assets/items/sprites/max_revive.png"
+    }
+}

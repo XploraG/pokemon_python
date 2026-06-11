@@ -1,0 +1,53 @@
+[
+  {
+    "telegramId": "12345678",
+    "username": "Red_Trainer",
+    "level": 1,
+    "experience": 0,
+    "xpNeededForNextLevel": 1000,
+    "gold": 500,
+    "usdBalance": 0,
+    "tonBalance": 0,
+    "inventory": {
+      "pokeballs": 5,
+      "greatballs": 0,
+      "ultraballs": 0,
+      "masterballs": 0
+    },
+    "equipment": {
+      "backpack": null,
+      "tool": null,
+      "outfit": null
+    },
+    "dailyLimits": {
+      "battleEnergy": 10,
+      "maxBattleEnergy": 10,
+      "adsWatchedToday": 0,
+      "lastResetTimestamp": 1780904114519
+    },
+    "status": "EN_RUTA",
+    "hasWaterMount": true,
+    "badges": [],
+    "currentCoordinates": {
+      "mapId": "hoenn/hoenn-generic-house-1f",
+      "x": 7,
+      "y": 3
+    },
+    "pokedex": {
+      "43": {
+        "id": 43,
+        "name": "oddish",
+        "seen": true,
+        "caught": false,
+        "firstSeenAt": "2026-06-09T22:35:37.883Z"
+      },
+      "69": {
+        "id": 69,
+        "name": "bellsprout",
+        "seen": true,
+        "caught": false,
+        "firstSeenAt": "2026-06-09T22:37:32.614Z"
+      }
+    }
+  }
+]

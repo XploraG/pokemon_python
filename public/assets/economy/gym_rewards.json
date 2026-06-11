@@ -1,0 +1,76 @@
+{
+    "gyms": [
+        {
+            "id": 1,
+            "name": "Gimnasio Roca",
+            "type": "rock",
+            "medal": "Medalla Roca",
+            "first_victory_bonus": 100,
+            "min_coins": 100,
+            "max_coins": 120
+        },
+        {
+            "id": 2,
+            "name": "Gimnasio Agua",
+            "type": "water",
+            "medal": "Medalla Cascada",
+            "first_victory_bonus": 150,
+            "min_coins": 150,
+            "max_coins": 170
+        },
+        {
+            "id": 3,
+            "name": "Gimnasio Electrico",
+            "type": "electric",
+            "medal": "Medalla Trueno",
+            "first_victory_bonus": 200,
+            "min_coins": 200,
+            "max_coins": 220
+        },
+        {
+            "id": 4,
+            "name": "Gimnasio Planta",
+            "type": "grass",
+            "medal": "Medalla Arcoiris",
+            "first_victory_bonus": 250,
+            "min_coins": 250,
+            "max_coins": 270
+        },
+        {
+            "id": 5,
+            "name": "Gimnasio Veneno",
+            "type": "poison",
+            "medal": "Medalla Alma",
+            "first_victory_bonus": 300,
+            "min_coins": 300,
+            "max_coins": 320
+        },
+        {
+            "id": 6,
+            "name": "Gimnasio Psiquico",
+            "type": "psychic",
+            "medal": "Medalla Pantano",
+            "first_victory_bonus": 350,
+            "min_coins": 350,
+            "max_coins": 370
+        },
+        {
+            "id": 7,
+            "name": "Gimnasio Fuego",
+            "type": "fire",
+            "medal": "Medalla Volcan",
+            "first_victory_bonus": 400,
+            "min_coins": 400,
+            "max_coins": 420
+        },
+        {
+            "id": 8,
+            "name": "Gimnasio Dragon",
+            "type": "dragon",
+            "medal": "Medalla Tierra",
+            "first_victory_bonus": 450,
+            "min_coins": 450,
+            "max_coins": 470
+        }
+    ]
+}

@@ -1,0 +1,17 @@
+{
+    "name": "Grandma Rose",
+    "img": "src/assets/entities/npcs/persons/childmary/sprites.png",
+    "scale": 2,
+    "type": "npc",
+    "color_to_be_erased": "#559262",
+    "dialog": "Hello young traveler! Welcome to my humble home. Enjoy your exploration around our beautiful village!",
+    "valid_moves": ["down"],
+    "down": [
+        {
+            "y": 36,
+            "x": 39,
+            "w": 17,
+            "h": 27
+        }
+    ]
+}

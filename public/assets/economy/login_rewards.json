@@ -1,0 +1,13 @@
+{
+    "rewards": [
+        {"day": 1, "coins": 100, "items": {}},
+        {"day": 2, "coins": 200, "items": {}},
+        {"day": 3, "coins": 500, "items": {}},
+        {"day": 5, "coins": 1000, "items": {"potion": 2}},
+        {"day": 7, "coins": 2000, "items": {"great_ball": 3}},
+        {"day": 10, "coins": 3000, "items": {"super_potion": 2}},
+        {"day": 14, "coins": 5000, "items": {"ultra_ball": 2}},
+        {"day": 21, "coins": 8000, "items": {"hyper_potion": 3}},
+        {"day": 30, "coins": 15000, "items": {"master_ball": 1}}
+    ]
+}

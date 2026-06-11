@@ -1,0 +1,26 @@
+{
+    "name": "PokeMart",
+    "categories": [
+        {
+            "name": "Pokeballs",
+            "source": "src/assets/items/pokeballs.json",
+            "items": ["pokeball", "great_ball", "ultra_ball", "master_ball", "timer_ball", "repeat_ball"]
+        },
+        {
+            "name": "Pociones",
+            "source": "src/assets/items/potions.json",
+            "items": ["potion", "super_potion", "hyper_potion", "revive", "max_revive"]
+        },
+        {
+            "name": "Mejoras",
+            "source": "src/assets/items/boosts.json",
+            "items": ["gold_incense", "lucky_egg", "repel"]
+        }
+    ],
+    "medals_required": {
+        "ultra_ball": 3,
+        "master_ball": 7,
+        "evolution_stone": 4,
+        "lucky_egg": 2
+    }
+}

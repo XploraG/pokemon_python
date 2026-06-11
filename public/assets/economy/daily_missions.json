@@ -1,0 +1,9 @@
+{
+    "missions": [
+        {"id": "defeat_trainers", "description": "Derrota 3 entrenadores", "target": 3, "reward_coins": 200, "type": "battle"},
+        {"id": "capture_pokemon", "description": "Captura 1 Pokemon", "target": 1, "reward_coins": 300, "type": "capture"},
+        {"id": "visit_pokecenter", "description": "Visita el Pokemon Center", "target": 1, "reward_coins": 100, "type": "visit"},
+        {"id": "claim_passive", "description": "Reclama tu generacion pasiva", "target": 1, "reward_coins": 150, "type": "claim"},
+        {"id": "spend_coins", "description": "Gasta 1000 coins en tiendas", "target": 1000, "reward_coins": 200, "type": "spend"}
+    ]
+}

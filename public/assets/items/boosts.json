@@ -1,0 +1,35 @@
+{
+    "gold_incense": {
+        "name": "Incienso de Oro",
+        "price": 3000,
+        "effect": "coin_multiplier",
+        "multiplier": 2.0,
+        "duration_minutes": 60,
+        "description": "x2 coins de batallas por 1 hora",
+        "sprite": "src/assets/items/sprites/gold_incense.png"
+    },
+    "lucky_egg": {
+        "name": "Lucky Egg",
+        "price": 5000,
+        "effect": "xp_multiplier",
+        "multiplier": 2.0,
+        "duration_minutes": 60,
+        "description": "x2 XP por 1 hora",
+        "sprite": "src/assets/items/sprites/lucky_egg.png"
+    },
+    "evolution_stone": {
+        "name": "Piedra Evolucion",
+        "price": 8000,
+        "effect": "evolution",
+        "description": "Evoluciona Pokemon especiales",
+        "sprite": "src/assets/items/sprites/evolution_stone.png"
+    },
+    "repel": {
+        "name": "Repelente",
+        "price": 400,
+        "effect": "repel",
+        "duration_minutes": 5,
+        "description": "Sin encuentros salvajes por 5 min",
+        "sprite": "src/assets/items/sprites/repel.png"
+    }
+}

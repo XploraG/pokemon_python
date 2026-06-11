@@ -1,0 +1,46 @@
+{
+    "pokeball": {
+        "name": "Pokeball",
+        "price": 200,
+        "capture_rate": 0.30,
+        "description": "Pokeball basica con 30% de captura",
+        "sprite": "src/assets/items/sprites/pokeball.png"
+    },
+    "great_ball": {
+        "name": "Great Ball",
+        "price": 500,
+        "capture_rate": 0.50,
+        "description": "Great Ball con 50% de captura",
+        "sprite": "src/assets/items/sprites/great_ball.png"
+    },
+    "ultra_ball": {
+        "name": "Ultra Ball",
+        "price": 1500,
+        "capture_rate": 0.75,
+        "description": "Ultra Ball con 75% de captura",
+        "sprite": "src/assets/items/sprites/ultra_ball.png"
+    },
+    "master_ball": {
+        "name": "Master Ball",
+        "price": 15000,
+        "capture_rate": 1.00,
+        "description": "Master Ball con 100% de captura",
+        "sprite": "src/assets/items/sprites/master_ball.png"
+    },
+    "timer_ball": {
+        "name": "Timer Ball",
+        "price": 800,
+        "capture_rate": 0.25,
+        "capture_rate_per_turn": 0.05,
+        "description": "Timer Ball que mejora con cada turno",
+        "sprite": "src/assets/items/sprites/timer_ball.png"
+    },
+    "repeat_ball": {
+        "name": "Repeat Ball",
+        "price": 600,
+        "capture_rate": 0.35,
+        "repeat_multiplier": 2.0,
+        "description": "Repeat Ball x2 si ya capturaste este Pokemon",
+        "sprite": "src/assets/items/sprites/repeat_ball.png"
+    }
+}
