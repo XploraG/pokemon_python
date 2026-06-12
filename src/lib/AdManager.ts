@@ -1,0 +1,128 @@
+/**
+ * AdManager.ts
+ * Helper unificado para monetización dinámica basada en la plataforma.
+ * Carga Adsgram en Telegram y Adsterra (u otros) en World App de forma aislada.
+ */
+
+export interface AdManagerConfig {
+    telegramBlockId?: string; // Adsgram block ID
+    adsterraUrl?: string;     // Adsterra Direct Link o URL de redirección
+}
+
+class AdManager {
+    private static instance: AdManager;
+    private config: AdManagerConfig = {
+        telegramBlockId: "YOUR_ADSGRAM_BLOCK_ID", // Reemplazar con ID real de Adsgram
+        adsterraUrl: "YOUR_ADSTERRA_DIRECT_LINK"   // Reemplazar con Direct Link real de Adsterra
+    };
+    private isAdsgramLoaded = false;
+
+    private constructor() {}
+
+    public static getInstance(): AdManager {
+        if (!AdManager.instance) {
+            AdManager.instance = new AdManager();
+        }
+        return AdManager.instance;
+    }
+
+    /**
+     * Detecta si la app se ejecuta dentro de Telegram
+     */
+    private isTelegram(): boolean {
+        return typeof window !== 'undefined' && !!(window as any).Telegram?.WebApp?.initDataUnsafe?.user?.id;
+    }
+
+    /**
+     * Carga dinámicamente el SDK de Adsgram en Telegram
+     */
+    private loadAdsgramSDK(): Promise<void> {
+        return new Promise((resolve, reject) => {
+            if (this.isAdsgramLoaded || (window as any).Adsgram) {
+                this.isAdsgramLoaded = true;
+                resolve();
+                return;
+            }
+
+            const script = document.createElement('script');
+            script.src = "https://adsgram.co/sdk/v1/adsgram-sdk.js";
+            script.async = true;
+            script.onload = () => {
+                this.isAdsgramLoaded = true;
+                resolve();
+            };
+            script.onerror = () => reject(new Error("No se pudo cargar el SDK de Adsgram"));
+            document.head.appendChild(script);
+        });
+    }
+
+    /**
+     * Muestra un anuncio de Adsgram (Telegram)
+     */
+    private async showTelegramAd(blockId: string): Promise<boolean> {
+        try {
+            await this.loadAdsgramSDK();
+            const adsgram = (window as any).Adsgram;
+            if (!adsgram) {
+                console.warn("Adsgram no está inicializado en window");
+                return false;
+            }
+
+            const AdController = adsgram.init({ blockId });
+            const result = await AdController.show();
+            // result contiene detalles del evento de Adsgram (ej: { done: true })
+            return !!(result && result.done);
+        } catch (err) {
+            console.error("Error al reproducir anuncio de Adsgram:", err);
+            return false;
+        }
+    }
+
+    /**
+     * Carga el script de Popunder de Adsterra en World App
+     */
+    private showWorldAppAd(): Promise<boolean> {
+        return new Promise((resolve) => {
+            if (typeof window === 'undefined') {
+                resolve(false);
+                return;
+            }
+
+            try {
+                const existing = document.getElementById('adsterra-popunder-script');
+                if (!existing) {
+                    const script = document.createElement('script');
+                    script.id = 'adsterra-popunder-script';
+                    script.src = "https://pl29719998.effectivecpmnetwork.com/10/3d/8f/103d8f2ad1a9c74967779c81881ee899.js";
+                    script.async = true;
+                    document.body.appendChild(script);
+                }
+                resolve(true);
+            } catch (err) {
+                console.error("Error al inyectar script de Adsterra:", err);
+                resolve(false);
+            }
+        });
+    }
+
+    /**
+     * Método público para mostrar un Anuncio Recompensado (Rewarded Ad)
+     * @returns Promise<boolean> true si el jugador debe recibir su recompensa, false si falló o canceló.
+     */
+    public async showRewardedAd(customConfig?: AdManagerConfig): Promise<boolean> {
+        const activeConfig = { ...this.config, ...customConfig };
+
+        if (this.isTelegram()) {
+            if (!activeConfig.telegramBlockId || activeConfig.telegramBlockId === "YOUR_ADSGRAM_BLOCK_ID") {
+                console.warn("Adsgram Block ID no configurado. Simulando recompensa en desarrollo.");
+                return new Promise((resolve) => setTimeout(() => resolve(true), 2000));
+            }
+            return await this.showTelegramAd(activeConfig.telegramBlockId);
+        } else {
+            // World App o navegador convencional
+            return await this.showWorldAppAd();
+        }
+    }
+}
+
+export default AdManager;

@@ -8,6 +8,9 @@ import passiveRates from '../../public/assets/economy/passive_rates.json';
 import pokemonSpeciesList from '../../public/assets/economy/pokemon_species.json';
 import economyConfig from '../../public/assets/economy/config.json';
 import { supabase } from '../lib/supabase';
+import AdManager from '../lib/AdManager';
+import AdsterraBanner from './AdsterraBanner';
+import PokemonCenterBanner from './PokemonCenterBanner';
 
 interface GameCanvasProps {
     saveName: string;
@@ -151,6 +154,12 @@ export default function GameCanvas({
     const playerNameRef = useRef(playerName);
     playerNameRef.current = playerName;
 
+    // Ad-related states
+    const [adHealsViewed, setAdHealsViewed] = useState(0);
+    const [adHealSelectMode, setAdHealSelectMode] = useState(false);
+    const [doubleRewardCoins, setDoubleRewardCoins] = useState<number>(0);
+    const [doubleRewardType, setDoubleRewardType] = useState<'gym' | 'wild' | 'trainer' | null>(null);
+
     useEffect(() => {
         setPlayerName(saveName);
         setNicknameInput(saveName);
@@ -253,6 +262,103 @@ export default function GameCanvas({
         }
         
         showNotification("Nickname Actualizado", `Tu alias ahora es "${trimmed}".`);
+    };
+
+    const handleWatchFreeCoinsAd = async () => {
+        const adManager = AdManager.getInstance();
+        const success = await adManager.showRewardedAd({
+            telegramBlockId: "34910",
+            adsterraUrl: process.env.NEXT_PUBLIC_ADSTERRA_DIRECT_LINK || "YOUR_ADSTERRA_DIRECT_LINK"
+        });
+
+        if (success) {
+            economyRef.current.addCoins(20);
+            saveLocalEconomy();
+            setEconomy(new Economy(economyRef.current.toSaveData()));
+            showNotification("Recompensa", "¡Has recibido 20 Coins por ver el anuncio!");
+        } else {
+            showNotification("Anuncio Cancelado", "No se pudo obtener la recompensa.");
+        }
+    };
+
+    const handleWatchHealAd = async () => {
+        const adManager = AdManager.getInstance();
+        const success = await adManager.showRewardedAd({
+            telegramBlockId: "34911",
+            adsterraUrl: process.env.NEXT_PUBLIC_ADSTERRA_DIRECT_LINK || "YOUR_ADSTERRA_DIRECT_LINK"
+        });
+
+        if (success) {
+            const nextCount = adHealsViewed + 1;
+            if (nextCount >= 2) {
+                setAdHealsViewed(0);
+                setAdHealSelectMode(true);
+                showNotification("¡Anuncios Completados!", "Selecciona un Pokémon de tu equipo para restaurarlo al 100% HP.");
+            } else {
+                setAdHealsViewed(nextCount);
+                showNotification("Anuncio Visto", `Anuncios vistos: ${nextCount}/2. ¡Ve un anuncio más para curar un Pokémon!`);
+            }
+        } else {
+            showNotification("Anuncio Cancelado", "No se completó el anuncio.");
+        }
+    };
+
+    const handleSelectPokemonToHeal = (index: number) => {
+        const updatedTeam = [...team];
+        const p = updatedTeam[index];
+        if (p.hp >= p.maxHp) {
+            showNotification("Centro Pokémon", `${p.id} ya está al 100% de HP.`);
+            return;
+        }
+        updatedTeam[index] = { ...p, hp: p.maxHp };
+        setTeam(updatedTeam);
+        saveLocalEconomy(updatedTeam);
+        setAdHealSelectMode(false);
+        showNotification("Pokémon Curado", `¡Tu ${p.id} ha sido curado al 100% de HP!`);
+    };
+
+    const handleDoubleBattleReward = async () => {
+        const coinsToDouble = doubleRewardCoins;
+        setDoubleRewardCoins(0);
+        setDoubleRewardType(null);
+        setNotification(null);
+
+        const adManager = AdManager.getInstance();
+        const success = await adManager.showRewardedAd({
+            telegramBlockId: "34912",
+            adsterraUrl: process.env.NEXT_PUBLIC_ADSTERRA_DIRECT_LINK || "YOUR_ADSTERRA_DIRECT_LINK"
+        });
+
+        if (success) {
+            economyRef.current.addCoins(coinsToDouble);
+            saveLocalEconomy();
+            setEconomy(new Economy(economyRef.current.toSaveData()));
+            showNotification("¡Duplicado!", `¡Has recibido otras ${coinsToDouble} Coins por ver el anuncio!`);
+        } else {
+            showNotification("Anuncio Cancelado", "No se pudo duplicar la recompensa.");
+        }
+    };
+
+    const handleDoubleBattleRewardFromDialog = async () => {
+        const coinsToDouble = doubleRewardCoins;
+        setDoubleRewardCoins(0);
+        setDoubleRewardType(null);
+        setActiveDialog(null);
+
+        const adManager = AdManager.getInstance();
+        const success = await adManager.showRewardedAd({
+            telegramBlockId: "34912",
+            adsterraUrl: process.env.NEXT_PUBLIC_ADSTERRA_DIRECT_LINK || "YOUR_ADSTERRA_DIRECT_LINK"
+        });
+
+        if (success) {
+            economyRef.current.addCoins(coinsToDouble);
+            saveLocalEconomy();
+            setEconomy(new Economy(economyRef.current.toSaveData()));
+            showNotification("¡Duplicado!", `¡Has recibido otras ${coinsToDouble} Coins por ver el anuncio!`);
+        } else {
+            showNotification("Anuncio Cancelado", "No se pudo duplicar la recompensa.");
+        }
     };
     
     // Engine loading flags
@@ -1369,6 +1475,10 @@ export default function GameCanvas({
                         setActiveDialog(`Impressive battle! You earned the Rock Medal and ${result.coins} Coins!`);
                         economyRef.current.updateMissionProgress('battle');
                         
+                        // Set double reward state
+                        setDoubleRewardCoins(result.coins);
+                        setDoubleRewardType('gym');
+                        
                         // Simulate taking damage in battle
                         const updatedTeam = teamRef.current.map(p => {
                             const dmg = Math.floor(Math.random() * 40) + 15; // 15-55 damage
@@ -1508,6 +1618,10 @@ export default function GameCanvas({
             economyRef.current.addCoins(coinsEarned);
             economyRef.current.updateMissionProgress('battle');
             
+            // Set double reward state
+            setDoubleRewardCoins(coinsEarned);
+            setDoubleRewardType('wild');
+
             showNotification(
                 "¡Victoria!", 
                 `¡Tu ${activePoke.id} causó ${playerDmg} de daño y derrotó al ${activeWildBattle.name} salvaje! Ganaste ${coinsEarned} Coins.`
@@ -1898,6 +2012,15 @@ export default function GameCanvas({
                     <div className="dialogue-box glass-panel fade-in">
                         <div className="dialogue-speaker">{dialogName}</div>
                         <div className="dialogue-text">{activeDialog}</div>
+                        {doubleRewardCoins > 0 && doubleRewardType === 'gym' && (
+                            <button
+                                onClick={handleDoubleBattleRewardFromDialog}
+                                className="pokemon-button"
+                                style={{ margin: '8px auto 0 auto', width: 'auto', display: 'block', background: '#ffe082', border: '1px solid #ffca28', color: '#3e2723', padding: '4px 12px', fontSize: '10px' }}
+                            >
+                                🎁 Duplicar Recompensa (+{doubleRewardCoins} Coins)
+                            </button>
+                        )}
                         <div className="dialogue-footer">Press Space/Enter to close</div>
                     </div>
                 )}
@@ -1948,6 +2071,14 @@ export default function GameCanvas({
                                 className="pokemon-button success"
                             >
                                 🚲 Montar Bicicleta: {isBicycleActive ? 'OFF' : 'ON'}
+                            </button>
+
+                            <button 
+                                onClick={handleWatchFreeCoinsAd}
+                                className="pokemon-button animate-hover"
+                                style={{ background: '#ffe082', border: '1px solid #ffca28', color: '#3e2723' }}
+                            >
+                                💎 Coins Gratis (+20 Coins) (Ver Anuncio)
                             </button>
 
                             <button 
@@ -2071,6 +2202,36 @@ export default function GameCanvas({
                                 💚 Curar Equipo (Gratis, {2 - economy.heals_today}/2 Hoy)
                             </button>
 
+                            {adHealSelectMode ? (
+                                <div style={{ background: 'rgba(235, 255, 235, 0.5)', border: '1px dashed #2e7d32', padding: '10px', borderRadius: '4px', marginBottom: '16px' }}>
+                                    <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#2e7d32', marginBottom: '8px', textTransform: 'uppercase' }}>
+                                        Selecciona un Pokémon para curar al 100%:
+                                    </div>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                        {team.map((p: any, idx: number) => (
+                                            <button
+                                                key={idx}
+                                                onClick={() => handleSelectPokemonToHeal(idx)}
+                                                className="pokemon-button animate-hover"
+                                                style={{ margin: 0, padding: '6px 12px', fontSize: '11px', textTransform: 'capitalize', display: 'flex', justifyContent: 'space-between', opacity: p.hp >= p.maxHp ? 0.6 : 1 }}
+                                                disabled={p.hp >= p.maxHp}
+                                            >
+                                                <span>{p.id} (HP: {p.hp}/{p.maxHp})</span>
+                                                <span style={{ fontWeight: 'bold', color: '#2e7d32' }}>{p.hp >= p.maxHp ? 'Lleno' : 'Curar'}</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            ) : (
+                                <button 
+                                    onClick={handleWatchHealAd}
+                                    className="pokemon-button animate-hover"
+                                    style={{ background: '#e1f5fe', border: '1px solid #0288d1', color: '#0288d1' }}
+                                >
+                                    💚 Curar 1 Pokémon (Ver Anuncio: {adHealsViewed}/2)
+                                </button>
+                            )}
+
                             <button 
                                 onClick={handleNurseRevive}
                                 className="pokemon-button"
@@ -2079,6 +2240,7 @@ export default function GameCanvas({
                                 ⚡ Revivir y Curar (Costo: {economy.getReviveCost()} Coins)
                             </button>
 
+                            <PokemonCenterBanner />
                             <button 
                                 onClick={() => {
                                     setShowNurseJoyModal(false);
@@ -2101,6 +2263,21 @@ export default function GameCanvas({
                             <button onClick={() => setShowShop(false)} className="modal-close-btn">&times;</button>
                         </div>
                         <div className="modal-body">
+                            {/* Coins Gratis Row */}
+                            <div className="shop-item-row" style={{ background: '#ffe082', border: '1px solid #ffca28', borderRadius: '4px', marginBottom: '12px' }}>
+                                <div className="shop-item-info">
+                                    <div className="shop-item-name" style={{ color: '#3e2723', fontWeight: 'bold' }}>💎 Coins Gratis (+20 Coins)</div>
+                                    <div className="shop-item-desc" style={{ color: '#5d4037', fontSize: '10px' }}>Ver un anuncio patrocinado</div>
+                                </div>
+                                <button 
+                                    onClick={handleWatchFreeCoinsAd}
+                                    className="pokemon-button animate-hover"
+                                    style={{ margin: 0, padding: '6px 12px', fontSize: '10px', width: 'auto', background: '#ffca28', border: '1px solid #ff8f00', color: '#3e2723' }}
+                                >
+                                    Ver Ads
+                                </button>
+                            </div>
+
                             <div className="shop-item-row">
                                 <div className="shop-item-info">
                                     <div className="shop-item-name">Pokeball</div>
@@ -2145,6 +2322,7 @@ export default function GameCanvas({
                                     300 Coins
                                 </button>
                             </div>
+                            <AdsterraBanner />
                         </div>
                     </div>
                 </div>
@@ -2220,6 +2398,7 @@ export default function GameCanvas({
                                     </div>
                                 ))
                             )}
+                            <AdsterraBanner />
                         </div>
                     </div>
                 </div>
@@ -2307,6 +2486,7 @@ export default function GameCanvas({
                                 )}
                             </div>
 
+                            <AdsterraBanner />
                             <button 
                                 onClick={() => setShowPcModal(false)}
                                 className="pokemon-button danger"
@@ -2527,14 +2707,31 @@ export default function GameCanvas({
                     <div className="modal-card pokemon-panel" style={{ maxWidth: '360px' }}>
                         <div className="modal-header">
                             <h3 className="modal-title">{notification.title}</h3>
-                            <button onClick={() => setNotification(null)} className="modal-close-btn">&times;</button>
+                            <button onClick={() => {
+                                setNotification(null);
+                                setDoubleRewardCoins(0);
+                                setDoubleRewardType(null);
+                            }} className="modal-close-btn">&times;</button>
                         </div>
                         <div className="modal-body">
                             <p style={{ fontWeight: 'bold', fontSize: '13px', marginBottom: '16px', lineHeight: '1.5', color: '#3e2723' }}>
                                 {notification.message}
                             </p>
+                            {notification.title === "¡Victoria!" && doubleRewardCoins > 0 && (
+                                <button 
+                                    onClick={handleDoubleBattleReward}
+                                    className="pokemon-button animate-hover"
+                                    style={{ background: '#ffe082', border: '1px solid #ffca28', color: '#3e2723', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', marginBottom: '12px' }}
+                                >
+                                    🎁 Duplicar Recompensa (+{doubleRewardCoins} Coins)
+                                </button>
+                            )}
                             <button 
-                                onClick={() => setNotification(null)}
+                                onClick={() => {
+                                    setNotification(null);
+                                    setDoubleRewardCoins(0);
+                                    setDoubleRewardType(null);
+                                }}
                                 className="pokemon-button success"
                             >
                                 OK

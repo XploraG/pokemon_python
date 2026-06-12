@@ -392,7 +392,7 @@ export default function Home() {
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                             <a
-                                href="https://t.me/PixelTamerBot/app"
+                                href="https://t.me/PixelTamerBot/play"
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="pokemon-button success"
@@ -402,11 +402,16 @@ export default function Home() {
                                 Jugar en Telegram (TMA)
                             </a>
                             <div style={{ fontSize: '9px', color: '#78909c', margin: '4px 0', fontWeight: 'bold', textTransform: 'uppercase' }}>ó</div>
-                            <div style={{ fontSize: '10px', color: '#5d4037', background: '#fcf8eb', border: '2px solid #5d4037', borderRadius: '6px', padding: '10px', textAlign: 'left', lineHeight: '1.4' }}>
-                                <strong style={{ color: '#3e2723', textTransform: 'uppercase' }}>Para World App:</strong>
-                                <br />
-                                Abre la aplicación <strong>World App</strong> en tu celular, busca el mini-app <strong>"Pixel Tamer"</strong> en la sección de apps, o escanea el código QR de desarrollador.
-                            </div>
+                            <a
+                                href="https://worldcoin.org/mini-app?app_id=app_6a783c64810d430744512e4207e07fce"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="pokemon-button"
+                                style={{ textDecoration: 'none', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', fontSize: '11px', padding: '10px 0', background: '#3e2723', color: '#fff' }}
+                            >
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                Descarga Pixel Tamer
+                            </a>
                         </div>
                     </div>
                     <p style={{ fontSize: '9px', color: '#90a4ae', margin: 0 }}>
