@@ -23,6 +23,8 @@ export interface EconomySaveData {
     xp?: number;
     heals_today?: number;
     last_heal_date?: string;
+    pvp_wins?: number;
+    pvp_losses?: number;
 }
 
 export class Economy {
@@ -42,6 +44,8 @@ export class Economy {
     public xp: number = 0;
     public heals_today: number = 0;
     public last_heal_date: string = '';
+    public pvp_wins: number = 0;
+    public pvp_losses: number = 0;
 
     constructor(saveData?: EconomySaveData) {
         if (saveData) {
@@ -68,6 +72,8 @@ export class Economy {
         this.xp = 0;
         this.heals_today = 0;
         this.last_heal_date = '';
+        this.pvp_wins = 0;
+        this.pvp_losses = 0;
     }
 
     private loadFromSave(data: EconomySaveData): void {
@@ -87,6 +93,8 @@ export class Economy {
         this.xp = data.xp ?? 0;
         this.heals_today = data.heals_today ?? 0;
         this.last_heal_date = data.last_heal_date ?? '';
+        this.pvp_wins = data.pvp_wins ?? 0;
+        this.pvp_losses = data.pvp_losses ?? 0;
     }
 
     public toSaveData(): EconomySaveData {
@@ -106,7 +114,9 @@ export class Economy {
             level: this.level,
             xp: this.xp,
             heals_today: this.heals_today,
-            last_heal_date: this.last_heal_date
+            last_heal_date: this.last_heal_date,
+            pvp_wins: this.pvp_wins,
+            pvp_losses: this.pvp_losses
         };
     }
 
