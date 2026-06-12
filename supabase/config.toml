@@ -1,0 +1,5 @@
+# Supabase local configuration file
+# Path: supabase/config.toml
+
+[functions.telegram-bot]
+verify_jwt = false
