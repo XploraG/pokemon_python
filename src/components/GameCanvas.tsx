@@ -2200,11 +2200,11 @@ export default function GameCanvas({
         const frameHeight = 20;
         const scale = 2.5;
         
-        const offsetX = Math.floor(window.innerWidth / 2) - 144;
-        const offsetY = Math.floor(window.innerHeight / 2) - 144;
-        
-        const camX = Math.max(0, Math.min(mapDimensions.width - 288, playerRef.current.x - 144));
-        const camY = Math.max(0, Math.min(mapDimensions.height - 288, playerRef.current.y - 144));
+        const camX = Math.max(0, Math.min(playerRef.current.x - canvasRef.current.width / 2, mapDimensions.width - canvasRef.current.width));
+        const camY = Math.max(0, Math.min(playerRef.current.y - canvasRef.current.height / 2, mapDimensions.height - canvasRef.current.height));
+
+        const offsetX = canvasRef.current.width > mapDimensions.width ? Math.floor((canvasRef.current.width - mapDimensions.width) / 2) : 0;
+        const offsetY = canvasRef.current.height > mapDimensions.height ? Math.floor((canvasRef.current.height - mapDimensions.height) / 2) : 0;
 
         const otherPlayersList = Object.entries(otherPlayersRef.current);
         for (const [address, otherPlayer] of otherPlayersList) {
