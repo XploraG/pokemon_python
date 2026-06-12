@@ -44,19 +44,6 @@ interface MapEntity {
     frame?: { x: number; y: number; w: number; h: number };
 }
 
-const EVOLUTION_DATABASE: Record<string, { method: 'level' | 'stone'; target: string; level?: number }> = {
-    charmander: { method: 'level', target: 'charmeleon', level: 16 },
-    charmeleon: { method: 'level', target: 'charizard', level: 36 },
-    bulbasaur: { method: 'level', target: 'ivysaur', level: 16 },
-    ivysaur: { method: 'level', target: 'venusaur', level: 32 },
-    squirtle: { method: 'level', target: 'wartortle', level: 16 },
-    wartortle: { method: 'level', target: 'blastoise', level: 36 },
-    pikachu: { method: 'stone', target: 'raichu' },
-    clefairy: { method: 'stone', target: 'clefable' },
-    vulpix: { method: 'stone', target: 'ninetales' },
-    jigglypuff: { method: 'stone', target: 'wigglytuff' }
-};
-
 interface LearnsetEntry {
     moveId: string;
     level: number;
@@ -371,19 +358,92 @@ const getPokemonAllMovesInfo = (speciesName: string): { moveId: string; levelReq
     return moves;
 };
 
+const EVOLUTION_DATABASE: Record<string, { method: 'level' | 'stone'; target: string; level?: number }> = {
+    // Level-up evolutions
+    bulbasaur: { method: 'level', target: 'ivysaur', level: 16 },
+    ivysaur: { method: 'level', target: 'venusaur', level: 32 },
+    charmander: { method: 'level', target: 'charmeleon', level: 16 },
+    charmeleon: { method: 'level', target: 'charizard', level: 36 },
+    squirtle: { method: 'level', target: 'wartortle', level: 16 },
+    wartortle: { method: 'level', target: 'blastoise', level: 36 },
+    caterpie: { method: 'level', target: 'metapod', level: 7 },
+    metapod: { method: 'level', target: 'butterfree', level: 10 },
+    weedle: { method: 'level', target: 'kakuna', level: 7 },
+    kakuna: { method: 'level', target: 'beedrill', level: 10 },
+    pidgey: { method: 'level', target: 'pidgeotto', level: 18 },
+    pidgeotto: { method: 'level', target: 'pidgeot', level: 36 },
+    rattata: { method: 'level', target: 'raticate', level: 20 },
+    spearow: { method: 'level', target: 'fearow', level: 20 },
+    ekans: { method: 'level', target: 'arbok', level: 22 },
+    sandshrew: { method: 'level', target: 'sandslash', level: 22 },
+    zubat: { method: 'level', target: 'golbat', level: 22 },
+    paras: { method: 'level', target: 'parasect', level: 24 },
+    venonat: { method: 'level', target: 'venomoth', level: 31 },
+    diglett: { method: 'level', target: 'dugtrio', level: 26 },
+    meowth: { method: 'level', target: 'persian', level: 28 },
+    psyduck: { method: 'level', target: 'golduck', level: 33 },
+    mankey: { method: 'level', target: 'primeape', level: 28 },
+    poliwag: { method: 'level', target: 'poliwhirl', level: 25 },
+    abra: { method: 'level', target: 'kadabra', level: 16 },
+    kadabra: { method: 'level', target: 'alakazam', level: 36 },
+    machop: { method: 'level', target: 'machoke', level: 28 },
+    machoke: { method: 'level', target: 'machamp', level: 40 },
+    bellsprout: { method: 'level', target: 'weepinbell', level: 21 },
+    tentacool: { method: 'level', target: 'tentacruel', level: 30 },
+    geodude: { method: 'level', target: 'graveler', level: 25 },
+    graveler: { method: 'level', target: 'golem', level: 40 },
+    ponyta: { method: 'level', target: 'rapidash', level: 40 },
+    slowpoke: { method: 'level', target: 'slowbro', level: 37 },
+    magnemite: { method: 'level', target: 'magneton', level: 30 },
+    doduo: { method: 'level', target: 'dodrio', level: 31 },
+    seel: { method: 'level', target: 'dewgong', level: 34 },
+    grimer: { method: 'level', target: 'muk', level: 38 },
+    gastly: { method: 'level', target: 'haunter', level: 25 },
+    haunter: { method: 'level', target: 'gengar', level: 40 },
+    drowzee: { method: 'level', target: 'hypno', level: 26 },
+    krabby: { method: 'level', target: 'kingler', level: 28 },
+    voltorb: { method: 'level', target: 'electrode', level: 30 },
+    cubone: { method: 'level', target: 'marowak', level: 28 },
+    koffing: { method: 'level', target: 'weezing', level: 35 },
+    rhyhorn: { method: 'level', target: 'rhydon', level: 42 },
+    horsea: { method: 'level', target: 'seadra', level: 32 },
+    goldeen: { method: 'level', target: 'seaking', level: 33 },
+    magikarp: { method: 'level', target: 'gyarados', level: 20 },
+    omanyte: { method: 'level', target: 'omastar', level: 40 },
+    kabuto: { method: 'level', target: 'kabutops', level: 40 },
+    dratini: { method: 'level', target: 'dragonair', level: 30 },
+    dragonair: { method: 'level', target: 'dragonite', level: 55 },
+
+    // Stone evolutions
+    pikachu: { method: 'stone', target: 'raichu' },
+    clefairy: { method: 'stone', target: 'clefable' },
+    vulpix: { method: 'stone', target: 'ninetales' },
+    jigglypuff: { method: 'stone', target: 'wigglytuff' },
+    gloom: { method: 'stone', target: 'vileplume' },
+    growlithe: { method: 'stone', target: 'arcanine' },
+    poliwhirl: { method: 'stone', target: 'poliwrath' },
+    weepinbell: { method: 'stone', target: 'victreebel' },
+    shellder: { method: 'stone', target: 'cloyster' },
+    exeggcute: { method: 'stone', target: 'exeggutor' },
+    staryu: { method: 'stone', target: 'starmie' },
+    eevee: { method: 'stone', target: 'vaporeon' }
+};
+
 const getPokemonEvolutionInfo = (speciesName: string): string => {
     const name = speciesName.toLowerCase();
-    if (name === 'charmander') return 'Evoluciona a Charmeleon al Nvl. 16';
-    if (name === 'charmeleon') return 'Evoluciona a Charizard al Nvl. 36';
-    if (name === 'bulbasaur') return 'Evoluciona a Ivysaur al Nvl. 16';
-    if (name === 'ivysaur') return 'Evoluciona a Venusaur al Nvl. 32';
-    if (name === 'squirtle') return 'Evoluciona a Wartortle al Nvl. 16';
-    if (name === 'wartortle') return 'Evoluciona a Blastoise al Nvl. 36';
-    if (name === 'pikachu') return 'Evoluciona a Raichu usando Piedra Evolución';
-    if (name === 'clefairy') return 'Evoluciona a Clefable usando Piedra Evolución';
-    if (name === 'vulpix') return 'Evoluciona a Ninetales usando Piedra Evolución';
-    if (name === 'jigglypuff') return 'Evoluciona a Wigglytuff usando Piedra Evolución';
-    return 'Sin evoluciones disponibles';
+    const evo = EVOLUTION_DATABASE[name];
+    if (!evo) return 'Sin evoluciones disponibles';
+    
+    if (name === 'eevee') {
+        return 'Evoluciona a Vaporeon, Jolteon o Flareon usando Piedra Evolución';
+    }
+    
+    const targetCap = evo.target.charAt(0).toUpperCase() + evo.target.slice(1);
+    if (evo.method === 'level') {
+        return `Evoluciona a ${targetCap} al Nvl. ${evo.level}`;
+    } else {
+        return `Evoluciona a ${targetCap} usando Piedra Evolución`;
+    }
 };
 
 const getPokemonMoves = (speciesName: string, level: number): string[] => {
@@ -2169,19 +2229,11 @@ export default function GameCanvas({
             
             if (leveledUp) {
                 msg += ` ¡Subió al nivel ${currentLvl}!`;
-                // Check level evolution
-                if (activePoke.id === 'charmander' && currentLvl >= 16) {
-                    evolvedName = 'charmeleon'; evolved = true;
-                } else if (activePoke.id === 'charmeleon' && currentLvl >= 36) {
-                    evolvedName = 'charizard'; evolved = true;
-                } else if (activePoke.id === 'bulbasaur' && currentLvl >= 16) {
-                    evolvedName = 'ivysaur'; evolved = true;
-                } else if (activePoke.id === 'ivysaur' && currentLvl >= 32) {
-                    evolvedName = 'venusaur'; evolved = true;
-                } else if (activePoke.id === 'squirtle' && currentLvl >= 16) {
-                    evolvedName = 'wartortle'; evolved = true;
-                } else if (activePoke.id === 'wartortle' && currentLvl >= 36) {
-                    evolvedName = 'blastoise'; evolved = true;
+                // Check database for evolution
+                const evo = EVOLUTION_DATABASE[activePoke.id.toLowerCase()];
+                if (evo && evo.method === 'level' && currentLvl >= (evo.level ?? 99)) {
+                    evolvedName = evo.target;
+                    evolved = true;
                 }
                 
                 if (evolved) {
@@ -2353,10 +2405,15 @@ export default function GameCanvas({
             const idLower = target.id.toLowerCase();
             let evolvedId = '';
             
-            if (idLower === 'pikachu') evolvedId = 'raichu';
-            else if (idLower === 'clefairy') evolvedId = 'clefable';
-            else if (idLower === 'vulpix') evolvedId = 'ninetales';
-            else if (idLower === 'jigglypuff') evolvedId = 'wigglytuff';
+            const evo = EVOLUTION_DATABASE[idLower];
+            if (evo && evo.method === 'stone') {
+                if (idLower === 'eevee') {
+                    const evos = ['vaporeon', 'jolteon', 'flareon'];
+                    evolvedId = evos[Math.floor(Math.random() * evos.length)];
+                } else {
+                    evolvedId = evo.target;
+                }
+            }
             
             if (evolvedId) {
                 const stats = getPokemonStats(evolvedId, target.level ?? 5);
