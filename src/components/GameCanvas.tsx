@@ -144,6 +144,28 @@ export default function GameCanvas({
     });
     const [currentMapPath, setCurrentMapPath] = useState(initialMapPath);
     
+    // Player nickname / alias states
+    const [playerName, setPlayerName] = useState(saveName);
+    const [nicknameInput, setNicknameInput] = useState(saveName);
+    const [showEditNicknameModal, setShowEditNicknameModal] = useState(false);
+    const playerNameRef = useRef(playerName);
+    playerNameRef.current = playerName;
+
+    useEffect(() => {
+        setPlayerName(saveName);
+        setNicknameInput(saveName);
+    }, [saveName]);
+
+    // Real-time Multiplayer states & refs
+    const [otherPlayers, setOtherPlayers] = useState<Record<string, any>>({});
+    const otherPlayersRef = useRef<Record<string, any>>({});
+    const channelRef = useRef<any>(null);
+    const lastBroadcastRef = useRef({ x: 0, y: 0, dir: '', animFrame: 0, map: '' });
+
+    useEffect(() => {
+        otherPlayersRef.current = otherPlayers;
+    }, [otherPlayers]);
+    
     // HUD and Modal States
     const [activeDialog, setActiveDialog] = useState<string | null>(null);
     const [dialogName, setDialogName] = useState<string>('');
@@ -188,6 +210,50 @@ export default function GameCanvas({
             showNotification("No Disponible", `Ya has reclamado hoy. Tiempo restante: ${mins} minutos.`);
         }
     };
+
+    const handleUpdateNickname = async (newName: string) => {
+        const trimmed = newName.trim();
+        if (!trimmed) {
+            showNotification("Error", "El nickname no puede estar vacío.");
+            return;
+        }
+        if (trimmed.length > 15) {
+            showNotification("Error", "El nickname es demasiado largo (máximo 15 caracteres).");
+            return;
+        }
+        setPlayerName(trimmed);
+        playerNameRef.current = trimmed;
+        
+        // Save nickname update to database
+        await saveLocalEconomy(undefined, undefined, trimmed);
+        
+        // Update presence tracking
+        if (channelRef.current) {
+            await channelRef.current.track({
+                online_at: new Date().toISOString(),
+                name: trimmed
+            });
+        }
+        
+        // Send a direct move broadcast to update other players immediately
+        if (channelRef.current) {
+            channelRef.current.send({
+                type: 'broadcast',
+                event: 'player_move',
+                payload: {
+                    address: walletAddress,
+                    name: trimmed,
+                    x: playerRef.current.x,
+                    y: playerRef.current.y,
+                    dir: playerRef.current.moveDirection,
+                    animFrame: playerRef.current.animFrame,
+                    map: currentMapPathRef.current
+                }
+            });
+        }
+        
+        showNotification("Nickname Actualizado", `Tu alias ahora es "${trimmed}".`);
+    };
     
     // Engine loading flags
     const [loading, setLoading] = useState(true);
@@ -209,6 +275,71 @@ export default function GameCanvas({
     useEffect(() => { inventoryRef.current = inventory; }, [inventory]);
     useEffect(() => { teamRef.current = team; }, [team]);
     useEffect(() => { pcPokemonRef.current = pcPokemon; }, [pcPokemon]);
+
+    // Supabase Real-time connection for Multiplayer
+    useEffect(() => {
+        if (loading || !walletAddress) return;
+
+        const channel = supabase.channel('global_lobby', {
+            config: {
+                presence: {
+                    key: walletAddress,
+                },
+            },
+        });
+
+        channelRef.current = channel;
+
+        channel
+            .on('presence', { event: 'sync' }, () => {
+                const state = channel.presenceState();
+                setOtherPlayers((prev) => {
+                    const next = { ...prev };
+                    const onlineAddresses = Object.keys(state);
+                    for (const addr of Object.keys(next)) {
+                        if (!onlineAddresses.includes(addr)) {
+                            delete next[addr];
+                        }
+                    }
+                    return next;
+                });
+            })
+            .on('presence', { event: 'leave' }, ({ key }) => {
+                setOtherPlayers((prev) => {
+                    const next = { ...prev };
+                    delete next[key];
+                    return next;
+                });
+            })
+            .on('broadcast', { event: 'player_move' }, ({ payload }) => {
+                if (payload.address === walletAddress) return;
+                setOtherPlayers((prev) => ({
+                    ...prev,
+                    [payload.address]: {
+                        name: payload.name,
+                        x: payload.x,
+                        y: payload.y,
+                        dir: payload.dir,
+                        animFrame: payload.animFrame,
+                        map: payload.map
+                    }
+                }));
+            });
+
+        channel.subscribe(async (status) => {
+            if (status === 'SUBSCRIBED') {
+                await channel.track({
+                    online_at: new Date().toISOString(),
+                    name: playerNameRef.current
+                });
+            }
+        });
+
+        return () => {
+            channel.unsubscribe();
+            channelRef.current = null;
+        };
+    }, [loading, walletAddress]);
 
     // Player position & movement states
     const playerRef = useRef({
@@ -634,16 +765,47 @@ export default function GameCanvas({
                 return;
             }
 
+            const player = playerRef.current;
+            const mapData = mapDataRef.current;
+
             // 1. Process movement animation & inputs
             processMovement();
+
+            // Broadcast movement changes if connected
+            if (
+                channelRef.current &&
+                (player.x !== lastBroadcastRef.current.x ||
+                 player.y !== lastBroadcastRef.current.y ||
+                 player.moveDirection !== lastBroadcastRef.current.dir ||
+                 player.animFrame !== lastBroadcastRef.current.animFrame ||
+                 currentMapPathRef.current !== lastBroadcastRef.current.map)
+            ) {
+                channelRef.current.send({
+                    type: 'broadcast',
+                    event: 'player_move',
+                    payload: {
+                        address: walletAddress,
+                        name: playerNameRef.current,
+                        x: player.x,
+                        y: player.y,
+                        dir: player.moveDirection,
+                        animFrame: player.animFrame,
+                        map: currentMapPathRef.current
+                    }
+                });
+                lastBroadcastRef.current = {
+                    x: player.x,
+                    y: player.y,
+                    dir: player.moveDirection,
+                    animFrame: player.animFrame,
+                    map: currentMapPathRef.current
+                };
+            }
 
             // 2. Clear canvas
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             // 3. Camera centering
-            const player = playerRef.current;
-            const mapData = mapDataRef.current;
-            
             const camX = Math.max(0, Math.min(player.x - canvas.width / 2, mapData.width - canvas.width));
             const camY = Math.max(0, Math.min(player.y - canvas.height / 2, mapData.height - canvas.height));
 
@@ -726,7 +888,7 @@ export default function GameCanvas({
                         const frameHeight = 20;
                         const scale = 2.5;
 
-                        ctx.drawImage(
+                        c.drawImage(
                             sprite,
                             dirOffset + player.animFrame * 16, // source x
                             12, // source y
@@ -737,7 +899,81 @@ export default function GameCanvas({
                             frameWidth * scale,
                             frameHeight * scale
                         );
+
+                        // Draw name tag above local player's head
+                        c.font = "bold 8px monospace";
+                        const nameTag = playerNameRef.current || "Tamer";
+                        const textWidth = c.measureText(nameTag).width;
+                        
+                        c.fillStyle = "rgba(0, 0, 0, 0.5)";
+                        c.fillRect(
+                            player.x - camX - textWidth / 2 - 3 + offsetX,
+                            player.y - camY - frameHeight * scale - 14 + offsetY,
+                            textWidth + 6,
+                            11
+                        );
+                        
+                        c.fillStyle = "#ffe082"; // Light yellow for local player to easily distinguish themselves
+                        c.fillText(
+                            nameTag,
+                            player.x - camX - textWidth / 2 + offsetX,
+                            player.y - camY - frameHeight * scale - 6 + offsetY
+                        );
                     }
+                }
+            });
+
+            // Add Other Players
+            Object.values(otherPlayersRef.current).forEach((otherPlayer: any) => {
+                if (otherPlayer.map === currentMapPathRef.current) {
+                    drawables.push({
+                        ySort: otherPlayer.y,
+                        draw: (c) => {
+                            const sprite = playerSpriteRef.current;
+                            if (sprite) {
+                                let dirOffset = 0;
+                                if (otherPlayer.dir === 'left') dirOffset = 48;
+                                else if (otherPlayer.dir === 'up') dirOffset = 96;
+                                else if (otherPlayer.dir === 'right') dirOffset = 144;
+
+                                const frameWidth = 15;
+                                const frameHeight = 20;
+                                const scale = 2.5;
+
+                                c.drawImage(
+                                    sprite,
+                                    dirOffset + (otherPlayer.animFrame ?? 0) * 16, // source x
+                                    12, // source y
+                                    frameWidth,
+                                    frameHeight,
+                                    otherPlayer.x - camX - (frameWidth * scale) / 2 + offsetX,
+                                    otherPlayer.y - camY - frameHeight * scale + offsetY,
+                                    frameWidth * scale,
+                                    frameHeight * scale
+                                );
+
+                                // Draw name tags
+                                c.font = "bold 8px monospace";
+                                const nameTag = otherPlayer.name || "Tamer";
+                                const textWidth = c.measureText(nameTag).width;
+                                
+                                c.fillStyle = "rgba(0, 0, 0, 0.5)";
+                                c.fillRect(
+                                    otherPlayer.x - camX - textWidth / 2 - 3 + offsetX,
+                                    otherPlayer.y - camY - frameHeight * scale - 14 + offsetY,
+                                    textWidth + 6,
+                                    11
+                                );
+                                
+                                c.fillStyle = "#ffffff";
+                                c.fillText(
+                                    nameTag,
+                                    otherPlayer.x - camX - textWidth / 2 + offsetX,
+                                    otherPlayer.y - camY - frameHeight * scale - 6 + offsetY
+                                );
+                            }
+                        }
+                    });
                 }
             });
 
@@ -1177,14 +1413,15 @@ export default function GameCanvas({
         }
     };
 
-    const saveLocalEconomy = async (updatedTeam?: any[], updatedPcPokemon?: any[]) => {
+    const saveLocalEconomy = async (updatedTeam?: any[], updatedPcPokemon?: any[], nameOverride?: string) => {
         const economyData = economyRef.current.toSaveData();
         const inventoryData = inventoryRef.current.toSaveData();
         const teamToSave = updatedTeam !== undefined ? updatedTeam : teamRef.current;
         const pcPokemonToSave = updatedPcPokemon !== undefined ? updatedPcPokemon : pcPokemonRef.current;
+        const activeName = nameOverride !== undefined ? nameOverride : playerNameRef.current;
         
         const saveState = {
-            name: saveName,
+            name: activeName,
             time: 0,
             player_coordinates: [playerRef.current.x, playerRef.current.y],
             map: currentMapPathRef.current,
@@ -1196,7 +1433,7 @@ export default function GameCanvas({
 
         // 1. Save locally to localStorage
         const fullSaves = JSON.parse(localStorage.getItem('pixel_tamer_saves') || '{}');
-        fullSaves[saveName] = saveState;
+        fullSaves[walletAddress || saveName] = saveState;
         localStorage.setItem('pixel_tamer_saves', JSON.stringify(fullSaves));
 
         // 2. Cloud sync to Supabase
@@ -1675,8 +1912,26 @@ export default function GameCanvas({
                             <button onClick={() => setShowMenuModal(false)} className="modal-close-btn">&times;</button>
                         </div>
                         <div className="modal-body">
-                            <div style={{ marginBottom: '16px', fontWeight: 'bold' }}>
-                                Entrenador Nivel: {economy.level}
+                            <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255, 255, 255, 0.45)', border: '1px dashed #3e2723', padding: '8px 12px', borderRadius: '4px' }}>
+                                <div>
+                                    <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#3e2723' }}>
+                                        Tamer: <span style={{ color: '#0288d1' }}>{playerName}</span>
+                                    </div>
+                                    <div style={{ fontSize: '10px', color: '#5d4037', marginTop: '2px' }}>
+                                        Nivel: {economy.level}
+                                    </div>
+                                </div>
+                                <button 
+                                    onClick={() => {
+                                        setNicknameInput(playerName);
+                                        setShowEditNicknameModal(true);
+                                        setShowMenuModal(false);
+                                    }}
+                                    className="pokemon-button animate-hover"
+                                    style={{ margin: 0, padding: '4px 8px', fontSize: '10px', width: 'auto', background: '#ffe082', border: '1px solid #ffca28', color: '#3e2723', cursor: 'pointer' }}
+                                >
+                                    ✏️ Editar Nick
+                                </button>
                             </div>
                             
                             {/* Render Pokemon HP Bars inside Menu */}
@@ -2285,6 +2540,63 @@ export default function GameCanvas({
                                 OK
                             </button>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Edit Nickname Modal */}
+            {showEditNicknameModal && (
+                <div className="modal-overlay" style={{ zIndex: 310 }}>
+                    <div className="modal-card pokemon-panel" style={{ maxWidth: '360px' }}>
+                        <div className="modal-header">
+                            <h3 className="modal-title">Editar Nickname</h3>
+                            <button onClick={() => setShowEditNicknameModal(false)} className="modal-close-btn">&times;</button>
+                        </div>
+                        <form onSubmit={(e) => {
+                            e.preventDefault();
+                            handleUpdateNickname(nicknameInput);
+                            setShowEditNicknameModal(false);
+                        }} className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            <p style={{ fontSize: '11px', color: '#5d4037', margin: 0, textTransform: 'uppercase', fontWeight: 'bold' }}>
+                                Elige un alias para mostrar sobre tu personaje:
+                            </p>
+                            <input 
+                                type="text"
+                                value={nicknameInput}
+                                onChange={(e) => setNicknameInput(e.target.value)}
+                                maxLength={15}
+                                placeholder="Escribe tu Nickname..."
+                                style={{
+                                    padding: '10px',
+                                    borderRadius: '6px',
+                                    border: '2px solid #3e2723',
+                                    fontSize: '14px',
+                                    fontFamily: 'inherit',
+                                    background: '#fdfbf7',
+                                    color: '#3e2723',
+                                    outline: 'none',
+                                    width: '100%',
+                                    boxSizing: 'border-box'
+                                }}
+                            />
+                            <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+                                <button 
+                                    type="button"
+                                    onClick={() => setShowEditNicknameModal(false)}
+                                    className="pokemon-button danger"
+                                    style={{ flex: 1, margin: 0 }}
+                                >
+                                    Cancelar
+                                </button>
+                                <button 
+                                    type="submit"
+                                    className="pokemon-button success"
+                                    style={{ flex: 2, margin: 0 }}
+                                >
+                                    Guardar Cambios
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             )}
