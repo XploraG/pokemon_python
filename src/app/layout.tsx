@@ -26,10 +26,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`} suppressHydrationWarning>
-      <head>
-        <Script src="https://telegram.org/js/telegram-web-app.js" strategy="beforeInteractive" />
-      </head>
       <body suppressHydrationWarning>
+        <Script src="https://telegram.org/js/telegram-web-app.js" strategy="beforeInteractive" />
+        <Script src="https://sad.adsgram.ai/js/sad.min.js" strategy="afterInteractive" />
         <MiniKitBootstrap>
           {children}
         </MiniKitBootstrap>

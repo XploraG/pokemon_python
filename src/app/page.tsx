@@ -50,6 +50,7 @@ export default function Home() {
     const [activeSave, setActiveSave] = useState<SaveData | null>(null);
     const [isConnecting, setIsConnecting] = useState(false);
     const [isMiniKitInstalled, setIsMiniKitInstalled] = useState(false);
+    const [mounted, setMounted] = useState(false);
     const [mockAddressInput, setMockAddressInput] = useState('');
     const [error, setError] = useState<string | null>(null);
 
@@ -64,6 +65,7 @@ export default function Home() {
     const [showDevPanel, setShowDevPanel] = useState(false);
 
     useEffect(() => {
+        setMounted(true);
         // Detect if MiniKit is available
         const checkMiniKit = async () => {
             try {
@@ -172,7 +174,7 @@ export default function Home() {
                     }
                 },
                 team_data: [
-                    { id: selectedStarter, rarity: "common", is_evolved: false }
+                    { id: selectedStarter, rarity: "common", is_evolved: false, level: 1, xp: 0 }
                 ],
                 pc_pokemon: []
             };
@@ -250,6 +252,20 @@ export default function Home() {
         setWalletAddress(null);
         setActiveSave(null);
     };
+
+    if (!mounted) {
+        return (
+            <div className="landing-container">
+                <div className="landing-wrapper" style={{ textAlign: 'center', padding: '40px 20px' }}>
+                    <h1 className="landing-title retro-title">Pixel Tamer</h1>
+                    <div className="saves-list-empty glass-panel" style={{ display: 'inline-block', padding: '24px' }}>
+                        <div className="spinner" style={{ border: '4px solid rgba(0, 0, 0, 0.1)', width: '36px', height: '36px', borderRadius: '50%', borderLeftColor: '#3e2723', animation: 'spin 1s linear infinite', margin: '0 auto 12px auto' }}></div>
+                        Iniciando juego...
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     // If game is active, render canvas
     if (activeSave && walletAddress) {
