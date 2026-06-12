@@ -29,6 +29,7 @@ interface TileComponent {
     size: [number, number];
     image: string;
     imgElement?: HTMLImageElement;
+    isSolid?: boolean;
 }
 
 interface MapEntity {
@@ -1817,8 +1818,8 @@ export default function GameCanvas({
                             setOpponentAtkStage(0);
                             setOpponentDefStage(0);
                             setIsBattleAnimating(false);
-                            setPlayerSpriteEffect('none');
-                            setOpponentSpriteEffect('none');
+                            setPlayerSpriteEffect('none' as any);
+                            setOpponentSpriteEffect('none' as any);
                             setFloatingDamage(null);
 
                             setDialogName("Hierba Alta");
@@ -2355,11 +2356,12 @@ export default function GameCanvas({
         const frameHeight = 20;
         const scale = 2.5;
         
-        const camX = Math.max(0, Math.min(playerRef.current.x - canvasRef.current.width / 2, mapDimensions.width - canvasRef.current.width));
-        const camY = Math.max(0, Math.min(playerRef.current.y - canvasRef.current.height / 2, mapDimensions.height - canvasRef.current.height));
+        const mapData = mapDataRef.current;
+        const camX = Math.max(0, Math.min(playerRef.current.x - canvasRef.current.width / 2, mapData.width - canvasRef.current.width));
+        const camY = Math.max(0, Math.min(playerRef.current.y - canvasRef.current.height / 2, mapData.height - canvasRef.current.height));
 
-        const offsetX = canvasRef.current.width > mapDimensions.width ? Math.floor((canvasRef.current.width - mapDimensions.width) / 2) : 0;
-        const offsetY = canvasRef.current.height > mapDimensions.height ? Math.floor((canvasRef.current.height - mapDimensions.height) / 2) : 0;
+        const offsetX = canvasRef.current.width > mapData.width ? Math.floor((canvasRef.current.width - mapData.width) / 2) : 0;
+        const offsetY = canvasRef.current.height > mapData.height ? Math.floor((canvasRef.current.height - mapData.height) / 2) : 0;
 
         const padding = 20; // 20px padding for easier clicking
 
@@ -2511,13 +2513,13 @@ export default function GameCanvas({
                     setOpponentAtkStage(0);
                     setOpponentDefStage(0);
                     setIsBattleAnimating(false);
-                    setPlayerSpriteEffect('none');
-                    setOpponentSpriteEffect('none');
+                    setPlayerSpriteEffect('none' as any);
+                    setOpponentSpriteEffect('none' as any);
                     setFloatingDamage(null);
 
                     // Start actual Gym Battle
                     setIsGymBattle(true);
-                    setGymLeaderName("Brock");
+                    setGymLeaderName(entity.name.replace("Gym Leader ", ""));
                     setBattleMessage("¡El Líder de Gimnasio Brock te desafía!");
                     setShowBallSelect(false);
                     setActiveWildBattle({
@@ -2937,13 +2939,9 @@ export default function GameCanvas({
                         playerRef.current.isMoving = false;
                         setCurrentMapPath('/assets/maps/pokecenter/main.json');
                         
-                        // Full heal team
-                        const fullyHealedTeam = updatedTeam.map((p: any) => {
-                            const stats = getPokemonStats(p.id, p.level ?? 1);
-                            return { ...p, hp: stats.maxHp, maxHp: stats.maxHp };
-                        });
-                        setTeam(fullyHealedTeam);
-                        saveLocalEconomy(fullyHealedTeam);
+                        // Do not heal automatically, just save their 0 HP state
+                        setTeam(updatedTeam);
+                        saveLocalEconomy(updatedTeam);
                         
                         setIsGymBattle(false);
                         setGymLeaderName(null);
@@ -3119,7 +3117,7 @@ export default function GameCanvas({
                         setEconomy(new Economy(newEconomyData));
                         setActiveWildBattle(null);
                         setIsBattleAnimating(false);
-                        setOpponentSpriteEffect(null);
+                        setOpponentSpriteEffect('none' as any);
                         setCatchBallState(null);
                     }, 1000);
                 } else {
@@ -3127,7 +3125,7 @@ export default function GameCanvas({
                     setOpponentSpriteEffect('catch-fail' as any);
                     setBattleMessage(`¡Oh no! El Pokémon escapó de la Pokeball.`);
                     setTimeout(() => {
-                        setOpponentSpriteEffect(null);
+                        setOpponentSpriteEffect('none' as any);
                         setCatchBallState(null);
                         
                         const activePokeIdx = team.findIndex((p: any) => p.hp > 0);
@@ -3155,9 +3153,9 @@ export default function GameCanvas({
                                 playerRef.current.targetY = 224;
                                 playerRef.current.isMoving = false;
                                 setCurrentMapPath('/assets/maps/pokecenter/main.json');
-                                const fullyHealedTeam = updatedTeam.map((p: any) => ({ ...p, hp: p.maxHp }));
-                                setTeam(fullyHealedTeam);
-                                saveLocalEconomy(fullyHealedTeam);
+                                // Save their 0 HP state without healing
+                                setTeam(updatedTeam);
+                                saveLocalEconomy(updatedTeam);
                                 setActiveWildBattle(null);
                             } else {
                                 setBattleMessage(`El ${activeWildBattle.name} salvaje escapó y contraatacó con ${wildDmg} de daño, debilitando a tu ${activePoke.id}.`);
@@ -3212,9 +3210,9 @@ export default function GameCanvas({
                     playerRef.current.isMoving = false;
                     setCurrentMapPath('/assets/maps/pokecenter/main.json');
                     
-                    const fullyHealedTeam = updatedTeam.map((p: any) => ({ ...p, hp: p.maxHp }));
-                    setTeam(fullyHealedTeam);
-                    saveLocalEconomy(fullyHealedTeam);
+                    // Save their 0 HP state without healing
+                    setTeam(updatedTeam);
+                    saveLocalEconomy(updatedTeam);
                     setActiveWildBattle(null);
                     return;
                 } else {
@@ -4797,7 +4795,6 @@ export default function GameCanvas({
                         </form>
                     </div>
                 </div>
-                </div>
             )}
 
             {/* PVP MODALS AND UI */}
@@ -4923,21 +4920,20 @@ export default function GameCanvas({
                                 {/* Controls */}
                                 <div style={{ background: '#fff', padding: '10px', borderTop: '4px solid #333' }}>
                                     {activePvPBattle.status === 'battle' ? (
-                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px' }}>
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', width: '100%' }}>
                                             {(() => {
-                                                const activePoke = team.find((p:any)=>p.hp>0);
+                                                const activePoke = team.find(p => p.hp > 0);
                                                 if (!activePoke) return null;
-                                                const moves = POKEMON_MOVESET[activePoke.id.toLowerCase()] || ['tackle'];
-                                                return moves.map(moveId => {
-                                                    const m = MOVES_DATABASE[moveId] || MOVES_DATABASE.tackle;
+                                                const moves = typeof window !== 'undefined' && (window as any).POKEMON_MOVESET ? (window as any).POKEMON_MOVESET[activePoke.id] || [] : [];
+                                                return moves.map((m: any, idx: number) => {
+                                                    const tc = typeof window !== 'undefined' && (window as any).TYPE_COLORS ? (window as any).TYPE_COLORS : {};
                                                     return (
                                                         <button 
-                                                            key={moveId}
-                                                            onClick={() => handleExecutePvPMove(moveId)}
-                                                            disabled={isBattleAnimating}
-                                                            className="pokemon-button"
-                                                            style={{
-                                                                background: TYPE_COLORS[m.type as keyof typeof TYPE_COLORS] || '#a8a878',
+                                                            key={idx}
+                                                            className="pokemon-button animate-hover"
+                                                            onClick={() => handleExecutePvPMove(m.id)}
+                                                            style={{ 
+                                                                background: tc[m.type] || '#a8a878',
                                                                 color: m.type === 'electric' ? '#3e2723' : '#fff',
                                                                 height: '38px', padding: '4px', margin: 0, fontSize: '11px', fontWeight: 'bold'
                                                             }}
