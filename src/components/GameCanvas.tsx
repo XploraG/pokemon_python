@@ -44,6 +44,158 @@ interface MapEntity {
     frame?: { x: number; y: number; w: number; h: number };
 }
 
+const EVOLUTION_DATABASE: Record<string, { method: 'level' | 'stone'; target: string; level?: number }> = {
+    charmander: { method: 'level', target: 'charmeleon', level: 16 },
+    charmeleon: { method: 'level', target: 'charizard', level: 36 },
+    bulbasaur: { method: 'level', target: 'ivysaur', level: 16 },
+    ivysaur: { method: 'level', target: 'venusaur', level: 32 },
+    squirtle: { method: 'level', target: 'wartortle', level: 16 },
+    wartortle: { method: 'level', target: 'blastoise', level: 36 },
+    pikachu: { method: 'stone', target: 'raichu' },
+    clefairy: { method: 'stone', target: 'clefable' },
+    vulpix: { method: 'stone', target: 'ninetales' },
+    jigglypuff: { method: 'stone', target: 'wigglytuff' }
+};
+
+interface LearnsetEntry {
+    moveId: string;
+    level: number;
+}
+
+const getPokemonLearnset = (speciesName: string, primaryType: string): LearnsetEntry[] => {
+    const name = speciesName.toLowerCase();
+    if (name === 'charmander') {
+        return [
+            { moveId: 'scratch', level: 1 },
+            { moveId: 'growl', level: 1 },
+            { moveId: 'ember', level: 8 },
+            { moveId: 'flamethrower', level: 15 }
+        ];
+    }
+    if (name === 'charmeleon') {
+        return [
+            { moveId: 'scratch', level: 1 },
+            { moveId: 'growl', level: 1 },
+            { moveId: 'ember', level: 1 },
+            { moveId: 'flamethrower', level: 18 },
+            { moveId: 'fire_blast', level: 30 }
+        ];
+    }
+    if (name === 'charizard') {
+        return [
+            { moveId: 'wing_attack', level: 1 },
+            { moveId: 'ember', level: 1 },
+            { moveId: 'flamethrower', level: 1 },
+            { moveId: 'fire_blast', level: 1 }
+        ];
+    }
+    if (name === 'bulbasaur') {
+        return [
+            { moveId: 'tackle', level: 1 },
+            { moveId: 'growl', level: 1 },
+            { moveId: 'vine_whip', level: 8 },
+            { moveId: 'mega_drain', level: 15 }
+        ];
+    }
+    if (name === 'ivysaur') {
+        return [
+            { moveId: 'tackle', level: 1 },
+            { moveId: 'growl', level: 1 },
+            { moveId: 'vine_whip', level: 1 },
+            { moveId: 'mega_drain', level: 18 },
+            { moveId: 'solar_beam', level: 30 }
+        ];
+    }
+    if (name === 'venusaur') {
+        return [
+            { moveId: 'tackle', level: 1 },
+            { moveId: 'vine_whip', level: 1 },
+            { moveId: 'mega_drain', level: 1 },
+            { moveId: 'solar_beam', level: 1 }
+        ];
+    }
+    if (name === 'squirtle') {
+        return [
+            { moveId: 'tackle', level: 1 },
+            { moveId: 'tail_whip', level: 1 },
+            { moveId: 'water_gun', level: 8 },
+            { moveId: 'bubble', level: 15 }
+        ];
+    }
+    if (name === 'wartortle') {
+        return [
+            { moveId: 'tackle', level: 1 },
+            { moveId: 'tail_whip', level: 1 },
+            { moveId: 'water_gun', level: 1 },
+            { moveId: 'bubble', level: 18 },
+            { moveId: 'hydro_pump', level: 30 }
+        ];
+    }
+    if (name === 'blastoise') {
+        return [
+            { moveId: 'tackle', level: 1 },
+            { moveId: 'water_gun', level: 1 },
+            { moveId: 'surf', level: 1 },
+            { moveId: 'hydro_pump', level: 1 }
+        ];
+    }
+    if (name === 'pikachu') {
+        return [
+            { moveId: 'tackle', level: 1 },
+            { moveId: 'growl', level: 1 },
+            { moveId: 'thunder_shock', level: 6 },
+            { moveId: 'quick_attack', level: 12 },
+            { moveId: 'thunderbolt', level: 20 }
+        ];
+    }
+    if (name === 'raichu') {
+        return [
+            { moveId: 'quick_attack', level: 1 },
+            { moveId: 'thunder_shock', level: 1 },
+            { moveId: 'thunderbolt', level: 1 },
+            { moveId: 'thunder', level: 1 }
+        ];
+    }
+    if (name === 'onix' || name.includes('onix')) {
+        return [
+            { moveId: 'tackle', level: 1 },
+            { moveId: 'rock_throw', level: 1 },
+            { moveId: 'mud_slap', level: 1 },
+            { moveId: 'earthquake', level: 1 }
+        ];
+    }
+
+    // Fallbacks based on primaryType
+    const list = [{ moveId: 'tackle', level: 1 }];
+    const type = primaryType.toLowerCase();
+    if (type === 'fire') {
+        list.push({ moveId: 'ember', level: 1 });
+        list.push({ moveId: 'flamethrower', level: 15 });
+    } else if (type === 'water') {
+        list.push({ moveId: 'water_gun', level: 1 });
+        list.push({ moveId: 'surf', level: 15 });
+    } else if (type === 'grass') {
+        list.push({ moveId: 'vine_whip', level: 1 });
+        list.push({ moveId: 'mega_drain', level: 15 });
+    } else if (type === 'electric') {
+        list.push({ moveId: 'thunder_shock', level: 1 });
+        list.push({ moveId: 'thunderbolt', level: 15 });
+    } else if (type === 'flying') {
+        list.push({ moveId: 'gust', level: 1 });
+        list.push({ moveId: 'wing_attack', level: 15 });
+    } else if (type === 'ground' || type === 'rock') {
+        list.push({ moveId: 'mud_slap', level: 1 });
+        list.push({ moveId: 'rock_throw', level: 15 });
+    } else if (type === 'psychic') {
+        list.push({ moveId: 'confusion', level: 1 });
+        list.push({ moveId: 'psychic', level: 15 });
+    } else {
+        list.push({ moveId: 'quick_attack', level: 1 });
+        list.push({ moveId: 'body_slam', level: 15 });
+    }
+    return list;
+};
+
 interface WildBattle {
     name: string;
     level: number;
@@ -51,6 +203,336 @@ interface WildBattle {
     maxHp: number;
     captureRate: number;
 }
+
+const MOVES_DATABASE: Record<string, { name: string; type: string; power: number; accuracy: number }> = {
+    tackle: { name: "Placaje", type: "normal", power: 40, accuracy: 100 },
+    scratch: { name: "Arañazo", type: "normal", power: 40, accuracy: 100 },
+    growl: { name: "Gruñido", type: "normal", power: 0, accuracy: 100 },
+    tail_whip: { name: "Látigo", type: "normal", power: 0, accuracy: 100 },
+    quick_attack: { name: "Ataque Rápido", type: "normal", power: 40, accuracy: 100 },
+    double_slap: { name: "Doble Bofetón", type: "normal", power: 15, accuracy: 85 },
+    body_slam: { name: "Golpe Cuerpo", type: "normal", power: 85, accuracy: 100 },
+    hyper_beam: { name: "Híper Rayo", type: "normal", power: 150, accuracy: 90 },
+    ember: { name: "Ascuas", type: "fire", power: 40, accuracy: 100 },
+    flamethrower: { name: "Lanzallamas", type: "fire", power: 90, accuracy: 100 },
+    fire_blast: { name: "Llamarada", type: "fire", power: 110, accuracy: 85 },
+    water_gun: { name: "Pistola Agua", type: "water", power: 40, accuracy: 100 },
+    bubble: { name: "Burbuja", type: "water", power: 40, accuracy: 100 },
+    surf: { name: "Surf", type: "water", power: 90, accuracy: 100 },
+    hydro_pump: { name: "Hidrobomba", type: "water", power: 110, accuracy: 80 },
+    vine_whip: { name: "Látigo Cepa", type: "grass", power: 45, accuracy: 100 },
+    mega_drain: { name: "Megaagotar", type: "grass", power: 40, accuracy: 100 },
+    solar_beam: { name: "Rayo Solar", type: "grass", power: 120, accuracy: 100 },
+    thunder_shock: { name: "Impactrueno", type: "electric", power: 40, accuracy: 100 },
+    thunderbolt: { name: "Rayo", type: "electric", power: 90, accuracy: 100 },
+    thunder: { name: "Trueno", type: "electric", power: 110, accuracy: 70 },
+    spark: { name: "Chispa", type: "electric", power: 65, accuracy: 100 },
+    rock_throw: { name: "Lanzarrocas", type: "rock", power: 50, accuracy: 90 },
+    earthquake: { name: "Terremoto", type: "ground", power: 100, accuracy: 100 },
+    mud_slap: { name: "Bofetón Lodo", type: "ground", power: 20, accuracy: 100 },
+    poison_sting: { name: "Picotazo Venenoso", type: "poison", power: 15, accuracy: 100 },
+    gust: { name: "Tornado", type: "flying", power: 40, accuracy: 100 },
+    wing_attack: { name: "Ataque Ala", type: "flying", power: 60, accuracy: 100 },
+    psychic: { name: "Psíquico", type: "psychic", power: 90, accuracy: 100 },
+    confusion: { name: "Confusión", type: "psychic", power: 50, accuracy: 100 }
+};
+
+const getPokemonAllMovesInfo = (speciesName: string): { moveId: string; levelReq: number }[] => {
+    const name = speciesName.toLowerCase();
+    if (name === 'charmander') {
+        return [
+            { moveId: 'scratch', levelReq: 1 },
+            { moveId: 'growl', levelReq: 1 },
+            { moveId: 'ember', levelReq: 8 },
+            { moveId: 'flamethrower', levelReq: 15 }
+        ];
+    }
+    if (name === 'charmeleon') {
+        return [
+            { moveId: 'scratch', levelReq: 1 },
+            { moveId: 'growl', levelReq: 1 },
+            { moveId: 'ember', levelReq: 1 },
+            { moveId: 'flamethrower', levelReq: 18 },
+            { moveId: 'fire_blast', levelReq: 30 }
+        ];
+    }
+    if (name === 'charizard') {
+        return [
+            { moveId: 'wing_attack', levelReq: 1 },
+            { moveId: 'ember', levelReq: 1 },
+            { moveId: 'flamethrower', levelReq: 1 },
+            { moveId: 'fire_blast', levelReq: 1 }
+        ];
+    }
+    if (name === 'bulbasaur') {
+        return [
+            { moveId: 'tackle', levelReq: 1 },
+            { moveId: 'growl', levelReq: 1 },
+            { moveId: 'vine_whip', levelReq: 8 },
+            { moveId: 'mega_drain', levelReq: 15 }
+        ];
+    }
+    if (name === 'ivysaur') {
+        return [
+            { moveId: 'tackle', levelReq: 1 },
+            { moveId: 'growl', levelReq: 1 },
+            { moveId: 'vine_whip', levelReq: 1 },
+            { moveId: 'mega_drain', levelReq: 18 },
+            { moveId: 'solar_beam', levelReq: 30 }
+        ];
+    }
+    if (name === 'venusaur') {
+        return [
+            { moveId: 'tackle', levelReq: 1 },
+            { moveId: 'vine_whip', levelReq: 1 },
+            { moveId: 'mega_drain', levelReq: 1 },
+            { moveId: 'solar_beam', levelReq: 1 }
+        ];
+    }
+    if (name === 'squirtle') {
+        return [
+            { moveId: 'tackle', levelReq: 1 },
+            { moveId: 'tail_whip', levelReq: 1 },
+            { moveId: 'water_gun', levelReq: 8 },
+            { moveId: 'bubble', levelReq: 15 }
+        ];
+    }
+    if (name === 'wartortle') {
+        return [
+            { moveId: 'tackle', levelReq: 1 },
+            { moveId: 'tail_whip', levelReq: 1 },
+            { moveId: 'water_gun', levelReq: 1 },
+            { moveId: 'bubble', levelReq: 18 },
+            { moveId: 'hydro_pump', levelReq: 30 }
+        ];
+    }
+    if (name === 'blastoise') {
+        return [
+            { moveId: 'tackle', levelReq: 1 },
+            { moveId: 'water_gun', levelReq: 1 },
+            { moveId: 'surf', levelReq: 1 },
+            { moveId: 'hydro_pump', levelReq: 1 }
+        ];
+    }
+    if (name === 'pikachu') {
+        return [
+            { moveId: 'tackle', levelReq: 1 },
+            { moveId: 'growl', levelReq: 1 },
+            { moveId: 'thunder_shock', levelReq: 6 },
+            { moveId: 'quick_attack', levelReq: 12 },
+            { moveId: 'thunderbolt', levelReq: 20 }
+        ];
+    }
+    if (name === 'raichu') {
+        return [
+            { moveId: 'quick_attack', levelReq: 1 },
+            { moveId: 'thunder_shock', levelReq: 1 },
+            { moveId: 'thunderbolt', levelReq: 1 },
+            { moveId: 'thunder', levelReq: 1 }
+        ];
+    }
+    if (name === 'onix' || name.includes('onix')) {
+        return [
+            { moveId: 'tackle', levelReq: 1 },
+            { moveId: 'rock_throw', levelReq: 1 },
+            { moveId: 'mud_slap', levelReq: 1 },
+            { moveId: 'earthquake', levelReq: 1 }
+        ];
+    }
+    // General fallback based on type
+    const species = pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === name);
+    const primaryType = species?.types?.[0] || 'normal';
+    const moves = [{ moveId: 'tackle', levelReq: 1 }];
+    if (primaryType === 'fire') {
+        moves.push({ moveId: 'ember', levelReq: 1 });
+        moves.push({ moveId: 'flamethrower', levelReq: 15 });
+    } else if (primaryType === 'water') {
+        moves.push({ moveId: 'water_gun', levelReq: 1 });
+        moves.push({ moveId: 'surf', levelReq: 15 });
+    } else if (primaryType === 'grass') {
+        moves.push({ moveId: 'vine_whip', levelReq: 1 });
+        moves.push({ moveId: 'mega_drain', levelReq: 15 });
+    } else if (primaryType === 'electric') {
+        moves.push({ moveId: 'thunder_shock', levelReq: 1 });
+        moves.push({ moveId: 'thunderbolt', levelReq: 15 });
+    } else if (primaryType === 'flying') {
+        moves.push({ moveId: 'gust', levelReq: 1 });
+        moves.push({ moveId: 'wing_attack', levelReq: 15 });
+    } else if (primaryType === 'ground' || primaryType === 'rock') {
+        moves.push({ moveId: 'mud_slap', levelReq: 1 });
+        moves.push({ moveId: 'rock_throw', levelReq: 15 });
+    } else if (primaryType === 'psychic') {
+        moves.push({ moveId: 'confusion', levelReq: 1 });
+        moves.push({ moveId: 'psychic', levelReq: 15 });
+    } else {
+        moves.push({ moveId: 'quick_attack', levelReq: 1 });
+        moves.push({ moveId: 'body_slam', levelReq: 15 });
+    }
+    return moves;
+};
+
+const getPokemonEvolutionInfo = (speciesName: string): string => {
+    const name = speciesName.toLowerCase();
+    if (name === 'charmander') return 'Evoluciona a Charmeleon al Nvl. 16';
+    if (name === 'charmeleon') return 'Evoluciona a Charizard al Nvl. 36';
+    if (name === 'bulbasaur') return 'Evoluciona a Ivysaur al Nvl. 16';
+    if (name === 'ivysaur') return 'Evoluciona a Venusaur al Nvl. 32';
+    if (name === 'squirtle') return 'Evoluciona a Wartortle al Nvl. 16';
+    if (name === 'wartortle') return 'Evoluciona a Blastoise al Nvl. 36';
+    if (name === 'pikachu') return 'Evoluciona a Raichu usando Piedra Evolución';
+    if (name === 'clefairy') return 'Evoluciona a Clefable usando Piedra Evolución';
+    if (name === 'vulpix') return 'Evoluciona a Ninetales usando Piedra Evolución';
+    if (name === 'jigglypuff') return 'Evoluciona a Wigglytuff usando Piedra Evolución';
+    return 'Sin evoluciones disponibles';
+};
+
+const getPokemonMoves = (speciesName: string, level: number): string[] => {
+    const name = speciesName.toLowerCase();
+    if (name === 'charmander') {
+        const moves = ['scratch', 'growl'];
+        if (level >= 8) moves.push('ember');
+        if (level >= 15) moves.push('flamethrower');
+        return moves;
+    }
+    if (name === 'charmeleon') {
+        const moves = ['scratch', 'growl', 'ember'];
+        if (level >= 18) moves.push('flamethrower');
+        if (level >= 30) moves.push('fire_blast');
+        return moves;
+    }
+    if (name === 'charizard') {
+        return ['wing_attack', 'ember', 'flamethrower', 'fire_blast'];
+    }
+    if (name === 'bulbasaur') {
+        const moves = ['tackle', 'growl'];
+        if (level >= 8) moves.push('vine_whip');
+        if (level >= 15) moves.push('mega_drain');
+        return moves;
+    }
+    if (name === 'ivysaur') {
+        const moves = ['tackle', 'growl', 'vine_whip'];
+        if (level >= 18) moves.push('mega_drain');
+        if (level >= 30) moves.push('solar_beam');
+        return moves;
+    }
+    if (name === 'venusaur') {
+        return ['tackle', 'vine_whip', 'mega_drain', 'solar_beam'];
+    }
+    if (name === 'squirtle') {
+        const moves = ['tackle', 'tail_whip'];
+        if (level >= 8) moves.push('water_gun');
+        if (level >= 15) moves.push('bubble');
+        return moves;
+    }
+    if (name === 'wartortle') {
+        const moves = ['tackle', 'tail_whip', 'water_gun'];
+        if (level >= 18) moves.push('bubble');
+        if (level >= 30) moves.push('hydro_pump');
+        return moves;
+    }
+    if (name === 'blastoise') {
+        return ['tackle', 'water_gun', 'surf', 'hydro_pump'];
+    }
+    if (name === 'pikachu') {
+        const moves = ['tackle', 'growl'];
+        if (level >= 6) moves.push('thunder_shock');
+        if (level >= 12) moves.push('quick_attack');
+        if (level >= 20) moves.push('thunderbolt');
+        return moves;
+    }
+    if (name === 'raichu') {
+        return ['quick_attack', 'thunder_shock', 'thunderbolt', 'thunder'];
+    }
+    if (name === 'onix' || name.includes('onix')) {
+        return ['tackle', 'rock_throw', 'mud_slap', 'earthquake'];
+    }
+    const species = pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === name);
+    const primaryType = species?.types?.[0] || 'normal';
+    const fallback = ['tackle'];
+    if (primaryType === 'fire') {
+        fallback.push('ember');
+        if (level >= 15) fallback.push('flamethrower');
+    } else if (primaryType === 'water') {
+        fallback.push('water_gun');
+        if (level >= 15) fallback.push('surf');
+    } else if (primaryType === 'grass') {
+        fallback.push('vine_whip');
+        if (level >= 15) fallback.push('mega_drain');
+    } else if (primaryType === 'electric') {
+        fallback.push('thunder_shock');
+        if (level >= 15) fallback.push('thunderbolt');
+    } else if (primaryType === 'flying') {
+        fallback.push('gust');
+        if (level >= 15) fallback.push('wing_attack');
+    } else if (primaryType === 'ground' || primaryType === 'rock') {
+        fallback.push('mud_slap');
+        if (level >= 15) fallback.push('rock_throw');
+    } else if (primaryType === 'psychic') {
+        fallback.push('confusion');
+        if (level >= 15) fallback.push('psychic');
+    } else {
+        fallback.push('quick_attack');
+        if (level >= 15) fallback.push('body_slam');
+    }
+    return fallback;
+};
+
+const getPokemonStats = (speciesName: string, level: number) => {
+    const nameLower = speciesName.toLowerCase();
+    const species = pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === nameLower) || {
+        hp: 40, attack: 45, defense: 40, speed: 50
+    };
+    const maxHp = (species.hp ?? 40) + (level * 3);
+    const attack = (species.attack ?? 45) + (level * 2);
+    const defense = (species.defense ?? 40) + (level * 2);
+    const speed = (species.speed ?? 50) + (level * 2);
+    return { maxHp, attack, defense, speed };
+};
+
+const getTypeMultiplier = (moveType: string, opponentTypes: string[]): number => {
+    let mult = 1.0;
+    for (const targetType of opponentTypes) {
+        const target = targetType.toLowerCase();
+        if (moveType === 'fire') {
+            if (['grass', 'bug', 'ice'].includes(target)) mult *= 2.0;
+            if (['water', 'fire', 'rock', 'dragon'].includes(target)) mult *= 0.5;
+        } else if (moveType === 'water') {
+            if (['fire', 'ground', 'rock'].includes(target)) mult *= 2.0;
+            if (['water', 'grass', 'dragon'].includes(target)) mult *= 0.5;
+        } else if (moveType === 'grass') {
+            if (['water', 'ground', 'rock'].includes(target)) mult *= 2.0;
+            if (['fire', 'grass', 'poison', 'flying', 'bug', 'dragon'].includes(target)) mult *= 0.5;
+        } else if (moveType === 'electric') {
+            if (['water', 'flying'].includes(target)) mult *= 2.0;
+            if (['grass', 'electric', 'dragon'].includes(target)) mult *= 0.5;
+            if (target === 'ground') mult *= 0.0;
+        } else if (moveType === 'ground') {
+            if (['fire', 'electric', 'poison', 'rock'].includes(target)) mult *= 2.0;
+            if (['grass', 'bug'].includes(target)) mult *= 0.5;
+            if (target === 'flying') mult *= 0.0;
+        } else if (moveType === 'rock') {
+            if (['fire', 'ice', 'flying', 'bug'].includes(target)) mult *= 2.0;
+            if (['ground', 'steel'].includes(target)) mult *= 0.5;
+        }
+    }
+    return mult;
+};
+
+const getTypeColor = (type: string): string => {
+    switch (type.toLowerCase()) {
+        case 'fire': return '#f44336';
+        case 'water': return '#2196f3';
+        case 'grass': return '#4caf50';
+        case 'electric': return '#ffbc00';
+        case 'ground': return '#795548';
+        case 'rock': return '#9e9e9e';
+        case 'flying': return '#00bcd4';
+        case 'poison': return '#9c27b0';
+        case 'psychic': return '#e91e63';
+        case 'bug': return '#8bc34a';
+        default: return '#78909c';
+    }
+};
 
 // Helper function to remove background key color dynamically in canvas
 const makeColorTransparent = (imgElement: HTMLImageElement, colorHex: string): HTMLCanvasElement | HTMLImageElement => {
@@ -132,18 +614,32 @@ export default function GameCanvas({
     const [economy, setEconomy] = useState<Economy>(() => new Economy(economyData));
     const [inventory, setInventory] = useState<Inventory>(() => new Inventory(inventoryData));
     const [team, setTeam] = useState<any[]>(() => {
-        return teamData.map((p: any) => ({
-            ...p,
-            hp: p.hp !== undefined ? p.hp : 100,
-            maxHp: p.maxHp !== undefined ? p.maxHp : 100
-        }));
+        return teamData.map((p: any) => {
+            const lvl = p.level !== undefined ? p.level : 5;
+            const xp = p.xp !== undefined ? p.xp : 0;
+            const stats = getPokemonStats(p.id, lvl);
+            return {
+                ...p,
+                level: lvl,
+                xp: xp,
+                hp: p.hp !== undefined ? p.hp : stats.maxHp,
+                maxHp: p.maxHp !== undefined ? p.maxHp : stats.maxHp
+            };
+        });
     });
     const [pcPokemon, setPcPokemon] = useState<any[]>(() => {
-        return pcPokemonData.map((p: any) => ({
-            ...p,
-            hp: p.hp !== undefined ? p.hp : 100,
-            maxHp: p.maxHp !== undefined ? p.maxHp : 100
-        }));
+        return pcPokemonData.map((p: any) => {
+            const lvl = p.level !== undefined ? p.level : 5;
+            const xp = p.xp !== undefined ? p.xp : 0;
+            const stats = getPokemonStats(p.id, lvl);
+            return {
+                ...p,
+                level: lvl,
+                xp: xp,
+                hp: p.hp !== undefined ? p.hp : stats.maxHp,
+                maxHp: p.maxHp !== undefined ? p.maxHp : stats.maxHp
+            };
+        });
     });
     const [currentMapPath, setCurrentMapPath] = useState(initialMapPath);
     
@@ -159,6 +655,8 @@ export default function GameCanvas({
     const [adHealSelectMode, setAdHealSelectMode] = useState(false);
     const [doubleRewardCoins, setDoubleRewardCoins] = useState<number>(0);
     const [doubleRewardType, setDoubleRewardType] = useState<'gym' | 'wild' | 'trainer' | null>(null);
+    const [isGymBattle, setIsGymBattle] = useState<boolean>(false);
+    const [gymLeaderName, setGymLeaderName] = useState<string | null>(null);
 
     useEffect(() => {
         setPlayerName(saveName);
@@ -192,6 +690,9 @@ export default function GameCanvas({
     const [activeWildBattle, setActiveWildBattle] = useState<WildBattle | null>(null);
     const [battleMessage, setBattleMessage] = useState<string>('¿Qué hará tu Pokémon?');
     const [showBallSelect, setShowBallSelect] = useState<boolean>(false);
+    const [showMoveSelect, setShowMoveSelect] = useState<boolean>(false);
+    const [usingItem, setUsingItem] = useState<any | null>(null);
+    const [selectedInfoPoke, setSelectedInfoPoke] = useState<any | null>(null);
 
     const showNotification = (title: string, message: string) => {
         setNotification({ title, message });
@@ -1593,7 +2094,12 @@ export default function GameCanvas({
         showNotification("Almacenamiento PC", `¡${pokemonToMove.id} se ha unido a tu equipo!`);
     };
 
-    const handleBattleAttack = () => {
+        const handleBattleAttack = () => {
+        if (!activeWildBattle) return;
+        setShowMoveSelect(true);
+    };
+
+    const handleExecuteMove = (moveId: string) => {
         if (!activeWildBattle) return;
 
         // Find active player pokemon (first with HP > 0)
@@ -1601,16 +2107,135 @@ export default function GameCanvas({
         if (activePokeIdx === -1) {
             showNotification("Centro Pokémon", "¡Todos tus Pokémon están debilitados!");
             setActiveWildBattle(null);
+            setShowMoveSelect(false);
             return;
         }
 
         const activePoke = team[activePokeIdx];
+        const move = MOVES_DATABASE[moveId] || MOVES_DATABASE.tackle;
         
-        // 1. Player attacks wild Pokémon
-        const playerDmg = Math.floor(Math.random() * 16) + 15; // 15-30 dmg
+        // 1. Player attacks
+        const opponentSpecies = pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === activeWildBattle.name.toLowerCase());
+        const opponentTypes = opponentSpecies?.types || ['normal'];
+        const mult = getTypeMultiplier(move.type, opponentTypes);
+        
+        // Check accuracy
+        const hit = Math.random() * 100 <= move.accuracy;
+        let playerDmg = 0;
+        let pMsg = "";
+
+        if (!hit) {
+            pMsg = `¡Tu ${activePoke.id} usó ${move.name} y falló!`;
+        } else {
+            if (move.power === 0) {
+                playerDmg = 5; // Status move base damage
+                pMsg = `¡Tu ${activePoke.id} usó ${move.name}! Su ataque bajó.`;
+            } else {
+                playerDmg = Math.floor(move.power * (1 + (activePoke.level ?? 5) / 20) * (Math.random() * 0.2 + 0.9));
+                playerDmg = Math.floor(playerDmg * mult);
+                
+                pMsg = `¡Tu ${activePoke.id} usó ${move.name} e infligió ${playerDmg} de daño!`;
+                if (mult > 1.5) pMsg += " ¡Es súper efectivo!";
+                else if (mult < 0.6 && mult > 0.0) pMsg += " No es muy efectivo...";
+                else if (mult === 0.0) pMsg += " ¡No tiene ningún efecto!";
+            }
+        }
+        
         const newWildHp = Math.max(0, activeWildBattle.hp - playerDmg);
         
+        // Temporarily update active wild HP in state
+        activeWildBattle.hp = newWildHp;
+
         if (newWildHp <= 0) {
+            // Compute XP earned
+            const xpGained = Math.floor(activeWildBattle.level * 25 * (Math.random() * 0.2 + 0.9));
+            
+            let currentLvl = activePoke.level ?? 5;
+            let currentXp = (activePoke.xp ?? 0) + xpGained;
+            let nextLvlXp = currentLvl * 100;
+            let leveledUp = false;
+            let msg = `¡Tu ${activePoke.id} ganó ${xpGained} XP!`;
+            
+            while (currentXp >= nextLvlXp) {
+                currentXp -= nextLvlXp;
+                currentLvl += 1;
+                nextLvlXp = currentLvl * 100;
+                leveledUp = true;
+            }
+            
+            let evolved = false;
+            let evolvedName = activePoke.id;
+            let oldName = activePoke.id;
+            
+            if (leveledUp) {
+                msg += ` ¡Subió al nivel ${currentLvl}!`;
+                // Check level evolution
+                if (activePoke.id === 'charmander' && currentLvl >= 16) {
+                    evolvedName = 'charmeleon'; evolved = true;
+                } else if (activePoke.id === 'charmeleon' && currentLvl >= 36) {
+                    evolvedName = 'charizard'; evolved = true;
+                } else if (activePoke.id === 'bulbasaur' && currentLvl >= 16) {
+                    evolvedName = 'ivysaur'; evolved = true;
+                } else if (activePoke.id === 'ivysaur' && currentLvl >= 32) {
+                    evolvedName = 'venusaur'; evolved = true;
+                } else if (activePoke.id === 'squirtle' && currentLvl >= 16) {
+                    evolvedName = 'wartortle'; evolved = true;
+                } else if (activePoke.id === 'wartortle' && currentLvl >= 36) {
+                    evolvedName = 'blastoise'; evolved = true;
+                }
+                
+                if (evolved) {
+                    msg += ` ¡Increíble! Ha evolucionado en ${evolvedName.toUpperCase()}!`;
+                }
+            }
+            
+            const updatedTeam = [...team];
+            const stats = getPokemonStats(evolvedName, currentLvl);
+            updatedTeam[activePokeIdx] = {
+                ...activePoke,
+                id: evolvedName,
+                level: currentLvl,
+                xp: currentXp,
+                is_evolved: evolved ? true : activePoke.is_evolved,
+                maxHp: stats.maxHp,
+                hp: leveledUp ? stats.maxHp : activePoke.hp // Heal fully on level up!
+            };
+            
+            setTeam(updatedTeam);
+            setShowMoveSelect(false);
+            
+            if (isGymBattle) {
+                // Gym battle victory!
+                const result = economyRef.current.getGymReward(1);
+                if (result.coins > 0) {
+                    economyRef.current.updateMissionProgress('battle');
+                    setDoubleRewardCoins(result.coins);
+                    setDoubleRewardType('gym');
+                    
+                    let gymTrainerMsg = `\nGanaste ${result.xpGained} XP de Entrenador.`;
+                    if (result.leveledUp) {
+                        gymTrainerMsg += ` \n🎉 ¡Tu Nivel de Entrenador subió al Nivel ${result.newLevel}!`;
+                    }
+
+                    showNotification(
+                        "¡Victoria de Gimnasio!", 
+                        `¡Derrotaste al Onix de Brock! Ganaste la Medalla Roca, ${result.coins} Coins y ${result.xpGained} XP. ${gymTrainerMsg}\n${msg}`
+                    );
+                } else {
+                    showNotification(
+                        "Victoria", 
+                        `¡Derrotaste al Onix de Brock! Buen combate. \n${msg}`
+                    );
+                }
+                
+                setIsGymBattle(false);
+                setGymLeaderName(null);
+                setActiveWildBattle(null);
+                saveLocalEconomy(updatedTeam);
+                setEconomy(new Economy(economyRef.current.toSaveData()));
+                return;
+            }
+
             // Wild Pokémon defeated!
             const minCoins = economyConfig.wild_battle_min_coins ?? 30;
             const maxCoins = economyConfig.wild_battle_max_coins ?? 50;
@@ -1618,27 +2243,63 @@ export default function GameCanvas({
             economyRef.current.addCoins(coinsEarned);
             economyRef.current.updateMissionProgress('battle');
             
-            // Set double reward state
+            // Award Trainer XP
+            const wildTrainerXp = (activeWildBattle.level ?? 1) * 10;
+            const xpResult = economyRef.current.addTrainerXp(wildTrainerXp);
+            let trainerMsg = `\nGanaste ${wildTrainerXp} XP de Entrenador.`;
+            if (xpResult.leveledUp) {
+                trainerMsg += ` \n🎉 ¡Tu Nivel de Entrenador subió al Nivel ${xpResult.newLevel}!`;
+            }
+
             setDoubleRewardCoins(coinsEarned);
             setDoubleRewardType('wild');
 
             showNotification(
                 "¡Victoria!", 
-                `¡Tu ${activePoke.id} causó ${playerDmg} de daño y derrotó al ${activeWildBattle.name} salvaje! Ganaste ${coinsEarned} Coins.`
+                `¡Tu ${oldName} derrotó al ${activeWildBattle.name} salvaje! Ganaste ${coinsEarned} Coins. ${trainerMsg}\n${msg}`
             );
             setActiveWildBattle(null);
-            saveLocalEconomy();
+            saveLocalEconomy(updatedTeam);
             setEconomy(new Economy(economyRef.current.toSaveData()));
             return;
         }
 
         // 2. Wild Pokémon counterattacks
-        const wildDmg = Math.floor(Math.random() * 11) + 8; // 8-18 dmg
-        const newPlayerHp = Math.max(0, activePoke.hp - wildDmg);
+        const opponentMoves = getPokemonMoves(activeWildBattle.name, activeWildBattle.level);
+        const wildMoveId = opponentMoves[Math.floor(Math.random() * opponentMoves.length)];
+        const wildMove = MOVES_DATABASE[wildMoveId] || MOVES_DATABASE.tackle;
+        
+        const wildHit = Math.random() * 100 <= wildMove.accuracy;
+        let wildDmg = 0;
+        let wMsg = `El ${activeWildBattle.name} salvaje usó ${wildMove.name}.`;
 
+        if (!wildHit) {
+            wMsg = `El ${activeWildBattle.name} salvaje usó ${wildMove.name} y falló.`;
+        } else {
+            if (wildMove.power === 0) {
+                wildDmg = 5;
+                wMsg = `El ${activeWildBattle.name} salvaje usó ${wildMove.name} y bajó tu ataque.`;
+            } else {
+                wildDmg = Math.floor(wildMove.power * (1 + activeWildBattle.level / 20) * (Math.random() * 0.2 + 0.9));
+                const activePokeSpecies = pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === activePoke.id.toLowerCase());
+                const activePokeTypes = activePokeSpecies?.types || ['normal'];
+                const playerMult = getTypeMultiplier(wildMove.type, activePokeTypes);
+                wildDmg = Math.floor(wildDmg * playerMult);
+                
+                wMsg = `El ${activeWildBattle.name} salvaje usó ${wildMove.name} e infligió ${wildDmg} de daño.`;
+                if (playerMult > 1.5) wMsg += " ¡Es súper efectivo!";
+                else if (playerMult < 0.6 && playerMult > 0.0) wMsg += " No es muy efectivo...";
+                else if (playerMult === 0.0) wMsg += " ¡No tiene ningún efecto!";
+            }
+        }
+        
+        const newPlayerHp = Math.max(0, activePoke.hp - wildDmg);
         const updatedTeam = [...team];
         updatedTeam[activePokeIdx] = { ...activePoke, hp: newPlayerHp };
         setTeam(updatedTeam);
+
+        setBattleMessage(`${pMsg}\n${wMsg}`);
+        setShowMoveSelect(false);
 
         if (newPlayerHp <= 0) {
             // Active Pokémon fainted!
@@ -1659,23 +2320,102 @@ export default function GameCanvas({
                 setCurrentMapPath('/assets/maps/pokecenter/main.json');
                 
                 // Full heal team
-                const fullyHealedTeam = updatedTeam.map((p: any) => ({ ...p, hp: p.maxHp }));
+                const fullyHealedTeam = updatedTeam.map((p: any) => {
+                    const stats = getPokemonStats(p.id, p.level ?? 5);
+                    return { ...p, hp: stats.maxHp, maxHp: stats.maxHp };
+                });
                 setTeam(fullyHealedTeam);
                 saveLocalEconomy(fullyHealedTeam);
+                
+                // Reset battle states (including gym battle states)
+                setIsGymBattle(false);
+                setGymLeaderName(null);
                 setActiveWildBattle(null);
                 return;
             } else {
                 setBattleMessage(
-                    `¡Tu ${activePoke.id} recibió ${wildDmg} de daño y se debilitó! ¡Adelante, ${updatedTeam[nextActiveIdx].id}!`
+                    `${pMsg}\n${wMsg}\n¡Tu ${activePoke.id} se debilitó! ¡Adelante, ${updatedTeam[nextActiveIdx].id}!`
                 );
             }
-        } else {
-            setBattleMessage(
-                `¡Tu ${activePoke.id} infligió ${playerDmg} de daño! El ${activeWildBattle.name} salvaje contraatacó con ${wildDmg} de daño.`
-            );
         }
 
         saveLocalEconomy(updatedTeam);
+    };
+
+    const handleApplyItemToPokemon = (p: any, idx: number) => {
+        if (!usingItem) return;
+
+        const updatedTeam = [...team];
+        const target = updatedTeam[idx];
+        const itemInfo = inventoryRef.current.getItemInfo(usingItem.id);
+        
+        if (usingItem.id === 'evolution_stone') {
+            const idLower = target.id.toLowerCase();
+            let evolvedId = '';
+            
+            if (idLower === 'pikachu') evolvedId = 'raichu';
+            else if (idLower === 'clefairy') evolvedId = 'clefable';
+            else if (idLower === 'vulpix') evolvedId = 'ninetales';
+            else if (idLower === 'jigglypuff') evolvedId = 'wigglytuff';
+            
+            if (evolvedId) {
+                const stats = getPokemonStats(evolvedId, target.level ?? 5);
+                updatedTeam[idx] = {
+                    ...target,
+                    id: evolvedId,
+                    is_evolved: true,
+                    hp: stats.maxHp,
+                    maxHp: stats.maxHp
+                };
+                
+                inventoryRef.current.removeItem(usingItem.id);
+                setInventory(new Inventory(inventoryRef.current.toSaveData()));
+                setTeam(updatedTeam);
+                saveLocalEconomy(updatedTeam);
+                setUsingItem(null);
+                
+                showNotification("¡Evolución exitosa!", `¡Tu ${target.id} ha evolucionado en ${evolvedId.toUpperCase()} usando la Piedra Evolución!`);
+            } else {
+                showNotification("Error de Piedra", `¡La Piedra Evolución no tiene efecto en ${target.id}!`);
+            }
+            return;
+        }
+
+        const isRevive = usingItem.id.includes('revive');
+        
+        if (isRevive) {
+            if (target.hp > 0) {
+                showNotification("Mochila", `¡${target.id} no está debilitado!`);
+                return;
+            }
+            const pct = itemInfo.heal_percent ?? 0.5;
+            target.hp = Math.floor(target.maxHp * pct);
+            
+            inventoryRef.current.removeItem(usingItem.id);
+            setInventory(new Inventory(inventoryRef.current.toSaveData()));
+            setTeam(updatedTeam);
+            saveLocalEconomy(updatedTeam);
+            setUsingItem(null);
+            showNotification("Mochila", `¡Has revivido a ${target.id}!`);
+        } else {
+            if (target.hp === 0) {
+                showNotification("Mochila", `¡${target.id} está debilitado! Usa Revivir primero.`);
+                return;
+            }
+            if (target.hp >= target.maxHp) {
+                showNotification("Mochila", `¡${target.id} ya tiene los PS al máximo!`);
+                return;
+            }
+            const heal = itemInfo.heal_amount ?? 20;
+            target.hp = Math.min(target.maxHp, target.hp + heal);
+            
+            inventoryRef.current.removeItem(usingItem.id);
+            setInventory(new Inventory(inventoryRef.current.toSaveData()));
+            setTeam(updatedTeam);
+            saveLocalEconomy(updatedTeam);
+            setUsingItem(null);
+            showNotification("Mochila", `¡Has curado a ${target.id}!`);
+        }
     };
 
     const handleBattleCatch = (ballId: string) => {
@@ -1913,8 +2653,20 @@ export default function GameCanvas({
 
                     return (
                         <div key={idx} className="pokemon-team-item">
-                            <div style={{ fontWeight: 'bold', textTransform: 'capitalize' }}>
-                                {p.id} (Nvl. {economy.level * 5})
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div style={{ fontWeight: 'bold', textTransform: 'capitalize' }}>
+                                    {p.id} (Nvl. {p.level ?? 5})
+                                </div>
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSelectedInfoPoke(p);
+                                    }}
+                                    className="pokemon-button success"
+                                    style={{ width: 'auto', padding: '2px 8px', fontSize: '9px', margin: 0 }}
+                                >
+                                    ℹ️ Info
+                                </button>
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                 <span>{p.hp}/{p.maxHp} HP</span>
@@ -1979,9 +2731,17 @@ export default function GameCanvas({
                                 <span>PUSDT:</span>
                                 <span>{economy.getFormattedPusdt()}</span>
                             </div>
-                            <div className="hud-row level" style={{ color: '#63b3ed' }}>
-                                <span>Level:</span>
-                                <span>{economy.level}</span>
+                            <div className="hud-row level" style={{ color: '#63b3ed', flexDirection: 'column', alignItems: 'flex-start', gap: '4px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+                                    <span>Level:</span>
+                                    <span>{economy.level}</span>
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', width: '100%' }}>
+                                    <span style={{ fontSize: '9px', color: '#a0aec0' }}>XP: {economy.xp ?? 0}/{economy.level * 1000}</span>
+                                    <div style={{ flex: 1, height: '4px', background: '#4a5568', borderRadius: '2px', overflow: 'hidden' }}>
+                                        <div style={{ height: '100%', width: `${Math.round(((economy.xp ?? 0) / (economy.level * 1000)) * 100)}%`, background: '#63b3ed', borderRadius: '2px' }}></div>
+                                    </div>
+                                </div>
                             </div>
                             <div className="hud-row bicycle">
                                 <span>Bicycle:</span>
@@ -2006,6 +2766,31 @@ export default function GameCanvas({
                 <div className="controls-info">
                     Controls: WASD/Arrows to Move | Space/Enter to Talk
                 </div>
+
+                {/* Pokémon Center Banner Overlay */}
+                {currentMapPath.includes('pokecenter') && (
+                    <div style={{
+                        position: 'absolute',
+                        bottom: '50px',
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        zIndex: 10,
+                        background: 'rgba(255, 255, 255, 0.9)',
+                        padding: '6px',
+                        borderRadius: '8px',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.35)',
+                        border: '2px dashed #ef5350',
+                        width: '320px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center'
+                    }}>
+                        <div style={{ fontSize: '9px', fontWeight: 'bold', color: '#c62828', marginBottom: '2px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                            🏥 Centro Pokémon - Banner de Ads
+                        </div>
+                        <PokemonCenterBanner />
+                    </div>
+                )}
 
                 {/* Dialogue bubble */}
                 {activeDialog && (
@@ -2073,13 +2858,7 @@ export default function GameCanvas({
                                 🚲 Montar Bicicleta: {isBicycleActive ? 'OFF' : 'ON'}
                             </button>
 
-                            <button 
-                                onClick={handleWatchFreeCoinsAd}
-                                className="pokemon-button animate-hover"
-                                style={{ background: '#ffe082', border: '1px solid #ffca28', color: '#3e2723' }}
-                            >
-                                💎 Coins Gratis (+20 Coins) (Ver Anuncio)
-                            </button>
+
 
                             <button 
                                 onClick={() => {
@@ -2377,26 +3156,78 @@ export default function GameCanvas({
 
             {showInventoryModal && (
                 <div className="modal-overlay">
-                    <div className="modal-card pokemon-panel">
+                    <div className="modal-card pokemon-panel" style={{ maxWidth: '420px', width: '90%' }}>
                         <div className="modal-header">
                             <h3 className="modal-title">Mochila (Items)</h3>
-                            <button onClick={() => setShowInventoryModal(false)} className="modal-close-btn">&times;</button>
+                            <button onClick={() => {
+                                setShowInventoryModal(false);
+                                setUsingItem(null);
+                            }} className="modal-close-btn">&times;</button>
                         </div>
                         <div className="modal-body">
-                            {inventory.getAllItems().length === 0 ? (
+                            {usingItem ? (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                    <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#3e2723', marginBottom: '8px', textAlign: 'center' }}>
+                                        Usar {usingItem.name || usingItem.id} en:
+                                    </div>
+                                    {team.map((p: any, idx: number) => {
+                                        const pct = Math.round((p.hp / p.maxHp) * 100);
+                                        return (
+                                            <button
+                                                key={idx}
+                                                onClick={() => handleApplyItemToPokemon(p, idx)}
+                                                className="pokemon-button"
+                                                style={{ 
+                                                    display: 'flex', 
+                                                    justifyContent: 'space-between', 
+                                                    alignItems: 'center', 
+                                                    padding: '8px 12px',
+                                                    background: '#efe5fd',
+                                                    border: '1px solid #7c4dff',
+                                                    marginBottom: '4px'
+                                                }}
+                                            >
+                                                <div style={{ textAlign: 'left' }}>
+                                                    <span style={{ textTransform: 'capitalize', fontWeight: 'bold', color: '#311b92' }}>{p.id}</span>
+                                                    <span style={{ fontSize: '10px', marginLeft: '6px', color: '#5e35b1' }}>Nvl. {p.level ?? 5}</span>
+                                                </div>
+                                                <div style={{ fontSize: '11px', color: p.hp === 0 ? '#d32f2f' : '#2e7d32', fontWeight: 'bold' }}>
+                                                    HP: {p.hp}/{p.maxHp} ({pct}%)
+                                                </div>
+                                            </button>
+                                        );
+                                    })}
+                                    <button 
+                                        onClick={() => setUsingItem(null)}
+                                        className="pokemon-button danger"
+                                        style={{ marginTop: '8px' }}
+                                    >
+                                        Cancelar
+                                    </button>
+                                </div>
+                            ) : inventory.getAllItems().length === 0 ? (
                                 <div className="inventory-empty">Tu mochila está vacía.</div>
                             ) : (
-                                inventory.getAllItems().map((item: any) => (
-                                    <div key={item.id} className="shop-item-row">
-                                        <div className="shop-item-info">
-                                            <div className="shop-item-name">{item.name || item.id}</div>
-                                            <div className="shop-item-desc">{item.description}</div>
+                                inventory.getAllItems().map((item: any) => {
+                                    const isUsable = item.id.includes('potion') || item.id.includes('revive') || item.id === 'evolution_stone';
+                                    return (
+                                        <div key={item.id} className="shop-item-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid #efebe9' }}>
+                                            <div className="shop-item-info" style={{ flex: 1 }}>
+                                                <div className="shop-item-name" style={{ fontWeight: 'bold', fontSize: '12px' }}>{item.name || item.id} <span style={{ fontSize: '10px', color: '#757575', marginLeft: '4px' }}>x{item.quantity}</span></div>
+                                                <div className="shop-item-desc" style={{ fontSize: '10px', color: '#5d4037' }}>{item.description}</div>
+                                            </div>
+                                            {isUsable && (
+                                                <button
+                                                    onClick={() => setUsingItem(item)}
+                                                    className="pokemon-button success"
+                                                    style={{ width: 'auto', padding: '4px 10px', fontSize: '10px', marginLeft: '12px' }}
+                                                >
+                                                    Usar
+                                                </button>
+                                            )}
                                         </div>
-                                        <div className="inventory-item-qty">
-                                            x{item.quantity}
-                                        </div>
-                                    </div>
-                                ))
+                                    );
+                                })
                             )}
                             <AdsterraBanner />
                         </div>
@@ -2427,19 +3258,30 @@ export default function GameCanvas({
                                             <div key={idx} className="shop-item-row" style={{ display: 'flex', alignItems: 'center', padding: '6px 10px', gap: '8px', margin: 0 }}>
                                                 {sprite && <img src={sprite} alt={p.id} style={{ width: '36px', height: '36px', imageRendering: 'pixelated' }} />}
                                                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                                                    <span style={{ textTransform: 'capitalize', fontWeight: 'bold', fontSize: '12px' }}>{p.id}</span>
+                                                    <span style={{ textTransform: 'capitalize', fontWeight: 'bold', fontSize: '12px' }}>
+                                                        {p.id} <span style={{ fontSize: '9px', color: '#7e57c2', fontWeight: 'normal' }}>(Nvl. {p.level ?? 5})</span>
+                                                    </span>
                                                     <span style={{ fontSize: '10px', color: '#5d4037' }}>
                                                         +{dailyIncome} Coins/Día
                                                     </span>
                                                 </div>
-                                                <button
-                                                    onClick={() => handleMoveToPc(idx)}
-                                                    disabled={team.length <= 1}
-                                                    className="shop-buy-btn"
-                                                    style={{ padding: '4px 8px', fontSize: '10px', opacity: team.length <= 1 ? 0.5 : 1, cursor: team.length <= 1 ? 'not-allowed' : 'pointer' }}
-                                                >
-                                                    Mover a PC
-                                                </button>
+                                                <div style={{ display: 'flex', gap: '4px' }}>
+                                                    <button
+                                                        onClick={() => setSelectedInfoPoke(p)}
+                                                        className="shop-buy-btn"
+                                                        style={{ padding: '4px 8px', fontSize: '10px', background: '#bbdefb', color: '#0d47a1', border: '1px solid #90caf9' }}
+                                                    >
+                                                        Info
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleMoveToPc(idx)}
+                                                        disabled={team.length <= 1}
+                                                        className="shop-buy-btn"
+                                                        style={{ padding: '4px 8px', fontSize: '10px', opacity: team.length <= 1 ? 0.5 : 1, cursor: team.length <= 1 ? 'not-allowed' : 'pointer' }}
+                                                    >
+                                                        Mover a PC
+                                                    </button>
+                                                </div>
                                             </div>
                                         );
                                     })}
@@ -2466,19 +3308,30 @@ export default function GameCanvas({
                                                 <div key={idx} className="shop-item-row" style={{ display: 'flex', alignItems: 'center', padding: '6px 10px', gap: '8px', margin: 0 }}>
                                                     {sprite && <img src={sprite} alt={p.id} style={{ width: '36px', height: '36px', imageRendering: 'pixelated' }} />}
                                                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                                                        <span style={{ textTransform: 'capitalize', fontWeight: 'bold', fontSize: '12px' }}>{p.id}</span>
+                                                        <span style={{ textTransform: 'capitalize', fontWeight: 'bold', fontSize: '12px' }}>
+                                                            {p.id} <span style={{ fontSize: '9px', color: '#7e57c2', fontWeight: 'normal' }}>(Nvl. {p.level ?? 5})</span>
+                                                        </span>
                                                         <span style={{ fontSize: '10px', color: '#5d4037' }}>
                                                             +{dailyIncome} Coins/Día
                                                         </span>
                                                     </div>
-                                                    <button
-                                                        onClick={() => handleMoveToTeam(idx)}
-                                                        disabled={team.length >= 6}
-                                                        className="shop-buy-btn"
-                                                        style={{ padding: '4px 8px', fontSize: '10px', opacity: team.length >= 6 ? 0.5 : 1, cursor: team.length >= 6 ? 'not-allowed' : 'pointer' }}
-                                                    >
-                                                        Mover a Equipo
-                                                    </button>
+                                                    <div style={{ display: 'flex', gap: '4px' }}>
+                                                        <button
+                                                            onClick={() => setSelectedInfoPoke(p)}
+                                                            className="shop-buy-btn"
+                                                            style={{ padding: '4px 8px', fontSize: '10px', background: '#bbdefb', color: '#0d47a1', border: '1px solid #90caf9' }}
+                                                        >
+                                                            Info
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleMoveToTeam(idx)}
+                                                            disabled={team.length >= 6}
+                                                            className="shop-buy-btn"
+                                                            style={{ padding: '4px 8px', fontSize: '10px', opacity: team.length >= 6 ? 0.5 : 1, cursor: team.length >= 6 ? 'not-allowed' : 'pointer' }}
+                                                        >
+                                                            Mover a Equipo
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             );
                                         })}
@@ -2498,6 +3351,145 @@ export default function GameCanvas({
                     </div>
                 </div>
             )}
+
+            {selectedInfoPoke && (() => {
+                const p = selectedInfoPoke;
+                const species = pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === p.id.toLowerCase());
+                const sprite = species ? species.sprite : '';
+                const baseStats = species ? { hp: species.hp, attack: species.attack, defense: species.defense, speed: species.speed } : { hp: 40, attack: 45, defense: 40, speed: 50 };
+                
+                // Calculate current stats using the same formulas as getPokemonStats
+                const currentStats = getPokemonStats(p.id, p.level ?? 5);
+                const allMoves = getPokemonAllMovesInfo(p.id);
+                const currentMoves = getPokemonMoves(p.id, p.level ?? 5);
+                const evolutionMsg = getPokemonEvolutionInfo(p.id);
+                const pct = Math.round((p.hp / p.maxHp) * 100);
+
+                return (
+                    <div className="modal-overlay" style={{ zIndex: 9999 }}>
+                        <div className="modal-card pokemon-panel" style={{ maxWidth: '420px', width: '90%' }}>
+                            <div className="modal-header">
+                                <h3 className="modal-title" style={{ textTransform: 'capitalize' }}>ℹ️ Info: {p.id}</h3>
+                                <button onClick={() => setSelectedInfoPoke(null)} className="modal-close-btn">&times;</button>
+                            </div>
+                            <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', borderBottom: '1px solid #efebe9', paddingBottom: '12px' }}>
+                                    {sprite && (
+                                        <img 
+                                            src={sprite} 
+                                            alt={p.id} 
+                                            style={{ 
+                                                width: '80px', 
+                                                height: '80px', 
+                                                imageRendering: 'pixelated',
+                                                background: '#f5f5f5',
+                                                borderRadius: '8px',
+                                                border: '2px solid #efebe9'
+                                            }} 
+                                        />
+                                    )}
+                                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                        <div style={{ fontSize: '16px', fontWeight: 'bold', textTransform: 'capitalize', color: '#3e2723' }}>
+                                            {p.id}
+                                        </div>
+                                        <div style={{ fontSize: '12px', color: '#795548', fontWeight: 'bold' }}>
+                                            Nivel {p.level ?? 5} (XP: {p.xp ?? 0}/{ (p.level ?? 5) * 100 })
+                                        </div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
+                                            <span style={{ fontSize: '11px', fontWeight: 'bold' }}>HP: {p.hp}/{p.maxHp}</span>
+                                            <div className="pokemon-hp-bar" style={{ flex: 1, height: '8px', margin: 0 }}>
+                                                <div 
+                                                    className="pokemon-hp-fill" 
+                                                    style={{ 
+                                                        width: `${pct}%`,
+                                                        background: pct < 20 ? '#f44336' : (pct < 50 ? '#ffeb3b' : '#4caf50')
+                                                    }}
+                                                ></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div style={{ borderBottom: '1px solid #efebe9', paddingBottom: '12px' }}>
+                                    <div style={{ fontWeight: 'bold', fontSize: '12px', color: '#5d4037', marginBottom: '6px' }}>Estadísticas Actuales:</div>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', fontSize: '11px' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 8px', background: '#efe5fd', borderRadius: '4px' }}>
+                                            <span style={{ color: '#5e35b1', fontWeight: 'bold' }}>PS Máx:</span>
+                                            <span style={{ fontWeight: 'bold' }}>{currentStats.maxHp}</span>
+                                        </div>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 8px', background: '#ffebee', borderRadius: '4px' }}>
+                                            <span style={{ color: '#c62828', fontWeight: 'bold' }}>Ataque:</span>
+                                            <span style={{ fontWeight: 'bold' }}>{currentStats.attack}</span>
+                                        </div>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 8px', background: '#e8f5e9', borderRadius: '4px' }}>
+                                            <span style={{ color: '#2e7d32', fontWeight: 'bold' }}>Defensa:</span>
+                                            <span style={{ fontWeight: 'bold' }}>{currentStats.defense}</span>
+                                        </div>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 8px', background: '#fff9c4', borderRadius: '4px' }}>
+                                            <span style={{ color: '#f57f17', fontWeight: 'bold' }}>Velocidad:</span>
+                                            <span style={{ fontWeight: 'bold' }}>{currentStats.speed}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div style={{ borderBottom: '1px solid #efebe9', paddingBottom: '12px' }}>
+                                    <div style={{ fontWeight: 'bold', fontSize: '12px', color: '#5d4037', marginBottom: '6px' }}>Ataques Disponibles (por Nivel):</div>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', maxHeight: '120px', overflowY: 'auto' }}>
+                                        {allMoves.map((mInfo) => {
+                                            const m = MOVES_DATABASE[mInfo.moveId] || { name: mInfo.moveId, type: 'normal', power: 40 };
+                                            const isKnown = currentMoves.includes(mInfo.moveId);
+                                            return (
+                                                <div 
+                                                    key={mInfo.moveId}
+                                                    style={{ 
+                                                        display: 'flex', 
+                                                        justifyContent: 'space-between', 
+                                                        alignItems: 'center', 
+                                                        padding: '4px 8px',
+                                                        background: isKnown ? '#e8f5e9' : '#fafafa',
+                                                        border: isKnown ? '1px solid #a5d6a7' : '1px solid #e0e0e0',
+                                                        borderRadius: '4px',
+                                                        fontSize: '11px',
+                                                        opacity: isKnown ? 1 : 0.6
+                                                    }}
+                                                >
+                                                    <div>
+                                                        <span style={{ fontWeight: 'bold', textTransform: 'capitalize' }}>{m.name}</span>
+                                                        <span style={{ fontSize: '9px', marginLeft: '6px', color: getTypeColor(m.type), fontWeight: 'bold', textTransform: 'uppercase' }}>
+                                                            {m.type}
+                                                        </span>
+                                                        <span style={{ fontSize: '9px', marginLeft: '6px', color: '#757575' }}>
+                                                            Poder: {m.power}
+                                                        </span>
+                                                    </div>
+                                                    <div style={{ fontWeight: 'bold', color: isKnown ? '#2e7d32' : '#757575' }}>
+                                                        {isKnown ? 'Conocido' : `Nvl. ${mInfo.levelReq}`}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+
+                                <div style={{ padding: '8px', background: '#fff3e0', border: '1px solid #ffe0b2', borderRadius: '6px' }}>
+                                    <div style={{ fontWeight: 'bold', fontSize: '12px', color: '#e65100', marginBottom: '2px' }}>Evolución:</div>
+                                    <div style={{ fontSize: '11px', color: '#5d4037', fontWeight: 'bold' }}>
+                                        ✨ {evolutionMsg}
+                                    </div>
+                                </div>
+
+                                <button 
+                                    onClick={() => setSelectedInfoPoke(null)}
+                                    className="pokemon-button danger"
+                                    style={{ marginTop: '8px' }}
+                                >
+                                    Cerrar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            })()}
 
             {/* --- Passive Generation Detailed Modal --- */}
             {showPassiveModal && (
@@ -2617,7 +3609,7 @@ export default function GameCanvas({
                                     <div className="battle-pokemon-card player" style={{ background: 'rgba(235, 255, 235, 0.45)', border: '1px dashed #2e7d32', padding: '10px', borderRadius: '4px', marginBottom: '16px' }}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold' }}>
                                             <span style={{ color: '#2e7d32', textTransform: 'capitalize' }}>🟢 Tu {activePoke.id}</span>
-                                            <span>Nvl. {economy.level * 5}</span>
+                                            <span>Nvl. {activePoke.level ?? 5}</span>
                                         </div>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '6px' }}>
                                             <span style={{ fontSize: '11px' }}>HP: {activePoke.hp}/{activePoke.maxHp}</span>
@@ -2627,6 +3619,20 @@ export default function GameCanvas({
                                                     style={{ 
                                                         width: `${pct}%`,
                                                         background: pct < 20 ? '#f44336' : (pct < 50 ? '#ffeb3b' : '#4caf50')
+                                                    }}
+                                                ></div>
+                                            </div>
+                                        </div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
+                                            <span style={{ fontSize: '9px', color: '#7e57c2' }}>XP: {activePoke.xp ?? 0}/{ (activePoke.level ?? 5) * 100 }</span>
+                                            <div className="pokemon-hp-bar" style={{ flex: 1, height: '4px', background: '#e0e0e0' }}>
+                                                <div 
+                                                    style={{ 
+                                                        height: '100%',
+                                                        width: `${Math.round(((activePoke.xp ?? 0) / ((activePoke.level ?? 5) * 100)) * 100)}%`,
+                                                        background: '#7e57c2',
+                                                        borderRadius: '2px',
+                                                        transition: 'width 0.3s ease'
                                                     }}
                                                 ></div>
                                             </div>
@@ -2641,7 +3647,47 @@ export default function GameCanvas({
                             </div>
 
                             {/* Battle Options */}
-                            {!showBallSelect ? (
+                            {showMoveSelect ? (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                    <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#3e2723', marginBottom: '4px' }}>Selecciona un Ataque:</div>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                                        {(() => {
+                                            const activePoke = team.find((p: any) => p.hp > 0);
+                                            if (!activePoke) return null;
+                                            const activePokeMoves = getPokemonMoves(activePoke.id, activePoke.level ?? 5);
+                                            return activePokeMoves.map((moveId) => {
+                                                const m = MOVES_DATABASE[moveId] || { name: moveId, type: 'normal', power: 40 };
+                                                return (
+                                                    <button
+                                                        key={moveId}
+                                                        onClick={() => handleExecuteMove(moveId)}
+                                                        className="pokemon-button"
+                                                        style={{ 
+                                                            background: getTypeColor(m.type), 
+                                                            color: m.type === 'electric' ? '#3e2723' : '#fff', 
+                                                            textTransform: 'capitalize',
+                                                            display: 'flex',
+                                                            flexDirection: 'column',
+                                                            alignItems: 'center',
+                                                            padding: '6px'
+                                                        }}
+                                                    >
+                                                        <span style={{ fontWeight: 'bold', fontSize: '12px' }}>{m.name}</span>
+                                                        <span style={{ fontSize: '9px', opacity: 0.8 }}>Poder: {m.power} | {m.type}</span>
+                                                    </button>
+                                                );
+                                            });
+                                        })()}
+                                    </div>
+                                    <button 
+                                        onClick={() => setShowMoveSelect(false)}
+                                        className="pokemon-button danger"
+                                        style={{ marginTop: '8px' }}
+                                    >
+                                        Atrás
+                                    </button>
+                                </div>
+                            ) : !showBallSelect ? (
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                                     <button 
                                         onClick={handleBattleAttack}

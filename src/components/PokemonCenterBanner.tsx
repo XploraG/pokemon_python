@@ -22,12 +22,13 @@ export const PokemonCenterBanner: React.FC = () => {
         script.async = true;
         script.setAttribute('data-cfasync', 'false');
         script.src = 'https://pl29719999.effectivecpmnetwork.com/e1339b6f72fdf22772ea4046fe6b0eba/invoke.js';
+        
         containerRef.current.appendChild(script);
     }, []);
 
     return (
         <div 
-            ref={containerRef} 
+            ref={containerRef}
             style={{ 
                 width: '320px', 
                 height: '50px', 
@@ -36,7 +37,7 @@ export const PokemonCenterBanner: React.FC = () => {
                 alignItems: 'center',
                 justifyContent: 'center',
                 overflow: 'hidden'
-            }} 
+            }}
         />
     );
 };

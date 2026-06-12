@@ -20,6 +20,7 @@ export interface EconomySaveData {
     total_coins_earned?: number;
     achievements_unlocked?: string[];
     level?: number;
+    xp?: number;
     heals_today?: number;
     last_heal_date?: string;
 }
@@ -38,6 +39,7 @@ export class Economy {
     public total_coins_earned: number = 0;
     public achievements_unlocked: string[] = [];
     public level: number = 1;
+    public xp: number = 0;
     public heals_today: number = 0;
     public last_heal_date: string = '';
 
@@ -63,6 +65,7 @@ export class Economy {
         this.total_coins_earned = 0;
         this.achievements_unlocked = [];
         this.level = 1;
+        this.xp = 0;
         this.heals_today = 0;
         this.last_heal_date = '';
     }
@@ -81,6 +84,7 @@ export class Economy {
         this.total_coins_earned = data.total_coins_earned ?? 0;
         this.achievements_unlocked = data.achievements_unlocked ?? [];
         this.level = data.level ?? 1;
+        this.xp = data.xp ?? 0;
         this.heals_today = data.heals_today ?? 0;
         this.last_heal_date = data.last_heal_date ?? '';
     }
@@ -100,6 +104,7 @@ export class Economy {
             total_coins_earned: this.total_coins_earned,
             achievements_unlocked: this.achievements_unlocked,
             level: this.level,
+            xp: this.xp,
             heals_today: this.heals_today,
             last_heal_date: this.last_heal_date
         };
@@ -137,15 +142,39 @@ export class Economy {
         return 0.0;
     }
 
+    // ---- TRAINER XP & LEVEL SYSTEM ----
+
+    public addTrainerXp(amount: number): { leveledUp: boolean; oldLevel: number; newLevel: number; xpGained: number } {
+        const oldLevel = this.level;
+        this.xp += amount;
+        
+        let leveledUp = false;
+        let nextLevelXp = this.level * 1000;
+        
+        while (this.xp >= nextLevelXp) {
+            this.xp -= nextLevelXp;
+            this.level += 1;
+            leveledUp = true;
+            nextLevelXp = this.level * 1000;
+        }
+        
+        return {
+            leveledUp,
+            oldLevel,
+            newLevel: this.level,
+            xpGained: amount
+        };
+    }
+
     // ---- BATTLE REWARDS ----
 
-    public getTrainerReward(difficulty: string, trainerId: string = ''): number {
+    public getTrainerReward(difficulty: string, trainerId: string = ''): { coins: number; xpGained: number; leveledUp: boolean; newLevel: number } {
         // Check cooldown
         if (trainerId && this.trainer_cooldowns[trainerId]) {
             const cooldownHours = economyConfig.trainer_rebattle_cooldown_hours ?? 6;
             const lastTime = this.trainer_cooldowns[trainerId];
             if (Date.now() / 1000 - lastTime < cooldownHours * 3600) {
-                return 0;
+                return { coins: 0, xpGained: 0, leveledUp: false, newLevel: this.level };
             }
         }
 
@@ -161,10 +190,23 @@ export class Economy {
             this.trainer_cooldowns[trainerId] = Date.now() / 1000;
         }
 
-        return coins;
+        // Award Trainer XP based on trainer difficulty
+        let xpGained = 50;
+        if (difficulty === 'pre_intermediate') xpGained = 100;
+        else if (difficulty === 'intermediate') xpGained = 150;
+        else if (difficulty === 'hard') xpGained = 250;
+
+        const xpResult = this.addTrainerXp(xpGained);
+
+        return {
+            coins,
+            xpGained,
+            leveledUp: xpResult.leveledUp,
+            newLevel: xpResult.newLevel
+        };
     }
 
-    public getGymReward(gymId: number): { coins: number; medal: string | null; isFirst: boolean } {
+    public getGymReward(gymId: number): { coins: number; medal: string | null; isFirst: boolean; xpGained: number; leveledUp: boolean; newLevel: number } {
         const gymIdStr = String(gymId);
 
         // Check cooldown
@@ -172,7 +214,7 @@ export class Economy {
             const cooldownHours = economyConfig.gym_rebattle_cooldown_hours ?? 24;
             const lastTime = this.gym_cooldowns[gymIdStr];
             if (Date.now() / 1000 - lastTime < cooldownHours * 3600) {
-                return { coins: 0, medal: null, isFirst: false };
+                return { coins: 0, medal: null, isFirst: false, xpGained: 0, leveledUp: false, newLevel: this.level };
             }
         }
 
@@ -186,7 +228,7 @@ export class Economy {
         }
 
         if (!gymConfig) {
-            return { coins: 0, medal: null, isFirst: false };
+            return { coins: 0, medal: null, isFirst: false, xpGained: 0, leveledUp: false, newLevel: this.level };
         }
 
         // Determine if first victory
@@ -212,7 +254,17 @@ export class Economy {
         this.defeated_gyms[gymIdStr] = timesDefeated + 1;
         this.gym_cooldowns[gymIdStr] = Date.now() / 1000;
 
-        return { coins, medal, isFirst };
+        // Award 500 Trainer XP for Gym victory
+        const xpResult = this.addTrainerXp(500);
+
+        return {
+            coins,
+            medal,
+            isFirst,
+            xpGained: 500,
+            leveledUp: xpResult.leveledUp,
+            newLevel: xpResult.newLevel
+        };
     }
 
     // ---- PASSIVE GENERATION ----
@@ -249,8 +301,13 @@ export class Economy {
         }
 
         const coins = this.calculatePassiveIncome(team);
-        this.addCoins(coins);
-        this.last_passive_claim = String(Date.now() / 1000);
+        if (coins > 0) {
+            this.addCoins(coins);
+            this.last_passive_claim = String(Date.now() / 1000);
+            
+            // Award 50 Trainer XP for claiming passive income
+            this.addTrainerXp(50);
+        }
         return coins;
     }
 
@@ -301,6 +358,8 @@ export class Economy {
 
         if (rewardCoins > 0) {
             this.addCoins(rewardCoins);
+            // Award 100 Trainer XP for new daily login reward
+            this.addTrainerXp(100);
         }
 
         return {
@@ -324,6 +383,8 @@ export class Economy {
                     this.daily_missions_progress[mid] = newProgress;
                     if (newProgress >= mission.target) {
                         this.addCoins(mission.reward_coins);
+                        // Award 200 Trainer XP for completing a daily mission!
+                        this.addTrainerXp(200);
                         completed.push(mid);
                     }
                 }
