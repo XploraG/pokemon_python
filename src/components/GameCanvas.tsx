@@ -682,8 +682,8 @@ export default function GameCanvas({
                 ...p,
                 level: lvl,
                 xp: xp,
-                hp: p.hp !== undefined ? p.hp : stats.maxHp,
-                maxHp: p.maxHp !== undefined ? p.maxHp : stats.maxHp
+                hp: p.hp !== undefined ? Math.min(p.hp, stats.maxHp) : stats.maxHp,
+                maxHp: stats.maxHp
             };
         });
     });
@@ -696,8 +696,8 @@ export default function GameCanvas({
                 ...p,
                 level: lvl,
                 xp: xp,
-                hp: p.hp !== undefined ? p.hp : stats.maxHp,
-                maxHp: p.maxHp !== undefined ? p.maxHp : stats.maxHp
+                hp: p.hp !== undefined ? Math.min(p.hp, stats.maxHp) : stats.maxHp,
+                maxHp: stats.maxHp
             };
         });
     });
@@ -2323,7 +2323,7 @@ export default function GameCanvas({
                         xp: currentXp,
                         is_evolved: evolved ? true : activePoke.is_evolved,
                         maxHp: stats.maxHp,
-                        hp: leveledUp ? stats.maxHp : activePoke.hp // Heal fully on level up!
+                        hp: leveledUp ? stats.maxHp : Math.min(activePoke.hp, stats.maxHp)
                     };
                     
                     setTeam(updatedTeam);
@@ -2600,7 +2600,9 @@ export default function GameCanvas({
     };
 
     const handleBattleCatch = (ballId: string) => {
-        if (!activeWildBattle) return;
+        if (!activeWildBattle || isBattleAnimating) return;
+
+        const info = inventoryRef.current.getItemInfo(ballId);
 
         // Check if player has the ball
         if (!inventoryRef.current.hasItem(ballId)) {
@@ -2611,6 +2613,11 @@ export default function GameCanvas({
         // Consume the ball
         inventoryRef.current.removeItem(ballId);
         setInventory(new Inventory(inventoryRef.current.toSaveData()));
+        
+        setShowBallSelect(false);
+        setIsBattleAnimating(true);
+        setBattleMessage(`¡Lanzaste una ${info.name || ballId}!`);
+        setOpponentSpriteEffect('catch-shake' as any);
 
         // Capture calculations
         let ballRate = 0.3;
@@ -2623,98 +2630,112 @@ export default function GameCanvas({
 
         const success = Math.random() < finalChance;
 
-        if (success) {
-            // Find rarity and stats from species list
-            const nameLower = activeWildBattle.name.toLowerCase();
-            const species = pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === nameLower);
-            const rarity = species ? species.rarity.toLowerCase() : "uncommon";
+        setTimeout(() => {
+            if (success) {
+                setOpponentSpriteEffect('catch-success' as any);
+                setBattleMessage(`1, 2, 3... ¡Atrapado!`);
+                setTimeout(() => {
+                    // Find rarity and stats from species list
+                    const nameLower = activeWildBattle.name.toLowerCase();
+                    const species = pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === nameLower);
+                    const rarity = species ? species.rarity.toLowerCase() : "uncommon";
 
-            const newPoke = {
-                id: activeWildBattle.name.toLowerCase(),
-                rarity: rarity,
-                is_evolved: false,
-                hp: 100,
-                maxHp: 100
-            };
+                    const newPoke = {
+                        id: activeWildBattle.name.toLowerCase(),
+                        rarity: rarity,
+                        is_evolved: false,
+                        hp: 100,
+                        maxHp: 100
+                    };
 
-            economyRef.current.updateMissionProgress('capture');
-            const newEconomyData = economyRef.current.toSaveData();
+                    economyRef.current.updateMissionProgress('capture');
+                    const newEconomyData = economyRef.current.toSaveData();
 
-            if (team.length >= 6) {
-                const updatedPc = [...pcPokemon, newPoke];
-                setPcPokemon(updatedPc);
-                saveLocalEconomy(team, updatedPc);
-                
-                showNotification(
-                    "¡Capturado!", 
-                    `¡Capturaste a ${activeWildBattle.name}! Pero tu equipo está lleno. Fue enviado a tu almacenamiento PC.`
-                );
-            } else {
-                const updatedTeam = [...team, newPoke];
-                setTeam(updatedTeam);
-                saveLocalEconomy(updatedTeam, pcPokemon);
-                
-                showNotification(
-                    "¡Capturado!",
-                    `¡Felicidades! Capturaste a ${activeWildBattle.name} y se unió a tu equipo.`
-                );
-            }
+                    if (team.length >= 6) {
+                        const updatedPc = [...pcPokemon, newPoke];
+                        setPcPokemon(updatedPc);
+                        saveLocalEconomy(team, updatedPc);
+                        
+                        showNotification(
+                            "¡Capturado!", 
+                            `¡Capturaste a ${activeWildBattle.name}! Pero tu equipo está lleno. Fue enviado a tu almacenamiento PC.`
+                        );
+                    } else {
+                        const updatedTeam = [...team, newPoke];
+                        setTeam(updatedTeam);
+                        saveLocalEconomy(updatedTeam, pcPokemon);
+                        
+                        showNotification(
+                            "¡Capturado!",
+                            `¡Felicidades! Capturaste a ${activeWildBattle.name} y se unió a tu equipo.`
+                        );
+                    }
 
-            setEconomy(new Economy(newEconomyData));
-            setActiveWildBattle(null);
-            setShowBallSelect(false);
-        } else {
-            // Failed capture! Wild Pokémon attacks back.
-            const activePokeIdx = team.findIndex((p: any) => p.hp > 0);
-            if (activePokeIdx === -1) {
-                setActiveWildBattle(null);
-                setShowBallSelect(false);
-                return;
-            }
-
-            const activePoke = team[activePokeIdx];
-            const wildDmg = Math.floor(Math.random() * 11) + 8;
-            const newPlayerHp = Math.max(0, activePoke.hp - wildDmg);
-
-            const updatedTeam = [...team];
-            updatedTeam[activePokeIdx] = { ...activePoke, hp: newPlayerHp };
-            setTeam(updatedTeam);
-
-            if (newPlayerHp <= 0) {
-                const nextActiveIdx = updatedTeam.findIndex((p: any) => p.hp > 0);
-                if (nextActiveIdx === -1) {
-                    showNotification(
-                        "Derrota",
-                        `¡La Pokeball falló! El Pikachu salvaje contraatacó con ${wildDmg} de daño. ¡Tu equipo se debilitó por completo y fuiste llevado al Centro Pokémon!`
-                    );
-                    
-                    playerRef.current.x = 144;
-                    playerRef.current.y = 224;
-                    playerRef.current.targetX = 144;
-                    playerRef.current.targetY = 224;
-                    playerRef.current.isMoving = false;
-                    setCurrentMapPath('/assets/maps/pokecenter/main.json');
-                    
-                    const fullyHealedTeam = updatedTeam.map((p: any) => ({ ...p, hp: p.maxHp }));
-                    setTeam(fullyHealedTeam);
-                    saveLocalEconomy(fullyHealedTeam);
+                    setEconomy(new Economy(newEconomyData));
                     setActiveWildBattle(null);
-                    setShowBallSelect(false);
-                    return;
-                } else {
-                    setBattleMessage(
-                        `¡La Pokeball falló! El Pikachu salvaje escapó y contraatacó con ${wildDmg} de daño, debilitando a tu ${activePoke.id}. ¡Adelante, ${updatedTeam[nextActiveIdx].id}!`
-                    );
-                }
+                    setIsBattleAnimating(false);
+                    setOpponentSpriteEffect(null);
+                }, 1000);
             } else {
-                setBattleMessage(
-                    `¡Oh no! El ${activeWildBattle.name} salvaje se escapó de la Pokeball. ¡Te atacó e infligió ${wildDmg} de daño!`
-                );
-            }
+                setOpponentSpriteEffect('catch-fail' as any);
+                setBattleMessage(`¡Oh no! El Pokémon escapó de la Pokeball.`);
+                setTimeout(() => {
+                    setOpponentSpriteEffect(null);
+                    
+                    // Failed capture! Wild Pokémon attacks back.
+                    const activePokeIdx = team.findIndex((p: any) => p.hp > 0);
+                    if (activePokeIdx === -1) {
+                        setActiveWildBattle(null);
+                        setIsBattleAnimating(false);
+                        return;
+                    }
 
-            saveLocalEconomy(updatedTeam);
-            setShowBallSelect(false);
-        }
+                    const activePoke = team[activePokeIdx];
+                    const wildDmg = Math.floor(Math.random() * 11) + 8;
+                    const newPlayerHp = Math.max(0, activePoke.hp - wildDmg);
+
+                    const updatedTeam = [...team];
+                    updatedTeam[activePokeIdx] = { ...activePoke, hp: newPlayerHp };
+                    setTeam(updatedTeam);
+
+                    if (newPlayerHp <= 0) {
+                        const nextActiveIdx = updatedTeam.findIndex((p: any) => p.hp > 0);
+                        if (nextActiveIdx === -1) {
+                            showNotification(
+                                "Derrota",
+                                `El ${activeWildBattle.name} salvaje contraatacó con ${wildDmg} de daño. ¡Tu equipo se debilitó por completo!`
+                            );
+                            
+                            playerRef.current.x = 144;
+                            playerRef.current.y = 224;
+                            playerRef.current.targetX = 144;
+                            playerRef.current.targetY = 224;
+                            playerRef.current.isMoving = false;
+                            setCurrentMapPath('/assets/maps/pokecenter/main.json');
+                            
+                            const fullyHealedTeam = updatedTeam.map((p: any) => ({ ...p, hp: p.maxHp }));
+                            setTeam(fullyHealedTeam);
+                            saveLocalEconomy(fullyHealedTeam);
+                            setActiveWildBattle(null);
+                        } else {
+                            setBattleMessage(
+                                `El ${activeWildBattle.name} salvaje escapó y contraatacó con ${wildDmg} de daño, debilitando a tu ${activePoke.id}.`
+                            );
+                        }
+                    } else {
+                        setBattleMessage(
+                            `El ${activeWildBattle.name} salvaje se escapó y te atacó. ¡Infligió ${wildDmg} de daño!`
+                        );
+                    }
+
+                    saveLocalEconomy(updatedTeam);
+                    
+                    setTimeout(() => {
+                        setIsBattleAnimating(false);
+                    }, 1500);
+                }, 1500);
+            }
+        }, 2000); // Wait for the shake animation
     };
 
     const handleBattleRun = () => {
@@ -3873,6 +3894,20 @@ export default function GameCanvas({
                             50% { transform: translateY(-15px) scale(1.3); opacity: 1; }
                             100% { transform: translateY(-30px) scale(1); opacity: 0; }
                         }
+                        @keyframes catch-shake {
+                            0% { transform: rotate(0deg); filter: sepia(1) hue-rotate(-50deg) saturate(5); }
+                            25% { transform: rotate(15deg); filter: sepia(1) hue-rotate(-50deg) saturate(5); }
+                            50% { transform: rotate(0deg); filter: sepia(1) hue-rotate(-50deg) saturate(5); }
+                            75% { transform: rotate(-15deg); filter: sepia(1) hue-rotate(-50deg) saturate(5); }
+                            100% { transform: rotate(0deg); filter: sepia(1) hue-rotate(-50deg) saturate(5); }
+                        }
+                        @keyframes catch-success {
+                            0% { transform: scale(1); filter: sepia(1) hue-rotate(-50deg) saturate(5); opacity: 1; }
+                            100% { transform: scale(0); filter: sepia(1) hue-rotate(-50deg) saturate(5); opacity: 0; }
+                        }
+                        .catch-shake { animation: catch-shake 0.8s ease-in-out infinite; }
+                        .catch-success { animation: catch-success 1s forwards; }
+                        .catch-fail { animation: battle-bounce 0.5s; }
                         .battle-pokemon-sprite {
                             transition: transform 0.15s ease-in-out;
                         }
@@ -3897,7 +3932,7 @@ export default function GameCanvas({
                     </div>
 
                     {/* Main Arena */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flexGrow: 1, justifyContent: 'center', position: 'relative' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, justifyContent: 'space-between', padding: '30px 0', position: 'relative' }}>
                         
                         {/* 1. Opponent Row */}
                         {(() => {
@@ -3906,6 +3941,9 @@ export default function GameCanvas({
                             if (opponentSpriteEffect === 'shake') opponentClass += " battle-shake";
                             if (opponentSpriteEffect === 'flash') opponentClass += " battle-flash";
                             if (opponentSpriteEffect === 'bounce') opponentClass += " battle-bounce";
+                            if (opponentSpriteEffect === 'catch-shake' as any) opponentClass += " catch-shake";
+                            if (opponentSpriteEffect === 'catch-success' as any) opponentClass += " catch-success";
+                            if (opponentSpriteEffect === 'catch-fail' as any) opponentClass += " catch-fail";
 
                             return (
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '0 8px' }}>
@@ -3925,7 +3963,7 @@ export default function GameCanvas({
                                             <span>{activeWildBattle.name}</span>
                                             <span>L:{activeWildBattle.level}</span>
                                         </div>
-                                        <div className="pokemon-hp-bar" style={{ height: '6px', background: '#e0e0e0', borderRadius: '3px', overflow: 'hidden', border: '1px solid #795548', margin: 0 }}>
+                                        <div className="pokemon-hp-bar" style={{ height: '6px', background: '#e0e0e0', borderRadius: '3px', overflow: 'hidden', border: '1px solid #795548', margin: 0, width: '100%' }}>
                                             <div style={{
                                                 height: '100%',
                                                 width: `${Math.round((activeWildBattle.hp / activeWildBattle.maxHp) * 100)}%`,
@@ -4013,7 +4051,7 @@ export default function GameCanvas({
                                             <span>{activePoke.id}</span>
                                             <span>L:{activePoke.level ?? 1}</span>
                                         </div>
-                                        <div className="pokemon-hp-bar" style={{ height: '6px', background: '#e0e0e0', borderRadius: '3px', overflow: 'hidden', border: '1px solid #795548', margin: 0 }}>
+                                        <div className="pokemon-hp-bar" style={{ height: '6px', background: '#e0e0e0', borderRadius: '3px', overflow: 'hidden', border: '1px solid #795548', margin: 0, width: '100%' }}>
                                             <div style={{
                                                 height: '100%',
                                                 width: `${pct}%`,
@@ -4040,7 +4078,7 @@ export default function GameCanvas({
                                         {/* XP bar */}
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
                                             <span style={{ fontSize: '7px', color: '#7e57c2', fontWeight: 'bold' }}>XP</span>
-                                            <div className="pokemon-hp-bar" style={{ flex: 1, height: '3px', background: '#e0e0e0', borderRadius: '1.5px', border: 'none', margin: 0 }}>
+                                            <div className="pokemon-hp-bar" style={{ flex: 1, height: '3px', background: '#e0e0e0', borderRadius: '1.5px', border: 'none', margin: 0, width: '100%' }}>
                                                 <div style={{
                                                     height: '100%',
                                                     width: `${Math.round(((activePoke.xp ?? 0) / ((activePoke.level ?? 1) * 100)) * 100)}%`,
