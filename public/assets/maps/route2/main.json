@@ -1,0 +1,24 @@
+{
+  "map": "src/assets/maps/route2/main.txt",
+  "tile_size": 32,
+  "components": [
+    {
+      "type": "CF",
+      "size": [
+        32,
+        32
+      ],
+      "image": "src/assets/maps/tutorial/imgs/cave_floor.png"
+    },
+    {
+      "type": "CW",
+      "size": [
+        32,
+        32
+      ],
+      "image": "src/assets/maps/tutorial/imgs/cave_wall.png",
+      "isSolid": true
+    }
+  ],
+  "entities": []
+}

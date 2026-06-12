@@ -89,6 +89,22 @@
         32
       ],
       "image": "src/assets/maps/tutorial/imgs/path/path9.png"
+    },
+    {
+      "type": "CW",
+      "size": [
+        32,
+        32
+      ],
+      "image": "src/assets/maps/tutorial/imgs/cave_wall.png"
+    },
+    {
+      "type": "CE",
+      "size": [
+        32,
+        32
+      ],
+      "image": "src/assets/maps/tutorial/imgs/cave_entrance.png"
     }
   ],
   "entities": [

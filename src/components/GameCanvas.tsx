@@ -769,6 +769,7 @@ export default function GameCanvas({
 
     // PvP States
     const [playerContextMenu, setPlayerContextMenu] = useState<{ address: string; name: string; x: number; y: number } | null>(null);
+    const [hoveredPlayer, setHoveredPlayer] = useState<{ address: string; name: string; x: number; y: number } | null>(null);
     const [pendingPvPInvite, setPendingPvPInvite] = useState<string | null>(null);
     const [incomingPvPInvite, setIncomingPvPInvite] = useState<{ from: string; fromName: string } | null>(null);
     const [activePvPBattle, setActivePvPBattle] = useState<any | null>(null);
@@ -1267,7 +1268,11 @@ export default function GameCanvas({
                 for (let r = 0; r < grid.length; r++) {
                     for (let c = 0; c < grid[r].length; c++) {
                         const tileType = grid[r][c];
-                        if (tileType === 'W1' || tileType === 'C1' || tileType === 'S1') {
+                        // Check explicit component isSolid property or fallback to hardcoded list
+                        const componentDef = tileComponents[tileType];
+                        const isSolid = componentDef?.isSolid || tileType === 'W1' || tileType === 'C1' || tileType === 'S1' || tileType === 'CW' || tileType === 'W';
+                        
+                        if (isSolid) {
                             colliders.push({
                                 x: c * tileSize,
                                 y: r * tileSize,
@@ -2028,14 +2033,164 @@ export default function GameCanvas({
                 setDialogName("Pueblo Tutorial");
                 setActiveDialog("Returning to Town...");
                 setTimeout(() => {
-                    playerRef.current.x = x; // Keep same X coordinate
-                    playerRef.current.y = 1036; // Spawn at row 32 of Town (y = 1036) to prevent instant return warp
+                    playerRef.current.x = x; 
+                    playerRef.current.y = 1036; 
                     playerRef.current.targetX = x;
                     playerRef.current.targetY = 1036;
                     playerRef.current.isMoving = false;
                     setCurrentMapPath('/assets/maps/tutorial/main.json');
                     setActiveDialog(null);
                 }, 500);
+                return true;
+            }
+            // Bottom edge warp to Route 3 (long path)
+            if (y >= 1280) {
+                setDialogName("Ruta 3");
+                setActiveDialog("Entering Route 3...");
+                setTimeout(() => {
+                    playerRef.current.x = 44; // left edge
+                    playerRef.current.y = 608; 
+                    playerRef.current.targetX = 44;
+                    playerRef.current.targetY = 608;
+                    playerRef.current.isMoving = false;
+                    setCurrentMapPath('/assets/maps/route3/main.json');
+                    setActiveDialog(null);
+                }, 500);
+                return true;
+            }
+            
+            // Check tile-based Cave Entrance warp (CE)
+            const mapData = mapDataRef.current;
+            const tileSize = mapData.tileSize || 32;
+            const col = Math.floor(x / tileSize);
+            const row = Math.floor((y - 1) / tileSize);
+            if (mapData.grid[row]?.[col] === 'CE') {
+                setDialogName("Cueva Oscura");
+                setActiveDialog("Entering the Cave...");
+                setTimeout(() => {
+                    playerRef.current.x = 288; // x=9 in route2
+                    playerRef.current.y = 1550; // bottom edge
+                    playerRef.current.targetX = 288;
+                    playerRef.current.targetY = 1550;
+                    playerRef.current.isMoving = false;
+                    setCurrentMapPath('/assets/maps/route2/main.json');
+                    setActiveDialog(null);
+                }, 500);
+                return true;
+            }
+        } else if (currentPath.includes('route2')) {
+            // Top edge warp to City 1
+            if (y <= 12) {
+                setDialogName("Ciudad Nueva");
+                setActiveDialog("Entering the City...");
+                setTimeout(() => {
+                    playerRef.current.x = 1000; // x=31 in city1
+                    playerRef.current.y = 1220; // y=38 in city1 (bottom edge)
+                    playerRef.current.targetX = 1000;
+                    playerRef.current.targetY = 1220;
+                    playerRef.current.isMoving = false;
+                    setCurrentMapPath('/assets/maps/city1/main.json');
+                    setActiveDialog(null);
+                }, 500);
+                return true;
+            }
+            // Bottom edge warp to Route 1 (exiting cave)
+            if (y >= 1560) {
+                setDialogName("Ruta 1");
+                setActiveDialog("Returning to Route 1...");
+                setTimeout(() => {
+                    playerRef.current.x = 1120; // near the cave entrance
+                    playerRef.current.y = 352; 
+                    playerRef.current.targetX = 1120;
+                    playerRef.current.targetY = 352;
+                    playerRef.current.isMoving = false;
+                    setCurrentMapPath('/assets/maps/route1/main.json');
+                    setActiveDialog(null);
+                }, 500);
+                return true;
+            }
+        } else if (currentPath.includes('route3')) {
+            // Left edge warp to Route 1 (bottom edge)
+            if (x <= 12) {
+                setDialogName("Ruta 1");
+                setActiveDialog("Returning to Route 1...");
+                setTimeout(() => {
+                    playerRef.current.x = 608; // middle of route 1 bottom path
+                    playerRef.current.y = 1280; 
+                    playerRef.current.targetX = 608;
+                    playerRef.current.targetY = 1280;
+                    playerRef.current.isMoving = false;
+                    setCurrentMapPath('/assets/maps/route1/main.json');
+                    setActiveDialog(null);
+                }, 500);
+                return true;
+            }
+            // Right edge warp to Route 4 (enters from top)
+            if (x >= 1560) {
+                setDialogName("Ruta 4");
+                setActiveDialog("Entering Route 4...");
+                setTimeout(() => {
+                    playerRef.current.x = 448; // middle of route 4 top path
+                    playerRef.current.y = 44; 
+                    playerRef.current.targetX = 448;
+                    playerRef.current.targetY = 44;
+                    playerRef.current.isMoving = false;
+                    setCurrentMapPath('/assets/maps/route4/main.json');
+                    setActiveDialog(null);
+                }, 500);
+                return true;
+            }
+        } else if (currentPath.includes('route4')) {
+            // Top edge warp to Route 3 (enters from right)
+            if (y <= 12) {
+                setDialogName("Ruta 3");
+                setActiveDialog("Returning to Route 3...");
+                setTimeout(() => {
+                    playerRef.current.x = 1560; // right edge
+                    playerRef.current.y = 448; // middle of route 3 right path
+                    playerRef.current.targetX = 1560;
+                    playerRef.current.targetY = 448;
+                    playerRef.current.isMoving = false;
+                    setCurrentMapPath('/assets/maps/route3/main.json');
+                    setActiveDialog(null);
+                }, 500);
+                return true;
+            }
+            // Bottom edge warp is blocked for now
+            if (y >= 1560) {
+                setDialogName("En construcción");
+                showNotification("Ciudad Nueva", "Esta zona está en construcción.");
+                // push player back slightly
+                playerRef.current.y = 1530;
+                playerRef.current.targetY = 1530;
+                playerRef.current.isMoving = false;
+                return true;
+            }
+        } else if (currentPath.includes('city1')) {
+            // Bottom edge warp to Route 2 Cave
+            if (y >= 1240 && x > 850) {
+                setDialogName("Cueva Oscura");
+                setActiveDialog("Entering the Cave...");
+                setTimeout(() => {
+                    playerRef.current.x = 1000; // x=31
+                    playerRef.current.y = 44; // route2 top edge
+                    playerRef.current.targetX = 1000;
+                    playerRef.current.targetY = 44;
+                    playerRef.current.isMoving = false;
+                    setCurrentMapPath('/assets/maps/route2/main.json');
+                    setActiveDialog(null);
+                }, 500);
+                return true;
+            }
+            // Other edges blocked
+            if (y <= 12 || x <= 12 || x >= 1250) {
+                setDialogName("En construcción");
+                showNotification("Aviso", "No puedes pasar por aquí.");
+                // Push back
+                if (y <= 12) { playerRef.current.y = 44; playerRef.current.targetY = 44; }
+                if (x <= 12) { playerRef.current.x = 44; playerRef.current.targetX = 44; }
+                if (x >= 1250) { playerRef.current.x = 1220; playerRef.current.targetX = 1220; }
+                playerRef.current.isMoving = false;
                 return true;
             }
         } else {
@@ -2189,8 +2344,8 @@ export default function GameCanvas({
         setIsBattleAnimating(false);
     };
 
-    const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
-        if (!canvasRef.current || activeWildBattle || activePvPBattle || showMenuModal) return;
+    const getPlayerUnderMouse = (e: React.MouseEvent<HTMLCanvasElement>) => {
+        if (!canvasRef.current || activeWildBattle || activePvPBattle || showMenuModal) return null;
         const rect = canvasRef.current.getBoundingClientRect();
         
         const clickX = e.clientX - rect.left;
@@ -2206,27 +2361,50 @@ export default function GameCanvas({
         const offsetX = canvasRef.current.width > mapDimensions.width ? Math.floor((canvasRef.current.width - mapDimensions.width) / 2) : 0;
         const offsetY = canvasRef.current.height > mapDimensions.height ? Math.floor((canvasRef.current.height - mapDimensions.height) / 2) : 0;
 
-        const otherPlayersList = Object.entries(otherPlayersRef.current);
-        for (const [address, otherPlayer] of otherPlayersList) {
+        const padding = 20; // 20px padding for easier clicking
+
+        for (const [address, otherPlayer] of Object.entries(otherPlayersRef.current)) {
             if (otherPlayer.map === currentMapPathRef.current) {
                 const px = otherPlayer.x - camX - (frameWidth * scale) / 2 + offsetX;
                 const py = otherPlayer.y - camY - frameHeight * scale + offsetY;
                 const pw = frameWidth * scale;
                 const ph = frameHeight * scale;
 
-                if (clickX >= px && clickX <= px + pw && clickY >= py && clickY <= py + ph) {
-                    setPlayerContextMenu({
+                if (clickX >= px - padding && clickX <= px + pw + padding && clickY >= py - padding && clickY <= py + ph + padding) {
+                    return {
                         address,
                         name: otherPlayer.name || "Tamer",
                         x: e.clientX,
                         y: e.clientY
-                    });
-                    return;
+                    };
                 }
             }
         }
-        
-        setPlayerContextMenu(null);
+        return null;
+    };
+
+    const handleCanvasMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+        const player = getPlayerUnderMouse(e);
+        if (player) {
+            // Only update state if it's a different player to avoid unnecessary re-renders
+            if (!hoveredPlayer || hoveredPlayer.address !== player.address) {
+                setHoveredPlayer(player);
+            } else {
+                // Update position
+                setHoveredPlayer(player);
+            }
+        } else if (hoveredPlayer) {
+            setHoveredPlayer(null);
+        }
+    };
+
+    const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+        const player = getPlayerUnderMouse(e);
+        if (player) {
+            handlePvPInvite(player.address);
+        } else {
+            setPlayerContextMenu(null);
+        }
     };
 
     const fetchLeaderboard = async () => {
@@ -3201,6 +3379,9 @@ export default function GameCanvas({
                     width={canvasSize.width}
                     height={canvasSize.height}
                     onClick={handleCanvasClick}
+                    onMouseMove={handleCanvasMouseMove}
+                    onMouseLeave={() => setHoveredPlayer(null)}
+                    style={{ cursor: hoveredPlayer ? 'pointer' : 'default' }}
                 />
 
                 {/* Floating Menu Button */}
@@ -4620,11 +4801,10 @@ export default function GameCanvas({
             )}
 
             {/* PVP MODALS AND UI */}
-            {playerContextMenu && (
-                <div style={{ position: 'absolute', top: playerContextMenu.y, left: playerContextMenu.x, background: '#fff', border: '2px solid #000', borderRadius: '4px', zIndex: 200, padding: '4px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <div style={{ fontSize: '10px', fontWeight: 'bold', borderBottom: '1px solid #ccc', paddingBottom: '4px' }}>{playerContextMenu.name}</div>
-                    <button className="pokemon-button success" style={{ margin: 0, padding: '4px 8px', fontSize: '10px' }} onClick={() => handlePvPInvite(playerContextMenu.address)}>⚔️ Desafiar</button>
-                    <button className="pokemon-button danger" style={{ margin: 0, padding: '4px 8px', fontSize: '10px' }} onClick={() => setPlayerContextMenu(null)}>Cancelar</button>
+            {hoveredPlayer && (
+                <div style={{ position: 'absolute', top: hoveredPlayer.y - 60, left: hoveredPlayer.x - 50, background: '#fff', border: '2px solid #000', borderRadius: '8px', zIndex: 200, padding: '8px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', pointerEvents: 'none', boxShadow: '0 4px 6px rgba(0,0,0,0.3)' }}>
+                    <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#333' }}>{hoveredPlayer.name}</div>
+                    <div style={{ fontSize: '10px', color: '#d32f2f', fontWeight: 'bold' }}>Haz click para Desafiar ⚔️</div>
                 </div>
             )}
 
