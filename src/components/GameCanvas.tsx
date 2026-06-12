@@ -772,8 +772,14 @@ export default function GameCanvas({
     const [playerContextMenu, setPlayerContextMenu] = useState<{ address: string; name: string; x: number; y: number } | null>(null);
     const [hoveredPlayer, setHoveredPlayer] = useState<{ address: string; name: string; x: number; y: number } | null>(null);
     const [pendingPvPInvite, setPendingPvPInvite] = useState<string | null>(null);
+    const pendingPvPInviteRef = useRef<string | null>(null);
+    const [pvpTurnTimer, setPvpTurnTimer] = useState<number>(45);
     const [incomingPvPInvite, setIncomingPvPInvite] = useState<{ from: string; fromName: string } | null>(null);
     const [activePvPBattle, setActivePvPBattle] = useState<any | null>(null);
+    const activePvPBattleRef = useRef<any | null>(null);
+    useEffect(() => {
+        activePvPBattleRef.current = activePvPBattle;
+    }, [activePvPBattle]);
     const [showLeaderboard, setShowLeaderboard] = useState<boolean>(false);
     const [pvpLeaderboard, setPvpLeaderboard] = useState<any[] | null>(null);
 
@@ -1000,6 +1006,13 @@ export default function GameCanvas({
                     delete next[key];
                     return next;
                 });
+                if (activePvPBattleRef.current && 
+                    (activePvPBattleRef.current.status === 'battle' || activePvPBattleRef.current.status === 'syncing') &&
+                    activePvPBattleRef.current.opponentAddress === key) {
+                    
+                    setActivePvPBattle((prev: any) => prev ? { ...prev, status: 'win' } : prev);
+                    setNotification({ title: "Oponente Desconectado", message: "Tu oponente ha abandonado la partida. ¡Has ganado por abandono!" });
+                }
             })
             .on('broadcast', { event: 'player_move' }, ({ payload }) => {
                 if (payload.address === walletAddress) return;
@@ -1024,8 +1037,15 @@ export default function GameCanvas({
                 }
             })
             .on('broadcast', { event: 'pvp_accept' }, ({ payload }) => {
-                if (payload.to === walletAddress && pendingPvPInvite === payload.from) {
+                if (payload.to === walletAddress && pendingPvPInviteRef.current === payload.from) {
                     setPendingPvPInvite(null);
+                    pendingPvPInviteRef.current = null;
+                    
+                    // Deduct the 100 coin bet
+                    economyRef.current.spendCoins(100);
+                    setEconomy(new Economy(economyRef.current.toSaveData()));
+                    saveLocalEconomy();
+
                     // Start battle as challenger
                     setActivePvPBattle({
                         opponentAddress: payload.from,
@@ -1034,7 +1054,8 @@ export default function GameCanvas({
                         myHp: teamRef.current.find((p: any) => p.hp > 0)?.hp || 100,
                         opponentHp: 100,
                         opponentMaxHp: 100,
-                        status: 'syncing'
+                        status: 'syncing',
+                        turn: walletAddress
                     });
                     
                     const activePoke = teamRef.current.find((p: any) => p.hp > 0);
@@ -1052,8 +1073,9 @@ export default function GameCanvas({
                 }
             })
             .on('broadcast', { event: 'pvp_reject' }, ({ payload }) => {
-                if (payload.to === walletAddress && pendingPvPInvite === payload.from) {
+                if (payload.to === walletAddress && pendingPvPInviteRef.current === payload.from) {
                     setPendingPvPInvite(null);
+                    pendingPvPInviteRef.current = null;
                     // Cannot use showNotification easily here without ref, so we use direct setNotification
                     setNotification({ title: "Desafío Rechazado", message: `El jugador ${payload.fromName || 'Tamer'} rechazó tu duelo.` });
                 }
@@ -1086,7 +1108,7 @@ export default function GameCanvas({
                             });
                             return { ...prev, myHp: newHp, status: 'loss' };
                         }
-                        return { ...prev, myHp: newHp };
+                        return { ...prev, myHp: newHp, turn: walletAddress };
                     });
                 }
             })
@@ -1113,6 +1135,61 @@ export default function GameCanvas({
             channelRef.current = null;
         };
     }, [loading, walletAddress]);
+
+    // Timer: Sender Waiting for Accept (30s)
+    useEffect(() => {
+        if (pendingPvPInvite) {
+            const timer = setTimeout(() => {
+                if (pendingPvPInviteRef.current === pendingPvPInvite) {
+                    setPendingPvPInvite(null);
+                    pendingPvPInviteRef.current = null;
+                    showNotification("Aviso", "El tiempo de desafío expiró sin respuesta.");
+                }
+            }, 30000);
+            return () => clearTimeout(timer);
+        }
+    }, [pendingPvPInvite]);
+
+    // Timer: Receiver Waiting to Accept (30s auto-reject)
+    useEffect(() => {
+        if (incomingPvPInvite) {
+            const timer = setTimeout(() => {
+                // Auto reject (penalty applied in handleRejectPvP)
+                handleRejectPvP();
+            }, 30000);
+            return () => clearTimeout(timer);
+        }
+    }, [incomingPvPInvite]);
+
+    // Timer: PvP Turn logic (45s)
+    useEffect(() => {
+        if (activePvPBattle && activePvPBattle.status === 'battle') {
+            const timer = setInterval(() => {
+                setPvpTurnTimer(prev => {
+                    if (prev <= 1) {
+                        // Time's up! If it's my turn, auto attack.
+                        if (activePvPBattle.turn === walletAddress) {
+                            const activePoke = team.find(p => p.hp > 0);
+                            if (activePoke) {
+                                const moves = typeof window !== 'undefined' && (window as any).POKEMON_MOVESET ? (window as any).POKEMON_MOVESET[activePoke.id] || [] : [];
+                                if (moves.length > 0) {
+                                    handleExecutePvPMove(moves[0].id || moves[0]);
+                                }
+                            }
+                        }
+                        return 45; // Reset timer for the next turn
+                    }
+                    return prev - 1;
+                });
+            }, 1000);
+            return () => {
+                clearInterval(timer);
+                setPvpTurnTimer(45);
+            };
+        } else {
+            setPvpTurnTimer(45);
+        }
+    }, [activePvPBattle?.status, activePvPBattle?.turn]);
 
     // Player position & movement states
     const playerRef = useRef({
@@ -2226,6 +2303,12 @@ export default function GameCanvas({
     // PvP Handlers
     const handlePvPInvite = (targetAddress: string) => {
         if (!channelRef.current) return;
+        
+        if ((economyRef.current.coins || 0) < 100) {
+            showNotification("Fondos Insuficientes", "Necesitas al menos 100 Coins para apostar en un duelo PvP.");
+            return;
+        }
+
         channelRef.current.send({
             type: 'broadcast',
             event: 'pvp_invite',
@@ -2269,6 +2352,18 @@ export default function GameCanvas({
     const handleAcceptPvP = () => {
         if (!incomingPvPInvite || !channelRef.current) return;
         
+        if ((economyRef.current.coins || 0) < 100) {
+            showNotification("Fondos Insuficientes", "Necesitas al menos 100 Coins para apostar en este duelo.");
+            // Force reject
+            handleRejectPvP();
+            return;
+        }
+
+        // Pay the bet
+        economyRef.current.spendCoins(100);
+        setEconomy(new Economy(economyRef.current.toSaveData()));
+        saveLocalEconomy();
+
         channelRef.current.send({
             type: 'broadcast',
             event: 'pvp_accept',
@@ -2286,7 +2381,8 @@ export default function GameCanvas({
             myHp: teamRef.current.find((p: any) => p.hp > 0)?.hp || 100,
             opponentHp: 100,
             opponentMaxHp: 100,
-            status: 'syncing'
+            status: 'syncing',
+            turn: incomingPvPInvite.from
         });
         
         const activePoke = teamRef.current.find((p: any) => p.hp > 0);
@@ -2327,7 +2423,11 @@ export default function GameCanvas({
         setOpponentSpriteEffect('shake');
         setFloatingDamage({ value: playerDmg, target: 'opponent' });
         
-        setActivePvPBattle((prev: any) => ({ ...prev, opponentHp: Math.max(0, prev.opponentHp - playerDmg) }));
+        setActivePvPBattle((prev: any) => ({ 
+            ...prev, 
+            opponentHp: Math.max(0, prev.opponentHp - playerDmg),
+            turn: prev.opponentAddress
+        }));
         
         channelRef.current?.send({
             type: 'broadcast',
@@ -2418,9 +2518,10 @@ export default function GameCanvas({
             const ranks = data.map((row: any) => {
                 const pvpWins = row.save_data?.economy_data?.pvp_wins || 0;
                 const pvpLosses = row.save_data?.economy_data?.pvp_losses || 0;
+                const pName = row.save_data?.name || "Entrenador";
                 return {
                     address: row.wallet_address,
-                    name: "Entrenador",
+                    name: pName,
                     wins: pvpWins,
                     losses: pvpLosses
                 };
@@ -4819,6 +4920,17 @@ export default function GameCanvas({
                 </div>
             )}
 
+            {pendingPvPInvite && (
+                <div className="modal-overlay" style={{ zIndex: 300 }}>
+                    <div className="modal-content" style={{ textAlign: 'center' }}>
+                        <div className="spinner animate-spin" style={{ border: '4px solid #f3f3f3', width: '40px', height: '40px', borderRadius: '50%', borderLeftColor: '#fbc02d', margin: '0 auto 15px auto' }}></div>
+                        <h2>⏳ ESPERANDO OPONENTE ⏳</h2>
+                        <p>Has enviado un desafío. Esperando a que el jugador acepte...</p>
+                        <p style={{ fontSize: '12px', color: '#666', marginTop: '10px' }}>Si no responde en 30 segundos, el duelo se cancelará automáticamente.</p>
+                    </div>
+                </div>
+            )}
+
             {showLeaderboard && (
                 <div className="modal-overlay" style={{ zIndex: 300 }}>
                     <div className="modal-content" style={{ width: '90%', maxWidth: '400px' }}>
@@ -4832,7 +4944,7 @@ export default function GameCanvas({
                                     <thead>
                                         <tr style={{ background: '#fbc02d', color: '#000' }}>
                                             <th style={{ padding: '8px', border: '1px solid #ddd' }}>#</th>
-                                            <th style={{ padding: '8px', border: '1px solid #ddd' }}>Address</th>
+                                            <th style={{ padding: '8px', border: '1px solid #ddd' }}>Nick</th>
                                             <th style={{ padding: '8px', border: '1px solid #ddd' }}>V</th>
                                             <th style={{ padding: '8px', border: '1px solid #ddd' }}>D</th>
                                         </tr>
@@ -4841,7 +4953,9 @@ export default function GameCanvas({
                                         {pvpLeaderboard.map((p, i) => (
                                             <tr key={p.address} style={{ background: i % 2 === 0 ? '#fff' : '#f9f9f9', color: '#333' }}>
                                                 <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>{i + 1}</td>
-                                                <td style={{ padding: '8px', border: '1px solid #ddd' }}>{p.address.slice(0, 6)}...</td>
+                                                <td style={{ padding: '8px', border: '1px solid #ddd' }} title={p.name}>
+                                                    {p.name.length > 10 ? p.name.slice(0, 10) + '...' : p.name}
+                                                </td>
                                                 <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center', color: '#2e7d32', fontWeight: 'bold' }}>{p.wins}</td>
                                                 <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center', color: '#c62828' }}>{p.losses}</td>
                                             </tr>
@@ -4920,42 +5034,48 @@ export default function GameCanvas({
                                 {/* Controls */}
                                 <div style={{ background: '#fff', padding: '10px', borderTop: '4px solid #333' }}>
                                     {activePvPBattle.status === 'battle' ? (
-                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', width: '100%' }}>
-                                            {(() => {
-                                                const activePoke = team.find(p => p.hp > 0);
-                                                if (!activePoke) return null;
-                                                const moves = typeof window !== 'undefined' && (window as any).POKEMON_MOVESET ? (window as any).POKEMON_MOVESET[activePoke.id] || [] : [];
-                                                return moves.map((m: any, idx: number) => {
-                                                    const tc = typeof window !== 'undefined' && (window as any).TYPE_COLORS ? (window as any).TYPE_COLORS : {};
-                                                    return (
-                                                        <button 
-                                                            key={idx}
-                                                            className="pokemon-button animate-hover"
-                                                            onClick={() => handleExecutePvPMove(m.id)}
-                                                            style={{ 
-                                                                background: tc[m.type] || '#a8a878',
-                                                                color: m.type === 'electric' ? '#3e2723' : '#fff',
-                                                                height: '38px', padding: '4px', margin: 0, fontSize: '11px', fontWeight: 'bold'
-                                                            }}
-                                                        >
-                                                            {m.name}
-                                                        </button>
-                                                    );
-                                                });
-                                            })()}
-                                        </div>
+                                        <>
+                                            <div style={{ textAlign: 'center', marginBottom: '8px', fontWeight: 'bold', fontSize: '14px', color: activePvPBattle.turn === walletAddress ? '#2e7d32' : '#c62828' }}>
+                                                {activePvPBattle.turn === walletAddress ? `⏳ Tu turno (${pvpTurnTimer}s)` : `⏳ Turno del oponente (${pvpTurnTimer}s)`}
+                                            </div>
+                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', width: '100%' }}>
+                                                {(() => {
+                                                    const activePoke = team.find(p => p.hp > 0);
+                                                    if (!activePoke) return null;
+                                                    const moves = typeof window !== 'undefined' && (window as any).POKEMON_MOVESET ? (window as any).POKEMON_MOVESET[activePoke.id] || [] : [];
+                                                    return moves.map((m: any, idx: number) => {
+                                                        const tc = typeof window !== 'undefined' && (window as any).TYPE_COLORS ? (window as any).TYPE_COLORS : {};
+                                                        return (
+                                                            <button 
+                                                                key={idx}
+                                                                className="pokemon-button animate-hover"
+                                                                onClick={() => handleExecutePvPMove(m.id)}
+                                                                disabled={activePvPBattle.turn !== walletAddress}
+                                                                style={{ 
+                                                                    background: tc[m.type] || '#a8a878',
+                                                                    color: m.type === 'electric' ? '#3e2723' : '#fff',
+                                                                    height: '38px', padding: '4px', margin: 0, fontSize: '11px', fontWeight: 'bold',
+                                                                    opacity: activePvPBattle.turn !== walletAddress ? 0.5 : 1
+                                                                }}
+                                                            >
+                                                                {m.name}
+                                                            </button>
+                                                        );
+                                                    });
+                                                })()}
+                                            </div>
+                                        </>
                                     ) : (
                                         <button 
                                             className="pokemon-button"
                                             onClick={() => {
                                                 if (activePvPBattle.status === 'win') {
                                                     economyRef.current.pvp_wins = (economyRef.current.pvp_wins || 0) + 1;
-                                                    economyRef.current.addCoins(50);
-                                                    showNotification("¡Ganaste!", "¡Ganaste el duelo y obtuviste 50 Coins!");
+                                                    economyRef.current.addCoins(200);
+                                                    showNotification("¡Ganaste!", "¡Ganaste el duelo y te llevas 200 Coins!");
                                                 } else if (activePvPBattle.status === 'loss') {
                                                     economyRef.current.pvp_losses = (economyRef.current.pvp_losses || 0) + 1;
-                                                    economyRef.current.spendCoins(50);
-                                                    showNotification("Derrota", "Perdiste el duelo y 50 Coins.");
+                                                    showNotification("Derrota", "Perdiste el duelo y tu apuesta de 100 Coins.");
                                                 }
                                                 setEconomy(new Economy(economyRef.current.toSaveData()));
                                                 saveLocalEconomy();
