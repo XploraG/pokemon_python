@@ -1452,7 +1452,7 @@ export default function GameCanvas({
                 ]);
 
                 // Synchronous processing begins
-                const grid = gridText.trim().split('\n').map(line => line.trim().split(/[\s,]+/));
+                const grid = gridText.trim().split('\n').map((line: string) => line.trim().split(/[\s,]+/));
                 const height = grid.length * tileSize;
                 const width = grid[0] ? grid[0].length * tileSize : 0;
 
@@ -1656,7 +1656,7 @@ export default function GameCanvas({
                     };
 
                     // Sanitize/align player coordinates to match the grid offset of the loaded map
-                    const isOutdoor = currentMapPath.includes('tutorial') || currentMapPath.includes('route1');
+                    const isOutdoor = currentMapPath.includes('tutorial') || currentMapPath.includes('route') || currentMapPath.includes('city');
                     const pxCoord = playerRef.current.x;
                     const pyCoord = playerRef.current.y;
                     const cellX = Math.floor(pxCoord / tileSize);
@@ -2209,12 +2209,12 @@ export default function GameCanvas({
                 return true;
             }
         } else if (currentPath.includes('city1')) {
-            // 1. Pokémon Center (x=600, y=800) -> door dx=20..60, dy=50..70
-            if (x >= 620 && x <= 660 && y >= 850 && y <= 870) {
+            // 1. Pokémon Center (x=200, y=800) -> door dx=20..60, dy=50..70
+            if (x >= 220 && x <= 260 && y >= 850 && y <= 870) {
                 setDialogName("Centro Pokemon");
                 setActiveDialog("Entering the Pokémon Center...");
                 returnMapRef.current = '/assets/maps/city1/main.json';
-                returnCoordsRef.current = [640, 888];
+                returnCoordsRef.current = [240, 888];
                 playerRef.current.x = 144;
                 playerRef.current.y = 224;
                 playerRef.current.targetX = 144;
@@ -2301,6 +2301,52 @@ export default function GameCanvas({
                 playerRef.current.isMoving = false;
                 setCurrentMapPath('/assets/maps/route1/main.json');
                 setActiveDialog(null);
+                playerRef.current.isMoving = false;
+                return true;
+            }
+
+            // 7. Check tile-based Cave Entrance warp (CE)
+            const mapData = mapDataRef.current;
+            const tileSize = mapData.tileSize || 32;
+            const col = Math.floor(x / tileSize);
+            const row = Math.floor((y - 1) / tileSize);
+            if (mapData.grid[row]?.[col] === 'CE') {
+                setDialogName("Cueva Oscura");
+                setActiveDialog("Entering the Cave...");
+                playerRef.current.x = 1000;
+                playerRef.current.y = 44;
+                playerRef.current.targetX = 1000;
+                playerRef.current.targetY = 44;
+                playerRef.current.isMoving = false;
+                setCurrentMapPath('/assets/maps/cave/main.json');
+                setActiveDialog(null);
+                playerRef.current.isMoving = false;
+                return true;
+            }
+
+            // 8. Left edge warp to Route 4
+            if (x <= 12) {
+                setDialogName("Ruta 4");
+                setActiveDialog("Returning to Route 4...");
+                playerRef.current.x = 1540;
+                playerRef.current.y = 640;
+                playerRef.current.targetX = 1540;
+                playerRef.current.targetY = 640;
+                playerRef.current.isMoving = false;
+                setCurrentMapPath('/assets/maps/route4/main.json');
+                setActiveDialog(null);
+                playerRef.current.isMoving = false;
+                return true;
+            }
+
+            // 9. Other edges blocked
+            if (y <= 12 || x >= 1250 || y >= 1250) {
+                setDialogName("En construcción");
+                showNotification("Aviso", "No puedes pasar por aquí.");
+                // Push back
+                if (y <= 12) { playerRef.current.y = 44; playerRef.current.targetY = 44; }
+                if (x >= 1250) { playerRef.current.x = 1220; playerRef.current.targetX = 1220; }
+                if (y >= 1250) { playerRef.current.y = 1220; playerRef.current.targetY = 1220; }
                 playerRef.current.isMoving = false;
                 return true;
             }
@@ -2465,50 +2511,6 @@ export default function GameCanvas({
                 playerRef.current.isMoving = false;
                 setCurrentMapPath('/assets/maps/city1/main.json');
                 setActiveDialog(null);
-                playerRef.current.isMoving = false;
-                return true;
-            }
-        } else if (currentPath.includes('city1')) {
-            // Check tile-based Cave Entrance warp (CE)
-            const mapData = mapDataRef.current;
-            const tileSize = mapData.tileSize || 32;
-            const col = Math.floor(x / tileSize);
-            const row = Math.floor((y - 1) / tileSize);
-            if (mapData.grid[row]?.[col] === 'CE') {
-                setDialogName("Cueva Oscura");
-                setActiveDialog("Entering the Cave...");
-                playerRef.current.x = 1000;
-                playerRef.current.y = 44;
-                playerRef.current.targetX = 1000;
-                playerRef.current.targetY = 44;
-                playerRef.current.isMoving = false;
-                setCurrentMapPath('/assets/maps/cave/main.json');
-                setActiveDialog(null);
-                playerRef.current.isMoving = false;
-                return true;
-            }
-            // Left edge warp to Route 4
-            if (x <= 12) {
-                setDialogName("Ruta 4");
-                setActiveDialog("Returning to Route 4...");
-                playerRef.current.x = 1540;
-                playerRef.current.y = 640;
-                playerRef.current.targetX = 1540;
-                playerRef.current.targetY = 640;
-                playerRef.current.isMoving = false;
-                setCurrentMapPath('/assets/maps/route4/main.json');
-                setActiveDialog(null);
-                playerRef.current.isMoving = false;
-                return true;
-            }
-            // Other edges blocked
-            if (y <= 12 || x >= 1250 || y >= 1250) {
-                setDialogName("En construcción");
-                showNotification("Aviso", "No puedes pasar por aquí.");
-                // Push back
-                if (y <= 12) { playerRef.current.y = 44; playerRef.current.targetY = 44; }
-                if (x >= 1250) { playerRef.current.x = 1220; playerRef.current.targetX = 1220; }
-                if (y >= 1250) { playerRef.current.y = 1220; playerRef.current.targetY = 1220; }
                 playerRef.current.isMoving = false;
                 return true;
             }
@@ -3766,145 +3768,146 @@ export default function GameCanvas({
                 />
 
                 {/* Mobile Touch Controls Overlay */}
-                <div className="mobile-controls">
-                    <div className="d-pad-container">
-                        <div 
-                            className="d-pad-btn d-pad-up"
-                            onPointerDown={() => keysPressed.current['w'] = true}
-                            onPointerUp={() => keysPressed.current['w'] = false}
-                            onPointerLeave={() => keysPressed.current['w'] = false}
-                        >▲</div>
-                        <div 
-                            className="d-pad-btn d-pad-left"
-                            onPointerDown={() => keysPressed.current['a'] = true}
-                            onPointerUp={() => keysPressed.current['a'] = false}
-                            onPointerLeave={() => keysPressed.current['a'] = false}
-                        >◀</div>
-                        <div 
-                            className="d-pad-btn d-pad-right"
-                            onPointerDown={() => keysPressed.current['d'] = true}
-                            onPointerUp={() => keysPressed.current['d'] = false}
-                            onPointerLeave={() => keysPressed.current['d'] = false}
-                        >▶</div>
-                        <div 
-                            className="d-pad-btn d-pad-down"
-                            onPointerDown={() => keysPressed.current['s'] = true}
-                            onPointerUp={() => keysPressed.current['s'] = false}
-                            onPointerLeave={() => keysPressed.current['s'] = false}
-                        >▼</div>
-                        <div className="d-pad-btn d-pad-center"></div>
-                    </div>
+                {!loading && (
+                    <div className="mobile-controls">
+                        <div className="d-pad-container">
+                            <div 
+                                className="d-pad-btn d-pad-up"
+                                onPointerDown={() => keysPressed.current['w'] = true}
+                                onPointerUp={() => keysPressed.current['w'] = false}
+                                onPointerLeave={() => keysPressed.current['w'] = false}
+                            >▲</div>
+                            <div 
+                                className="d-pad-btn d-pad-left"
+                                onPointerDown={() => keysPressed.current['a'] = true}
+                                onPointerUp={() => keysPressed.current['a'] = false}
+                                onPointerLeave={() => keysPressed.current['a'] = false}
+                            >◀</div>
+                            <div 
+                                className="d-pad-btn d-pad-right"
+                                onPointerDown={() => keysPressed.current['d'] = true}
+                                onPointerUp={() => keysPressed.current['d'] = false}
+                                onPointerLeave={() => keysPressed.current['d'] = false}
+                            >▶</div>
+                            <div 
+                                className="d-pad-btn d-pad-down"
+                                onPointerDown={() => keysPressed.current['s'] = true}
+                                onPointerUp={() => keysPressed.current['s'] = false}
+                                onPointerLeave={() => keysPressed.current['s'] = false}
+                            >▼</div>
+                            <div className="d-pad-btn d-pad-center"></div>
+                        </div>
 
-                    <div className="action-buttons-container">
-                        <div 
-                            className="action-btn action-btn-a"
-                            onPointerDown={(e) => { e.preventDefault(); handleInteraction(); }}
-                        >A</div>
-                        <div 
-                            className="action-btn action-btn-b"
-                            onPointerDown={(e) => { e.preventDefault(); setIsBicycleActive(prev => !prev); }}
-                        >B</div>
-                        <div 
-                            className="action-btn action-btn-menu"
-                            onPointerDown={(e) => { e.preventDefault(); setShowMenuModal(prev => !prev); }}
-                        >☰</div>
-                    </div>
-                </div>
-
-                {/* Loading Overlay */}
-                {loading && (
-                    <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#fff', backdropFilter: 'blur(4px)' }}>
-                        <div style={{ marginBottom: '16px', animation: 'spin 1s linear infinite', border: '4px solid rgba(255,255,255,0.3)', borderTop: '4px solid #fff', borderRadius: '50%', width: '40px', height: '40px' }}></div>
-                        <h2 style={{ margin: '0 0 8px 0', fontFamily: 'var(--font-sans)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Cargando Zona...</h2>
-                        <p style={{ margin: 0, color: '#aaa', fontSize: '14px' }}>{loadingMessage}</p>
+                        <div className="action-buttons-container">
+                            <div 
+                                className="action-btn action-btn-a"
+                                onPointerDown={(e) => { e.preventDefault(); handleInteraction(); }}
+                            >A</div>
+                            <div 
+                                className="action-btn action-btn-b"
+                                onPointerDown={(e) => { e.preventDefault(); setIsBicycleActive(prev => !prev); }}
+                            >B</div>
+                            <div 
+                                className="action-btn action-btn-menu"
+                                onPointerDown={(e) => { e.preventDefault(); setShowMenuModal(prev => !prev); }}
+                            >☰</div>
+                        </div>
                     </div>
                 )}
 
                 {/* Floating Menu Button */}
-                <button onClick={() => setShowMenuModal(true)} className="floating-menu-btn" style={{ zIndex: 100 }}>
-                    ☰ MENU (Q)
-                </button>
-                <button 
-                    onClick={() => { fetchLeaderboard(); setShowLeaderboard(true); }} 
-                    className="floating-menu-btn" 
-                    style={{ left: '120px', background: '#fbc02d', color: '#000', zIndex: 100 }}
-                >
-                    🏆 RANKING
-                </button>
+                {!loading && (
+                    <>
+                        <button onClick={() => setShowMenuModal(true)} className="floating-menu-btn" style={{ zIndex: 100 }}>
+                            ☰ MENU (Q)
+                        </button>
+                        <button 
+                            onClick={() => { fetchLeaderboard(); setShowLeaderboard(true); }} 
+                            className="floating-menu-btn" 
+                            style={{ left: '120px', background: '#fbc02d', color: '#000', zIndex: 100 }}
+                        >
+                            🏆 RANKING
+                        </button>
+                    </>
+                )}
 
                 {/* HUD Overlay */}
-                <div 
-                    className={`hud-panel ${isHudMinimized ? 'minimized' : ''}`}
-                    onClick={() => {
-                        if (isHudMinimized) {
-                            setIsHudMinimized(false);
-                        }
-                    }}
-                >
-                    <div className="hud-header">
-                        <span className="hud-title">
-                            {isHudMinimized ? `💰 ${economy.getFormattedCoins()} | Lvl ${economy.level}` : '🏆 Trainer Stats'}
-                        </span>
-                        <button 
-                            onClick={(e) => {
-                                e.stopPropagation(); // Prevent card onClick trigger when clicking button
-                                setIsHudMinimized(!isHudMinimized);
-                            }}
-                            className="hud-toggle-btn"
-                            title={isHudMinimized ? "Expand HUD" : "Minimize HUD"}
-                        >
-                            {isHudMinimized ? '＋' : '－'}
-                        </button>
-                    </div>
-
-                    {!isHudMinimized && (
-                        <div className="hud-content">
-                            <div className="hud-row coins">
-                                <span>Coins:</span>
-                                <span>{economy.getFormattedCoins()}</span>
-                            </div>
-                            <div className="hud-row pusdt">
-                                <span>PUSDT:</span>
-                                <span>{economy.getFormattedPusdt()}</span>
-                            </div>
-                            <div className="hud-row level" style={{ color: '#63b3ed', flexDirection: 'column', alignItems: 'flex-start', gap: '4px' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
-                                    <span>Level:</span>
-                                    <span>{economy.level}</span>
-                                </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', width: '100%' }}>
-                                    <span style={{ fontSize: '9px', color: '#a0aec0' }}>XP: {economy.xp ?? 0}/{economy.level * 1000}</span>
-                                    <div style={{ flex: 1, height: '4px', background: '#4a5568', borderRadius: '2px', overflow: 'hidden' }}>
-                                        <div style={{ height: '100%', width: `${Math.round(((economy.xp ?? 0) / (economy.level * 1000)) * 100)}%`, background: '#63b3ed', borderRadius: '2px' }}></div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="hud-row bicycle">
-                                <span>Bicycle:</span>
-                                <span style={{ color: isBicycleActive ? '#a8e6cf' : '#ff8888' }}>
-                                    {isBicycleActive ? 'ON' : 'OFF'}
-                                </span>
-                            </div>
+                {!loading && (
+                    <div 
+                        className={`hud-panel ${isHudMinimized ? 'minimized' : ''}`}
+                        onClick={() => {
+                            if (isHudMinimized) {
+                                setIsHudMinimized(false);
+                            }
+                        }}
+                    >
+                        <div className="hud-header">
+                            <span className="hud-title">
+                                {isHudMinimized ? `💰 ${economy.getFormattedCoins()} | Lvl ${economy.level}` : '🏆 Trainer Stats'}
+                            </span>
                             <button 
                                 onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleConvertPusdt();
+                                    e.stopPropagation(); // Prevent card onClick trigger when clicking button
+                                    setIsHudMinimized(!isHudMinimized);
                                 }}
-                                className="hud-button"
+                                className="hud-toggle-btn"
+                                title={isHudMinimized ? "Expand HUD" : "Minimize HUD"}
                             >
-                                Convert 10k Coins → 1 PUSDT
+                                {isHudMinimized ? '＋' : '－'}
                             </button>
                         </div>
-                    )}
-                </div>
+
+                        {!isHudMinimized && (
+                            <div className="hud-content">
+                                <div className="hud-row coins">
+                                    <span>Coins:</span>
+                                    <span>{economy.getFormattedCoins()}</span>
+                                </div>
+                                <div className="hud-row pusdt">
+                                    <span>PUSDT:</span>
+                                    <span>{economy.getFormattedPusdt()}</span>
+                                </div>
+                                <div className="hud-row level" style={{ color: '#63b3ed', flexDirection: 'column', alignItems: 'flex-start', gap: '4px' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+                                        <span>Level:</span>
+                                        <span>{economy.level}</span>
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', width: '100%' }}>
+                                        <span style={{ fontSize: '9px', color: '#a0aec0' }}>XP: {economy.xp ?? 0}/{economy.level * 1000}</span>
+                                        <div style={{ flex: 1, height: '4px', background: '#4a5568', borderRadius: '2px', overflow: 'hidden' }}>
+                                            <div style={{ height: '100%', width: `${Math.round(((economy.xp ?? 0) / (economy.level * 1000)) * 100)}%`, background: '#63b3ed', borderRadius: '2px' }}></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="hud-row bicycle">
+                                    <span>Bicycle:</span>
+                                    <span style={{ color: isBicycleActive ? '#a8e6cf' : '#ff8888' }}>
+                                        {isBicycleActive ? 'ON' : 'OFF'}
+                                    </span>
+                                </div>
+                                <button 
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleConvertPusdt();
+                                    }}
+                                    className="hud-button"
+                                >
+                                    Convert 10k Coins → 1 PUSDT
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                )}
 
                 {/* Controls Info overlay */}
-                <div className="controls-info">
-                    Controls: WASD/Arrows to Move | Space/Enter to Talk
-                </div>
+                {!loading && (
+                    <div className="controls-info">
+                        Controls: WASD/Arrows to Move | Space/Enter to Talk
+                    </div>
+                )}
 
                 {/* Pokémon Center Banner Overlay */}
-                {currentMapPath.includes('pokecenter') && (
+                {!loading && currentMapPath.includes('pokecenter') && (
                     <div style={{
                         position: 'absolute',
                         bottom: '50px',
@@ -3929,7 +3932,7 @@ export default function GameCanvas({
                 )}
 
                 {/* Dialogue bubble */}
-                {activeDialog && (
+                {!loading && activeDialog && (
                     <div className="dialogue-box glass-panel fade-in">
                         <div className="dialogue-speaker">{dialogName}</div>
                         <div className="dialogue-text">{activeDialog}</div>
@@ -3943,6 +3946,15 @@ export default function GameCanvas({
                             </button>
                         )}
                         <div className="dialogue-footer">Press Space/Enter to close</div>
+                    </div>
+                )}
+
+                {/* Loading Overlay */}
+                {loading && (
+                    <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', background: '#0a0518', zIndex: 10000, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#fff', backdropFilter: 'blur(4px)' }}>
+                        <div style={{ marginBottom: '16px', animation: 'spin 1s linear infinite', border: '4px solid rgba(255,255,255,0.2)', borderTopColor: '#ef5350', borderBottomColor: '#ffffff', borderRadius: '50%', width: '50px', height: '50px' }}></div>
+                        <h2 style={{ margin: '0 0 8px 0', fontFamily: 'var(--font-sans)', textTransform: 'uppercase', letterSpacing: '0.1em', color: '#ef5350', fontSize: '18px', fontWeight: 'bold' }}>Cargando Zona...</h2>
+                        <p style={{ margin: 0, color: '#aaa', fontSize: '14px', fontFamily: 'monospace' }}>{loadingMessage}</p>
                     </div>
                 )}
             </div>

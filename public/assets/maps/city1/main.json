@@ -57,7 +57,7 @@
         {
             "location": "src/assets/entities/structures/pokemoncenter/main.json",
             "coordinates": {
-                "x": 600,
+                "x": 200,
                 "y": 800
             }
         },
