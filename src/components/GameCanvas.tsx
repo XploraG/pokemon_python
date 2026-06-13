@@ -2051,7 +2051,6 @@ export default function GameCanvas({
                 showDaily || 
                 showMissions || 
                 showInventoryModal || 
-                pendingWarp !== null ||
                 activeWildBattleRef.current !== null ||
                 activeDialogRef.current !== null ||
                 activePvPBattleRef.current !== null ||
@@ -2085,9 +2084,6 @@ export default function GameCanvas({
                 const nextX = player.x + moveX * gridMoveDist;
                 const nextY = player.y + moveY * gridMoveDist;
 
-                // Check map edge warps BEFORE collision to allow walking "off" the map to warp
-                const isWarping = checkAutoDoorEntry(nextX, nextY);
-                if (isWarping) return;
 
                 // Collision bounds check
                 if (nextX >= 0 && nextX < mapData.width && nextY >= 0 && nextY < mapData.height) {
@@ -2136,7 +2132,13 @@ export default function GameCanvas({
                 setActiveDialog("Entering the Pokémon Center...");
                 returnMapRef.current = '/assets/maps/tutorial/main.json';
                 returnCoordsRef.current = [600, 748]; // Spawn below door when returning
-                setPendingWarp({ path: '/assets/maps/pokecenter/main.json', x: 144, y: 224, name: "Centro Pokemon" });
+                playerRef.current.x = 144;
+                playerRef.current.y = 224;
+                playerRef.current.targetX = 144;
+                playerRef.current.targetY = 224;
+                playerRef.current.isMoving = false;
+                setCurrentMapPath('/assets/maps/pokecenter/main.json');
+                setActiveDialog(null);
                 playerRef.current.isMoving = false;
                 return true;
             }
@@ -2147,7 +2149,13 @@ export default function GameCanvas({
                 setActiveDialog("Entering the PokeMart Store...");
                 returnMapRef.current = '/assets/maps/tutorial/main.json';
                 returnCoordsRef.current = [580, 1040]; // Spawn below door when returning
-                setPendingWarp({ path: '/assets/maps/pokemart/main.json', x: 144, y: 224, name: "Tienda Pokemon" });
+                playerRef.current.x = 144;
+                playerRef.current.y = 224;
+                playerRef.current.targetX = 144;
+                playerRef.current.targetY = 224;
+                playerRef.current.isMoving = false;
+                setCurrentMapPath('/assets/maps/pokemart/main.json');
+                setActiveDialog(null);
                 playerRef.current.isMoving = false;
                 return true;
             }
@@ -2157,7 +2165,13 @@ export default function GameCanvas({
                 setDialogName("Gimnasio");
                 setActiveDialog("Entering the Gym...");
                 returnCoordsRef.current = [396, 228];
-                setPendingWarp({ path: '/assets/maps/gym/main.json', x: 176, y: 288, name: "Gimnasio" });
+                playerRef.current.x = 176;
+                playerRef.current.y = 288;
+                playerRef.current.targetX = 176;
+                playerRef.current.targetY = 288;
+                playerRef.current.isMoving = false;
+                setCurrentMapPath('/assets/maps/gym/main.json');
+                setActiveDialog(null);
                 playerRef.current.isMoving = false;
                 return true;
             }
@@ -2167,7 +2181,13 @@ export default function GameCanvas({
                 setDialogName("Casa");
                 setActiveDialog("Entering house...");
                 returnCoordsRef.current = [154, 748];
-                setPendingWarp({ path: '/assets/maps/redhouse/main.json', x: 144, y: 224, name: "Casa" });
+                playerRef.current.x = 144;
+                playerRef.current.y = 224;
+                playerRef.current.targetX = 144;
+                playerRef.current.targetY = 224;
+                playerRef.current.isMoving = false;
+                setCurrentMapPath('/assets/maps/redhouse/main.json');
+                setActiveDialog(null);
                 playerRef.current.isMoving = false;
                 return true;
             }
@@ -2178,7 +2198,13 @@ export default function GameCanvas({
                 setActiveDialog("Entering house...");
                 returnMapRef.current = '/assets/maps/tutorial/main.json';
                 returnCoordsRef.current = [329, 748];
-                setPendingWarp({ path: '/assets/maps/redhouse/main.json', x: 144, y: 224, name: "Casa" });
+                playerRef.current.x = 144;
+                playerRef.current.y = 224;
+                playerRef.current.targetX = 144;
+                playerRef.current.targetY = 224;
+                playerRef.current.isMoving = false;
+                setCurrentMapPath('/assets/maps/redhouse/main.json');
+                setActiveDialog(null);
                 playerRef.current.isMoving = false;
                 return true;
             }
@@ -2189,7 +2215,13 @@ export default function GameCanvas({
                 setActiveDialog("Entering the Pokémon Center...");
                 returnMapRef.current = '/assets/maps/city1/main.json';
                 returnCoordsRef.current = [640, 888];
-                setPendingWarp({ path: '/assets/maps/pokecenter/main.json', x: 144, y: 224, name: "Centro Pokemon" });
+                playerRef.current.x = 144;
+                playerRef.current.y = 224;
+                playerRef.current.targetX = 144;
+                playerRef.current.targetY = 224;
+                playerRef.current.isMoving = false;
+                setCurrentMapPath('/assets/maps/pokecenter/main.json');
+                setActiveDialog(null);
                 playerRef.current.isMoving = false;
                 return true;
             }
@@ -2199,7 +2231,13 @@ export default function GameCanvas({
                 setActiveDialog("Entering the PokeMart Store...");
                 returnMapRef.current = '/assets/maps/city1/main.json';
                 returnCoordsRef.current = [820, 900];
-                setPendingWarp({ path: '/assets/maps/pokemart/main.json', x: 144, y: 224, name: "Tienda Pokemon" });
+                playerRef.current.x = 144;
+                playerRef.current.y = 224;
+                playerRef.current.targetX = 144;
+                playerRef.current.targetY = 224;
+                playerRef.current.isMoving = false;
+                setCurrentMapPath('/assets/maps/pokemart/main.json');
+                setActiveDialog(null);
                 playerRef.current.isMoving = false;
                 return true;
             }
@@ -2209,7 +2247,13 @@ export default function GameCanvas({
                 setActiveDialog("Entering the Gym...");
                 returnMapRef.current = '/assets/maps/city1/main.json';
                 returnCoordsRef.current = [690, 574];
-                setPendingWarp({ path: '/assets/maps/gym/main.json', x: 176, y: 288, name: "Gimnasio" });
+                playerRef.current.x = 176;
+                playerRef.current.y = 288;
+                playerRef.current.targetX = 176;
+                playerRef.current.targetY = 288;
+                playerRef.current.isMoving = false;
+                setCurrentMapPath('/assets/maps/gym/main.json');
+                setActiveDialog(null);
                 playerRef.current.isMoving = false;
                 return true;
             }
@@ -2219,7 +2263,13 @@ export default function GameCanvas({
                 setActiveDialog("Entering house...");
                 returnMapRef.current = '/assets/maps/city1/main.json';
                 returnCoordsRef.current = [480, 564];
-                setPendingWarp({ path: '/assets/maps/redhouse/main.json', x: 144, y: 224, name: "Casa" });
+                playerRef.current.x = 144;
+                playerRef.current.y = 224;
+                playerRef.current.targetX = 144;
+                playerRef.current.targetY = 224;
+                playerRef.current.isMoving = false;
+                setCurrentMapPath('/assets/maps/redhouse/main.json');
+                setActiveDialog(null);
                 playerRef.current.isMoving = false;
                 return true;
             }
@@ -2229,7 +2279,13 @@ export default function GameCanvas({
                 setActiveDialog("Entering house...");
                 returnMapRef.current = '/assets/maps/city1/main.json';
                 returnCoordsRef.current = [930, 564];
-                setPendingWarp({ path: '/assets/maps/redhouse/main.json', x: 144, y: 224, name: "Casa" });
+                playerRef.current.x = 144;
+                playerRef.current.y = 224;
+                playerRef.current.targetX = 144;
+                playerRef.current.targetY = 224;
+                playerRef.current.isMoving = false;
+                setCurrentMapPath('/assets/maps/redhouse/main.json');
+                setActiveDialog(null);
                 playerRef.current.isMoving = false;
                 return true;
             }
@@ -2238,7 +2294,13 @@ export default function GameCanvas({
             if (y >= 1060 && x >= 96 && x <= 680) {
                 setDialogName("Ruta 1");
                 setActiveDialog("Entering Route 1...");
-                setPendingWarp({ path: '/assets/maps/route1/main.json', x: x, y: 44, name: "Ruta 1" });
+                playerRef.current.x = x;
+                playerRef.current.y = 44;
+                playerRef.current.targetX = x;
+                playerRef.current.targetY = 44;
+                playerRef.current.isMoving = false;
+                setCurrentMapPath('/assets/maps/route1/main.json');
+                setActiveDialog(null);
                 playerRef.current.isMoving = false;
                 return true;
             }
@@ -2247,7 +2309,13 @@ export default function GameCanvas({
             if (y <= 12) {
                 setDialogName("Pueblo Tutorial");
                 setActiveDialog("Returning to Town...");
-                setPendingWarp({ path: '/assets/maps/tutorial/main.json', x: x, y: 1036, name: "Pueblo Tutorial" });
+                playerRef.current.x = x;
+                playerRef.current.y = 1036;
+                playerRef.current.targetX = x;
+                playerRef.current.targetY = 1036;
+                playerRef.current.isMoving = false;
+                setCurrentMapPath('/assets/maps/tutorial/main.json');
+                setActiveDialog(null);
                 playerRef.current.isMoving = false;
                 return true;
             }
@@ -2255,7 +2323,13 @@ export default function GameCanvas({
             if (y >= 1280) {
                 setDialogName("Ruta 2");
                 setActiveDialog("Entering Route 2...");
-                setPendingWarp({ path: '/assets/maps/route2/main.json', x: 44, y: 608, name: "Ruta 2" });
+                playerRef.current.x = 44;
+                playerRef.current.y = 608;
+                playerRef.current.targetX = 44;
+                playerRef.current.targetY = 608;
+                playerRef.current.isMoving = false;
+                setCurrentMapPath('/assets/maps/route2/main.json');
+                setActiveDialog(null);
                 playerRef.current.isMoving = false;
                 return true;
             }
@@ -2268,7 +2342,13 @@ export default function GameCanvas({
             if (mapData.grid[row]?.[col] === 'CE') {
                 setDialogName("Cueva Oscura");
                 setActiveDialog("Entering the Cave...");
-                setPendingWarp({ path: '/assets/maps/cave/main.json', x: 288, y: 1550, name: "Cueva Oscura" });
+                playerRef.current.x = 288;
+                playerRef.current.y = 1550;
+                playerRef.current.targetX = 288;
+                playerRef.current.targetY = 1550;
+                playerRef.current.isMoving = false;
+                setCurrentMapPath('/assets/maps/cave/main.json');
+                setActiveDialog(null);
                 playerRef.current.isMoving = false;
                 return true;
             }
@@ -2277,7 +2357,13 @@ export default function GameCanvas({
             if (y <= 12) {
                 setDialogName("Ciudad Nueva");
                 setActiveDialog("Entering the City...");
-                setPendingWarp({ path: '/assets/maps/city1/main.json', x: 1000, y: 1220, name: "Ciudad Nueva" });
+                playerRef.current.x = 1000;
+                playerRef.current.y = 1220;
+                playerRef.current.targetX = 1000;
+                playerRef.current.targetY = 1220;
+                playerRef.current.isMoving = false;
+                setCurrentMapPath('/assets/maps/city1/main.json');
+                setActiveDialog(null);
                 playerRef.current.isMoving = false;
                 return true;
             }
@@ -2285,7 +2371,13 @@ export default function GameCanvas({
             if (y >= 1560) {
                 setDialogName("Ruta 1");
                 setActiveDialog("Returning to Route 1...");
-                setPendingWarp({ path: '/assets/maps/route1/main.json', x: 1120, y: 352, name: "Ruta 1" });
+                playerRef.current.x = 1120;
+                playerRef.current.y = 352;
+                playerRef.current.targetX = 1120;
+                playerRef.current.targetY = 352;
+                playerRef.current.isMoving = false;
+                setCurrentMapPath('/assets/maps/route1/main.json');
+                setActiveDialog(null);
                 playerRef.current.isMoving = false;
                 return true;
             }
@@ -2294,7 +2386,13 @@ export default function GameCanvas({
             if (x <= 12) {
                 setDialogName("Ruta 1");
                 setActiveDialog("Returning to Route 1...");
-                setPendingWarp({ path: '/assets/maps/route1/main.json', x: 608, y: 1280, name: "Ruta 1" });
+                playerRef.current.x = 608;
+                playerRef.current.y = 1280;
+                playerRef.current.targetX = 608;
+                playerRef.current.targetY = 1280;
+                playerRef.current.isMoving = false;
+                setCurrentMapPath('/assets/maps/route1/main.json');
+                setActiveDialog(null);
                 playerRef.current.isMoving = false;
                 return true;
             }
@@ -2302,7 +2400,13 @@ export default function GameCanvas({
             if (x >= 1560) {
                 setDialogName("Ruta 3");
                 setActiveDialog("Entering Route 3...");
-                setPendingWarp({ path: '/assets/maps/route3/main.json', x: 448, y: 44, name: "Ruta 3" });
+                playerRef.current.x = 448;
+                playerRef.current.y = 44;
+                playerRef.current.targetX = 448;
+                playerRef.current.targetY = 44;
+                playerRef.current.isMoving = false;
+                setCurrentMapPath('/assets/maps/route3/main.json');
+                setActiveDialog(null);
                 playerRef.current.isMoving = false;
                 return true;
             }
@@ -2311,7 +2415,13 @@ export default function GameCanvas({
             if (y <= 12) {
                 setDialogName("Ruta 2");
                 setActiveDialog("Returning to Route 2...");
-                setPendingWarp({ path: '/assets/maps/route2/main.json', x: 1540, y: 448, name: "Ruta 2" });
+                playerRef.current.x = 1540;
+                playerRef.current.y = 448;
+                playerRef.current.targetX = 1540;
+                playerRef.current.targetY = 448;
+                playerRef.current.isMoving = false;
+                setCurrentMapPath('/assets/maps/route2/main.json');
+                setActiveDialog(null);
                 playerRef.current.isMoving = false;
                 return true;
             }
@@ -2319,7 +2429,13 @@ export default function GameCanvas({
             if (y >= 1560) {
                 setDialogName("Ruta 4");
                 setActiveDialog("Entering Route 4...");
-                setPendingWarp({ path: '/assets/maps/route4/main.json', x: 44, y: 640, name: "Ruta 4" });
+                playerRef.current.x = 44;
+                playerRef.current.y = 640;
+                playerRef.current.targetX = 44;
+                playerRef.current.targetY = 640;
+                playerRef.current.isMoving = false;
+                setCurrentMapPath('/assets/maps/route4/main.json');
+                setActiveDialog(null);
                 playerRef.current.isMoving = false;
                 return true;
             }
@@ -2328,7 +2444,13 @@ export default function GameCanvas({
             if (x <= 12) {
                 setDialogName("Ruta 3");
                 setActiveDialog("Returning to Route 3...");
-                setPendingWarp({ path: '/assets/maps/route3/main.json', x: 448, y: 1540, name: "Ruta 3" });
+                playerRef.current.x = 448;
+                playerRef.current.y = 1540;
+                playerRef.current.targetX = 448;
+                playerRef.current.targetY = 1540;
+                playerRef.current.isMoving = false;
+                setCurrentMapPath('/assets/maps/route3/main.json');
+                setActiveDialog(null);
                 playerRef.current.isMoving = false;
                 return true;
             }
@@ -2336,7 +2458,13 @@ export default function GameCanvas({
             if (x >= 1560) {
                 setDialogName("Ciudad Nueva");
                 setActiveDialog("Entering City 1...");
-                setPendingWarp({ path: '/assets/maps/city1/main.json', x: 44, y: 640, name: "Ciudad Nueva" });
+                playerRef.current.x = 44;
+                playerRef.current.y = 640;
+                playerRef.current.targetX = 44;
+                playerRef.current.targetY = 640;
+                playerRef.current.isMoving = false;
+                setCurrentMapPath('/assets/maps/city1/main.json');
+                setActiveDialog(null);
                 playerRef.current.isMoving = false;
                 return true;
             }
@@ -2349,7 +2477,13 @@ export default function GameCanvas({
             if (mapData.grid[row]?.[col] === 'CE') {
                 setDialogName("Cueva Oscura");
                 setActiveDialog("Entering the Cave...");
-                setPendingWarp({ path: '/assets/maps/cave/main.json', x: 1000, y: 44, name: "Cueva Oscura" });
+                playerRef.current.x = 1000;
+                playerRef.current.y = 44;
+                playerRef.current.targetX = 1000;
+                playerRef.current.targetY = 44;
+                playerRef.current.isMoving = false;
+                setCurrentMapPath('/assets/maps/cave/main.json');
+                setActiveDialog(null);
                 playerRef.current.isMoving = false;
                 return true;
             }
@@ -2357,7 +2491,13 @@ export default function GameCanvas({
             if (x <= 12) {
                 setDialogName("Ruta 4");
                 setActiveDialog("Returning to Route 4...");
-                setPendingWarp({ path: '/assets/maps/route4/main.json', x: 1540, y: 640, name: "Ruta 4" });
+                playerRef.current.x = 1540;
+                playerRef.current.y = 640;
+                playerRef.current.targetX = 1540;
+                playerRef.current.targetY = 640;
+                playerRef.current.isMoving = false;
+                setCurrentMapPath('/assets/maps/route4/main.json');
+                setActiveDialog(null);
                 playerRef.current.isMoving = false;
                 return true;
             }
@@ -2383,7 +2523,13 @@ export default function GameCanvas({
             if (tileType === 'CP') {
                 setDialogName("Exit");
                 setActiveDialog("Exiting building...");
-                setPendingWarp({ path: returnMapRef.current, x: returnCoordsRef.current[0], y: returnCoordsRef.current[1], name: "Salir" });
+                playerRef.current.x = returnCoordsRef.current[0];
+                playerRef.current.y = returnCoordsRef.current[1];
+                playerRef.current.targetX = returnCoordsRef.current[0];
+                playerRef.current.targetY = returnCoordsRef.current[1];
+                playerRef.current.isMoving = false;
+                setCurrentMapPath(returnMapRef.current);
+                setActiveDialog(null);
                 playerRef.current.isMoving = false;
                 return true;
             }
@@ -3947,46 +4093,6 @@ export default function GameCanvas({
             )}
 
 
-            {/* Map Transition Confirmation */}
-            {pendingWarp && (
-                <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.8)', zIndex: 3000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <div style={{ background: '#2d3748', border: '2px solid #4a5568', borderRadius: '8px', padding: '20px', color: 'white', textAlign: 'center', minWidth: '250px' }}>
-                        <h3 style={{ margin: '0 0 15px 0' }}>¿Desea avanzar a {pendingWarp.name}?</h3>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px' }}>
-                            <button 
-                                onClick={() => {
-                                    setPendingWarp(null);
-                                    setActiveDialog(null);
-                                    if (playerRef.current.moveDirection === 'up') playerRef.current.y += 32;
-                                    if (playerRef.current.moveDirection === 'down') playerRef.current.y -= 32;
-                                    if (playerRef.current.moveDirection === 'left') playerRef.current.x += 32;
-                                    if (playerRef.current.moveDirection === 'right') playerRef.current.x -= 32;
-                                    playerRef.current.targetX = playerRef.current.x;
-                                    playerRef.current.targetY = playerRef.current.y;
-                                }}
-                                style={{ flex: 1, padding: '8px', background: '#e53e3e', border: 'none', borderRadius: '4px', color: 'white', cursor: 'pointer' }}
-                            >
-                                Quedarse
-                            </button>
-                            <button 
-                                onClick={() => {
-                                    playerRef.current.x = pendingWarp.x;
-                                    playerRef.current.y = pendingWarp.y;
-                                    playerRef.current.targetX = pendingWarp.x;
-                                    playerRef.current.targetY = pendingWarp.y;
-                                    playerRef.current.isMoving = false;
-                                    setCurrentMapPath(pendingWarp.path);
-                                    setActiveDialog(null);
-                                    setPendingWarp(null);
-                                }}
-                                style={{ flex: 1, padding: '8px', background: '#38a169', border: 'none', borderRadius: '4px', color: 'white', cursor: 'pointer' }}
-                            >
-                                Continuar
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
             {showNurseJoyModal && (
                 <div className="modal-overlay">
                     <div className="modal-card pokemon-panel">
