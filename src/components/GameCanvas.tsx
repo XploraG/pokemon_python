@@ -1279,6 +1279,7 @@ export default function GameCanvas({
     
     // Return coordinates tracking when entering interior maps
     const returnCoordsRef = useRef<[number, number]>([playerCoordinates[0], playerCoordinates[1]]);
+    const returnMapRef = useRef<string>('/assets/maps/tutorial/main.json');
 
     // Map grids & preloaded entities references
     const mapDataRef = useRef<{
@@ -2094,7 +2095,7 @@ export default function GameCanvas({
                     playerRef.current.isMoving = false;
                     setCurrentMapPath('/assets/maps/pokecenter/main.json');
                     setActiveDialog(null);
-                }, 500);
+                }, 100);
                 return true;
             }
 
@@ -2111,7 +2112,7 @@ export default function GameCanvas({
                     playerRef.current.isMoving = false;
                     setCurrentMapPath('/assets/maps/pokemart/main.json');
                     setActiveDialog(null);
-                }, 500);
+                }, 100);
                 return true;
             }
 
@@ -2128,7 +2129,7 @@ export default function GameCanvas({
                     playerRef.current.isMoving = false;
                     setCurrentMapPath('/assets/maps/gym/main.json');
                     setActiveDialog(null);
-                }, 500);
+                }, 100);
                 return true;
             }
 
@@ -2145,7 +2146,7 @@ export default function GameCanvas({
                     playerRef.current.isMoving = false;
                     setCurrentMapPath('/assets/maps/redhouse/main.json');
                     setActiveDialog(null);
-                }, 500);
+                }, 100);
                 return true;
             }
 
@@ -2153,6 +2154,7 @@ export default function GameCanvas({
             if (x >= 310 && x <= 340 && y >= 700 && y <= 724) {
                 setDialogName("Casa");
                 setActiveDialog("Entering house...");
+                returnMapRef.current = '/assets/maps/tutorial/main.json';
                 returnCoordsRef.current = [329, 748];
                 setTimeout(() => {
                     playerRef.current.x = 144;
@@ -2162,7 +2164,93 @@ export default function GameCanvas({
                     playerRef.current.isMoving = false;
                     setCurrentMapPath('/assets/maps/redhouse/main.json');
                     setActiveDialog(null);
-                }, 500);
+                }, 100);
+                return true;
+            }
+        } else if (currentPath.includes('city1')) {
+            // 1. Pokémon Center (x=600, y=800) -> door dx=20..60, dy=50..70
+            if (x >= 620 && x <= 660 && y >= 850 && y <= 870) {
+                setDialogName("Centro Pokemon");
+                setActiveDialog("Entering the Pokémon Center...");
+                returnMapRef.current = '/assets/maps/city1/main.json';
+                returnCoordsRef.current = [640, 888];
+                setTimeout(() => {
+                    playerRef.current.x = 144;
+                    playerRef.current.y = 224;
+                    playerRef.current.targetX = 144;
+                    playerRef.current.targetY = 224;
+                    playerRef.current.isMoving = false;
+                    setCurrentMapPath('/assets/maps/pokecenter/main.json');
+                    setActiveDialog(null);
+                }, 100);
+                return true;
+            }
+            // 2. PokeMart (x=800, y=800) -> door dx=0..40, dy=60..82
+            if (x >= 800 && x <= 840 && y >= 860 && y <= 882) {
+                setDialogName("Comercio Pokemon");
+                setActiveDialog("Entering the PokeMart Store...");
+                returnMapRef.current = '/assets/maps/city1/main.json';
+                returnCoordsRef.current = [820, 900];
+                setTimeout(() => {
+                    playerRef.current.x = 144;
+                    playerRef.current.y = 224;
+                    playerRef.current.targetX = 144;
+                    playerRef.current.targetY = 224;
+                    playerRef.current.isMoving = false;
+                    setCurrentMapPath('/assets/maps/pokemart/main.json');
+                    setActiveDialog(null);
+                }, 100);
+                return true;
+            }
+            // 3. Gym (x=600, y=400) -> door dx=70..110, dy=130..154
+            if (x >= 670 && x <= 710 && y >= 530 && y <= 554) {
+                setDialogName("Gimnasio");
+                setActiveDialog("Entering the Gym...");
+                returnMapRef.current = '/assets/maps/city1/main.json';
+                returnCoordsRef.current = [690, 574];
+                setTimeout(() => {
+                    playerRef.current.x = 176;
+                    playerRef.current.y = 288;
+                    playerRef.current.targetX = 176;
+                    playerRef.current.targetY = 288;
+                    playerRef.current.isMoving = false;
+                    setCurrentMapPath('/assets/maps/gym/main.json');
+                    setActiveDialog(null);
+                }, 100);
+                return true;
+            }
+            // 4. House 1 (x=400, y=400) -> door dx=65..95, dy=120..144
+            if (x >= 465 && x <= 495 && y >= 520 && y <= 544) {
+                setDialogName("Casa");
+                setActiveDialog("Entering house...");
+                returnMapRef.current = '/assets/maps/city1/main.json';
+                returnCoordsRef.current = [480, 564];
+                setTimeout(() => {
+                    playerRef.current.x = 144;
+                    playerRef.current.y = 224;
+                    playerRef.current.targetX = 144;
+                    playerRef.current.targetY = 224;
+                    playerRef.current.isMoving = false;
+                    setCurrentMapPath('/assets/maps/redhouse/main.json');
+                    setActiveDialog(null);
+                }, 100);
+                return true;
+            }
+            // 5. House 2 (x=850, y=400) -> door dx=65..95, dy=120..144
+            if (x >= 915 && x <= 945 && y >= 520 && y <= 544) {
+                setDialogName("Casa");
+                setActiveDialog("Entering house...");
+                returnMapRef.current = '/assets/maps/city1/main.json';
+                returnCoordsRef.current = [930, 564];
+                setTimeout(() => {
+                    playerRef.current.x = 144;
+                    playerRef.current.y = 224;
+                    playerRef.current.targetX = 144;
+                    playerRef.current.targetY = 224;
+                    playerRef.current.isMoving = false;
+                    setCurrentMapPath('/assets/maps/redhouse/main.json');
+                    setActiveDialog(null);
+                }, 100);
                 return true;
             }
 
@@ -2178,7 +2266,7 @@ export default function GameCanvas({
                     playerRef.current.isMoving = false;
                     setCurrentMapPath('/assets/maps/route1/main.json');
                     setActiveDialog(null);
-                }, 500);
+                }, 100);
                 return true;
             }
         } else if (currentPath.includes('route1')) {
@@ -2194,7 +2282,7 @@ export default function GameCanvas({
                     playerRef.current.isMoving = false;
                     setCurrentMapPath('/assets/maps/tutorial/main.json');
                     setActiveDialog(null);
-                }, 500);
+                }, 100);
                 return true;
             }
             // Bottom edge warp to Route 3 (long path)
@@ -2209,7 +2297,7 @@ export default function GameCanvas({
                     playerRef.current.isMoving = false;
                     setCurrentMapPath('/assets/maps/route3/main.json');
                     setActiveDialog(null);
-                }, 500);
+                }, 100);
                 return true;
             }
             
@@ -2229,7 +2317,7 @@ export default function GameCanvas({
                     playerRef.current.isMoving = false;
                     setCurrentMapPath('/assets/maps/route2/main.json');
                     setActiveDialog(null);
-                }, 500);
+                }, 100);
                 return true;
             }
         } else if (currentPath.includes('route2')) {
@@ -2245,7 +2333,7 @@ export default function GameCanvas({
                     playerRef.current.isMoving = false;
                     setCurrentMapPath('/assets/maps/city1/main.json');
                     setActiveDialog(null);
-                }, 500);
+                }, 100);
                 return true;
             }
             // Bottom edge warp to Route 1 (exiting cave)
@@ -2260,7 +2348,7 @@ export default function GameCanvas({
                     playerRef.current.isMoving = false;
                     setCurrentMapPath('/assets/maps/route1/main.json');
                     setActiveDialog(null);
-                }, 500);
+                }, 100);
                 return true;
             }
         } else if (currentPath.includes('route3')) {
@@ -2276,7 +2364,7 @@ export default function GameCanvas({
                     playerRef.current.isMoving = false;
                     setCurrentMapPath('/assets/maps/route1/main.json');
                     setActiveDialog(null);
-                }, 500);
+                }, 100);
                 return true;
             }
             // Right edge warp to Route 4 (enters from top)
@@ -2291,7 +2379,7 @@ export default function GameCanvas({
                     playerRef.current.isMoving = false;
                     setCurrentMapPath('/assets/maps/route4/main.json');
                     setActiveDialog(null);
-                }, 500);
+                }, 100);
                 return true;
             }
         } else if (currentPath.includes('route4')) {
@@ -2307,7 +2395,7 @@ export default function GameCanvas({
                     playerRef.current.isMoving = false;
                     setCurrentMapPath('/assets/maps/route3/main.json');
                     setActiveDialog(null);
-                }, 500);
+                }, 100);
                 return true;
             }
             // Bottom edge warp is blocked for now
@@ -2333,7 +2421,7 @@ export default function GameCanvas({
                     playerRef.current.isMoving = false;
                     setCurrentMapPath('/assets/maps/route2/main.json');
                     setActiveDialog(null);
-                }, 500);
+                }, 100);
                 return true;
             }
             // Other edges blocked
@@ -2366,9 +2454,9 @@ export default function GameCanvas({
                     playerRef.current.targetX = rx;
                     playerRef.current.targetY = ry;
                     playerRef.current.isMoving = false;
-                    setCurrentMapPath('/assets/maps/tutorial/main.json');
+                    setCurrentMapPath(returnMapRef.current);
                     setActiveDialog(null);
-                }, 500);
+                }, 100);
                 return true;
             }
         }
@@ -2579,7 +2667,12 @@ export default function GameCanvas({
     const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
         const player = getPlayerUnderMouse(e);
         if (player) {
-            handlePvPInvite(player.address);
+            setPlayerContextMenu({
+                address: player.address,
+                name: player.name,
+                x: player.x,
+                y: player.y
+            });
         } else {
             setPlayerContextMenu(null);
         }
@@ -3558,6 +3651,52 @@ export default function GameCanvas({
                     onMouseLeave={() => setHoveredPlayer(null)}
                     style={{ cursor: hoveredPlayer ? 'pointer' : 'default' }}
                 />
+
+                {/* Mobile Touch Controls Overlay */}
+                <div className="mobile-controls">
+                    <div className="d-pad-container">
+                        <div 
+                            className="d-pad-btn d-pad-up"
+                            onPointerDown={() => keysPressed.current['w'] = true}
+                            onPointerUp={() => keysPressed.current['w'] = false}
+                            onPointerLeave={() => keysPressed.current['w'] = false}
+                        >▲</div>
+                        <div 
+                            className="d-pad-btn d-pad-left"
+                            onPointerDown={() => keysPressed.current['a'] = true}
+                            onPointerUp={() => keysPressed.current['a'] = false}
+                            onPointerLeave={() => keysPressed.current['a'] = false}
+                        >◀</div>
+                        <div 
+                            className="d-pad-btn d-pad-right"
+                            onPointerDown={() => keysPressed.current['d'] = true}
+                            onPointerUp={() => keysPressed.current['d'] = false}
+                            onPointerLeave={() => keysPressed.current['d'] = false}
+                        >▶</div>
+                        <div 
+                            className="d-pad-btn d-pad-down"
+                            onPointerDown={() => keysPressed.current['s'] = true}
+                            onPointerUp={() => keysPressed.current['s'] = false}
+                            onPointerLeave={() => keysPressed.current['s'] = false}
+                        >▼</div>
+                        <div className="d-pad-btn d-pad-center"></div>
+                    </div>
+
+                    <div className="action-buttons-container">
+                        <div 
+                            className="action-btn action-btn-a"
+                            onPointerDown={(e) => { e.preventDefault(); handleInteraction(); }}
+                        >A</div>
+                        <div 
+                            className="action-btn action-btn-b"
+                            onPointerDown={(e) => { e.preventDefault(); setIsBicycleActive(prev => !prev); }}
+                        >B</div>
+                        <div 
+                            className="action-btn action-btn-menu"
+                            onPointerDown={(e) => { e.preventDefault(); setShowMenuModal(prev => !prev); }}
+                        >☰</div>
+                    </div>
+                </div>
 
                 {/* Floating Menu Button */}
                 <button onClick={() => setShowMenuModal(true)} className="floating-menu-btn" style={{ zIndex: 100 }}>
@@ -4975,10 +5114,31 @@ export default function GameCanvas({
             )}
 
             {/* PVP MODALS AND UI */}
-            {hoveredPlayer && (
+            {hoveredPlayer && !playerContextMenu && (
                 <div style={{ position: 'absolute', top: hoveredPlayer.y - 60, left: hoveredPlayer.x - 50, background: '#fff', border: '2px solid #000', borderRadius: '8px', zIndex: 200, padding: '8px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', pointerEvents: 'none', boxShadow: '0 4px 6px rgba(0,0,0,0.3)' }}>
                     <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#333' }}>{hoveredPlayer.name}</div>
-                    <div style={{ fontSize: '10px', color: '#d32f2f', fontWeight: 'bold' }}>Haz click para Desafiar ⚔️</div>
+                    <div style={{ fontSize: '10px', color: '#666' }}>Click to Challenge (100 coins)</div>
+                </div>
+            )}
+
+            {playerContextMenu && (
+                <div 
+                    style={{ position: 'absolute', top: playerContextMenu.y - 80, left: playerContextMenu.x - 60, background: '#fff', border: '2px solid #000', borderRadius: '8px', zIndex: 200, padding: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', boxShadow: '0 4px 15px rgba(0,0,0,0.5)', pointerEvents: 'auto' }}
+                >
+                    <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#333' }}>{playerContextMenu.name}</div>
+                    <button 
+                        onClick={(e) => { e.stopPropagation(); handlePvPInvite(playerContextMenu.address); setPlayerContextMenu(null); }}
+                        className="btn-primary" 
+                        style={{ padding: '8px 16px', fontSize: '12px' }}
+                    >
+                        ⚔️ Desafiar
+                    </button>
+                    <button 
+                        onClick={(e) => { e.stopPropagation(); setPlayerContextMenu(null); }}
+                        style={{ background: '#eee', color: '#333', border: '1px solid #ccc', borderRadius: '4px', padding: '4px 8px', fontSize: '10px', cursor: 'pointer' }}
+                    >
+                        Cancelar
+                    </button>
                 </div>
             )}
 

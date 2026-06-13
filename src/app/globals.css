@@ -1036,4 +1036,133 @@ body::before {
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15) !important;
 }
 
+/* Mobile Controls Overlay */
+.mobile-controls {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none; /* Let touches pass through where there are no buttons */
+  z-index: 50; /* Above the canvas but below modals */
+}
 
+/* D-Pad Container */
+.d-pad-container {
+  position: absolute;
+  bottom: 40px;
+  left: 30px;
+  width: 160px;
+  height: 160px;
+  pointer-events: auto;
+  opacity: 0.75;
+  transition: opacity 0.2s;
+}
+
+.d-pad-container:active {
+  opacity: 0.95;
+}
+
+.d-pad-btn {
+  position: absolute;
+  width: 50px;
+  height: 50px;
+  background: rgba(18, 10, 41, 0.5);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(0, 242, 254, 0.3);
+  border-radius: 12px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: white;
+  font-size: 24px;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+}
+
+.d-pad-btn:active {
+  background: rgba(0, 242, 254, 0.5);
+  border-color: white;
+  box-shadow: 0 0 15px var(--secondary-glow);
+  transform: scale(0.95);
+}
+
+.d-pad-up { top: 0; left: 55px; }
+.d-pad-left { top: 55px; left: 0; }
+.d-pad-right { top: 55px; left: 110px; }
+.d-pad-down { top: 110px; left: 55px; }
+.d-pad-center { top: 55px; left: 55px; border-radius: 50%; width: 50px; height: 50px; background: transparent; border: none; box-shadow: none; pointer-events: none; }
+
+/* Action Buttons Container */
+.action-buttons-container {
+  position: absolute;
+  bottom: 40px;
+  right: 40px;
+  width: 160px;
+  height: 160px;
+  pointer-events: auto;
+  opacity: 0.8;
+  transition: opacity 0.2s;
+}
+
+.action-buttons-container:active {
+  opacity: 1;
+}
+
+.action-btn {
+  position: absolute;
+  background: rgba(18, 10, 41, 0.5);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(0, 242, 254, 0.3);
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: white;
+  font-weight: 800;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+}
+
+.action-btn:active {
+  background: rgba(0, 242, 254, 0.5);
+  border-color: white;
+  box-shadow: 0 0 15px var(--secondary-glow);
+  transform: scale(0.92);
+}
+
+.action-btn-a {
+  bottom: 0;
+  left: 0;
+  width: 75px;
+  height: 75px;
+  font-size: 28px;
+  background: rgba(123, 47, 247, 0.5);
+  border-color: rgba(123, 47, 247, 0.6);
+}
+
+.action-btn-a:active {
+  background: rgba(123, 47, 247, 0.8);
+}
+
+.action-btn-b {
+  top: 0;
+  right: 15px;
+  width: 55px;
+  height: 55px;
+  font-size: 20px;
+}
+
+.action-btn-menu {
+  bottom: 10px;
+  right: 0;
+  width: 55px;
+  height: 55px;
+  font-size: 16px;
+}
