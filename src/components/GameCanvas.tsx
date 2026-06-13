@@ -778,7 +778,8 @@ export default function GameCanvas({
                 level: lvl,
                 xp: xp,
                 hp: p.hp !== undefined ? Math.min(p.hp, stats.maxHp) : stats.maxHp,
-                maxHp: stats.maxHp
+                maxHp: stats.maxHp,
+                moves: p.moves || getPokemonMoves(p.id, lvl)
             };
         });
     });
@@ -792,7 +793,8 @@ export default function GameCanvas({
                 level: lvl,
                 xp: xp,
                 hp: p.hp !== undefined ? Math.min(p.hp, stats.maxHp) : stats.maxHp,
-                maxHp: stats.maxHp
+                maxHp: stats.maxHp,
+                moves: p.moves || getPokemonMoves(p.id, lvl)
             };
         });
     });
@@ -836,6 +838,7 @@ export default function GameCanvas({
     const [shopTab, setShopTab] = useState<'balls' | 'items' | 'tms'>('balls');
     const [showTutorModal, setShowTutorModal] = useState(false);
     const [tutorMoveToLearn, setTutorMoveToLearn] = useState<string | null>(null);
+    const [selectedTutorPokeIdx, setSelectedTutorPokeIdx] = useState<number | null>(null);
     const [showDaily, setShowDaily] = useState(false);
     const [showMissions, setShowMissions] = useState(false);
     const [showInventoryModal, setShowInventoryModal] = useState(false);
@@ -881,6 +884,10 @@ export default function GameCanvas({
     useEffect(() => {
         activePvPBattleRef.current = activePvPBattle;
     }, [activePvPBattle]);
+    const [pvpItemsUsed, setPvpItemsUsed] = useState<number>(0);
+    const pvpItemsUsedRef = useRef<number>(0);
+    useEffect(() => { pvpItemsUsedRef.current = pvpItemsUsed; }, [pvpItemsUsed]);
+    const [showPvpBackpack, setShowPvpBackpack] = useState<boolean>(false);
     const [showLeaderboard, setShowLeaderboard] = useState<boolean>(false);
     const [pvpLeaderboard, setPvpLeaderboard] = useState<any[] | null>(null);
 
@@ -956,6 +963,17 @@ export default function GameCanvas({
     };
 
     const handleWatchFreeCoinsAd = async () => {
+        const today = new Date().toISOString().split('T')[0];
+        if (economyRef.current.last_ad_date !== today) {
+            economyRef.current.last_ad_date = today;
+            economyRef.current.ads_viewed_today = 0;
+        }
+
+        if ((economyRef.current.ads_viewed_today || 0) >= 20) {
+            showNotification("Límite Diario", "Ya has alcanzado el límite máximo de 20 anuncios por hoy.");
+            return;
+        }
+
         const adManager = AdManager.getInstance();
         const success = await adManager.showRewardedAd({
             telegramBlockId: "34910",
@@ -964,9 +982,10 @@ export default function GameCanvas({
 
         if (success) {
             economyRef.current.addCoins(20);
+            economyRef.current.ads_viewed_today = (economyRef.current.ads_viewed_today || 0) + 1;
             saveLocalEconomy();
             setEconomy(new Economy(economyRef.current.toSaveData()));
-            showNotification("Recompensa", "¡Has recibido 20 Coins por ver el anuncio!");
+            showNotification("Recompensa", `¡Has recibido 20 Coins por ver el anuncio! (${economyRef.current.ads_viewed_today}/20 hoy)`);
         } else {
             showNotification("Anuncio Cancelado", "No se pudo obtener la recompensa.");
         }
@@ -1131,9 +1150,69 @@ export default function GameCanvas({
             })
             .on('broadcast', { event: 'pvp_invite' }, ({ payload }) => {
                 if (payload.to === walletAddress && !activePvPBattle && !activeWildBattleRef.current) {
+                    const lastLoss = economyRef.current.last_pvp_loss_time || 0;
+                    const cooldownDuration = economyRef.current.pvp_cooldown_duration || 0;
+                    const elapsed = (Date.now() - lastLoss) / 1000;
+                    if (elapsed < cooldownDuration) {
+                        const remaining = Math.max(0, Math.ceil(cooldownDuration - elapsed));
+                        channel.send({
+                            type: 'broadcast',
+                            event: 'pvp_in_cooldown',
+                            payload: {
+                                from: walletAddress,
+                                fromName: playerNameRef.current || "Tamer",
+                                to: payload.from,
+                                remaining
+                            }
+                        });
+                        return;
+                    }
                     setIncomingPvPInvite({
                         from: payload.from,
                         fromName: payload.fromName
+                    });
+                }
+            })
+            .on('broadcast', { event: 'pvp_in_cooldown' }, ({ payload }) => {
+                if (payload.to === walletAddress && pendingPvPInviteRef.current === payload.from) {
+                    setPendingPvPInvite(null);
+                    pendingPvPInviteRef.current = null;
+                    const mins = Math.floor(payload.remaining / 60);
+                    const secs = payload.remaining % 60;
+                    const timeStr = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+                    setNotification({
+                        title: "Oponente en Cooldown",
+                        message: `El jugador ${payload.fromName || 'Tamer'} está en cooldown tras perder recientemente. Podrás desafiarlo en ${timeStr}.`
+                    });
+                }
+            })
+            .on('broadcast', { event: 'pvp_use_item' }, ({ payload }) => {
+                if (payload.to === walletAddress) {
+                    setActivePvPBattle((prev: any) => {
+                        if (!prev) return prev;
+                        return {
+                            ...prev,
+                            opponentHp: payload.new_hp,
+                            turn: walletAddress
+                        };
+                    });
+                    setFloatingDamage({ value: "+HP", target: 'opponent' });
+                    setTimeout(() => setFloatingDamage(null), 1000);
+                    setNotification({
+                        title: "Turno del oponente",
+                        message: `El oponente usó ${payload.item_name} en su Pokémon. HP actual: ${payload.new_hp}. ¡Es tu turno!`
+                    });
+                }
+            })
+            .on('broadcast', { event: 'pvp_flee' }, ({ payload }) => {
+                if (payload.to === walletAddress) {
+                    setActivePvPBattle((prev: any) => {
+                        if (!prev) return prev;
+                        return { ...prev, status: 'opponent_flee' };
+                    });
+                    setNotification({
+                        title: "Combate Cancelado",
+                        message: `El oponente huyó de la batalla. El combate ha terminado y se reembolsó tu apuesta.`
                     });
                 }
             })
@@ -1146,7 +1225,7 @@ export default function GameCanvas({
                     economyRef.current.spendCoins(100);
                     setEconomy(new Economy(economyRef.current.toSaveData()));
                     saveLocalEconomy();
-
+ 
                     // Start battle as challenger
                     setActivePvPBattle({
                         opponentAddress: payload.from,
@@ -1158,6 +1237,9 @@ export default function GameCanvas({
                         status: 'syncing',
                         turn: walletAddress
                     });
+                    
+                    // Reset PvP items used counter
+                    setPvpItemsUsed(0);
                     
                     const activePoke = teamRef.current.find((p: any) => p.hp > 0);
                     if (activePoke) {
@@ -1177,7 +1259,6 @@ export default function GameCanvas({
                 if (payload.to === walletAddress && pendingPvPInviteRef.current === payload.from) {
                     setPendingPvPInvite(null);
                     pendingPvPInviteRef.current = null;
-                    // Cannot use showNotification easily here without ref, so we use direct setNotification
                     setNotification({ title: "Desafío Rechazado", message: `El jugador ${payload.fromName || 'Tamer'} rechazó tu duelo.` });
                 }
             })
@@ -1185,8 +1266,6 @@ export default function GameCanvas({
                 if (payload.to === walletAddress) {
                     setActivePvPBattle((prev: any) => {
                         if (!prev) return prev;
-                        // If we are already in battle and receive a sync packet, it means the opponent missed our sync packet.
-                        // We must resend it so they can enter the battle state.
                         if (prev.status === 'battle') {
                             const activePoke = teamRef.current.find((p: any) => p.hp > 0);
                             if (activePoke) {
@@ -1211,18 +1290,23 @@ export default function GameCanvas({
                         if (!prev) return prev;
                         const newHp = Math.max(0, prev.myHp - payload.damage);
                         
-                        // Show floating damage
                         setFloatingDamage({ value: payload.damage, target: 'player' });
                         setPlayerSpriteEffect('shake');
                         setTimeout(() => { setPlayerSpriteEffect('none'); setFloatingDamage(null); }, 800);
-
+ 
                         if (newHp <= 0) {
-                            // We lost
                             channel.send({
                                 type: 'broadcast',
                                 event: 'pvp_result',
                                 payload: { from: walletAddress, to: payload.from, result: 'win' }
                             });
+                            
+                            // 5 minutes normal loss cooldown
+                            economyRef.current.last_pvp_loss_time = Date.now();
+                            economyRef.current.pvp_cooldown_duration = 300;
+                            saveLocalEconomy();
+                            setEconomy(new Economy(economyRef.current.toSaveData()));
+                            
                             return { ...prev, myHp: newHp, status: 'loss' };
                         }
                         return { ...prev, myHp: newHp, turn: walletAddress };
@@ -1233,7 +1317,7 @@ export default function GameCanvas({
                 if (payload.to === walletAddress) {
                     setActivePvPBattle((prev: any) => {
                         if (!prev) return prev;
-                        return { ...prev, status: payload.result }; // 'win'
+                        return { ...prev, status: payload.result };
                     });
                 }
             });
@@ -1763,6 +1847,9 @@ export default function GameCanvas({
         if (loading) return;
 
         const handleKeyDown = (e: KeyboardEvent) => {
+            if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') {
+                return;
+            }
             const key = e.key.toLowerCase();
             if (['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(key)) {
                 keysPressed.current[key] = true;
@@ -1783,6 +1870,9 @@ export default function GameCanvas({
         };
 
         const handleKeyUp = (e: KeyboardEvent) => {
+            if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') {
+                return;
+            }
             const key = e.key.toLowerCase();
             if (key in keysPressed.current) {
                 keysPressed.current[key] = false;
@@ -2385,6 +2475,8 @@ export default function GameCanvas({
             status: 'syncing',
             turn: incomingPvPInvite.from
         });
+        
+        setPvpItemsUsed(0);
         
         const activePoke = teamRef.current.find((p: any) => p.hp > 0);
         if (activePoke) {
@@ -3188,6 +3280,7 @@ export default function GameCanvas({
         }
 
         const isRevive = usingItem.id.includes('revive');
+        const isFullHeal = usingItem.id === 'full_heal';
         
         if (isRevive) {
             if (target.hp > 0) {
@@ -3203,6 +3296,17 @@ export default function GameCanvas({
             saveLocalEconomy(updatedTeam);
             setUsingItem(null);
             showNotification("Mochila", `¡Has revivido a ${target.id}!`);
+        } else if (isFullHeal) {
+            if (target.hp === 0) {
+                showNotification("Mochila", `¡${target.id} está debilitado! Usa Revivir primero.`);
+                return;
+            }
+            inventoryRef.current.removeItem(usingItem.id);
+            setInventory(new Inventory(inventoryRef.current.toSaveData()));
+            setTeam(updatedTeam);
+            saveLocalEconomy(updatedTeam);
+            setUsingItem(null);
+            showNotification("Mochila", `¡Se han curado todos los problemas de estado de ${target.id}!`);
         } else {
             if (target.hp === 0) {
                 showNotification("Mochila", `¡${target.id} está debilitado! Usa Revivir primero.`);
@@ -3222,6 +3326,109 @@ export default function GameCanvas({
             setUsingItem(null);
             showNotification("Mochila", `¡Has curado a ${target.id}!`);
         }
+    };
+
+    const handleApplyItemToPokemonPvp = (p: any, idx: number) => {
+        if (!usingItem || !activePvPBattle || activePvPBattle.turn !== walletAddress) return;
+
+        const updatedTeam = [...team];
+        const target = updatedTeam[idx];
+        const itemInfo = inventoryRef.current.getItemInfo(usingItem.id);
+        const isRevive = usingItem.id.includes('revive');
+        const isFullHeal = usingItem.id === 'full_heal';
+
+        if (isRevive) {
+            if (target.hp > 0) {
+                showNotification("Mochila PvP", `¡${target.id} no está debilitado!`);
+                return;
+            }
+            const pct = itemInfo.heal_percent ?? 0.5;
+            target.hp = Math.floor(target.maxHp * pct);
+        } else if (isFullHeal) {
+            if (target.hp === 0) {
+                showNotification("Mochila PvP", `¡${target.id} está debilitado! Usa Revivir primero.`);
+                return;
+            }
+        } else {
+            if (target.hp === 0) {
+                showNotification("Mochila PvP", `¡${target.id} está debilitado! Usa Revivir primero.`);
+                return;
+            }
+            if (target.hp >= target.maxHp) {
+                showNotification("Mochila PvP", `¡${target.id} ya tiene los PS al máximo!`);
+                return;
+            }
+            const heal = itemInfo.heal_amount ?? 20;
+            target.hp = Math.min(target.maxHp, target.hp + heal);
+        }
+
+        inventoryRef.current.removeItem(usingItem.id);
+        setInventory(new Inventory(inventoryRef.current.toSaveData()));
+
+        const activePokeIdxBefore = team.findIndex((poke: any) => poke.hp > 0);
+        setTeam(updatedTeam);
+
+        let finalHp = activePvPBattle.myHp;
+        if (idx === activePokeIdxBefore) {
+            finalHp = target.hp;
+        }
+
+        const nextItemsUsed = pvpItemsUsed + 1;
+        setPvpItemsUsed(nextItemsUsed);
+
+        setActivePvPBattle((prev: any) => ({
+            ...prev,
+            myHp: finalHp,
+            turn: prev.opponentAddress
+        }));
+
+        channelRef.current?.send({
+            type: 'broadcast',
+            event: 'pvp_use_item',
+            payload: {
+                from: walletAddress,
+                to: activePvPBattle.opponentAddress,
+                item_id: usingItem.id,
+                item_name: itemInfo.name || usingItem.id,
+                new_hp: finalHp,
+                target_idx: idx
+            }
+        });
+
+        saveLocalEconomy(updatedTeam);
+        setEconomy(new Economy(economyRef.current.toSaveData()));
+        setUsingItem(null);
+        setShowPvpBackpack(false);
+        showNotification("Mochila PvP", `¡Has usado ${itemInfo.name || usingItem.id} con éxito! Tu turno ha terminado.`);
+    };
+
+    const handlePvpFlee = () => {
+        if (!activePvPBattle || isBattleAnimating) return;
+
+        // Refund 100 coins bet, deduct 10 coins penalty (net cost = 10 coins)
+        economyRef.current.addCoins(100);
+        economyRef.current.spendCoins(10);
+        
+        economyRef.current.last_pvp_loss_time = Date.now();
+        economyRef.current.pvp_cooldown_duration = 120; // 2 minutes cooldown
+        
+        // Do NOT increment pvp_losses stats since it was not a standard combat defeat
+
+        saveLocalEconomy();
+        setEconomy(new Economy(economyRef.current.toSaveData()));
+
+        channelRef.current?.send({
+            type: 'broadcast',
+            event: 'pvp_flee',
+            payload: {
+                from: walletAddress,
+                to: activePvPBattle.opponentAddress
+            }
+        });
+
+        setShowPvpBackpack(false);
+        setActivePvPBattle((prev: any) => prev ? { ...prev, status: 'flee' } : null);
+        showNotification("Fuga de Batalla", "Huyiste del combate. Se te reembolsó tu apuesta de 100 Coins menos 10 Coins de penalidad (neto: -10 Coins). Tienes un cooldown de 2 minutos.");
     };
 
     const handleBattleCatch = (ballId: string) => {
@@ -3876,19 +4083,6 @@ export default function GameCanvas({
                                 💻 Almacenamiento PC
                             </button>
 
-                            {/* Cheat/Level Up Button for Testing Cost Scaling! */}
-                            <button 
-                                onClick={() => {
-                                    economy.level += 1;
-                                    setEconomy(new Economy(economy.toSaveData()));
-                                    saveLocalEconomy();
-                                }}
-                                className="pokemon-button"
-                                style={{ background: '#e0f7fa' }}
-                            >
-                                ⚡ Level Up (Test Cost Scaling)
-                            </button>
-
                             <button 
                                 onClick={() => {
                                     saveLocalEconomy();
@@ -4262,21 +4456,323 @@ export default function GameCanvas({
                         </div>
                     </div>
                 </div>
-            )}               {showDaily && (
-                <div className="modal-overlay">
-                    <div className="modal-card pokemon-panel">
+            )}
+
+            {showTutorModal && tutorMoveToLearn && (
+                <div className="modal-overlay" style={{ zIndex: 360 }}>
+                    <div className="modal-card pokemon-panel" style={{ width: '95%', maxWidth: '440px' }}>
                         <div className="modal-header">
-                            <h3 className="modal-title">Daily Login Streak</h3>
+                            <h3 className="modal-title">💿 Tutor de Movimientos</h3>
+                            <button 
+                                onClick={() => {
+                                    setShowTutorModal(false);
+                                    setTutorMoveToLearn(null);
+                                    setSelectedTutorPokeIdx(null);
+                                    setShowShop(true);
+                                }} 
+                                className="modal-close-btn"
+                            >
+                                &times;
+                            </button>
+                        </div>
+                        <div className="modal-body" style={{ maxHeight: '70vh', overflowY: 'auto', paddingRight: '4px' }}>
+                            {(() => {
+                                const tm = TMS_SHOP.find(t => t.id === tutorMoveToLearn);
+                                if (!tm) return <p>Movimiento no encontrado.</p>;
+                                const tc = typeof window !== 'undefined' && (window as any).TYPE_COLORS ? (window as any).TYPE_COLORS : {};
+                                const typeBg = tc[tm.type] || '#a8a878';
+                                
+                                return (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                        {/* Detalle TM */}
+                                        <div style={{ padding: '8px', border: '1.5px solid #3e2723', borderRadius: '8px', background: '#fffdf9', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                            <span style={{ fontSize: '32px' }}>💿</span>
+                                            <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                    <span style={{ fontWeight: 'bold', fontSize: '12px', color: '#3e2723' }}>{tm.name}</span>
+                                                    <span style={{ fontSize: '7px', background: typeBg, color: '#fff', padding: '1px 4px', borderRadius: '3px', textTransform: 'uppercase', fontWeight: 'bold' }}>{tm.type}</span>
+                                                </div>
+                                                <span style={{ fontSize: '9px', color: '#666', marginTop: '2px' }}>{tm.desc}</span>
+                                            </div>
+                                        </div>
+
+                                        {selectedTutorPokeIdx === null ? (
+                                            <>
+                                                <p style={{ fontSize: '10px', color: '#5d4037', margin: 0, fontWeight: 'bold', textAlign: 'left' }}>Selecciona el Pokémon que aprenderá el movimiento:</p>
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                                    {team.map((poke, index) => {
+                                                        const isComp = isTmCompatible(poke.id, tutorMoveToLearn);
+                                                        const species = pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === poke.id.toLowerCase());
+                                                        const sprite = species ? species.sprite : '';
+                                                        
+                                                        return (
+                                                            <div 
+                                                                key={index} 
+                                                                onClick={() => {
+                                                                    if (isComp) {
+                                                                        setSelectedTutorPokeIdx(index);
+                                                                    }
+                                                                }}
+                                                                style={{
+                                                                    display: 'flex',
+                                                                    alignItems: 'center',
+                                                                    justifyContent: 'space-between',
+                                                                    padding: '8px',
+                                                                    border: '2px solid',
+                                                                    borderColor: isComp ? '#3e2723' : '#efebe9',
+                                                                    borderRadius: '8px',
+                                                                    background: isComp ? '#fff' : '#f5f5f5',
+                                                                    cursor: isComp ? 'pointer' : 'not-allowed',
+                                                                    opacity: isComp ? 1 : 0.6,
+                                                                    transition: 'all 0.1s ease'
+                                                                }}
+                                                                className={isComp ? "animate-hover" : ""}
+                                                            >
+                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                                    {sprite && <img src={sprite} alt={poke.id} style={{ width: '36px', height: '36px', imageRendering: 'pixelated' }} />}
+                                                                    <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
+                                                                        <span style={{ fontWeight: 'bold', fontSize: '11px', textTransform: 'capitalize', color: '#3e2723' }}>{poke.id}</span>
+                                                                        <span style={{ fontSize: '8px', color: '#757575' }}>Nivel {poke.level} • HP {poke.hp}/{poke.maxHp}</span>
+                                                                    </div>
+                                                                </div>
+                                                                <div>
+                                                                    {isComp ? (
+                                                                        <span style={{ fontSize: '8px', background: '#e8f5e9', color: '#2e7d32', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>Compatible</span>
+                                                                    ) : (
+                                                                        <span style={{ fontSize: '8px', background: '#ffebee', color: '#c62828', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>Incompatible</span>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <>
+                                                {(() => {
+                                                    const targetPoke = team[selectedTutorPokeIdx];
+                                                    const currentMoves = targetPoke.moves || getPokemonMoves(targetPoke.id, targetPoke.level);
+                                                    
+                                                    // Handle direct learn if fewer than 4 moves
+                                                    const learnDirectly = async () => {
+                                                        const updatedTeam = [...team];
+                                                        const pokeCopy = { ...updatedTeam[selectedTutorPokeIdx] };
+                                                        pokeCopy.moves = [...currentMoves, tutorMoveToLearn];
+                                                        updatedTeam[selectedTutorPokeIdx] = pokeCopy;
+                                                        
+                                                        setTeam(updatedTeam);
+                                                        await saveLocalEconomy(updatedTeam);
+                                                        
+                                                        setShowTutorModal(false);
+                                                        setTutorMoveToLearn(null);
+                                                        setSelectedTutorPokeIdx(null);
+                                                        showNotification("¡Movimiento Aprendido!", `¡Tu ${targetPoke.id.toUpperCase()} ha aprendido ${tm.name}!`);
+                                                    };
+
+                                                    const replaceMove = async (moveIdxToReplace: number) => {
+                                                        const updatedTeam = [...team];
+                                                        const pokeCopy = { ...updatedTeam[selectedTutorPokeIdx] };
+                                                        const newMoves = [...currentMoves];
+                                                        newMoves[moveIdxToReplace] = tutorMoveToLearn;
+                                                        pokeCopy.moves = newMoves;
+                                                        updatedTeam[selectedTutorPokeIdx] = pokeCopy;
+                                                        
+                                                        setTeam(updatedTeam);
+                                                        await saveLocalEconomy(updatedTeam);
+                                                        
+                                                        setShowTutorModal(false);
+                                                        setTutorMoveToLearn(null);
+                                                        setSelectedTutorPokeIdx(null);
+                                                        showNotification("¡Movimiento Aprendido!", `¡Tu ${targetPoke.id.toUpperCase()} ha aprendido ${tm.name} reemplazando ${MOVES_DATABASE[currentMoves[moveIdxToReplace]]?.name || currentMoves[moveIdxToReplace]}!`);
+                                                    };
+
+                                                    if (currentMoves.length < 4 && !currentMoves.includes(tutorMoveToLearn)) {
+                                                        // Automatically learn directly
+                                                        learnDirectly();
+                                                        return <p>Aprendiendo movimiento...</p>;
+                                                    }
+
+                                                    if (currentMoves.includes(tutorMoveToLearn)) {
+                                                        return (
+                                                            <div style={{ textAlign: 'center', padding: '16px' }}>
+                                                                <p style={{ fontSize: '11px', color: '#c62828', fontWeight: 'bold' }}>¡Tu {targetPoke.id.toUpperCase()} ya conoce este movimiento!</p>
+                                                                <button onClick={() => setSelectedTutorPokeIdx(null)} className="pokemon-button" style={{ width: 'auto', padding: '6px 12px' }}>Atrás</button>
+                                                            </div>
+                                                        );
+                                                    }
+
+                                                    return (
+                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                                            <p style={{ fontSize: '10px', color: '#5d4037', margin: 0, fontWeight: 'bold', textAlign: 'left' }}>
+                                                                Tu {targetPoke.id.toUpperCase()} ya tiene 4 movimientos. Selecciona el movimiento que deseas olvidar para aprender <strong>{tm.name}</strong>:
+                                                            </p>
+                                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                                                {currentMoves.map((mId: string, mIdx: number) => {
+                                                                    const mInfo = MOVES_DATABASE[mId] || { name: mId, type: 'normal', power: 40 };
+                                                                    return (
+                                                                        <button 
+                                                                            key={mIdx} 
+                                                                            onClick={() => replaceMove(mIdx)}
+                                                                            className="pokemon-button animate-hover"
+                                                                            style={{
+                                                                                margin: 0,
+                                                                                padding: '10px',
+                                                                                background: '#ffebee',
+                                                                                border: '2px solid #c62828',
+                                                                                color: '#c62828',
+                                                                                fontWeight: 'bold',
+                                                                                fontSize: '11px',
+                                                                                textTransform: 'capitalize',
+                                                                                display: 'flex',
+                                                                                justifyContent: 'space-between',
+                                                                                alignItems: 'center'
+                                                                            }}
+                                                                        >
+                                                                            <span>❌ Olvidar: {mInfo.name}</span>
+                                                                            <span style={{ fontSize: '8px', background: getTypeColor(mInfo.type), color: mInfo.type === 'electric' ? '#3e2723' : '#fff', padding: '1px 4px', borderRadius: '3px' }}>{mInfo.type}</span>
+                                                                        </button>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                            <button 
+                                                                onClick={() => setSelectedTutorPokeIdx(null)} 
+                                                                className="pokemon-button danger" 
+                                                                style={{ marginTop: '8px' }}
+                                                            >
+                                                                Atrás
+                                                            </button>
+                                                        </div>
+                                                    );
+                                                })()}
+                                            </>
+                                        )}
+                                        
+                                        <button 
+                                            onClick={() => {
+                                                setShowTutorModal(false);
+                                                setTutorMoveToLearn(null);
+                                                setSelectedTutorPokeIdx(null);
+                                                setShowShop(true);
+                                            }} 
+                                            className="pokemon-button secondary"
+                                            style={{ marginTop: '8px' }}
+                                        >
+                                            ⬅️ Volver a la Tienda
+                                        </button>
+                                    </div>
+                                );
+                            })()}
+                        </div>
+                    </div>
+                </div>
+            )}               {showDaily && (
+                <div className="modal-overlay" style={{ zIndex: 400 }}>
+                    <div className="modal-card pokemon-panel" style={{ width: '95%', maxWidth: '420px' }}>
+                        <div className="modal-header">
+                            <h3 className="modal-title">📅 Calendario de Racha</h3>
                             <button onClick={() => setShowDaily(false)} className="modal-close-btn">&times;</button>
                         </div>
-                        <div className="modal-body">
-                            <div className="daily-streak-card" style={{ background: 'rgba(255, 255, 255, 0.45)', border: '1px dashed #3e2723' }}>
-                                <div className="daily-streak-val">{economy.login_streak} Days</div>
-                                <div className="daily-streak-label">Consecutive logins streak</div>
+                        <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            {/* Current Streak Header */}
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'linear-gradient(135deg, #e3f2fd, #bbdefb)', border: '2px solid #1e88e5', borderRadius: '8px', padding: '10px 14px' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
+                                    <span style={{ fontSize: '9px', fontWeight: 'bold', color: '#1565c0', textTransform: 'uppercase' }}>Racha Actual</span>
+                                    <span style={{ fontSize: '18px', fontWeight: 'bold', color: '#0d47a1' }}>{economy.login_streak} Días</span>
+                                </div>
+                                <span style={{ fontSize: '32px' }}>🔥</span>
                             </div>
-                            <p className="daily-streak-desc">
-                                Log in daily to scale your rewards up to 15,000 Coins and Master Balls! Miss a day and it resets.
+
+                            <p style={{ fontSize: '9px', color: '#5d4037', margin: 0, textAlign: 'left', lineHeight: '1.3' }}>
+                                Entra al juego todos los días consecutivamente para avanzar en el calendario. <strong>Si fallas un día, la racha se reiniciará al Día 1.</strong>
                             </p>
+
+                            {/* 7-Day Calendar Grid */}
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', margin: '8px 0' }}>
+                                {[1, 2, 3, 4, 5, 6, 7].map(day => {
+                                    const isCompleted = economy.login_streak >= day;
+                                    const isCurrent = economy.login_streak === day;
+                                    
+                                    // Rewards preview for the 7 days
+                                    let rewardText = "🪙100";
+                                    let giftIcon = "";
+                                    if (day === 2) rewardText = "🪙200";
+                                    else if (day === 3) rewardText = "🪙500";
+                                    else if (day === 4) rewardText = "🪙500";
+                                    else if (day === 5) { rewardText = "🪙1K"; giftIcon = "🧪x2"; }
+                                    else if (day === 6) rewardText = "🪙1K";
+                                    else if (day === 7) { rewardText = "🪙2K"; giftIcon = "🔵x3"; }
+
+                                    return (
+                                        <div key={day} style={{
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            alignItems: 'center',
+                                            justifyContent: 'space-between',
+                                            padding: '6px',
+                                            borderRadius: '6px',
+                                            border: '2px solid',
+                                            fontSize: '9px',
+                                            minHeight: '60px',
+                                            background: isCompleted ? '#e8f5e9' : (isCurrent ? '#fff9c4' : '#fff'),
+                                            borderColor: isCompleted ? '#2e7d32' : (isCurrent ? '#fbc02d' : '#efebe9'),
+                                            boxShadow: isCurrent ? '0 0 6px rgba(251, 192, 45, 0.5)' : 'none',
+                                            opacity: isCompleted ? 0.9 : 1
+                                        }}>
+                                            <span style={{ fontWeight: 'bold', color: isCompleted ? '#2e7d32' : (isCurrent ? '#fbc02d' : '#8d6e63') }}>Día {day}</span>
+                                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
+                                                <span style={{ fontSize: '8px', color: '#666', fontWeight: 'bold' }}>{rewardText}</span>
+                                                {giftIcon && <span style={{ fontSize: '7px', background: '#ffe082', padding: '1px 3px', borderRadius: '3px', fontWeight: 'bold' }}>{giftIcon}</span>}
+                                            </div>
+                                            <div>
+                                                {isCompleted ? (
+                                                    <span style={{ color: '#2e7d32', fontWeight: 'bold' }}>✓</span>
+                                                ) : (
+                                                    isCurrent ? (
+                                                        <span style={{ color: '#fbc02d', fontWeight: 'bold' }}>🔥</span>
+                                                    ) : (
+                                                        <span style={{ color: '#bdbdbd' }}>🔒</span>
+                                                    )
+                                                )}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                                {/* Place 8th cell as a next milestones indicator card */}
+                                <div style={{
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    padding: '6px',
+                                    borderRadius: '6px',
+                                    border: '2px dashed #bcaaa4',
+                                    background: '#fafafa',
+                                    fontSize: '9px',
+                                    minHeight: '60px'
+                                }}>
+                                    <span style={{ fontWeight: 'bold', color: '#8d6e63' }}>Milestones</span>
+                                    <span style={{ fontSize: '14px', marginTop: '4px' }}>🚀</span>
+                                </div>
+                            </div>
+
+                            {/* Future High Rewards Row */}
+                            <div style={{ borderTop: '1px solid #efebe9', paddingTop: '10px', display: 'flex', flexDirection: 'column', gap: '6px', textAlign: 'left' }}>
+                                <span style={{ fontSize: '9px', fontWeight: 'bold', color: '#3e2723' }}>Próximas Súper Recompensas:</span>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 8px', background: '#f5f0e1', border: '1px solid #3e2723', borderRadius: '4px', fontSize: '9px' }}>
+                                        <span>Día 14 • Recompensa Media</span>
+                                        <span style={{ fontWeight: 'bold' }}>🪙 5,000 + 🟡 Ultra Ball x2</span>
+                                    </div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 8px', background: '#f5f0e1', border: '1px solid #3e2723', borderRadius: '4px', fontSize: '9px' }}>
+                                        <span>Día 21 • Recompensa Épica</span>
+                                        <span style={{ fontWeight: 'bold' }}>🪙 8,000 + 🧪 Hiperpoción x3</span>
+                                    </div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 8px', background: 'linear-gradient(135deg, #ffe082, #ffb300)', border: '1.5px solid #ff8f00', borderRadius: '4px', fontSize: '9px', fontWeight: 'bold', color: '#3e2723' }}>
+                                        <span>Día 30 • ¡Recompensa Legendaria!</span>
+                                        <span>🪙 15,000 + 🟣 Master Ball x1</span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -4306,6 +4802,101 @@ export default function GameCanvas({
                                     </div>
                                 );
                             })}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showPvpBackpack && (
+                <div className="modal-overlay" style={{ zIndex: 10000 }}>
+                    <div className="modal-card pokemon-panel" style={{ maxWidth: '420px', width: '90%' }}>
+                        <div className="modal-header">
+                            <h3 className="modal-title">🎒 Mochila PvP</h3>
+                            <button onClick={() => {
+                                setShowPvpBackpack(false);
+                                setUsingItem(null);
+                            }} className="modal-close-btn">&times;</button>
+                        </div>
+                        <div className="modal-body">
+                            {pvpItemsUsed >= 3 ? (
+                                <div style={{ color: '#d32f2f', fontWeight: 'bold', fontSize: '11px', textAlign: 'center', marginBottom: '10px' }}>
+                                    ⚠️ Has alcanzado el límite máximo de 3 objetos por combate.
+                                </div>
+                            ) : null}
+                            
+                            {usingItem ? (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                    <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#3e2723', marginBottom: '8px', textAlign: 'center' }}>
+                                        Usar {usingItem.name || usingItem.id} en:
+                                    </div>
+                                    {team.map((p: any, idx: number) => {
+                                        const pct = Math.round((p.hp / p.maxHp) * 100);
+                                        const isRevive = usingItem.id.includes('revive');
+                                        const isValidTarget = isRevive ? p.hp === 0 : p.hp > 0;
+                                        
+                                        return (
+                                            <button
+                                                key={idx}
+                                                onClick={() => handleApplyItemToPokemonPvp(p, idx)}
+                                                className="pokemon-button"
+                                                disabled={!isValidTarget || pvpItemsUsed >= 3}
+                                                style={{ 
+                                                    display: 'flex', 
+                                                    justifyContent: 'space-between', 
+                                                    alignItems: 'center', 
+                                                    padding: '8px 12px',
+                                                    background: isValidTarget ? '#efe5fd' : '#f5f5f5',
+                                                    border: isValidTarget ? '1px solid #7c4dff' : '1px solid #ccc',
+                                                    marginBottom: '4px',
+                                                    opacity: isValidTarget ? 1 : 0.6
+                                                }}
+                                            >
+                                                <div style={{ textAlign: 'left' }}>
+                                                    <span style={{ textTransform: 'capitalize', fontWeight: 'bold', color: isValidTarget ? '#311b92' : '#666' }}>{p.id}</span>
+                                                    <span style={{ fontSize: '10px', marginLeft: '6px', color: '#5e35b1' }}>Nvl. {p.level ?? 5}</span>
+                                                </div>
+                                                <div style={{ fontSize: '11px', color: p.hp === 0 ? '#d32f2f' : '#2e7d32', fontWeight: 'bold' }}>
+                                                    HP: {p.hp}/{p.maxHp} ({pct}%)
+                                                </div>
+                                            </button>
+                                        );
+                                    })}
+                                    <button 
+                                        onClick={() => setUsingItem(null)}
+                                        className="pokemon-button danger"
+                                        style={{ marginTop: '8px' }}
+                                    >
+                                        Atrás
+                                    </button>
+                                </div>
+                            ) : (() => {
+                                const usableItems = inventory.getAllItems().filter((item: any) => 
+                                    item.id.includes('potion') || item.id.includes('revive') || item.id === 'full_heal'
+                                );
+                                
+                                if (usableItems.length === 0) {
+                                    return <div className="inventory-empty">No tienes objetos curativos en tu mochila.</div>;
+                                }
+                                
+                                return usableItems.map((item: any) => (
+                                    <div key={item.id} className="shop-item-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid #efebe9' }}>
+                                        <div className="shop-item-info" style={{ flex: 1 }}>
+                                            <div className="shop-item-name" style={{ fontWeight: 'bold', fontSize: '12px' }}>
+                                                {item.name || item.id} <span style={{ fontSize: '10px', color: '#757575', marginLeft: '4px' }}>x{item.quantity}</span>
+                                            </div>
+                                            <div className="shop-item-desc" style={{ fontSize: '10px', color: '#5d4037' }}>{item.description}</div>
+                                        </div>
+                                        <button
+                                            onClick={() => setUsingItem(item)}
+                                            disabled={pvpItemsUsed >= 3}
+                                            className="pokemon-button success"
+                                            style={{ width: 'auto', padding: '4px 10px', fontSize: '10px', marginLeft: '12px', opacity: pvpItemsUsed >= 3 ? 0.5 : 1 }}
+                                        >
+                                            Usar
+                                        </button>
+                                    </div>
+                                ));
+                            })()}
                         </div>
                     </div>
                 </div>
@@ -4518,7 +5109,7 @@ export default function GameCanvas({
                 // Calculate current stats using the same formulas as getPokemonStats
                 const currentStats = getPokemonStats(p.id, p.level ?? 5);
                 const allMoves = getPokemonAllMovesInfo(p.id);
-                const currentMoves = getPokemonMoves(p.id, p.level ?? 5);
+                const currentMoves = p.moves || getPokemonMoves(p.id, p.level ?? 5);
                 const evolutionMsg = getPokemonEvolutionInfo(p.id);
                 const pct = Math.round((p.hp / p.maxHp) * 100);
 
@@ -5063,8 +5654,8 @@ export default function GameCanvas({
                                 {(() => {
                                     const activePoke = team.find((p: any) => p.hp > 0);
                                     if (!activePoke) return null;
-                                    const activePokeMoves = getPokemonMoves(activePoke.id, activePoke.level ?? 1);
-                                    return activePokeMoves.map((moveId) => {
+                                    const activePokeMoves = activePoke.moves || getPokemonMoves(activePoke.id, activePoke.level ?? 1);
+                                    return (activePokeMoves as string[]).map((moveId: string) => {
                                         const m = MOVES_DATABASE[moveId] || { name: moveId, type: 'normal', power: 40 };
                                         return (
                                             <button
@@ -5161,7 +5752,7 @@ export default function GameCanvas({
 
             {/* Custom Modal Notification Dialog */}
             {notification && (
-                <div className="modal-overlay" style={{ zIndex: 300 }}>
+                <div className="modal-overlay" style={{ zIndex: 10000 }}>
                     <div className="modal-card pokemon-panel" style={{ maxWidth: '360px' }}>
                         <div className="modal-header">
                             <h3 className="modal-title">{notification.title}</h3>
@@ -5286,7 +5877,7 @@ export default function GameCanvas({
             )}
 
             {incomingPvPInvite && (
-                <div className="modal-overlay" style={{ zIndex: 300 }}>
+                <div className="modal-overlay" style={{ zIndex: 10000 }}>
                     <div className="modal-content" style={{ textAlign: 'center' }}>
                         <h2>⚔️ ¡DESAFÍO RECIBIDO! ⚔️</h2>
                         <p>El jugador <strong>{incomingPvPInvite.fromName}</strong> te ha desafiado a una Batalla Pokémon.</p>
@@ -5300,7 +5891,7 @@ export default function GameCanvas({
             )}
 
             {pendingPvPInvite && (
-                <div className="modal-overlay" style={{ zIndex: 300 }}>
+                <div className="modal-overlay" style={{ zIndex: 10000 }}>
                     <div className="modal-content" style={{ textAlign: 'center' }}>
                         <div className="spinner animate-spin" style={{ border: '4px solid #f3f3f3', width: '40px', height: '40px', borderRadius: '50%', borderLeftColor: '#fbc02d', margin: '0 auto 15px auto' }}></div>
                         <h2>⏳ ESPERANDO OPONENTE ⏳</h2>
@@ -5520,6 +6111,10 @@ export default function GameCanvas({
                                 "¡Felicidades! Has ganado la batalla PvP."
                             ) : activePvPBattle.status === 'loss' ? (
                                 "Tu equipo ha sido derrotado. Has perdido la batalla PvP."
+                            ) : activePvPBattle.status === 'flee' ? (
+                                "Huyiste de la batalla."
+                            ) : activePvPBattle.status === 'opponent_flee' ? (
+                                "El oponente huyó de la batalla."
                             ) : (
                                 "¡Duelo PvP finalizado!"
                             )}
@@ -5546,8 +6141,8 @@ export default function GameCanvas({
                                         {(() => {
                                             const activePoke = team.find(p => p.hp > 0);
                                             if (!activePoke) return null;
-                                            const activePokeMoves = getPokemonMoves(activePoke.id, activePoke.level ?? 1);
-                                            return activePokeMoves.map((moveId) => {
+                                            const activePokeMoves = activePoke.moves || getPokemonMoves(activePoke.id, activePoke.level ?? 1);
+                                            return (activePokeMoves as string[]).map((moveId: string) => {
                                                 const m = MOVES_DATABASE[moveId] || { name: moveId, type: 'normal', power: 40 };
                                                 return (
                                                     <button 
@@ -5576,6 +6171,31 @@ export default function GameCanvas({
                                             });
                                         })()}
                                     </div>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', width: '100%', marginBottom: '6px' }}>
+                                        <button
+                                            className="pokemon-button"
+                                            onClick={() => {
+                                                setUsingItem(null);
+                                                setShowPvpBackpack(true);
+                                            }}
+                                            disabled={activePvPBattle.turn !== walletAddress || isBattleAnimating}
+                                            style={{
+                                                background: '#ffe082', color: '#3e2723', border: '1px solid #ffca28', margin: 0, padding: '8px', fontSize: '11px', fontWeight: 'bold',
+                                                opacity: activePvPBattle.turn !== walletAddress ? 0.5 : 1,
+                                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px'
+                                            }}
+                                        >
+                                            🎒 Mochila ({pvpItemsUsed}/3)
+                                        </button>
+                                        <button
+                                            className="pokemon-button danger"
+                                            onClick={handlePvpFlee}
+                                            disabled={isBattleAnimating}
+                                            style={{ margin: 0, padding: '8px', fontSize: '11px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
+                                        >
+                                            🏃 Huir
+                                        </button>
+                                    </div>
                                     <div style={{ textAlign: 'center', fontWeight: 'bold', fontSize: '12px', color: activePvPBattle.turn === walletAddress ? '#2e7d32' : '#c62828', paddingBottom: '4px' }}>
                                         {activePvPBattle.turn === walletAddress ? `⏳ Tu turno (${pvpTurnTimer}s)` : `⏳ Turno del oponente (${pvpTurnTimer}s)`}
                                     </div>
@@ -5586,11 +6206,16 @@ export default function GameCanvas({
                                     onClick={() => {
                                         if (activePvPBattle.status === 'win') {
                                             economyRef.current.pvp_wins = (economyRef.current.pvp_wins || 0) + 1;
-                                            economyRef.current.addCoins(200);
-                                            showNotification("¡Ganaste!", "¡Ganaste el duelo y te llevas 200 Coins!");
+                                            economyRef.current.addCoins(180);
+                                            showNotification("¡Ganaste!", "¡Ganaste el duelo y te llevas 180 Coins (después del 10% de fee de la casa)!");
                                         } else if (activePvPBattle.status === 'loss') {
                                             economyRef.current.pvp_losses = (economyRef.current.pvp_losses || 0) + 1;
                                             showNotification("Derrota", "Perdiste el duelo y tu apuesta de 100 Coins.");
+                                        } else if (activePvPBattle.status === 'flee') {
+                                            showNotification("Combate Finalizado", "Huyiste del combate. Perdiste 10 Coins.");
+                                        } else if (activePvPBattle.status === 'opponent_flee') {
+                                            economyRef.current.addCoins(100);
+                                            showNotification("Combate Cancelado", "El oponente huyó de la batalla. Se te han devuelto tus 100 Coins.");
                                         }
                                         setEconomy(new Economy(economyRef.current.toSaveData()));
                                         saveLocalEconomy();

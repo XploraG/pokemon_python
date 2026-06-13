@@ -33,5 +33,12 @@
         "heal_percent": 1.00,
         "description": "Revive con 100% HP",
         "sprite": "src/assets/items/sprites/max_revive.png"
+    },
+    "full_heal": {
+        "name": "Cura Total",
+        "price": 600,
+        "description": "Cura todos los estados alterados",
+        "sprite": "src/assets/items/sprites/full_heal.png"
     }
 }
+

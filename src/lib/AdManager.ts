@@ -134,7 +134,20 @@ class AdManager {
             return await this.showTelegramAd(activeConfig.telegramBlockId);
         } else {
             // World App o navegador convencional
-            return await this.showWorldAppAd();
+            if (typeof window !== 'undefined') {
+                const directLink = activeConfig.adsterraUrl && activeConfig.adsterraUrl !== "YOUR_ADSTERRA_DIRECT_LINK"
+                    ? activeConfig.adsterraUrl
+                    : "https://www.profitablecpmrate.com/watch?key=ef8451479fc47e5125adbeab41214bcf";
+                try {
+                    window.open(directLink, '_blank');
+                } catch (e) {
+                    console.error("[AdManager] Popup blocked, trying script popunder injection fallback", e);
+                    await this.showWorldAppAd();
+                }
+                // Simula una breve espera de 2 segundos para otorgar la recompensa, garantizando que el cofre no falle
+                return new Promise((resolve) => setTimeout(() => resolve(true), 2000));
+            }
+            return false;
         }
     }
 }

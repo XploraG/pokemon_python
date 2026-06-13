@@ -25,6 +25,10 @@ export interface EconomySaveData {
     last_heal_date?: string;
     pvp_wins?: number;
     pvp_losses?: number;
+    ads_viewed_today?: number;
+    last_ad_date?: string;
+    last_pvp_loss_time?: number;
+    pvp_cooldown_duration?: number;
 }
 
 export class Economy {
@@ -46,6 +50,10 @@ export class Economy {
     public last_heal_date: string = '';
     public pvp_wins: number = 0;
     public pvp_losses: number = 0;
+    public ads_viewed_today: number = 0;
+    public last_ad_date: string = '';
+    public last_pvp_loss_time: number = 0;
+    public pvp_cooldown_duration: number = 0;
 
     constructor(saveData?: EconomySaveData) {
         if (saveData) {
@@ -74,6 +82,10 @@ export class Economy {
         this.last_heal_date = '';
         this.pvp_wins = 0;
         this.pvp_losses = 0;
+        this.ads_viewed_today = 0;
+        this.last_ad_date = '';
+        this.last_pvp_loss_time = 0;
+        this.pvp_cooldown_duration = 0;
     }
 
     private loadFromSave(data: EconomySaveData): void {
@@ -95,6 +107,10 @@ export class Economy {
         this.last_heal_date = data.last_heal_date ?? '';
         this.pvp_wins = data.pvp_wins ?? 0;
         this.pvp_losses = data.pvp_losses ?? 0;
+        this.ads_viewed_today = data.ads_viewed_today ?? 0;
+        this.last_ad_date = data.last_ad_date ?? '';
+        this.last_pvp_loss_time = data.last_pvp_loss_time ?? 0;
+        this.pvp_cooldown_duration = data.pvp_cooldown_duration ?? 0;
     }
 
     public toSaveData(): EconomySaveData {
@@ -116,7 +132,11 @@ export class Economy {
             heals_today: this.heals_today,
             last_heal_date: this.last_heal_date,
             pvp_wins: this.pvp_wins,
-            pvp_losses: this.pvp_losses
+            pvp_losses: this.pvp_losses,
+            ads_viewed_today: this.ads_viewed_today,
+            last_ad_date: this.last_ad_date,
+            last_pvp_loss_time: this.last_pvp_loss_time,
+            pvp_cooldown_duration: this.pvp_cooldown_duration
         };
     }
 
