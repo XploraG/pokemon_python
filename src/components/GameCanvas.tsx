@@ -222,8 +222,70 @@ const MOVES_DATABASE: Record<string, { name: string; type: string; power: number
     gust: { name: "Tornado", type: "flying", power: 40, accuracy: 100 },
     wing_attack: { name: "Ataque Ala", type: "flying", power: 60, accuracy: 100 },
     psychic: { name: "Psíquico", type: "psychic", power: 90, accuracy: 100 },
-    confusion: { name: "Confusión", type: "psychic", power: 50, accuracy: 100 }
+    confusion: { name: "Confusión", type: "psychic", power: 50, accuracy: 100 },
+    // Premium TMs
+    thunder_wave: { name: "Onda Trueno", type: "electric", power: 0, accuracy: 100 },
+    sleep_powder: { name: "Somnífero", type: "grass", power: 0, accuracy: 75 },
+    toxic: { name: "Tóxico", type: "poison", power: 0, accuracy: 90 },
+    confuse_ray: { name: "Rayo Confuso", type: "ghost", power: 0, accuracy: 100 },
+    will_o_wisp: { name: "Fuego Fatuo", type: "fire", power: 0, accuracy: 85 },
+    leech_seed: { name: "Drenadoras", type: "grass", power: 0, accuracy: 90 },
+    recover: { name: "Recuperación", type: "normal", power: 0, accuracy: 100 },
+    reflect: { name: "Reflejo", type: "psychic", power: 0, accuracy: 100 }
 };
+
+// Lore compatibility dictionary for the 8 TMs
+const TM_COMPATIBILITY: Record<string, string[]> = {
+    thunder_wave: ['pikachu', 'raichu', 'magnemite', 'magneton', 'electabuzz', 'jolteon', 'zapdos', 'mew', 'mewtwo', 'abra', 'kadabra', 'alakazam'],
+    sleep_powder: ['bulbasaur', 'ivysaur', 'venusaur', 'butterfree', 'oddish', 'gloom', 'vileplume', 'bellsprout', 'weepinbell', 'victreebel', 'exeggcute', 'exeggutor', 'tangela', 'mew'],
+    toxic: [], // Empty means universal (any Pokemon can learn it, matching Gen 1 TM lore!)
+    confuse_ray: ['gastly', 'haunter', 'gengar', 'vulpix', 'ninetales', 'lapras', 'mew'],
+    will_o_wisp: ['charmander', 'charmeleon', 'charizard', 'vulpix', 'ninetales', 'growlithe', 'arcanine', 'ponyta', 'rapidash', 'magmar', 'flareon', 'gastly', 'haunter', 'gengar', 'mew'],
+    leech_seed: ['bulbasaur', 'ivysaur', 'venusaur', 'oddish', 'gloom', 'vileplume', 'bellsprout', 'weepinbell', 'victreebel', 'exeggcute', 'exeggutor', 'tangela', 'mew'],
+    recover: ['abra', 'kadabra', 'alakazam', 'porygon', 'mew', 'mewtwo', 'slowpoke', 'slowbro'],
+    reflect: ['bulbasaur', 'ivysaur', 'venusaur', 'charmander', 'charmeleon', 'charizard', 'squirtle', 'wartortle', 'blastoise', 'pikachu', 'raichu', 'clefairy', 'clefable', 'jigglypuff', 'wigglytuff', 'abra', 'kadabra', 'alakazam', 'mr-mime', 'mr_mime', 'mew', 'mewtwo', 'eevee', 'vaporeon', 'jolteon', 'flareon']
+};
+
+const isTmCompatible = (pokemonId: string, tmId: string): boolean => {
+    const poke = pokemonId.toLowerCase();
+    const tm = tmId.toLowerCase();
+    if (!TM_COMPATIBILITY[tm]) return false;
+    // Toxic is universal
+    if (tm === 'toxic') return true;
+    return TM_COMPATIBILITY[tm].includes(poke);
+};
+
+const TAMERBALLS_SHOP = [
+    { id: 'pokeball', name: 'Tamer Ball', desc: 'Esfera básica de captura (30% éxito)', coins: 300, icon: '🔴' },
+    { id: 'superball', name: 'Super Ball', desc: 'Mayor ratio de captura (50% éxito)', coins: 500, icon: '🔵' },
+    { id: 'ultraball', name: 'Ultra Ball', desc: 'Ratio de captura muy alto (70% éxito)', pusdt: 1.00, icon: '🟡' },
+    { id: 'masterball', name: 'Master Ball', desc: 'Captura garantizada (100% éxito)', pusdt: 3.00, icon: '🟣' }
+];
+
+const ITEMS_SHOP = [
+    { id: 'potion', name: 'Poción', desc: 'Restaura 20 PS', coins: 150, pusdt: 0.20, icon: '🧪' },
+    { id: 'super_potion', name: 'Superpoción', desc: 'Restaura 50 PS', coins: 250, pusdt: 0.50, icon: '🧪' },
+    { id: 'hyper_potion', name: 'Hiperpoción', desc: 'Restaura 120 PS', coins: 600, pusdt: 1.00, icon: '🧪' },
+    { id: 'revive', name: 'Revivir', desc: 'Revive a un Pokémon con 50% PS', coins: 1000, pusdt: 0.70, icon: '✨' },
+    { id: 'full_heal', name: 'Cura Total', desc: 'Cura todos los estados alterados', coins: 600, pusdt: 0.50, icon: '💊' },
+    { id: 'evolution_stone', name: 'Piedra Evolución', desc: 'Evoluciona de forma genérica (Eevee al azar)', coins: 2000, pusdt: 1.50, icon: '🪨' },
+    { id: 'thunder_stone', name: 'Piedra Trueno', desc: 'Evolución exacta Eléctrico (Pikachu, Eevee->Jolteon)', coins: 2000, pusdt: 1.50, icon: '⚡' },
+    { id: 'water_stone', name: 'Piedra Agua', desc: 'Evolución exacta Agua (Poliwhirl, Eevee->Vaporeon)', coins: 2000, pusdt: 1.50, icon: '💧' },
+    { id: 'fire_stone', name: 'Piedra Fuego', desc: 'Evolución exacta Fuego (Growlithe, Eevee->Flareon)', coins: 2000, pusdt: 1.50, icon: '🔥' },
+    { id: 'leaf_stone', name: 'Piedra Hoja', desc: 'Evolución exacta Planta (Gloom, Weepinbell)', coins: 2000, pusdt: 1.50, icon: '🍃' },
+    { id: 'moon_stone', name: 'Piedra Lunar', desc: 'Evolución exacta Hada/Luna (Clefairy, Jigglypuff)', coins: 2000, pusdt: 1.50, icon: '🌙' }
+];
+
+const TMS_SHOP = [
+    { id: 'thunder_wave', name: 'TM01 Onda Trueno', desc: 'Paraliza al rival (reduce velocidad/prob. ataque)', pusdt: 5.00, rarity: 'Rara', type: 'electric' },
+    { id: 'sleep_powder', name: 'TM02 Somnífero', desc: 'Pone a dormir al rival (lo inhabilita por turnos)', pusdt: 7.00, rarity: 'Rara', type: 'grass' },
+    { id: 'toxic', name: 'TM03 Tóxico', desc: 'Envenena gravemente (daño creciente cada turno)', pusdt: 15.00, rarity: 'Épica', type: 'poison' },
+    { id: 'confuse_ray', name: 'TM04 Rayo Confuso', desc: 'Confunde al rival (50% prob. de autodaño)', pusdt: 8.00, rarity: 'Rara', type: 'ghost' },
+    { id: 'will_o_wisp', name: 'TM05 Fuego Fatuo', desc: 'Quema al rival (daño pasivo + reduce 50% ataque físico)', pusdt: 10.00, rarity: 'Rara', type: 'fire' },
+    { id: 'leech_seed', name: 'TM06 Drenadoras', desc: 'Roba vida al oponente y te cura cada turno', pusdt: 10.00, rarity: 'Épica', type: 'grass' },
+    { id: 'recover', name: 'TM07 Recuperación', desc: 'Recupera instantáneamente el 50% de PS máximos', pusdt: 10.00, rarity: 'Legendaria', type: 'normal' },
+    { id: 'reflect', name: 'TM08 Reflejo', desc: 'Escudo físico (reduce 50% daño físico por 3 turnos)', pusdt: 5.00, rarity: 'Rara', type: 'psychic' }
+];
 
 const getPokemonAllMovesInfo = (speciesName: string): { moveId: string; levelReq: number }[] => {
     const name = speciesName.toLowerCase();
@@ -771,6 +833,9 @@ export default function GameCanvas({
     const [activeDialog, setActiveDialog] = useState<string | null>(null);
     const [dialogName, setDialogName] = useState<string>('');
     const [showShop, setShowShop] = useState(false);
+    const [shopTab, setShopTab] = useState<'balls' | 'items' | 'tms'>('balls');
+    const [showTutorModal, setShowTutorModal] = useState(false);
+    const [tutorMoveToLearn, setTutorMoveToLearn] = useState<string | null>(null);
     const [showDaily, setShowDaily] = useState(false);
     const [showMissions, setShowMissions] = useState(false);
     const [showInventoryModal, setShowInventoryModal] = useState(false);
@@ -3047,17 +3112,55 @@ export default function GameCanvas({
         const target = updatedTeam[idx];
         const itemInfo = inventoryRef.current.getItemInfo(usingItem.id);
         
-        if (usingItem.id === 'evolution_stone') {
+        if (usingItem.id.includes('stone')) {
             const idLower = target.id.toLowerCase();
             let evolvedId = '';
             
             const evo = EVOLUTION_DATABASE[idLower];
-            if (evo && evo.method === 'stone') {
+            const isStoneEvolution = evo && evo.method === 'stone';
+            
+            if (isStoneEvolution) {
+                const stoneId = usingItem.id;
+                
                 if (idLower === 'eevee') {
-                    const evos = ['vaporeon', 'jolteon', 'flareon'];
-                    evolvedId = evos[Math.floor(Math.random() * evos.length)];
+                    if (stoneId === 'water_stone') {
+                        evolvedId = 'vaporeon';
+                    } else if (stoneId === 'thunder_stone') {
+                        evolvedId = 'jolteon';
+                    } else if (stoneId === 'fire_stone') {
+                        evolvedId = 'flareon';
+                    } else if (stoneId === 'evolution_stone') {
+                        const evos = ['vaporeon', 'jolteon', 'flareon'];
+                        evolvedId = evos[Math.floor(Math.random() * evos.length)];
+                    }
+                } else if (idLower === 'pikachu') {
+                    if (stoneId === 'thunder_stone' || stoneId === 'evolution_stone') {
+                        evolvedId = 'raichu';
+                    }
+                } else if (idLower === 'vulpix') {
+                    if (stoneId === 'fire_stone' || stoneId === 'evolution_stone') {
+                        evolvedId = 'ninetales';
+                    }
+                } else if (idLower === 'growlithe') {
+                    if (stoneId === 'fire_stone' || stoneId === 'evolution_stone') {
+                        evolvedId = 'arcanine';
+                    }
+                } else if (['poliwhirl', 'shellder', 'staryu'].includes(idLower)) {
+                    if (stoneId === 'water_stone' || stoneId === 'evolution_stone') {
+                        evolvedId = evo.target;
+                    }
+                } else if (['gloom', 'weepinbell', 'exeggcute'].includes(idLower)) {
+                    if (stoneId === 'leaf_stone' || stoneId === 'evolution_stone') {
+                        evolvedId = evo.target;
+                    }
+                } else if (['clefairy', 'jigglypuff'].includes(idLower)) {
+                    if (stoneId === 'moon_stone' || stoneId === 'evolution_stone') {
+                        evolvedId = evo.target;
+                    }
                 } else {
-                    evolvedId = evo.target;
+                    if (stoneId === 'evolution_stone') {
+                        evolvedId = evo.target;
+                    }
                 }
             }
             
@@ -3077,9 +3180,9 @@ export default function GameCanvas({
                 saveLocalEconomy(updatedTeam);
                 setUsingItem(null);
                 
-                showNotification("¡Evolución exitosa!", `¡Tu ${target.id} ha evolucionado en ${evolvedId.toUpperCase()} usando la Piedra Evolución!`);
+                showNotification("¡Evolución exitosa!", `¡Tu ${target.id.toUpperCase()} ha evolucionado en ${evolvedId.toUpperCase()} usando la ${itemInfo.name || 'Piedra'}!`);
             } else {
-                showNotification("Error de Piedra", `¡La Piedra Evolución no tiene efecto en ${target.id}!`);
+                showNotification("Error de Piedra", `¡La ${itemInfo.name || 'Piedra'} no tiene efecto en ${target.id.toUpperCase()}!`);
             }
             return;
         }
@@ -3882,71 +3985,278 @@ export default function GameCanvas({
             )}
 
             {showShop && (
-                <div className="modal-overlay">
-                    <div className="modal-card pokemon-panel">
-                        <div className="modal-header">
-                            <h3 className="modal-title">PokeMart Store</h3>
+                <div className="modal-overlay" style={{ zIndex: 350 }}>
+                    <div className="modal-card pokemon-panel" style={{ width: '95%', maxWidth: '480px' }}>
+                        <div className="modal-header" style={{ borderBottom: 'none', paddingBottom: 0 }}>
+                            <h3 className="modal-title">🏪 PokéMart Store</h3>
                             <button onClick={() => setShowShop(false)} className="modal-close-btn">&times;</button>
                         </div>
-                        <div className="modal-body">
-                            {/* Coins Gratis Row */}
-                            <div className="shop-item-row" style={{ background: '#ffe082', border: '1px solid #ffca28', borderRadius: '4px', marginBottom: '12px' }}>
-                                <div className="shop-item-info">
-                                    <div className="shop-item-name" style={{ color: '#3e2723', fontWeight: 'bold' }}>💎 Coins Gratis (+20 Coins)</div>
-                                    <div className="shop-item-desc" style={{ color: '#5d4037', fontSize: '10px' }}>Ver un anuncio patrocinado</div>
+                        <div className="modal-body" style={{ maxHeight: '72vh', overflowY: 'auto', paddingRight: '4px', paddingTop: '8px' }}>
+                            {/* Premium Balance Bar */}
+                            <div className="premium-shop-header">
+                                <div className="shop-balance-pill coins" title="Tus Coins">
+                                    🪙 {economy.getFormattedCoins()}
+                                </div>
+                                <div className="shop-balance-pill pusdt" title="Tu saldo PUSDT">
+                                    💲 {economy.getFormattedPusdt()} PUSD
+                                </div>
+                            </div>
+
+                            {/* Cofre Diario Row */}
+                            <div className="free-coins-chest animate-hover" onClick={handleWatchFreeCoinsAd} style={{ cursor: 'pointer' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                    <span className="chest-icon-glowing">🎁</span>
+                                    <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
+                                        <span style={{ fontWeight: 'bold', fontSize: '11px', color: '#5d4037' }}>Cofre Diario Gratis</span>
+                                        <span style={{ fontSize: '8px', color: '#5d4037', opacity: 0.9 }}>Consigue +20 Coins gratis viendo publicidad</span>
+                                    </div>
                                 </div>
                                 <button 
-                                    onClick={handleWatchFreeCoinsAd}
-                                    className="pokemon-button animate-hover"
-                                    style={{ margin: 0, padding: '6px 12px', fontSize: '10px', width: 'auto', background: '#ffca28', border: '1px solid #ff8f00', color: '#3e2723' }}
+                                    className="pokemon-button animate-hover" 
+                                    style={{ margin: 0, padding: '4px 10px', fontSize: '9px', width: 'auto', background: '#ffca28', border: '1px solid #ff8f00', color: '#3e2723' }}
                                 >
-                                    Ver Ads
+                                    Ver Anuncio
                                 </button>
                             </div>
 
-                            <div className="shop-item-row">
-                                <div className="shop-item-info">
-                                    <div className="shop-item-name">Pokeball</div>
-                                    <div className="shop-item-desc">Basic capturing ball (30% rate)</div>
-                                </div>
+                            {/* Tabs Bar */}
+                            <div style={{ display: 'flex', border: '2px solid #3e2723', borderRadius: '8px', overflow: 'hidden', marginBottom: '12px', background: '#fff' }}>
                                 <button 
-                                    onClick={() => {
-                                        if (economy.spendCoins(200)) {
-                                            inventory.addItem('pokeball');
-                                            economy.updateMissionProgress('spend', 200);
-                                            saveLocalEconomy();
-                                            showNotification("Compra Exitosa", "¡Compraste 1 Pokeball con éxito!");
-                                            setEconomy(new Economy(economy.toSaveData()));
-                                        } else {
-                                            showNotification("Fondos Insuficientes", "¡No tienes suficientes Coins para comprar esta Pokeball!");
-                                        }
+                                    onClick={() => setShopTab('balls')} 
+                                    style={{
+                                        flex: 1, padding: '8px 4px', border: 'none', background: shopTab === 'balls' ? '#3e2723' : 'transparent',
+                                        color: shopTab === 'balls' ? '#fff' : '#3e2723', fontWeight: 'bold', fontSize: '11px', cursor: 'pointer',
+                                        transition: 'all 0.2s'
                                     }}
-                                    className="shop-buy-btn"
                                 >
-                                    200 Coins
+                                    🔴 Tamer Balls
+                                </button>
+                                <button 
+                                    onClick={() => setShopTab('items')} 
+                                    style={{
+                                        flex: 1, padding: '8px 4px', border: 'none', background: shopTab === 'items' ? '#3e2723' : 'transparent',
+                                        color: shopTab === 'items' ? '#fff' : '#3e2723', fontWeight: 'bold', fontSize: '11px', cursor: 'pointer',
+                                        transition: 'all 0.2s'
+                                    }}
+                                >
+                                    🧪 Objetos
+                                </button>
+                                <button 
+                                    onClick={() => setShopTab('tms')} 
+                                    style={{
+                                        flex: 1, padding: '8px 4px', border: 'none', background: shopTab === 'tms' ? '#3e2723' : 'transparent',
+                                        color: shopTab === 'tms' ? '#fff' : '#3e2723', fontWeight: 'bold', fontSize: '11px', cursor: 'pointer',
+                                        transition: 'all 0.2s'
+                                    }}
+                                >
+                                    💿 Ataques / TMs
                                 </button>
                             </div>
-                            <div className="shop-item-row">
-                                <div className="shop-item-info">
-                                    <div className="shop-item-name">Potion</div>
-                                    <div className="shop-item-desc">Heals 20 HP</div>
-                                </div>
-                                <button 
-                                    onClick={() => {
-                                        if (economy.spendCoins(300)) {
-                                            inventory.addItem('potion');
-                                            economy.updateMissionProgress('spend', 300);
-                                            saveLocalEconomy();
-                                            showNotification("Compra Exitosa", "¡Compraste 1 Poción con éxito!");
-                                            setEconomy(new Economy(economy.toSaveData()));
-                                        } else {
-                                            showNotification("Fondos Insuficientes", "¡No tienes suficientes Coins para comprar esta Poción!");
-                                        }
-                                    }}
-                                    className="shop-buy-btn"
-                                >
-                                    300 Coins
-                                </button>
+
+                            {/* Shop Content Grid */}
+                            <div>
+                                {shopTab === 'balls' && (
+                                    <div className="shop-grid">
+                                        {TAMERBALLS_SHOP.map(item => {
+                                            const isPusdtOnly = item.pusdt !== undefined;
+                                            const isCoinsOnly = item.coins !== undefined;
+                                            
+                                            // Assign rarity style
+                                            let rarityClass = 'rarity-common';
+                                            let badgeClass = 'common';
+                                            let badgeText = 'Común';
+                                            if (item.id === 'superball') {
+                                                rarityClass = 'rarity-uncommon';
+                                                badgeClass = 'uncommon';
+                                                badgeText = 'Inusual';
+                                            } else if (item.id === 'ultraball') {
+                                                rarityClass = 'rarity-rare';
+                                                badgeClass = 'rare';
+                                                badgeText = 'Rara';
+                                            } else if (item.id === 'masterball') {
+                                                rarityClass = 'rarity-legendary';
+                                                badgeClass = 'legendary';
+                                                badgeText = 'Leyenda';
+                                            }
+
+                                            return (
+                                                <div key={item.id} className={`shop-card-premium ${rarityClass}`}>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                                                        <span style={{ fontSize: '24px' }}>{item.icon}</span>
+                                                        <span className={`shop-card-badge ${badgeClass}`}>{badgeText}</span>
+                                                    </div>
+                                                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', textAlign: 'left', marginBottom: '8px' }}>
+                                                        <span style={{ fontWeight: 'bold', fontSize: '11px', color: '#3e2723' }}>{item.name}</span>
+                                                        <span style={{ fontSize: '8px', color: '#666', marginTop: '2px', lineHeight: '10px' }}>{item.desc}</span>
+                                                    </div>
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                                        {isCoinsOnly && (
+                                                            <button 
+                                                                onClick={() => {
+                                                                    const cost = item.coins!;
+                                                                    if (economy.spendCoins(cost)) {
+                                                                        inventory.addItem(item.id);
+                                                                        setInventory(new Inventory(inventory.toSaveData()));
+                                                                        economy.updateMissionProgress('spend', cost);
+                                                                        saveLocalEconomy();
+                                                                        setEconomy(new Economy(economy.toSaveData()));
+                                                                        showNotification("Compra Exitosa", `¡Compraste 1 ${item.name} con éxito!`);
+                                                                    } else {
+                                                                        showNotification("Fondos Insuficientes", "¡No tienes suficientes Coins!");
+                                                                    }
+                                                                }}
+                                                                className="btn-premium-buy coins"
+                                                            >
+                                                                🪙 {item.coins}
+                                                            </button>
+                                                        )}
+                                                        {isPusdtOnly && (
+                                                            <button 
+                                                                onClick={() => {
+                                                                    const cost = item.pusdt!;
+                                                                    if (economy.spendPusdt(cost)) {
+                                                                        inventory.addItem(item.id);
+                                                                        setInventory(new Inventory(inventory.toSaveData()));
+                                                                        saveLocalEconomy();
+                                                                        setEconomy(new Economy(economy.toSaveData()));
+                                                                        showNotification("Compra Exitosa", `¡Compraste 1 ${item.name} con éxito!`);
+                                                                    } else {
+                                                                        showNotification("Fondos Insuficientes", "¡No tienes suficientes PUSDT!");
+                                                                    }
+                                                                }}
+                                                                className="btn-premium-buy pusdt"
+                                                            >
+                                                                💲 {item.pusdt!.toFixed(2)} PUSD
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+
+                                {shopTab === 'items' && (
+                                    <div className="shop-grid">
+                                        {ITEMS_SHOP.map(item => {
+                                            // Assign rarity style
+                                            let rarityClass = 'rarity-common';
+                                            let badgeClass = 'common';
+                                            let badgeText = 'Común';
+                                            
+                                            if (item.id.includes('super_potion') || item.id === 'revive' || item.id === 'full_heal') {
+                                                rarityClass = 'rarity-uncommon';
+                                                badgeClass = 'uncommon';
+                                                badgeText = 'Inusual';
+                                            } else if (item.id.includes('hyper_potion')) {
+                                                rarityClass = 'rarity-rare';
+                                                badgeClass = 'rare';
+                                                badgeText = 'Rara';
+                                            } else if (item.id.includes('stone')) {
+                                                rarityClass = 'rarity-epic';
+                                                badgeClass = 'epic';
+                                                badgeText = 'Épica';
+                                            }
+
+                                            return (
+                                                <div key={item.id} className={`shop-card-premium ${rarityClass}`}>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                                                        <span style={{ fontSize: '24px' }}>{item.icon}</span>
+                                                        <span className={`shop-card-badge ${badgeClass}`}>{badgeText}</span>
+                                                    </div>
+                                                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', textAlign: 'left', marginBottom: '8px' }}>
+                                                        <span style={{ fontWeight: 'bold', fontSize: '11px', color: '#3e2723' }}>{item.name}</span>
+                                                        <span style={{ fontSize: '8px', color: '#666', marginTop: '2px', lineHeight: '10px' }}>{item.desc}</span>
+                                                    </div>
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                                        <button 
+                                                            onClick={() => {
+                                                                const cost = item.coins;
+                                                                if (economy.spendCoins(cost)) {
+                                                                    inventory.addItem(item.id);
+                                                                    setInventory(new Inventory(inventory.toSaveData()));
+                                                                    economy.updateMissionProgress('spend', cost);
+                                                                    saveLocalEconomy();
+                                                                    setEconomy(new Economy(economy.toSaveData()));
+                                                                    showNotification("Compra Exitosa", `¡Compraste 1 ${item.name} con éxito!`);
+                                                                } else {
+                                                                    showNotification("Fondos Insuficientes", "¡No tienes suficientes Coins!");
+                                                                }
+                                                            }}
+                                                            className="btn-premium-buy coins"
+                                                        >
+                                                            🪙 {item.coins}
+                                                        </button>
+                                                        <button 
+                                                            onClick={() => {
+                                                                const cost = item.pusdt;
+                                                                if (economy.spendPusdt(cost)) {
+                                                                    inventory.addItem(item.id);
+                                                                    setInventory(new Inventory(inventory.toSaveData()));
+                                                                    saveLocalEconomy();
+                                                                    setEconomy(new Economy(economy.toSaveData()));
+                                                                    showNotification("Compra Exitosa", `¡Compraste 1 ${item.name} con éxito!`);
+                                                                } else {
+                                                                    showNotification("Fondos Insuficientes", "¡No tienes suficientes PUSDT!");
+                                                                }
+                                                            }}
+                                                            className="btn-premium-buy pusdt"
+                                                        >
+                                                            💲 {item.pusdt.toFixed(2)} PUSD
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+
+                                {shopTab === 'tms' && (
+                                    <div className="shop-grid">
+                                        {TMS_SHOP.map(item => {
+                                            const rarityClass = item.rarity === 'Legendaria' ? 'rarity-legendary' : (item.rarity === 'Épica' ? 'rarity-epic' : 'rarity-rare');
+                                            const badgeClass = item.rarity === 'Legendaria' ? 'legendary' : (item.rarity === 'Épica' ? 'epic' : 'rare');
+                                            const tc = typeof window !== 'undefined' && (window as any).TYPE_COLORS ? (window as any).TYPE_COLORS : {};
+                                            const typeBg = tc[item.type] || '#a8a878';
+                                            
+                                            return (
+                                                <div key={item.id} className={`shop-card-premium ${rarityClass}`}>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                                                        <span style={{ fontSize: '24px' }}>💿</span>
+                                                        <span className="shop-card-type-tag" style={{ background: typeBg }}>{item.type}</span>
+                                                    </div>
+                                                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', textAlign: 'left', marginBottom: '8px' }}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap' }}>
+                                                            <span style={{ fontWeight: 'bold', fontSize: '9px', color: '#3e2723' }}>{item.name}</span>
+                                                            <span className={`shop-card-badge ${badgeClass}`} style={{ fontSize: '6px', padding: '1px 3px' }}>{item.rarity}</span>
+                                                        </div>
+                                                        <span style={{ fontSize: '8px', color: '#666', marginTop: '2px', lineHeight: '10px' }}>{item.desc}</span>
+                                                    </div>
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                                        <button 
+                                                            onClick={() => {
+                                                                const cost = item.pusdt;
+                                                                if (economy.spendPusdt(cost)) {
+                                                                    saveLocalEconomy();
+                                                                    setEconomy(new Economy(economy.toSaveData()));
+                                                                    setTutorMoveToLearn(item.id);
+                                                                    setShowTutorModal(true);
+                                                                    setShowShop(false);
+                                                                    showNotification("¡TM Adquirida!", `Has adquirido ${item.name}. Selecciona a quién enseñársela.`);
+                                                                } else {
+                                                                    showNotification("Fondos Insuficientes", "¡No tienes suficientes PUSDT para comprar este movimiento!");
+                                                                }
+                                                            }}
+                                                            className="btn-premium-buy pusdt"
+                                                        >
+                                                            💲 {item.pusdt.toFixed(2)} PUSD
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
                             </div>
                             <AdsterraBanner />
                         </div>
@@ -4056,7 +4366,7 @@ export default function GameCanvas({
                                 <div className="inventory-empty">Tu mochila está vacía.</div>
                             ) : (
                                 inventory.getAllItems().map((item: any) => {
-                                    const isUsable = item.id.includes('potion') || item.id.includes('revive') || item.id === 'evolution_stone';
+                                    const isUsable = item.id.includes('potion') || item.id.includes('revive') || item.id.includes('stone');
                                     return (
                                         <div key={item.id} className="shop-item-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid #efebe9' }}>
                                             <div className="shop-item-info" style={{ flex: 1 }}>

@@ -19,10 +19,45 @@
     },
     "evolution_stone": {
         "name": "Piedra Evolucion",
-        "price": 8000,
+        "price": 2000,
         "effect": "evolution",
-        "description": "Evoluciona Pokemon especiales",
+        "description": "Evoluciona de forma genérica (Eevee al azar)",
         "sprite": "src/assets/items/sprites/evolution_stone.png"
+    },
+    "water_stone": {
+        "name": "Piedra Agua",
+        "price": 2000,
+        "effect": "evolution",
+        "description": "Evoluciona a Pokémon tipo Agua (ej. Eevee -> Vaporeon)",
+        "sprite": "src/assets/items/sprites/water_stone.png"
+    },
+    "thunder_stone": {
+        "name": "Piedra Trueno",
+        "price": 2000,
+        "effect": "evolution",
+        "description": "Evoluciona a Pokémon tipo Eléctrico (ej. Pikachu -> Raichu)",
+        "sprite": "src/assets/items/sprites/thunder_stone.png"
+    },
+    "fire_stone": {
+        "name": "Piedra Fuego",
+        "price": 2000,
+        "effect": "evolution",
+        "description": "Evoluciona a Pokémon tipo Fuego (ej. Eevee -> Flareon)",
+        "sprite": "src/assets/items/sprites/fire_stone.png"
+    },
+    "leaf_stone": {
+        "name": "Piedra Hoja",
+        "price": 2000,
+        "effect": "evolution",
+        "description": "Evoluciona a Pokémon tipo Planta (ej. Gloom -> Vileplume)",
+        "sprite": "src/assets/items/sprites/leaf_stone.png"
+    },
+    "moon_stone": {
+        "name": "Piedra Lunar",
+        "price": 2000,
+        "effect": "evolution",
+        "description": "Evoluciona a Pokémon tipo Hada/Luna (ej. Clefairy -> Clefable)",
+        "sprite": "src/assets/items/sprites/moon_stone.png"
     },
     "repel": {
         "name": "Repelente",

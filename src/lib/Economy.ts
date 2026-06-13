@@ -136,6 +136,14 @@ export class Economy {
         return false;
     }
 
+    public spendPusdt(amount: number): boolean {
+        if (this.pusdt >= amount) {
+            this.pusdt -= amount;
+            return true;
+        }
+        return false;
+    }
+
     public convertToPusdt(coinAmount: number): number {
         const rate = economyConfig.coins_to_pusdt_rate ?? 10000;
         if (coinAmount < rate || this.coins < coinAmount) {
