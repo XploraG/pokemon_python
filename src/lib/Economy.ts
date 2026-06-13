@@ -32,6 +32,7 @@ export interface EconomySaveData {
     equipped_medals?: string[];
     medal_levels?: Record<string, number>;
     tournament_medals?: string[];
+    in_pvp_battle?: boolean;
 }
 
 export class Economy {
@@ -60,6 +61,7 @@ export class Economy {
     public equipped_medals: string[] = [];
     public medal_levels: Record<string, number> = {};
     public tournament_medals: string[] = [];
+    public in_pvp_battle: boolean = false;
 
     constructor(saveData?: EconomySaveData) {
         if (saveData) {
@@ -95,6 +97,7 @@ export class Economy {
         this.equipped_medals = [];
         this.medal_levels = {};
         this.tournament_medals = [];
+        this.in_pvp_battle = false;
     }
 
     private loadFromSave(data: EconomySaveData): void {
@@ -123,6 +126,7 @@ export class Economy {
         this.equipped_medals = data.equipped_medals ?? [];
         this.medal_levels = data.medal_levels ?? {};
         this.tournament_medals = data.tournament_medals ?? [];
+        this.in_pvp_battle = data.in_pvp_battle ?? false;
         for (const medal of this.medals) {
             if (!this.medal_levels[medal]) {
                 this.medal_levels[medal] = 1;
@@ -156,7 +160,8 @@ export class Economy {
             pvp_cooldown_duration: this.pvp_cooldown_duration,
             equipped_medals: this.equipped_medals,
             medal_levels: this.medal_levels,
-            tournament_medals: this.tournament_medals
+            tournament_medals: this.tournament_medals,
+            in_pvp_battle: this.in_pvp_battle
         };
     }
 

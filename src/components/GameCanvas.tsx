@@ -1028,7 +1028,7 @@ export default function GameCanvas({
                     medalLevels: econData.medal_levels || {},
                     equippedMedals: econData.equipped_medals || [],
                     tournamentMedals: econData.tournament_medals || [],
-                    team: saveData.team || []
+                    team: saveData.team_data || []
                 });
             } else {
                 showNotification("Perfil de Entrenador", "No se pudo cargar el perfil del oponente.");
@@ -1233,6 +1233,50 @@ export default function GameCanvas({
     useEffect(() => { inventoryRef.current = inventory; }, [inventory]);
     useEffect(() => { teamRef.current = team; }, [team]);
     useEffect(() => { pcPokemonRef.current = pcPokemon; }, [pcPokemon]);
+    // Anti-cheat Check: check if player left/disconnected during active PvP battle
+    useEffect(() => {
+        if (!loading && economy && economy.in_pvp_battle) {
+            // Apply penalty: add loss and start 5 min cooldown
+            economy.pvp_losses = (economy.pvp_losses || 0) + 1;
+            economy.last_pvp_loss_time = Date.now();
+            economy.pvp_cooldown_duration = 300;
+            economy.in_pvp_battle = false;
+            
+            // Save state immediately
+            const saveState = {
+                name: playerNameRef.current,
+                time: 0,
+                player_coordinates: [playerRef.current.x, playerRef.current.y],
+                map: currentMapPathRef.current,
+                economy_data: economy.toSaveData(),
+                inventory_data: inventoryRef.current.toSaveData(),
+                team_data: teamRef.current,
+                pc_pokemon: pcPokemonRef.current
+            };
+            
+            // Local save
+            const fullSaves = JSON.parse(localStorage.getItem('pixel_tamer_saves') || '{}');
+            fullSaves[walletAddress || saveName] = saveState;
+            localStorage.setItem('pixel_tamer_saves', JSON.stringify(fullSaves));
+            
+            // Cloud save
+            if (walletAddress) {
+                supabase
+                    .from('player_saves')
+                    .upsert({
+                        wallet_address: walletAddress,
+                        save_data: saveState,
+                        updated_at: new Date().toISOString()
+                    })
+                    .then(({ error }) => {
+                        if (error) console.error("Anti-cheat sync error:", error);
+                    });
+            }
+            
+            setEconomy(new Economy(economy.toSaveData()));
+            showNotification("Penalización por Abandono", "Detectamos que saliste de tu último combate PvP de forma abrupta. Se ha registrado como una derrota por abandono.");
+        }
+    }, [loading, walletAddress]);
 
     // Supabase Real-time connection for Multiplayer
     useEffect(() => {
@@ -1371,6 +1415,7 @@ export default function GameCanvas({
                     
                     // Deduct the 100 coin bet
                     economyRef.current.spendCoins(100);
+                    economyRef.current.in_pvp_battle = true;
                     setEconomy(new Economy(economyRef.current.toSaveData()));
                     saveLocalEconomy();
  
@@ -1518,6 +1563,18 @@ export default function GameCanvas({
                         return { ...prev, status: payload.result };
                     });
                 }
+            })
+            .on('broadcast', { event: 'pvp_abandon' }, ({ payload }) => {
+                if (payload.to === walletAddress) {
+                    setActivePvPBattle((prev: any) => {
+                        if (!prev) return prev;
+                        if (prev.status === 'battle' || prev.status === 'syncing') {
+                            setNotification({ title: "Victoria por Abandono", message: "Tu oponente ha abandonado el combate de forma abrupta. ¡Has ganado por abandono!" });
+                            return { ...prev, status: 'win' };
+                        }
+                        return prev;
+                    });
+                }
             });
 
         channel.subscribe(async (status) => {
@@ -1549,7 +1606,40 @@ export default function GameCanvas({
     // Save on beforeunload
     useEffect(() => {
         const handleBeforeUnload = () => {
-            if (!activeWildBattleRef.current && !activePvPBattleRef.current && !isGymBattle) {
+            if (activePvPBattleRef.current && (activePvPBattleRef.current.status === 'battle' || activePvPBattleRef.current.status === 'syncing')) {
+                // Cheating / abandoning during battle!
+                economyRef.current.pvp_losses = (economyRef.current.pvp_losses || 0) + 1;
+                economyRef.current.last_pvp_loss_time = Date.now();
+                economyRef.current.pvp_cooldown_duration = 300;
+                economyRef.current.in_pvp_battle = false;
+                
+                const saveState = {
+                    name: playerNameRef.current,
+                    time: 0,
+                    player_coordinates: [playerRef.current.x, playerRef.current.y],
+                    map: currentMapPathRef.current,
+                    economy_data: economyRef.current.toSaveData(),
+                    inventory_data: inventoryRef.current.toSaveData(),
+                    team_data: teamRef.current,
+                    pc_pokemon: pcPokemonRef.current
+                };
+
+                const fullSaves = JSON.parse(localStorage.getItem('pixel_tamer_saves') || '{}');
+                fullSaves[walletAddress || saveName] = saveState;
+                localStorage.setItem('pixel_tamer_saves', JSON.stringify(fullSaves));
+
+                // Send abandon broadcast to opponent
+                if (channelRef.current) {
+                    channelRef.current.send({
+                        type: 'broadcast',
+                        event: 'pvp_abandon',
+                        payload: {
+                            from: walletAddress,
+                            to: activePvPBattleRef.current.opponentAddress
+                        }
+                    });
+                }
+            } else if (!activeWildBattleRef.current && !activePvPBattleRef.current && !isGymBattle) {
                 const fullSaves = JSON.parse(localStorage.getItem('pixel_tamer_saves') || '{}');
                 fullSaves[walletAddress || saveName] = {
                     name: playerNameRef.current,
@@ -2741,6 +2831,7 @@ export default function GameCanvas({
 
         // Pay the bet
         economyRef.current.spendCoins(100);
+        economyRef.current.in_pvp_battle = true;
         setEconomy(new Economy(economyRef.current.toSaveData()));
         saveLocalEconomy();
 
@@ -4538,8 +4629,32 @@ export default function GameCanvas({
             {showShop && (
                 <div className="modal-overlay" style={{ zIndex: 350 }}>
                     <div className="modal-card pokemon-panel" style={{ width: '95%', maxWidth: '480px' }}>
-                        <div className="modal-header" style={{ borderBottom: 'none', paddingBottom: 0 }}>
-                            <h3 className="modal-title">🏪 PokéMart Store</h3>
+                        <div className="modal-header" style={{ borderBottom: 'none', paddingBottom: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <button 
+                                    onClick={() => {
+                                        setShowShop(false);
+                                        setShowMenuModal(true);
+                                    }} 
+                                    style={{
+                                        background: '#efebe9',
+                                        border: '1px solid #d7ccc8',
+                                        borderRadius: '4px',
+                                        color: '#3e2723',
+                                        fontSize: '9px',
+                                        fontWeight: 'bold',
+                                        cursor: 'pointer',
+                                        padding: '2px 6px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '2px',
+                                        fontFamily: 'monospace'
+                                    }}
+                                >
+                                    ⬅️ Menú
+                                </button>
+                                <h3 className="modal-title" style={{ margin: 0 }}>🏪 PokéMart Store</h3>
+                            </div>
                             <button onClick={() => setShowShop(false)} className="modal-close-btn">&times;</button>
                         </div>
                         <div className="modal-body" style={{ maxHeight: '72vh', overflowY: 'auto', paddingRight: '4px', paddingTop: '8px' }}>
@@ -6880,7 +6995,7 @@ export default function GameCanvas({
                                         if (activePvPBattle.status === 'win') {
                                             economyRef.current.pvp_wins = (economyRef.current.pvp_wins || 0) + 1;
                                             economyRef.current.addCoins(180);
-                                            showNotification("¡Ganaste!", "¡Ganaste el duelo y te llevas 180 Coins (después del 10% de fee de la casa)!");
+                                            showNotification("¡Ganaste!", "GANASTE EL DUELO TE LLEVAS 180 COINS.");
                                         } else if (activePvPBattle.status === 'loss') {
                                             economyRef.current.pvp_losses = (economyRef.current.pvp_losses || 0) + 1;
                                             showNotification("Derrota", "Perdiste el duelo y tu apuesta de 100 Coins.");
@@ -6890,6 +7005,7 @@ export default function GameCanvas({
                                             economyRef.current.addCoins(100);
                                             showNotification("Combate Cancelado", "El oponente huyó de la batalla. Se te han devuelto tus 100 Coins.");
                                         }
+                                        economyRef.current.in_pvp_battle = false;
                                         setEconomy(new Economy(economyRef.current.toSaveData()));
                                         saveLocalEconomy();
                                         setActivePvPBattle(null);
