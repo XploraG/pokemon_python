@@ -2526,23 +2526,26 @@ export default function GameCanvas({
                 // Automatically check if player stepped onto a door tile
                 const isWarped = checkAutoDoorEntry(player.x, player.y);
                 if (!isWarped) {
-                    // Check for wild encounter in tall grass (G2) on Route 1
-                    const isRoute1 = currentMapPathRef.current.includes('route1');
+                    // Check for wild encounter in tall grass (G2) or caves (CF)
+                    const currentMapPathStr = currentMapPathRef.current;
+                    const isWildArea = currentMapPathStr.includes('route') || currentMapPathStr.includes('cave') || currentMapPathStr.includes('procedural');
                     const col = Math.floor(player.x / mapData.tileSize);
                     const row = Math.floor((player.y - 1) / mapData.tileSize);
                     const tileType = mapData.grid[row]?.[col];
+                    const isEncounterTile = (tileType === 'G2') || (currentMapPathStr.includes('cave') && tileType === 'CF');
 
-                    if (isRoute1 && tileType === 'G2') {
+                    if (isWildArea && isEncounterTile) {
                         const hasActivePoke = teamRef.current.some((p: any) => p.hp > 0);
-                        if (hasActivePoke && Math.random() < 0.15) {
+                        // Lower encounter rate in caves since players walk on floor CF constantly
+                        const encounterRate = currentMapPathStr.includes('cave') ? 0.08 : 0.15;
+                        if (hasActivePoke && Math.random() < encounterRate) {
                             // Stop player movement
                             keysPressed.current = {};
                             player.isMoving = false;
                             player.animFrame = 0;
 
                             const playerLevel = economyRef.current.level;
-                            const wildLvl = Math.max(1, playerLevel * 2 + Math.floor(Math.random() * 3) - 1);
-                            const wildHp = 30 + wildLvl * 5;
+                            const wild = generateWildPokemon(currentMapPathStr, playerLevel);
 
                             // Reset battle stages and animations
                             setPlayerAtkStage(0);
@@ -2555,15 +2558,15 @@ export default function GameCanvas({
                             setFloatingDamage(null);
 
                             setDialogName("Hierba Alta");
-                            setActiveDialog(`¡Un Pikachu salvaje de Nvl. ${wildLvl} apareció!`);
+                            setActiveDialog(`¡Un ${wild.name} salvaje de Nvl. ${wild.level} apareció!`);
                             
                             setBattleMessage("¿Qué hará tu Pokémon?");
                             setShowBallSelect(false);
                             setActiveWildBattle({
-                                name: "Pikachu",
-                                level: wildLvl,
-                                hp: wildHp,
-                                maxHp: wildHp,
+                                name: wild.name,
+                                level: wild.level,
+                                hp: wild.hp,
+                                maxHp: wild.maxHp,
                                 captureRate: 0.35
                             });
                         }
@@ -2624,6 +2627,12 @@ export default function GameCanvas({
 
 
                 // Collision bounds check
+                const isOutOfBounds = nextX < 0 || nextX >= mapData.width || nextY < 0 || nextY >= mapData.height;
+                if (isOutOfBounds) {
+                    const transitioned = handleMapTransition(currentMapPathRef.current, nextX, nextY, dir);
+                    if (transitioned) return;
+                }
+
                 if (nextX >= 0 && nextX < mapData.width && nextY >= 0 && nextY < mapData.height) {
                     // Bounding Box Check against solid structure colliders
                     // Player feet hitbox: 18px wide and 8px high centered at feet base
@@ -2657,6 +2666,371 @@ export default function GameCanvas({
                 }
             }
         }
+    };
+
+    const handleMapTransition = (currentPath: string, nextX: number, nextY: number, dir: string): boolean => {
+        const path = currentPath.toLowerCase();
+
+        // 1. Tutorial map transitions (Pueblo Tutorial)
+        if (path.includes('tutorial')) {
+            if (dir === 'down') {
+                prepareProceduralMap('procedural://route_1');
+                transitionToMap('procedural://route_1', 480, 32);
+                return true;
+            }
+        }
+
+        // 2. Infinite Procedural map transitions (Progresses Southwards)
+        if (path.startsWith('procedural://')) {
+            const parts = path.replace('procedural://', '').split('_');
+            const type = parts[0];
+            const index = parseInt(parts[1] || '1', 10);
+
+            if (type === 'route') {
+                if (dir === 'up') {
+                    if (index === 1) {
+                        transitionToMap('/assets/maps/tutorial/main.json', 480, 1056); // Spawn at tutorial bottom path exit
+                    } else {
+                        const nextMap = `procedural://cave_${index - 1}`;
+                        prepareProceduralMap(nextMap);
+                        transitionToMap(nextMap, 512, 1216); // Spawn at cave bottom exit
+                    }
+                    return true;
+                }
+                if (dir === 'down') {
+                    const nextMap = `procedural://settlement_${index}`;
+                    prepareProceduralMap(nextMap);
+                    transitionToMap(nextMap, 640, 32); // Spawn at settlement top entry
+                    return true;
+                }
+            } else if (type === 'settlement') {
+                if (dir === 'up') {
+                    const nextMap = `procedural://route_${index}`;
+                    prepareProceduralMap(nextMap);
+                    transitionToMap(nextMap, 480, 1408); // Spawn at route bottom entry
+                    return true;
+                }
+                if (dir === 'down') {
+                    const nextMap = `procedural://cave_${index}`;
+                    prepareProceduralMap(nextMap);
+                    transitionToMap(nextMap, 512, 32); // Spawn at cave top entry
+                    return true;
+                }
+            } else if (type === 'cave') {
+                if (dir === 'up') {
+                    const nextMap = `procedural://settlement_${index}`;
+                    prepareProceduralMap(nextMap);
+                    transitionToMap(nextMap, 640, 1216); // Spawn at settlement bottom entry
+                    return true;
+                }
+                if (dir === 'down') {
+                    if (index >= 13) {
+                        setActiveDialog("La cueva se derrumba por el sur. ¡Has llegado al límite de la exploración! No puedes ir más allá.");
+                        return false;
+                    }
+                    const nextMap = `procedural://route_${index + 1}`;
+                    prepareProceduralMap(nextMap);
+                    transitionToMap(nextMap, 480, 32); // Spawn at next route top entry
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    };
+
+    const transitionToMap = (path: string, spawnX: number, spawnY: number) => {
+        setDialogName("Exploración");
+        setActiveDialog("Cargando nueva zona...");
+        playerRef.current.x = spawnX;
+        playerRef.current.y = spawnY;
+        playerRef.current.targetX = spawnX;
+        playerRef.current.targetY = spawnY;
+        playerRef.current.isMoving = false;
+        playerRef.current.animFrame = 0;
+        
+        setCurrentMapPath(path);
+        
+        setTimeout(() => {
+            setActiveDialog(null);
+        }, 100);
+    };
+
+    // Generate themed wild pokemon based on location
+    const generateWildPokemon = (mapPath: string, playerLevel: number) => {
+        const path = mapPath.toLowerCase();
+        let pool = ['rattata', 'pidgey', 'caterpie', 'weedle', 'pikachu']; // default route1 pool
+
+        if (path.includes('cave')) {
+            pool = ['zubat', 'geodude', 'onix', 'gastly', 'sandshrew', 'diglett', 'machop'];
+        } else if (path.includes('route2')) {
+            pool = ['spearow', 'ekans', 'sandshrew', 'jigglypuff', 'rattata', 'spearow'];
+        } else if (path.includes('route3')) {
+            pool = ['mankey', 'growlithe', 'abra', 'machop', 'bellsprout', 'oddish'];
+        } else if (path.includes('route4')) {
+            pool = ['meowth', 'psyduck', 'poliwag', 'slowpoke', 'doduo', 'rattata'];
+        } else if (path.includes('procedural')) {
+            pool = ['caterpie', 'weedle', 'pidgey', 'rattata', 'zubat', 'geodude', 'pikachu', 'oddish', 'bellsprout', 'mankey', 'meowth', 'psyduck'];
+        }
+
+        const randomName = pool[Math.floor(Math.random() * pool.length)];
+        const species = pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === randomName) || {
+            name: "pikachu",
+            hp: 35,
+            types: ["electric"]
+        };
+
+        const wildLvl = Math.max(1, playerLevel * 2 + Math.floor(Math.random() * 3) - 1);
+        const wildHp = (species.hp || 35) + wildLvl * 5;
+        const displayName = species.name.charAt(0).toUpperCase() + species.name.slice(1);
+        const displayType = species.types && species.types[0] ? (species.types[0].charAt(0).toUpperCase() + species.types[0].slice(1)) : 'Normal';
+
+        return {
+            id: `wild_${species.name}`,
+            name: displayName,
+            level: wildLvl,
+            hp: wildHp,
+            maxHp: wildHp,
+            type: displayType
+        };
+    };
+
+    // Seeded Random Number Generator
+    const createRandom = (seedStr: string) => {
+        let h = 2166136261 >>> 0;
+        for (let i = 0; i < seedStr.length; i++) {
+            h = Math.imul(h ^ seedStr.charCodeAt(i), 16777619);
+        }
+        h = h >>> 0;
+        return () => {
+            h = Math.imul(h ^ (h >>> 16), 2246822507);
+            h = Math.imul(h ^ (h >>> 13), 3266489909);
+            h = (h ^ (h >>> 16)) >>> 0;
+            return h / 4294967296;
+        };
+    };
+
+    // Seeded Procedural Map Generator (Settlements, Routes, Caves)
+    const prepareProceduralMap = (mapId: string) => {
+        if (assetCache[mapId]) return;
+
+        const parts = mapId.replace('procedural://', '').split('_');
+        const type = parts[0]; // 'route' | 'settlement' | 'cave'
+        const index = parseInt(parts[1] || '1', 10);
+        const rand = createRandom(mapId);
+
+        let mapJson: any = {};
+        let gridText = "";
+
+        if (type === 'route') {
+            const cols = 30;
+            const rows = 45;
+            const grid: string[][] = Array.from({ length: rows }, () => Array(cols).fill('G1'));
+
+            // Generate winding path
+            let pathCenter = 14 + Math.floor(rand() * 3);
+            for (let r = rows - 1; r >= 0; r--) {
+                if (r < rows - 1 && rand() < 0.35) {
+                    pathCenter += rand() < 0.5 ? -1 : 1;
+                    pathCenter = Math.max(5, Math.min(cols - 6, pathCenter));
+                }
+                grid[r][pathCenter - 1] = 'p4';
+                grid[r][pathCenter] = 'p5';
+                grid[r][pathCenter + 1] = 'p6';
+            }
+
+            // Fill borders with cliffs and trees
+            for (let r = 0; r < rows; r++) {
+                grid[r][0] = 'CW';
+                grid[r][1] = 'T';
+                grid[r][2] = 'T';
+                grid[r][cols - 3] = 'T';
+                grid[r][cols - 2] = 'T';
+                grid[r][cols - 1] = 'CW';
+            }
+
+            // Add tall grass G2 patches
+            for (let r = 5; r < rows - 5; r += 8) {
+                if (rand() < 0.7) {
+                    const grassCol = 3 + Math.floor(rand() * 4);
+                    for (let gr = r; gr < r + 4 && gr < rows; gr++) {
+                        for (let gc = grassCol; gc < grassCol + 4 && gc < cols; gc++) {
+                            if (grid[gr][gc] === 'G1') grid[gr][gc] = 'G2';
+                        }
+                    }
+                }
+                if (rand() < 0.7) {
+                    const grassCol = cols - 7 - Math.floor(rand() * 4);
+                    for (let gr = r; gr < r + 4 && gr < rows; gr++) {
+                        for (let gc = grassCol; gc < grassCol + 4 && gc < cols; gc++) {
+                            if (grid[gr][gc] === 'G1') grid[gr][gc] = 'G2';
+                        }
+                    }
+                }
+            }
+
+            gridText = grid.map(line => line.join(' ')).join('\n');
+
+            mapJson = {
+                "map": `${mapId.replace('.json', '')}.txt`,
+                "tile_size": 32,
+                "components": [
+                    { "type": "G1", "size": [32, 32], "image": "src/assets/maps/tutorial/imgs/grass1.png" },
+                    { "type": "G2", "size": [32, 32], "image": "src/assets/maps/tutorial/imgs/grass2.png" },
+                    { "type": "p4", "size": [32, 32], "image": "src/assets/maps/tutorial/imgs/path/path4.png" },
+                    { "type": "p5", "size": [32, 32], "image": "src/assets/maps/tutorial/imgs/path/path5.png" },
+                    { "type": "p6", "size": [32, 32], "image": "src/assets/maps/tutorial/imgs/path/path6.png" },
+                    { "type": "T", "size": [32, 32], "image": "src/assets/entities/structures/tree/tree.png", "isSolid": true },
+                    { "type": "CW", "size": [32, 32], "image": "src/assets/maps/tutorial/imgs/cave_wall.png", "isSolid": true }
+                ],
+                "entities": [
+                    {
+                        "location": "src/assets/entities/structures/sign/main.json",
+                        "coordinates": { "x": (pathCenter + 2) * 32, "y": 350 },
+                        "dialogs": [
+                            `Ruta de Exploración ${index}\n^ Norte: Siguiente Zona\nv Sur: Regresar`
+                        ]
+                    },
+                    {
+                        "location": "src/assets/entities/npcs/pokemons/pikachu/main.json",
+                        "coordinates": { "x": 160, "y": 500 }
+                    }
+                ]
+            };
+        } else if (type === 'settlement') {
+            const cols = 40;
+            const rows = 40;
+            const grid: string[][] = Array.from({ length: rows }, () => Array(cols).fill('G1'));
+
+            for (let r = 15; r < 25; r++) {
+                for (let c = 15; c < 25; c++) {
+                    grid[r][c] = 'p5';
+                }
+            }
+
+            for (let r = 0; r < rows; r++) {
+                for (let c = 18; c <= 21; c++) {
+                    grid[r][c] = 'p5';
+                }
+            }
+
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    const isRoad = c >= 18 && c <= 21;
+                    const isBorder = r < 3 || r > rows - 4 || c < 3 || c > cols - 4;
+                    if (isBorder && !isRoad) {
+                        grid[r][c] = 'T';
+                    }
+                }
+            }
+
+            gridText = grid.map(line => line.join(' ')).join('\n');
+
+            mapJson = {
+                "map": `${mapId.replace('.json', '')}.txt`,
+                "tile_size": 32,
+                "components": [
+                    { "type": "G1", "size": [32, 32], "image": "src/assets/maps/tutorial/imgs/grass1.png" },
+                    { "type": "p5", "size": [32, 32], "image": "src/assets/maps/tutorial/imgs/path/path5.png" },
+                    { "type": "T", "size": [32, 32], "image": "src/assets/entities/structures/tree/tree.png", "isSolid": true }
+                ],
+                "entities": [
+                    {
+                        "location": "src/assets/entities/structures/pokemoncenter/main.json",
+                        "coordinates": { "x": 160, "y": 160 }
+                    },
+                    {
+                        "location": "src/assets/entities/structures/pokemonmarket/main.json",
+                        "coordinates": { "x": 960, "y": 160 }
+                    },
+                    {
+                        "location": "src/assets/entities/structures/redhouse/main.json",
+                        "coordinates": { "x": 160, "y": 800 }
+                    },
+                    {
+                        "location": "src/assets/entities/structures/redhouse/main.json",
+                        "coordinates": { "x": 960, "y": 800 }
+                    },
+                    {
+                        "location": "src/assets/entities/npcs/persons/grandpa/main.json",
+                        "coordinates": { "x": 640, "y": 640 },
+                        "dialogs": [
+                            `¡Bienvenido a Pueblo Semilla ${index}!`,
+                            "Un refugio pacífico en medio de la exploración infinita.",
+                            "Si sigues hacia el norte, encontrarás una cueva misteriosa."
+                        ]
+                    },
+                    {
+                        "location": "src/assets/entities/structures/sign/main.json",
+                        "coordinates": { "x": 544, "y": 800 },
+                        "dialogs": [
+                            `Pueblo Semilla ${index}\n^ Norte: Hacia Cueva\nv Sur: Hacia Ruta`
+                        ]
+                    }
+                ]
+            };
+
+            if (index <= 12) {
+                mapJson.entities.push({
+                    "location": "src/assets/entities/structures/gym/main.json",
+                    "coordinates": { "x": 512, "y": 480 }
+                });
+            }
+        } else if (type === 'cave') {
+            const cols = 30;
+            const rows = 40;
+            const grid: string[][] = Array.from({ length: rows }, () => Array(cols).fill('CW'));
+
+            const carveCircle = (cx: number, cy: number, r: number) => {
+                for (let y = cy - r; y <= cy + r; y++) {
+                    for (let x = cx - r; x <= cx + r; x++) {
+                        if (x >= 2 && x < cols - 2 && y >= 2 && y < rows - 2) {
+                            const dx = x - cx;
+                            const dy = y - cy;
+                            if (dx * dx + dy * dy <= r * r) {
+                                grid[y][x] = 'CF';
+                            }
+                        }
+                    }
+                }
+            };
+
+            carveCircle(15, 30, 6);
+            carveCircle(15, 10, 6);
+
+            for (let r = 0; r < rows; r++) {
+                grid[r][14] = 'CF';
+                grid[r][15] = 'CF';
+                grid[r][16] = 'CF';
+            }
+
+            gridText = grid.map(line => line.join(' ')).join('\n');
+
+            mapJson = {
+                "map": `${mapId.replace('.json', '')}.txt`,
+                "tile_size": 32,
+                "components": [
+                    { "type": "CF", "size": [32, 32], "image": "src/assets/maps/tutorial/imgs/cave_floor.png" },
+                    { "type": "CW", "size": [32, 32], "image": "src/assets/maps/tutorial/imgs/cave_wall.png", "isSolid": true }
+                ],
+                "entities": [
+                    {
+                        "location": "src/assets/entities/structures/sign/main.json",
+                        "coordinates": { "x": 576, "y": 640 },
+                        "dialogs": [
+                            `Cueva Oscura Procedural ${index}\n^ Norte: Siguiente Ruta\nv Sur: Regresar al Pueblo`
+                        ]
+                    },
+                    {
+                        "location": "src/assets/entities/npcs/pokemons/pokeball/main.json",
+                        "coordinates": { "x": 288, "y": 320 }
+                    }
+                ]
+            };
+        }
+
+        assetCache[mapId] = mapJson;
+        assetCache[`${mapId.replace('.json', '')}.txt`] = gridText;
     };
 
     // Check if player is standing on a door tile and automatically enter/interact
@@ -3141,7 +3515,7 @@ export default function GameCanvas({
                     const returnMap = returnMapRef.current.toLowerCase();
                     if (returnMap.includes('procedural://settlement_')) {
                         const parts = returnMap.replace('procedural://settlement_', '').split('_');
-                        gymIndex = parseInt(parts[0] || '1', 10);
+                        gymIndex = parseInt(parts[0] || '1', 10) + 1;
                     }
 
                     if (gymIndex > 13) {
@@ -3608,7 +3982,7 @@ export default function GameCanvas({
                         const returnMap = returnMapRef.current.toLowerCase();
                         if (returnMap.includes('procedural://settlement_')) {
                             const parts = returnMap.replace('procedural://settlement_', '').split('_');
-                            gymIndex = parseInt(parts[0] || '1', 10);
+                            gymIndex = parseInt(parts[0] || '1', 10) + 1;
                         }
 
                         const gymBosses = [
@@ -3807,6 +4181,8 @@ export default function GameCanvas({
                         );
                         
                         // Warp to Pokemon Center
+                        returnMapRef.current = '/assets/maps/tutorial/main.json';
+                        returnCoordsRef.current = [600, 748];
                         playerRef.current.x = 144;
                         playerRef.current.y = 224;
                         playerRef.current.targetX = 144;
@@ -4187,6 +4563,8 @@ export default function GameCanvas({
                             const nextActiveIdx = updatedTeam.findIndex((p: any) => p.hp > 0);
                             if (nextActiveIdx === -1) {
                                 showNotification("Derrota", `El ${activeWildBattle.name} salvaje contraatacó con ${wildDmg} de daño. ¡Tu equipo se debilitó por completo!`);
+                                returnMapRef.current = '/assets/maps/tutorial/main.json';
+                                returnCoordsRef.current = [600, 748];
                                 playerRef.current.x = 144;
                                 playerRef.current.y = 224;
                                 playerRef.current.targetX = 144;
@@ -4243,6 +4621,8 @@ export default function GameCanvas({
                         `¡No pudiste escapar! El ${activeWildBattle.name} salvaje te atacó e infligió ${wildDmg} de daño, debilitando a todo tu equipo. Fuiste llevado al Centro Pokémon.`
                     );
                     
+                    returnMapRef.current = '/assets/maps/tutorial/main.json';
+                    returnCoordsRef.current = [600, 748];
                     playerRef.current.x = 144;
                     playerRef.current.y = 224;
                     playerRef.current.targetX = 144;
