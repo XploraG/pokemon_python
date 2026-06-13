@@ -1,40 +1,55 @@
 {
-  "map": "src/assets/maps/pokecenter/main.txt",
-  "tile_size": 32,
-  "components": [
-    {
-      "type": "W1",
-      "size": [32, 32],
-      "image": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'><rect width='32' height='32' fill='%233a4454'/><rect x='1' y='1' width='30' height='30' fill='%234a5568'/><line x1='0' y1='16' x2='32' y2='16' stroke='%232d3748' stroke-width='2'/></svg>"
-    },
-    {
-      "type": "F1",
-      "size": [32, 32],
-      "image": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'><rect width='32' height='32' fill='%23edf2f7'/><rect x='2' y='2' width='28' height='28' fill='%23f7fafc'/></svg>"
-    },
-    {
-      "type": "C1",
-      "size": [32, 32],
-      "image": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'><rect width='32' height='32' fill='%23dd6b20'/><rect x='1' y='1' width='30' height='30' fill='%23ed8936'/><rect x='3' y='3' width='26' height='4' fill='%23fbd38d'/></svg>"
-    },
-    {
-      "type": "CP",
-      "size": [32, 32],
-      "image": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'><rect width='32' height='32' fill='%23e53e3e'/><rect x='2' y='2' width='28' height='28' fill='%23fc8181'/></svg>"
-    },
-    {
-      "type": "B1",
-      "size": [32, 32],
-      "image": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'><rect width='32' height='32' fill='%231a202c'/></svg>"
-    }
-  ],
-  "entities": [
-    {
-      "location": "src/assets/entities/npcs/persons/nursejoy/main.json",
-      "coordinates": {
-        "x": 128,
-        "y": 64
-      }
-    }
-  ]
+    "map": "src/assets/maps/pokecenter/main.txt",
+    "tile_size": 32,
+    "components": [
+        {
+            "type": "W1",
+            "size": [
+                32,
+                32
+            ],
+            "image": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'><rect width='32' height='32' fill='%233a4454'/><rect x='1' y='1' width='30' height='30' fill='%234a5568'/><line x1='0' y1='16' x2='32' y2='16' stroke='%232d3748' stroke-width='2'/></svg>"
+        },
+        {
+            "type": "F1",
+            "size": [
+                32,
+                32
+            ],
+            "image": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'><rect width='32' height='32' fill='%23edf2f7'/><rect x='2' y='2' width='28' height='28' fill='%23f7fafc'/></svg>"
+        },
+        {
+            "type": "C1",
+            "size": [
+                32,
+                32
+            ],
+            "image": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'><rect width='32' height='32' fill='%23dd6b20'/><rect x='1' y='1' width='30' height='30' fill='%23ed8936'/><rect x='3' y='3' width='26' height='4' fill='%23fbd38d'/></svg>"
+        },
+        {
+            "type": "CP",
+            "size": [
+                32,
+                32
+            ],
+            "image": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'><rect width='32' height='32' fill='%23e53e3e'/><rect x='2' y='2' width='28' height='28' fill='%23fc8181'/></svg>"
+        },
+        {
+            "type": "B1",
+            "size": [
+                32,
+                32
+            ],
+            "image": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'><rect width='32' height='32' fill='%231a202c'/></svg>"
+        }
+    ],
+    "entities": [
+        {
+            "location": "src/assets/entities/npcs/persons/nursejoy/main.json",
+            "coordinates": {
+                "x": 128,
+                "y": 64
+            }
+        }
+    ]
 }

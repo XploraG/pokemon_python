@@ -1,108 +1,134 @@
 {
-  "map": "src/assets/maps/city1/main.txt",
-  "tile_size": 32,
-  "components": [
-    {
-      "type": "G1",
-      "size": [
-        32,
-        32
-      ],
-      "image": "src/assets/maps/tutorial/imgs/grass1.png"
-    },
-    {
-      "type": "p5",
-      "size": [
-        32,
-        32
-      ],
-      "image": "src/assets/maps/tutorial/imgs/path/path5.png"
-    },
-    {
-      "type": "T",
-      "size": [
-        32,
-        32
-      ],
-      "image": "src/assets/entities/structures/tree/tree1.png",
-      "isSolid": true
-    },
-    {
-      "type": "W",
-      "size": [
-        32,
-        32
-      ],
-      "image": "src/assets/entities/structures/fence/main.png",
-      "isSolid": true
-    }
-  ],
-  "entities": [
-    {
-      "location": "src/assets/entities/structures/pokemoncenter/main.json",
-      "coordinates": {
-        "x": 600,
-        "y": 800
-      }
-    },
-    {
-      "location": "src/assets/entities/structures/pokemonmarket/main.json",
-      "coordinates": {
-        "x": 800,
-        "y": 800
-      }
-    },
-    {
-      "location": "src/assets/entities/structures/gym/main.json",
-      "coordinates": {
-        "x": 600,
-        "y": 400
-      }
-    },
-    {
-      "location": "src/assets/entities/structures/redhouse/main.json",
-      "coordinates": {
-        "x": 400,
-        "y": 400
-      }
-    },
-    {
-      "location": "src/assets/entities/structures/redhouse/main.json",
-      "coordinates": {
-        "x": 850,
-        "y": 400
-      }
-    },
-    {
-      "location": "src/assets/entities/npcs/persons/childmary/main.json",
-      "coordinates": {
-        "x": 500,
-        "y": 600
-      },
-      "dialogs": [
-        "¡Bienvenido a Ciudad Nueva!",
-        "Aquí podrás desafiar a nuestro Líder de Gimnasio."
-      ]
-    },
-    {
-      "location": "src/assets/entities/npcs/persons/grandpa/main.json",
-      "coordinates": {
-        "x": 750,
-        "y": 600
-      },
-      "dialogs": [
-        "El Centro Pokémon es gratis, asegúrate de descansar."
-      ]
-    },
-    {
-      "location": "src/assets/entities/structures/sign/main.json",
-      "coordinates": {
-        "x": 1000,
-        "y": 1150
-      },
-      "dialogs": [
-        "Ciudad Nueva\nv Sur: Regresar a Cueva Oscura"
-      ]
-    }
-  ]
+    "map": "src/assets/maps/city1/main.txt",
+    "tile_size": 32,
+    "components": [
+        {
+            "type": "G1",
+            "size": [
+                32,
+                32
+            ],
+            "image": "src/assets/maps/tutorial/imgs/grass1.png"
+        },
+        {
+            "type": "p5",
+            "size": [
+                32,
+                32
+            ],
+            "image": "src/assets/maps/tutorial/imgs/path/path5.png"
+        },
+        {
+            "type": "T",
+            "size": [
+                32,
+                32
+            ],
+            "image": "src/assets/entities/structures/tree/tree1.png",
+            "isSolid": true
+        },
+        {
+            "type": "W",
+            "size": [
+                32,
+                32
+            ],
+            "image": "src/assets/entities/structures/fence/main.png",
+            "isSolid": true
+        },
+        {
+            "type": "CE",
+            "size": [
+                32,
+                32
+            ],
+            "image": "src/assets/maps/tutorial/imgs/cave_entrance.png"
+        },
+        {
+            "type": "CW",
+            "size": [
+                32,
+                32
+            ],
+            "image": "src/assets/maps/tutorial/imgs/cave_wall.png"
+        }
+    ],
+    "entities": [
+        {
+            "location": "src/assets/entities/structures/pokemoncenter/main.json",
+            "coordinates": {
+                "x": 600,
+                "y": 800
+            }
+        },
+        {
+            "location": "src/assets/entities/structures/pokemonmarket/main.json",
+            "coordinates": {
+                "x": 800,
+                "y": 800
+            }
+        },
+        {
+            "location": "src/assets/entities/structures/gym/main.json",
+            "coordinates": {
+                "x": 600,
+                "y": 400
+            }
+        },
+        {
+            "location": "src/assets/entities/structures/redhouse/main.json",
+            "coordinates": {
+                "x": 400,
+                "y": 400
+            }
+        },
+        {
+            "location": "src/assets/entities/structures/redhouse/main.json",
+            "coordinates": {
+                "x": 850,
+                "y": 400
+            }
+        },
+        {
+            "location": "src/assets/entities/npcs/persons/childmary/main.json",
+            "coordinates": {
+                "x": 500,
+                "y": 600
+            },
+            "dialogs": [
+                "¡Bienvenido a Ciudad Nueva!",
+                "Aquí podrás desafiar a nuestro Líder de Gimnasio."
+            ]
+        },
+        {
+            "location": "src/assets/entities/npcs/persons/grandpa/main.json",
+            "coordinates": {
+                "x": 750,
+                "y": 600
+            },
+            "dialogs": [
+                "El Centro Pokémon es gratis, asegúrate de descansar."
+            ]
+        },
+        {
+            "location": "src/assets/entities/structures/sign/main.json",
+            "coordinates": {
+                "x": 1000,
+                "y": 1150
+            },
+            "dialogs": [
+                "Ciudad Nueva\nv Sur: Regresar a Cueva Oscura"
+            ]
+        },
+        {
+            "location": "src/assets/entities/structures/sign/main.json",
+            "coordinates": {
+                "x": 100,
+                "y": 640
+            },
+            "dialogs": [
+                "Ciudad Nueva\n< Oeste: Regresar a Ruta 4"
+            ]
+        }
+    ]
 }

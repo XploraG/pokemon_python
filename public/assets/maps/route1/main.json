@@ -1,529 +1,529 @@
 {
-  "map": "src/assets/maps/route1/main.txt",
-  "tile_size": 32,
-  "components": [
-    {
-      "type": "G1",
-      "size": [
-        32,
-        32
-      ],
-      "image": "src/assets/maps/tutorial/imgs/grass1.png"
-    },
-    {
-      "type": "G2",
-      "size": [
-        32,
-        32
-      ],
-      "image": "src/assets/maps/tutorial/imgs/grass2.png"
-    },
-    {
-      "type": "p1",
-      "size": [
-        32,
-        32
-      ],
-      "image": "src/assets/maps/tutorial/imgs/path/path1.png"
-    },
-    {
-      "type": "p2",
-      "size": [
-        32,
-        32
-      ],
-      "image": "src/assets/maps/tutorial/imgs/path/path2.png"
-    },
-    {
-      "type": "p3",
-      "size": [
-        32,
-        32
-      ],
-      "image": "src/assets/maps/tutorial/imgs/path/path3.png"
-    },
-    {
-      "type": "p4",
-      "size": [
-        32,
-        32
-      ],
-      "image": "src/assets/maps/tutorial/imgs/path/path4.png"
-    },
-    {
-      "type": "p5",
-      "size": [
-        32,
-        32
-      ],
-      "image": "src/assets/maps/tutorial/imgs/path/path5.png"
-    },
-    {
-      "type": "p6",
-      "size": [
-        32,
-        32
-      ],
-      "image": "src/assets/maps/tutorial/imgs/path/path6.png"
-    },
-    {
-      "type": "p7",
-      "size": [
-        32,
-        32
-      ],
-      "image": "src/assets/maps/tutorial/imgs/path/path7.png"
-    },
-    {
-      "type": "p8",
-      "size": [
-        32,
-        32
-      ],
-      "image": "src/assets/maps/tutorial/imgs/path/path8.png"
-    },
-    {
-      "type": "p9",
-      "size": [
-        32,
-        32
-      ],
-      "image": "src/assets/maps/tutorial/imgs/path/path9.png"
-    },
-    {
-      "type": "CW",
-      "size": [
-        32,
-        32
-      ],
-      "image": "src/assets/maps/tutorial/imgs/cave_wall.png"
-    },
-    {
-      "type": "CE",
-      "size": [
-        32,
-        32
-      ],
-      "image": "src/assets/maps/tutorial/imgs/cave_entrance.png"
-    }
-  ],
-  "entities": [
-    {
-      "location": "src/assets/entities/npcs/pokemons/pikachu/main.json",
-      "coordinates": {
-        "x": 300,
-        "y": 400
-      }
-    },
-    {
-      "location": "src/assets/entities/npcs/pokemons/pikachu/main.json",
-      "coordinates": {
-        "x": 800,
-        "y": 250
-      }
-    },
-    {
-      "location": "src/assets/entities/npcs/pokemons/pikachu/main.json",
-      "coordinates": {
-        "x": 150,
-        "y": 800
-      }
-    },
-    {
-      "location": "src/assets/entities/npcs/pokemons/pikachu/main.json",
-      "coordinates": {
-        "x": 1100,
-        "y": 600
-      }
-    },
-    {
-      "location": "src/assets/entities/npcs/pokemons/snorlax/main.json",
-      "coordinates": {
-        "x": 550,
-        "y": 900
-      }
-    },
-    {
-      "location": "src/assets/entities/npcs/pokemons/pokeball/main.json",
-      "coordinates": {
-        "x": 100,
-        "y": 200
-      }
-    },
-    {
-      "location": "src/assets/entities/npcs/pokemons/pokeball/main.json",
-      "coordinates": {
-        "x": 1200,
-        "y": 900
-      }
-    },
-    {
-      "location": "src/assets/entities/npcs/persons/athletemike/main.json",
-      "coordinates": {
-        "x": 500,
-        "y": 180
-      }
-    },
-    {
-      "location": "src/assets/entities/npcs/persons/buisnessman/main.json",
-      "coordinates": {
-        "x": 900,
-        "y": 500
-      }
-    },
-    {
-      "location": "src/assets/entities/npcs/persons/childmary/main.json",
-      "coordinates": {
-        "x": 200,
-        "y": 1050
-      }
-    },
-    {
-      "location": "src/assets/entities/structures/tree/main.json",
-      "coordinates": [
-        {
-          "x": 0,
-          "y": 0
-        },
-        {
-          "x": 0,
-          "y": 60
-        },
-        {
-          "x": 0,
-          "y": 120
-        },
-        {
-          "x": 0,
-          "y": 180
-        },
-        {
-          "x": 0,
-          "y": 240
-        },
-        {
-          "x": 0,
-          "y": 300
-        },
-        {
-          "x": 0,
-          "y": 360
-        },
-        {
-          "x": 0,
-          "y": 420
-        },
-        {
-          "x": 0,
-          "y": 480
-        },
-        {
-          "x": 0,
-          "y": 540
-        },
-        {
-          "x": 0,
-          "y": 600
-        },
-        {
-          "x": 0,
-          "y": 660
-        },
-        {
-          "x": 0,
-          "y": 720
-        },
-        {
-          "x": 0,
-          "y": 780
-        },
-        {
-          "x": 0,
-          "y": 840
-        },
-        {
-          "x": 0,
-          "y": 900
-        },
-        {
-          "x": 0,
-          "y": 960
-        },
-        {
-          "x": 0,
-          "y": 1020
-        },
-        {
-          "x": 0,
-          "y": 1080
-        },
-        {
-          "x": 0,
-          "y": 1140
-        },
-        {
-          "x": 0,
-          "y": 1200
-        },
-        {
-          "x": 1380,
-          "y": 0
-        },
-        {
-          "x": 1380,
-          "y": 60
-        },
-        {
-          "x": 1380,
-          "y": 120
-        },
-        {
-          "x": 1380,
-          "y": 180
-        },
-        {
-          "x": 1380,
-          "y": 240
-        },
-        {
-          "x": 1380,
-          "y": 300
-        },
-        {
-          "x": 1380,
-          "y": 360
-        },
-        {
-          "x": 1380,
-          "y": 420
-        },
-        {
-          "x": 1380,
-          "y": 480
-        },
-        {
-          "x": 1380,
-          "y": 540
-        },
-        {
-          "x": 1380,
-          "y": 600
-        },
-        {
-          "x": 1380,
-          "y": 660
-        },
-        {
-          "x": 1380,
-          "y": 720
-        },
-        {
-          "x": 1380,
-          "y": 780
-        },
-        {
-          "x": 1380,
-          "y": 840
-        },
-        {
-          "x": 1380,
-          "y": 900
-        },
-        {
-          "x": 1380,
-          "y": 960
-        },
-        {
-          "x": 1380,
-          "y": 1020
-        },
-        {
-          "x": 1380,
-          "y": 1080
-        },
-        {
-          "x": 1380,
-          "y": 1140
-        },
-        {
-          "x": 1380,
-          "y": 1200
-        },
-        {
-          "x": 0,
-          "y": -40
-        },
-        {
-          "x": 60,
-          "y": -40
-        },
-        {
-          "x": 660,
-          "y": -40
-        },
-        {
-          "x": 720,
-          "y": -40
-        },
-        {
-          "x": 780,
-          "y": -40
-        },
-        {
-          "x": 840,
-          "y": -40
-        },
-        {
-          "x": 900,
-          "y": -40
-        },
-        {
-          "x": 960,
-          "y": -40
-        },
-        {
-          "x": 1020,
-          "y": -40
-        },
-        {
-          "x": 1080,
-          "y": -40
-        },
-        {
-          "x": 1140,
-          "y": -40
-        },
-        {
-          "x": 1200,
-          "y": -40
-        },
-        {
-          "x": 1260,
-          "y": -40
-        },
-        {
-          "x": 1320,
-          "y": -40
-        },
-        {
-          "x": 1380,
-          "y": -40
-        },
-        {
-          "x": 0,
-          "y": 1200
-        },
-        {
-          "x": 60,
-          "y": 1200
-        },
-        {
-          "x": 120,
-          "y": 1200
-        },
-        {
-          "x": 180,
-          "y": 1200
-        },
-        {
-          "x": 240,
-          "y": 1200
-        },
-        {
-          "x": 300,
-          "y": 1200
-        },
-        {
-          "x": 360,
-          "y": 1200
-        },
-        {
-          "x": 420,
-          "y": 1200
-        },
-        {
-          "x": 660,
-          "y": 1200
-        },
-        {
-          "x": 720,
-          "y": 1200
-        },
-        {
-          "x": 780,
-          "y": 1200
-        },
-        {
-          "x": 840,
-          "y": 1200
-        },
-        {
-          "x": 900,
-          "y": 1200
-        },
-        {
-          "x": 960,
-          "y": 1200
-        },
-        {
-          "x": 1020,
-          "y": 1200
-        },
-        {
-          "x": 1080,
-          "y": 1200
-        },
-        {
-          "x": 1140,
-          "y": 1200
-        },
-        {
-          "x": 1200,
-          "y": 1200
-        },
-        {
-          "x": 1260,
-          "y": 1200
-        },
-        {
-          "x": 1320,
-          "y": 1200
-        },
-        {
-          "x": 1380,
-          "y": 1200
+    "map": "src/assets/maps/route1/main.txt",
+    "tile_size": 32,
+    "components": [
+        {
+            "type": "G1",
+            "size": [
+                32,
+                32
+            ],
+            "image": "src/assets/maps/tutorial/imgs/grass1.png"
+        },
+        {
+            "type": "G2",
+            "size": [
+                32,
+                32
+            ],
+            "image": "src/assets/maps/tutorial/imgs/grass2.png"
+        },
+        {
+            "type": "p1",
+            "size": [
+                32,
+                32
+            ],
+            "image": "src/assets/maps/tutorial/imgs/path/path1.png"
+        },
+        {
+            "type": "p2",
+            "size": [
+                32,
+                32
+            ],
+            "image": "src/assets/maps/tutorial/imgs/path/path2.png"
+        },
+        {
+            "type": "p3",
+            "size": [
+                32,
+                32
+            ],
+            "image": "src/assets/maps/tutorial/imgs/path/path3.png"
+        },
+        {
+            "type": "p4",
+            "size": [
+                32,
+                32
+            ],
+            "image": "src/assets/maps/tutorial/imgs/path/path4.png"
+        },
+        {
+            "type": "p5",
+            "size": [
+                32,
+                32
+            ],
+            "image": "src/assets/maps/tutorial/imgs/path/path5.png"
+        },
+        {
+            "type": "p6",
+            "size": [
+                32,
+                32
+            ],
+            "image": "src/assets/maps/tutorial/imgs/path/path6.png"
+        },
+        {
+            "type": "p7",
+            "size": [
+                32,
+                32
+            ],
+            "image": "src/assets/maps/tutorial/imgs/path/path7.png"
+        },
+        {
+            "type": "p8",
+            "size": [
+                32,
+                32
+            ],
+            "image": "src/assets/maps/tutorial/imgs/path/path8.png"
+        },
+        {
+            "type": "p9",
+            "size": [
+                32,
+                32
+            ],
+            "image": "src/assets/maps/tutorial/imgs/path/path9.png"
+        },
+        {
+            "type": "CW",
+            "size": [
+                32,
+                32
+            ],
+            "image": "src/assets/maps/tutorial/imgs/cave_wall.png"
+        },
+        {
+            "type": "CE",
+            "size": [
+                32,
+                32
+            ],
+            "image": "src/assets/maps/tutorial/imgs/cave_entrance.png"
         }
-      ]
-    },
-    {
-      "location": "src/assets/entities/structures/sign/main.json",
-      "coordinates": {
-        "x": 1000,
-        "y": 350
-      },
-      "dialogs": [
-        "Ruta 1\n-> Entrada a la Cueva Oscura\n(Hacia Ciudad Nueva)"
-      ]
-    },
-    {
-      "location": "src/assets/entities/structures/sign/main.json",
-      "coordinates": {
-        "x": 608,
-        "y": 1200
-      },
-      "dialogs": [
-        "Ruta 1\nv Sur: Hacia Ruta 3"
-      ]
-    },
-    {
-      "location": "src/assets/entities/structures/sign/main.json",
-      "coordinates": {
-        "x": 500,
-        "y": 100
-      },
-      "dialogs": [
-        "Ruta 1\n^ Norte: Regresar a Pueblo Tutorial"
-      ]
-    }
-  ]
+    ],
+    "entities": [
+        {
+            "location": "src/assets/entities/npcs/pokemons/pikachu/main.json",
+            "coordinates": {
+                "x": 300,
+                "y": 400
+            }
+        },
+        {
+            "location": "src/assets/entities/npcs/pokemons/pikachu/main.json",
+            "coordinates": {
+                "x": 800,
+                "y": 250
+            }
+        },
+        {
+            "location": "src/assets/entities/npcs/pokemons/pikachu/main.json",
+            "coordinates": {
+                "x": 150,
+                "y": 800
+            }
+        },
+        {
+            "location": "src/assets/entities/npcs/pokemons/pikachu/main.json",
+            "coordinates": {
+                "x": 1100,
+                "y": 600
+            }
+        },
+        {
+            "location": "src/assets/entities/npcs/pokemons/snorlax/main.json",
+            "coordinates": {
+                "x": 550,
+                "y": 900
+            }
+        },
+        {
+            "location": "src/assets/entities/npcs/pokemons/pokeball/main.json",
+            "coordinates": {
+                "x": 100,
+                "y": 200
+            }
+        },
+        {
+            "location": "src/assets/entities/npcs/pokemons/pokeball/main.json",
+            "coordinates": {
+                "x": 1200,
+                "y": 900
+            }
+        },
+        {
+            "location": "src/assets/entities/npcs/persons/athletemike/main.json",
+            "coordinates": {
+                "x": 500,
+                "y": 180
+            }
+        },
+        {
+            "location": "src/assets/entities/npcs/persons/buisnessman/main.json",
+            "coordinates": {
+                "x": 900,
+                "y": 500
+            }
+        },
+        {
+            "location": "src/assets/entities/npcs/persons/childmary/main.json",
+            "coordinates": {
+                "x": 200,
+                "y": 1050
+            }
+        },
+        {
+            "location": "src/assets/entities/structures/tree/main.json",
+            "coordinates": [
+                {
+                    "x": 0,
+                    "y": 0
+                },
+                {
+                    "x": 0,
+                    "y": 60
+                },
+                {
+                    "x": 0,
+                    "y": 120
+                },
+                {
+                    "x": 0,
+                    "y": 180
+                },
+                {
+                    "x": 0,
+                    "y": 240
+                },
+                {
+                    "x": 0,
+                    "y": 300
+                },
+                {
+                    "x": 0,
+                    "y": 360
+                },
+                {
+                    "x": 0,
+                    "y": 420
+                },
+                {
+                    "x": 0,
+                    "y": 480
+                },
+                {
+                    "x": 0,
+                    "y": 540
+                },
+                {
+                    "x": 0,
+                    "y": 600
+                },
+                {
+                    "x": 0,
+                    "y": 660
+                },
+                {
+                    "x": 0,
+                    "y": 720
+                },
+                {
+                    "x": 0,
+                    "y": 780
+                },
+                {
+                    "x": 0,
+                    "y": 840
+                },
+                {
+                    "x": 0,
+                    "y": 900
+                },
+                {
+                    "x": 0,
+                    "y": 960
+                },
+                {
+                    "x": 0,
+                    "y": 1020
+                },
+                {
+                    "x": 0,
+                    "y": 1080
+                },
+                {
+                    "x": 0,
+                    "y": 1140
+                },
+                {
+                    "x": 0,
+                    "y": 1200
+                },
+                {
+                    "x": 1380,
+                    "y": 0
+                },
+                {
+                    "x": 1380,
+                    "y": 60
+                },
+                {
+                    "x": 1380,
+                    "y": 120
+                },
+                {
+                    "x": 1380,
+                    "y": 180
+                },
+                {
+                    "x": 1380,
+                    "y": 240
+                },
+                {
+                    "x": 1380,
+                    "y": 300
+                },
+                {
+                    "x": 1380,
+                    "y": 360
+                },
+                {
+                    "x": 1380,
+                    "y": 420
+                },
+                {
+                    "x": 1380,
+                    "y": 480
+                },
+                {
+                    "x": 1380,
+                    "y": 540
+                },
+                {
+                    "x": 1380,
+                    "y": 600
+                },
+                {
+                    "x": 1380,
+                    "y": 660
+                },
+                {
+                    "x": 1380,
+                    "y": 720
+                },
+                {
+                    "x": 1380,
+                    "y": 780
+                },
+                {
+                    "x": 1380,
+                    "y": 840
+                },
+                {
+                    "x": 1380,
+                    "y": 900
+                },
+                {
+                    "x": 1380,
+                    "y": 960
+                },
+                {
+                    "x": 1380,
+                    "y": 1020
+                },
+                {
+                    "x": 1380,
+                    "y": 1080
+                },
+                {
+                    "x": 1380,
+                    "y": 1140
+                },
+                {
+                    "x": 1380,
+                    "y": 1200
+                },
+                {
+                    "x": 0,
+                    "y": -40
+                },
+                {
+                    "x": 60,
+                    "y": -40
+                },
+                {
+                    "x": 660,
+                    "y": -40
+                },
+                {
+                    "x": 720,
+                    "y": -40
+                },
+                {
+                    "x": 780,
+                    "y": -40
+                },
+                {
+                    "x": 840,
+                    "y": -40
+                },
+                {
+                    "x": 900,
+                    "y": -40
+                },
+                {
+                    "x": 960,
+                    "y": -40
+                },
+                {
+                    "x": 1020,
+                    "y": -40
+                },
+                {
+                    "x": 1080,
+                    "y": -40
+                },
+                {
+                    "x": 1140,
+                    "y": -40
+                },
+                {
+                    "x": 1200,
+                    "y": -40
+                },
+                {
+                    "x": 1260,
+                    "y": -40
+                },
+                {
+                    "x": 1320,
+                    "y": -40
+                },
+                {
+                    "x": 1380,
+                    "y": -40
+                },
+                {
+                    "x": 0,
+                    "y": 1200
+                },
+                {
+                    "x": 60,
+                    "y": 1200
+                },
+                {
+                    "x": 120,
+                    "y": 1200
+                },
+                {
+                    "x": 180,
+                    "y": 1200
+                },
+                {
+                    "x": 240,
+                    "y": 1200
+                },
+                {
+                    "x": 300,
+                    "y": 1200
+                },
+                {
+                    "x": 360,
+                    "y": 1200
+                },
+                {
+                    "x": 420,
+                    "y": 1200
+                },
+                {
+                    "x": 660,
+                    "y": 1200
+                },
+                {
+                    "x": 720,
+                    "y": 1200
+                },
+                {
+                    "x": 780,
+                    "y": 1200
+                },
+                {
+                    "x": 840,
+                    "y": 1200
+                },
+                {
+                    "x": 900,
+                    "y": 1200
+                },
+                {
+                    "x": 960,
+                    "y": 1200
+                },
+                {
+                    "x": 1020,
+                    "y": 1200
+                },
+                {
+                    "x": 1080,
+                    "y": 1200
+                },
+                {
+                    "x": 1140,
+                    "y": 1200
+                },
+                {
+                    "x": 1200,
+                    "y": 1200
+                },
+                {
+                    "x": 1260,
+                    "y": 1200
+                },
+                {
+                    "x": 1320,
+                    "y": 1200
+                },
+                {
+                    "x": 1380,
+                    "y": 1200
+                }
+            ]
+        },
+        {
+            "location": "src/assets/entities/structures/sign/main.json",
+            "coordinates": {
+                "x": 1000,
+                "y": 350
+            },
+            "dialogs": [
+                "Ruta 1\n-> Entrada a la Cueva Oscura\n(Camino Difícil a Ciudad Nueva)"
+            ]
+        },
+        {
+            "location": "src/assets/entities/structures/sign/main.json",
+            "coordinates": {
+                "x": 608,
+                "y": 1200
+            },
+            "dialogs": [
+                "Ruta 1\nv Sur: Hacia Ruta 2\n(Camino Normal a Ciudad Nueva)"
+            ]
+        },
+        {
+            "location": "src/assets/entities/structures/sign/main.json",
+            "coordinates": {
+                "x": 500,
+                "y": 100
+            },
+            "dialogs": [
+                "Ruta 1\n^ Norte: Regresar a Pueblo Tutorial"
+            ]
+        }
+    ]
 }

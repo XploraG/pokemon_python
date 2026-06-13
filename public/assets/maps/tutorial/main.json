@@ -1,669 +1,699 @@
 {
-  "map": "src/assets/maps/tutorial/main.txt",
-  "tile_size": 32,
-  "components": [
-    {
-      "type": "G1",
-      "size": [32, 32],
-      "image": "src/assets/maps/tutorial/imgs/grass1.png"
-    },
-    {
-      "type": "p1",
-      "size": [32, 32],
-      "image": "src/assets/maps/tutorial/imgs/path/path1.png"
-    },
-    {
-      "type": "p2",
-      "size": [32, 32],
-      "image": "src/assets/maps/tutorial/imgs/path/path2.png"
-    },
-    {
-      "type": "p3",
-      "size": [32, 32],
-      "image": "src/assets/maps/tutorial/imgs/path/path3.png"
-    },
-    {
-      "type": "p4",
-      "size": [32, 32],
-      "image": "src/assets/maps/tutorial/imgs/path/path4.png"
-    },
-    {
-      "type": "p5",
-      "size": [32, 32],
-      "image": "src/assets/maps/tutorial/imgs/path/path5.png"
-    },
-    {
-      "type": "p6",
-      "size": [32, 32],
-      "image": "src/assets/maps/tutorial/imgs/path/path6.png"
-    },
-    {
-      "type": "p7",
-      "size": [32, 32],
-      "image": "src/assets/maps/tutorial/imgs/path/path7.png"
-    },
-    {
-      "type": "p8",
-      "size": [32, 32],
-      "image": "src/assets/maps/tutorial/imgs/path/path8.png"
-    },
-    {
-      "type": "p9",
-      "size": [32, 32],
-      "image": "src/assets/maps/tutorial/imgs/path/path9.png"
-    }
-  ],
-  "entities": [
-    {
-      "location": "src/assets/entities/npcs/persons/childmary/main.json",
-      "coordinates": {
-        "x": 250,
-        "y": 270
-      }
-    },
-    {
-      "location": "src/assets/entities/npcs/persons/athletemike/main.json",
-      "coordinates": {
-        "x": 170,
-        "y": 500
-      }
-    },
-    {
-      "location": "src/assets/entities/npcs/pokemons/pikachu/main.json",
-      "coordinates": {
-        "x": 110,
-        "y": 85
-      }
-    },
-    {
-      "location": "src/assets/entities/npcs/pokemons/pikachu/main.json",
-      "coordinates": {
-        "x": 340,
-        "y": 780
-      }
-    },
-    {
-      "location": "src/assets/entities/npcs/pokemons/pikachu/main.json",
-      "coordinates": {
-        "x": 230,
-        "y": 890
-      }
-    },
-    {
-      "location": "src/assets/entities/npcs/pokemons/snorlax/main.json",
-      "coordinates": {
-        "x": 730,
-        "y": 425
-      }
-    },
-    {
-      "location": "src/assets/entities/npcs/pokemons/pokeball/main.json",
-      "coordinates": {
-        "x": 200,
-        "y": 100
-      }
-    },
-    {
-      "location": "src/assets/entities/structures/gym/main.json",
-      "coordinates": {
-        "x": 300,
-        "y": 50
-      }
-    },
-    {
-      "location": "src/assets/entities/structures/bush/main.json",
-      "coordinates": {
-        "x": 190,
-        "y": 840
-      }
-    },
-    {
-      "location": "src/assets/entities/structures/greenhouse/main.json",
-      "coordinates": {
-        "x": 140,
-        "y": 330
-      }
-    },
-    {
-      "location": "src/assets/entities/structures/fountain/main.json",
-      "coordinates": {
-        "x": 530,
-        "y": 470
-      }
-    },
-    {
-      "location": "src/assets/entities/structures/bench/main.json",
-      "coordinates": {
-        "x": 520,
-        "y": 380
-      }
-    },
-    {
-      "location": "src/assets/entities/structures/pokemoncenter/main.json",
-      "coordinates": {
-        "x": 520,
-        "y": 590
-      }
-    },
-    {
-      "location": "src/assets/entities/structures/pokemonmarket/main.json",
-      "coordinates": {
-        "x": 500,
-        "y": 885
-      }
-    },
-    {
-      "location": "src/assets/entities/structures/redhouse/main.json",
-      "coordinates": {
-        "x": 75,
-        "y": 580
-      }
-    },
-    {
-      "location": "src/assets/entities/structures/redhouse/main.json",
-      "coordinates": {
-        "x": 250,
-        "y": 580
-      }
-    },
-    {
-      "location": "src/assets/entities/structures/tree2/main.json",
-      "coordinates": {
-        "x": 190,
-        "y": 960
-      }
-    },
-    {
-      "location": "src/assets/entities/structures/goto/main.json",
-      "coordinates": {
-        "x": -100,
-        "y": 990
-      }
-    },
-    {
-      "location": "src/assets/entities/structures/tree/main.json",
-      "coordinates": [
+    "map": "src/assets/maps/tutorial/main.txt",
+    "tile_size": 32,
+    "components": [
         {
-          "x": 65,
-          "y": -40
+            "type": "G1",
+            "size": [
+                32,
+                32
+            ],
+            "image": "src/assets/maps/tutorial/imgs/grass1.png"
         },
         {
-          "x": 130,
-          "y": -40
+            "type": "p1",
+            "size": [
+                32,
+                32
+            ],
+            "image": "src/assets/maps/tutorial/imgs/path/path1.png"
         },
         {
-          "x": 195,
-          "y": -40
+            "type": "p2",
+            "size": [
+                32,
+                32
+            ],
+            "image": "src/assets/maps/tutorial/imgs/path/path2.png"
         },
         {
-          "x": 260,
-          "y": -40
+            "type": "p3",
+            "size": [
+                32,
+                32
+            ],
+            "image": "src/assets/maps/tutorial/imgs/path/path3.png"
         },
         {
-          "x": 325,
-          "y": -40
+            "type": "p4",
+            "size": [
+                32,
+                32
+            ],
+            "image": "src/assets/maps/tutorial/imgs/path/path4.png"
         },
         {
-          "x": 390,
-          "y": -40
+            "type": "p5",
+            "size": [
+                32,
+                32
+            ],
+            "image": "src/assets/maps/tutorial/imgs/path/path5.png"
         },
         {
-          "x": 455,
-          "y": -40
+            "type": "p6",
+            "size": [
+                32,
+                32
+            ],
+            "image": "src/assets/maps/tutorial/imgs/path/path6.png"
         },
         {
-          "x": 520,
-          "y": -40
+            "type": "p7",
+            "size": [
+                32,
+                32
+            ],
+            "image": "src/assets/maps/tutorial/imgs/path/path7.png"
         },
         {
-          "x": 585,
-          "y": -40
+            "type": "p8",
+            "size": [
+                32,
+                32
+            ],
+            "image": "src/assets/maps/tutorial/imgs/path/path8.png"
+        },
+        {
+            "type": "p9",
+            "size": [
+                32,
+                32
+            ],
+            "image": "src/assets/maps/tutorial/imgs/path/path9.png"
         }
-      ]
-    },
-    {
-      "location": "src/assets/entities/structures/tree/main.json",
-      "coordinates": [
+    ],
+    "entities": [
         {
-          "x": 65,
-          "y": 180
+            "location": "src/assets/entities/npcs/persons/childmary/main.json",
+            "coordinates": {
+                "x": 250,
+                "y": 270
+            }
         },
         {
-          "x": 65,
-          "y": 240
+            "location": "src/assets/entities/npcs/persons/athletemike/main.json",
+            "coordinates": {
+                "x": 170,
+                "y": 500
+            }
         },
         {
-          "x": 65,
-          "y": 300
+            "location": "src/assets/entities/npcs/pokemons/pikachu/main.json",
+            "coordinates": {
+                "x": 110,
+                "y": 85
+            }
         },
         {
-          "x": 130,
-          "y": 180
+            "location": "src/assets/entities/npcs/pokemons/pikachu/main.json",
+            "coordinates": {
+                "x": 340,
+                "y": 780
+            }
         },
         {
-          "x": 130,
-          "y": 240
+            "location": "src/assets/entities/npcs/pokemons/pikachu/main.json",
+            "coordinates": {
+                "x": 230,
+                "y": 890
+            }
+        },
+        {
+            "location": "src/assets/entities/npcs/pokemons/snorlax/main.json",
+            "coordinates": {
+                "x": 730,
+                "y": 425
+            }
+        },
+        {
+            "location": "src/assets/entities/npcs/pokemons/pokeball/main.json",
+            "coordinates": {
+                "x": 200,
+                "y": 100
+            }
+        },
+        {
+            "location": "src/assets/entities/structures/gym/main.json",
+            "coordinates": {
+                "x": 300,
+                "y": 50
+            }
+        },
+        {
+            "location": "src/assets/entities/structures/bush/main.json",
+            "coordinates": {
+                "x": 190,
+                "y": 840
+            }
+        },
+        {
+            "location": "src/assets/entities/structures/greenhouse/main.json",
+            "coordinates": {
+                "x": 140,
+                "y": 330
+            }
+        },
+        {
+            "location": "src/assets/entities/structures/fountain/main.json",
+            "coordinates": {
+                "x": 530,
+                "y": 470
+            }
+        },
+        {
+            "location": "src/assets/entities/structures/bench/main.json",
+            "coordinates": {
+                "x": 520,
+                "y": 380
+            }
+        },
+        {
+            "location": "src/assets/entities/structures/pokemoncenter/main.json",
+            "coordinates": {
+                "x": 520,
+                "y": 590
+            }
+        },
+        {
+            "location": "src/assets/entities/structures/pokemonmarket/main.json",
+            "coordinates": {
+                "x": 500,
+                "y": 885
+            }
+        },
+        {
+            "location": "src/assets/entities/structures/redhouse/main.json",
+            "coordinates": {
+                "x": 75,
+                "y": 580
+            }
+        },
+        {
+            "location": "src/assets/entities/structures/redhouse/main.json",
+            "coordinates": {
+                "x": 250,
+                "y": 580
+            }
+        },
+        {
+            "location": "src/assets/entities/structures/tree2/main.json",
+            "coordinates": {
+                "x": 190,
+                "y": 960
+            }
+        },
+        {
+            "location": "src/assets/entities/structures/goto/main.json",
+            "coordinates": {
+                "x": -100,
+                "y": 990
+            }
+        },
+        {
+            "location": "src/assets/entities/structures/tree/main.json",
+            "coordinates": [
+                {
+                    "x": 65,
+                    "y": -40
+                },
+                {
+                    "x": 130,
+                    "y": -40
+                },
+                {
+                    "x": 195,
+                    "y": -40
+                },
+                {
+                    "x": 260,
+                    "y": -40
+                },
+                {
+                    "x": 325,
+                    "y": -40
+                },
+                {
+                    "x": 390,
+                    "y": -40
+                },
+                {
+                    "x": 455,
+                    "y": -40
+                },
+                {
+                    "x": 520,
+                    "y": -40
+                },
+                {
+                    "x": 585,
+                    "y": -40
+                }
+            ]
+        },
+        {
+            "location": "src/assets/entities/structures/tree/main.json",
+            "coordinates": [
+                {
+                    "x": 65,
+                    "y": 180
+                },
+                {
+                    "x": 65,
+                    "y": 240
+                },
+                {
+                    "x": 65,
+                    "y": 300
+                },
+                {
+                    "x": 130,
+                    "y": 180
+                },
+                {
+                    "x": 130,
+                    "y": 240
+                }
+            ]
+        },
+        {
+            "location": "src/assets/entities/structures/tree/main.json",
+            "coordinates": [
+                {
+                    "x": 590,
+                    "y": 0
+                },
+                {
+                    "x": 590,
+                    "y": 60
+                },
+                {
+                    "x": 590,
+                    "y": 120
+                },
+                {
+                    "x": 590,
+                    "y": 180
+                },
+                {
+                    "x": 590,
+                    "y": 240
+                },
+                {
+                    "x": 650,
+                    "y": 0
+                },
+                {
+                    "x": 650,
+                    "y": 60
+                },
+                {
+                    "x": 650,
+                    "y": 120
+                },
+                {
+                    "x": 650,
+                    "y": 180
+                },
+                {
+                    "x": 650,
+                    "y": 240
+                },
+                {
+                    "x": 650,
+                    "y": 300
+                },
+                {
+                    "x": 650,
+                    "y": 330
+                },
+                {
+                    "x": 710,
+                    "y": 0
+                },
+                {
+                    "x": 710,
+                    "y": 60
+                },
+                {
+                    "x": 710,
+                    "y": 120
+                },
+                {
+                    "x": 710,
+                    "y": 180
+                },
+                {
+                    "x": 710,
+                    "y": 240
+                },
+                {
+                    "x": 710,
+                    "y": 300
+                },
+                {
+                    "x": 710,
+                    "y": 330
+                },
+                {
+                    "x": 740,
+                    "y": 480
+                },
+                {
+                    "x": 740,
+                    "y": 530
+                },
+                {
+                    "x": 800,
+                    "y": 480
+                },
+                {
+                    "x": 800,
+                    "y": 530
+                },
+                {
+                    "x": 860,
+                    "y": 480
+                },
+                {
+                    "x": 860,
+                    "y": 530
+                },
+                {
+                    "x": 920,
+                    "y": 480
+                },
+                {
+                    "x": 920,
+                    "y": 530
+                },
+                {
+                    "x": 980,
+                    "y": 480
+                },
+                {
+                    "x": 980,
+                    "y": 530
+                },
+                {
+                    "x": 770,
+                    "y": 0
+                },
+                {
+                    "x": 770,
+                    "y": 60
+                },
+                {
+                    "x": 770,
+                    "y": 120
+                },
+                {
+                    "x": 770,
+                    "y": 180
+                },
+                {
+                    "x": 770,
+                    "y": 240
+                },
+                {
+                    "x": 770,
+                    "y": 300
+                },
+                {
+                    "x": 830,
+                    "y": 0
+                },
+                {
+                    "x": 830,
+                    "y": 60
+                },
+                {
+                    "x": 830,
+                    "y": 120
+                },
+                {
+                    "x": 830,
+                    "y": 180
+                },
+                {
+                    "x": 830,
+                    "y": 240
+                },
+                {
+                    "x": 830,
+                    "y": 300
+                },
+                {
+                    "x": 890,
+                    "y": 0
+                },
+                {
+                    "x": 890,
+                    "y": 60
+                },
+                {
+                    "x": 890,
+                    "y": 120
+                },
+                {
+                    "x": 890,
+                    "y": 180
+                },
+                {
+                    "x": 890,
+                    "y": 240
+                },
+                {
+                    "x": 890,
+                    "y": 300
+                },
+                {
+                    "x": 950,
+                    "y": 0
+                },
+                {
+                    "x": 950,
+                    "y": 60
+                },
+                {
+                    "x": 950,
+                    "y": 120
+                },
+                {
+                    "x": 950,
+                    "y": 180
+                },
+                {
+                    "x": 950,
+                    "y": 240
+                },
+                {
+                    "x": 950,
+                    "y": 300
+                },
+                {
+                    "x": 1010,
+                    "y": 0
+                },
+                {
+                    "x": 1010,
+                    "y": 60
+                },
+                {
+                    "x": 1010,
+                    "y": 120
+                },
+                {
+                    "x": 1010,
+                    "y": 180
+                },
+                {
+                    "x": 1010,
+                    "y": 240
+                },
+                {
+                    "x": 1010,
+                    "y": 300
+                },
+                {
+                    "x": 1070,
+                    "y": 0
+                }
+            ]
+        },
+        {
+            "location": "src/assets/entities/structures/tree/main.json",
+            "coordinates": [
+                {
+                    "x": 0,
+                    "y": -40
+                },
+                {
+                    "x": 0,
+                    "y": 0
+                },
+                {
+                    "x": 0,
+                    "y": 60
+                },
+                {
+                    "x": 0,
+                    "y": 120
+                },
+                {
+                    "x": 0,
+                    "y": 180
+                },
+                {
+                    "x": 0,
+                    "y": 240
+                },
+                {
+                    "x": 0,
+                    "y": 300
+                },
+                {
+                    "x": 0,
+                    "y": 360
+                },
+                {
+                    "x": 0,
+                    "y": 420
+                },
+                {
+                    "x": 0,
+                    "y": 480
+                },
+                {
+                    "x": 0,
+                    "y": 540
+                },
+                {
+                    "x": 0,
+                    "y": 600
+                },
+                {
+                    "x": 0,
+                    "y": 660
+                },
+                {
+                    "x": 0,
+                    "y": 720
+                },
+                {
+                    "x": 0,
+                    "y": 780
+                },
+                {
+                    "x": 0,
+                    "y": 840
+                },
+                {
+                    "x": 0,
+                    "y": 900
+                }
+            ]
+        },
+        {
+            "location": "src/assets/entities/structures/tree2/main.json",
+            "coordinates": [
+                {
+                    "x": 690,
+                    "y": 580
+                },
+                {
+                    "x": 690,
+                    "y": 600
+                },
+                {
+                    "x": 690,
+                    "y": 660
+                },
+                {
+                    "x": 690,
+                    "y": 720
+                },
+                {
+                    "x": 690,
+                    "y": 780
+                },
+                {
+                    "x": 750,
+                    "y": 600
+                },
+                {
+                    "x": 750,
+                    "y": 660
+                },
+                {
+                    "x": 750,
+                    "y": 720
+                },
+                {
+                    "x": 750,
+                    "y": 780
+                },
+                {
+                    "x": 810,
+                    "y": 600
+                },
+                {
+                    "x": 810,
+                    "y": 660
+                },
+                {
+                    "x": 810,
+                    "y": 720
+                },
+                {
+                    "x": 810,
+                    "y": 780
+                },
+                {
+                    "x": 870,
+                    "y": 600
+                },
+                {
+                    "x": 870,
+                    "y": 660
+                },
+                {
+                    "x": 870,
+                    "y": 720
+                },
+                {
+                    "x": 870,
+                    "y": 780
+                },
+                {
+                    "x": 930,
+                    "y": 600
+                },
+                {
+                    "x": 930,
+                    "y": 660
+                },
+                {
+                    "x": 930,
+                    "y": 720
+                },
+                {
+                    "x": 930,
+                    "y": 780
+                },
+                {
+                    "x": 625,
+                    "y": 820
+                },
+                {
+                    "x": 565,
+                    "y": 820
+                },
+                {
+                    "x": 500,
+                    "y": 820
+                }
+            ]
         }
-      ]
-    },
-    {
-      "location": "src/assets/entities/structures/tree/main.json",
-      "coordinates": [
-        {
-          "x": 590,
-          "y": 0
-        },
-        {
-          "x": 590,
-          "y": 60
-        },
-        {
-          "x": 590,
-          "y": 120
-        },
-        {
-          "x": 590,
-          "y": 180
-        },
-        {
-          "x": 590,
-          "y": 240
-        },
-        {
-          "x": 650,
-          "y": 0
-        },
-        {
-          "x": 650,
-          "y": 60
-        },
-        {
-          "x": 650,
-          "y": 120
-        },
-        {
-          "x": 650,
-          "y": 180
-        },
-        {
-          "x": 650,
-          "y": 240
-        },
-        {
-          "x": 650,
-          "y": 300
-        },
-        {
-          "x": 650,
-          "y": 330
-        },
-        {
-          "x": 710,
-          "y": 0
-        },
-        {
-          "x": 710,
-          "y": 60
-        },
-        {
-          "x": 710,
-          "y": 120
-        },
-        {
-          "x": 710,
-          "y": 180
-        },
-        {
-          "x": 710,
-          "y": 240
-        },
-        {
-          "x": 710,
-          "y": 300
-        },
-        {
-          "x": 710,
-          "y": 330
-        },
-        {
-          "x": 740,
-          "y": 480
-        },
-        {
-          "x": 740,
-          "y": 530
-        },
-        {
-          "x": 800,
-          "y": 480
-        },
-        {
-          "x": 800,
-          "y": 530
-        },
-        {
-          "x": 860,
-          "y": 480
-        },
-        {
-          "x": 860,
-          "y": 530
-        },
-        {
-          "x": 920,
-          "y": 480
-        },
-        {
-          "x": 920,
-          "y": 530
-        },
-        {
-          "x": 980,
-          "y": 480
-        },
-        {
-          "x": 980,
-          "y": 530
-        },
-        {
-          "x": 770,
-          "y": 0
-        },
-        {
-          "x": 770,
-          "y": 60
-        },
-        {
-          "x": 770,
-          "y": 120
-        },
-        {
-          "x": 770,
-          "y": 180
-        },
-        {
-          "x": 770,
-          "y": 240
-        },
-        {
-          "x": 770,
-          "y": 300
-        },
-        {
-          "x": 830,
-          "y": 0
-        },
-        {
-          "x": 830,
-          "y": 60
-        },
-        {
-          "x": 830,
-          "y": 120
-        },
-        {
-          "x": 830,
-          "y": 180
-        },
-        {
-          "x": 830,
-          "y": 240
-        },
-        {
-          "x": 830,
-          "y": 300
-        },
-        {
-          "x": 890,
-          "y": 0
-        },
-        {
-          "x": 890,
-          "y": 60
-        },
-        {
-          "x": 890,
-          "y": 120
-        },
-        {
-          "x": 890,
-          "y": 180
-        },
-        {
-          "x": 890,
-          "y": 240
-        },
-        {
-          "x": 890,
-          "y": 300
-        },
-        {
-          "x": 950,
-          "y": 0
-        },
-        {
-          "x": 950,
-          "y": 60
-        },
-        {
-          "x": 950,
-          "y": 120
-        },
-        {
-          "x": 950,
-          "y": 180
-        },
-        {
-          "x": 950,
-          "y": 240
-        },
-        {
-          "x": 950,
-          "y": 300
-        },
-        {
-          "x": 1010,
-          "y": 0
-        },
-        {
-          "x": 1010,
-          "y": 60
-        },
-        {
-          "x": 1010,
-          "y": 120
-        },
-        {
-          "x": 1010,
-          "y": 180
-        },
-        {
-          "x": 1010,
-          "y": 240
-        },
-        {
-          "x": 1010,
-          "y": 300
-        },
-        {
-          "x": 1070,
-          "y": 0
-        }
-      ]
-    },
-    {
-      "location": "src/assets/entities/structures/tree/main.json",
-      "coordinates": [
-        {
-          "x": 0,
-          "y": -40
-        },
-        {
-          "x": 0,
-          "y": 0
-        },
-        {
-          "x": 0,
-          "y": 60
-        },
-        {
-          "x": 0,
-          "y": 120
-        },
-        {
-          "x": 0,
-          "y": 180
-        },
-        {
-          "x": 0,
-          "y": 240
-        },
-        {
-          "x": 0,
-          "y": 300
-        },
-        {
-          "x": 0,
-          "y": 360
-        },
-        {
-          "x": 0,
-          "y": 420
-        },
-        {
-          "x": 0,
-          "y": 480
-        },
-        {
-          "x": 0,
-          "y": 540
-        },
-        {
-          "x": 0,
-          "y": 600
-        },
-        {
-          "x": 0,
-          "y": 660
-        },
-        {
-          "x": 0,
-          "y": 720
-        },
-        {
-          "x": 0,
-          "y": 780
-        },
-        {
-          "x": 0,
-          "y": 840
-        },
-        {
-          "x": 0,
-          "y": 900
-        }
-      ]
-    },
-    {
-      "location": "src/assets/entities/structures/tree2/main.json",
-      "coordinates": [
-        {
-          "x": 690,
-          "y": 580
-        },
-        {
-          "x": 690,
-          "y": 600
-        },
-        {
-          "x": 690,
-          "y": 660
-        },
-        {
-          "x": 690,
-          "y": 720
-        },
-        {
-          "x": 690,
-          "y": 780
-        },
-        {
-          "x": 750,
-          "y": 600
-        },
-        {
-          "x": 750,
-          "y": 660
-        },
-        {
-          "x": 750,
-          "y": 720
-        },
-        {
-          "x": 750,
-          "y": 780
-        },
-        {
-          "x": 810,
-          "y": 600
-        },
-        {
-          "x": 810,
-          "y": 660
-        },
-        {
-          "x": 810,
-          "y": 720
-        },
-        {
-          "x": 810,
-          "y": 780
-        },
-        {
-          "x": 870,
-          "y": 600
-        },
-        {
-          "x": 870,
-          "y": 660
-        },
-        {
-          "x": 870,
-          "y": 720
-        },
-        {
-          "x": 870,
-          "y": 780
-        },
-        {
-          "x": 930,
-          "y": 600
-        },
-        {
-          "x": 930,
-          "y": 660
-        },
-        {
-          "x": 930,
-          "y": 720
-        },
-        {
-          "x": 930,
-          "y": 780
-        },
-        {
-          "x": 625,
-          "y": 820
-        },
-        {
-          "x": 565,
-          "y": 820
-        },
-        {
-          "x": 500,
-          "y": 820
-        }
-      ]
-    }
-  ]
+    ]
 }

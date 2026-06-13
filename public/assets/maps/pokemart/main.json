@@ -1,40 +1,55 @@
 {
-  "map": "src/assets/maps/pokemart/main.txt",
-  "tile_size": 32,
-  "components": [
-    {
-      "type": "W1",
-      "size": [32, 32],
-      "image": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'><rect width='32' height='32' fill='%232b6cb0'/><rect x='1' y='1' width='30' height='30' fill='%233182ce'/><line x1='0' y1='16' x2='32' y2='16' stroke='%232c5282' stroke-width='2'/></svg>"
-    },
-    {
-      "type": "F1",
-      "size": [32, 32],
-      "image": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'><rect width='32' height='32' fill='%23ebf8ff'/><rect x='2' y='2' width='28' height='28' fill='%23e6fffa'/></svg>"
-    },
-    {
-      "type": "C1",
-      "size": [32, 32],
-      "image": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'><rect width='32' height='32' fill='%234a5568'/><rect x='1' y='1' width='30' height='30' fill='%23718096'/><rect x='3' y='3' width='26' height='4' fill='%23cbd5e0'/></svg>"
-    },
-    {
-      "type": "CP",
-      "size": [32, 32],
-      "image": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'><rect width='32' height='32' fill='%233182ce'/><rect x='2' y='2' width='28' height='28' fill='%2363b3ed'/></svg>"
-    },
-    {
-      "type": "B1",
-      "size": [32, 32],
-      "image": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'><rect width='32' height='32' fill='%231a202c'/></svg>"
-    }
-  ],
-  "entities": [
-    {
-      "location": "src/assets/entities/npcs/persons/martclerk/main.json",
-      "coordinates": {
-        "x": 128,
-        "y": 64
-      }
-    }
-  ]
+    "map": "src/assets/maps/pokemart/main.txt",
+    "tile_size": 32,
+    "components": [
+        {
+            "type": "W1",
+            "size": [
+                32,
+                32
+            ],
+            "image": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'><rect width='32' height='32' fill='%232b6cb0'/><rect x='1' y='1' width='30' height='30' fill='%233182ce'/><line x1='0' y1='16' x2='32' y2='16' stroke='%232c5282' stroke-width='2'/></svg>"
+        },
+        {
+            "type": "F1",
+            "size": [
+                32,
+                32
+            ],
+            "image": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'><rect width='32' height='32' fill='%23ebf8ff'/><rect x='2' y='2' width='28' height='28' fill='%23e6fffa'/></svg>"
+        },
+        {
+            "type": "C1",
+            "size": [
+                32,
+                32
+            ],
+            "image": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'><rect width='32' height='32' fill='%234a5568'/><rect x='1' y='1' width='30' height='30' fill='%23718096'/><rect x='3' y='3' width='26' height='4' fill='%23cbd5e0'/></svg>"
+        },
+        {
+            "type": "CP",
+            "size": [
+                32,
+                32
+            ],
+            "image": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'><rect width='32' height='32' fill='%233182ce'/><rect x='2' y='2' width='28' height='28' fill='%2363b3ed'/></svg>"
+        },
+        {
+            "type": "B1",
+            "size": [
+                32,
+                32
+            ],
+            "image": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'><rect width='32' height='32' fill='%231a202c'/></svg>"
+        }
+    ],
+    "entities": [
+        {
+            "location": "src/assets/entities/npcs/persons/martclerk/main.json",
+            "coordinates": {
+                "x": 128,
+                "y": 64
+            }
+        }
+    ]
 }

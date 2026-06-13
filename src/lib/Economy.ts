@@ -409,18 +409,18 @@ export class Economy {
         return 100 + Math.floor(this.level / 10) * 200;
     }
 
-    public canFreeHeal(): boolean {
-        const today = new Date().toISOString().split('T')[0];
+    public canFreeHeal(trueDate: string | null = null): boolean {
+        const today = trueDate || new Date().toISOString().split('T')[0];
         if (this.last_heal_date !== today) {
             return true;
         }
         return this.heals_today < 2;
     }
 
-    public executeFreeHeal(): boolean {
-        if (!this.canFreeHeal()) return false;
+    public executeFreeHeal(trueDate: string | null = null): boolean {
+        if (!this.canFreeHeal(trueDate)) return false;
         
-        const today = new Date().toISOString().split('T')[0];
+        const today = trueDate || new Date().toISOString().split('T')[0];
         if (this.last_heal_date !== today) {
             this.heals_today = 0;
             this.last_heal_date = today;

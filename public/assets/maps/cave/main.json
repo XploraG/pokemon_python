@@ -1,0 +1,45 @@
+{
+    "map": "src/assets/maps/cave/main.txt",
+    "tile_size": 32,
+    "components": [
+        {
+            "type": "CF",
+            "size": [
+                32,
+                32
+            ],
+            "image": "src/assets/maps/tutorial/imgs/cave_floor.png"
+        },
+        {
+            "type": "CW",
+            "size": [
+                32,
+                32
+            ],
+            "image": "src/assets/maps/tutorial/imgs/cave_wall.png",
+            "isSolid": true
+        }
+    ],
+    "entities": [
+        {
+            "location": "src/assets/entities/structures/sign/main.json",
+            "coordinates": {
+                "x": 288,
+                "y": 1500
+            },
+            "dialogs": [
+                "Cueva Oscura\nv Sur: Salida a Ruta 1"
+            ]
+        },
+        {
+            "location": "src/assets/entities/structures/sign/main.json",
+            "coordinates": {
+                "x": 1000,
+                "y": 100
+            },
+            "dialogs": [
+                "Cueva Oscura\n^ Norte: Salida a Ciudad Nueva"
+            ]
+        }
+    ]
+}

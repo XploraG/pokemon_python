@@ -596,20 +596,27 @@ const getTypeColor = (type: string): string => {
 };
 
 // Helper function to remove background key color dynamically in canvas
-const makeColorTransparent = (imgElement: HTMLImageElement, colorHex: string): HTMLCanvasElement | HTMLImageElement => {
+const transparentImageCache: Record<string, HTMLCanvasElement | HTMLImageElement> = {};
+
+const makeColorTransparent = (imgElement: HTMLImageElement, colorHex: string) => {
     if (typeof window === 'undefined') return imgElement;
+    
+    const cacheKey = imgElement.src + '_' + colorHex;
+    if (transparentImageCache[cacheKey]) {
+        return transparentImageCache[cacheKey];
+    }
+
     try {
         const tempCanvas = document.createElement('canvas');
         tempCanvas.width = imgElement.width;
         tempCanvas.height = imgElement.height;
-        const tempCtx = tempCanvas.getContext('2d');
+        const tempCtx = tempCanvas.getContext('2d', { willReadFrequently: true });
         if (!tempCtx) return imgElement;
 
         tempCtx.drawImage(imgElement, 0, 0);
         const imgData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
         const data = imgData.data;
 
-        // Target color. Default to parsed colorHex, fallback to top-left pixel (0,0) if opaque
         let rTarget = 200;
         let gTarget = 191;
         let bTarget = 231;
@@ -648,6 +655,7 @@ const makeColorTransparent = (imgElement: HTMLImageElement, colorHex: string): H
             }
         }
         tempCtx.putImageData(imgData, 0, 0);
+        transparentImageCache[cacheKey] = tempCanvas;
         return tempCanvas;
     } catch (e) {
         console.warn("Could not make color transparent:", e);
@@ -656,6 +664,7 @@ const makeColorTransparent = (imgElement: HTMLImageElement, colorHex: string): H
 };
 
 const assetCache: Record<string, any> = {};
+const globalComponentCache: Record<string, HTMLImageElement> = {};
 async function cachedFetchJson(url: string) {
     if (assetCache[url]) return assetCache[url];
     try {
@@ -1388,16 +1397,22 @@ export default function GameCanvas({
                 // Prepare tile components preloading
                 const tileComponents: Record<string, TileComponent> = {};
                 const componentPromises = mapJson.components.map(async (comp: any) => {
-                    const img = new Image();
                     const cleanPath = comp.image.startsWith('data:') ? comp.image : comp.image.replace('src/assets/', '/assets/');
-                    if (!comp.image.startsWith('data:')) {
-                        img.crossOrigin = "anonymous";
+                    
+                    let img = globalComponentCache[cleanPath];
+                    if (!img) {
+                        img = new Image();
+                        if (!comp.image.startsWith('data:')) {
+                            img.crossOrigin = "anonymous";
+                        }
+                        img.src = cleanPath;
+                        await new Promise((res) => {
+                            img.onload = res;
+                            img.onerror = res;
+                        });
+                        globalComponentCache[cleanPath] = img;
                     }
-                    img.src = cleanPath;
-                    await new Promise((res) => {
-                        img.onload = res;
-                        img.onerror = res;
-                    });
+
                     tileComponents[comp.type] = {
                         type: comp.type,
                         size: comp.size,
@@ -1412,13 +1427,18 @@ export default function GameCanvas({
                     const entMeta = await cachedFetchJson(cleanLoc);
 
                     const cleanImgPath = entMeta.img.replace('src/assets/', '/assets/');
-                    const entImg = new Image();
-                    entImg.crossOrigin = "anonymous";
-                    entImg.src = cleanImgPath;
-                    await new Promise((res) => {
-                        entImg.onload = res;
-                        entImg.onerror = res;
-                    });
+                    
+                    let entImg = globalComponentCache[cleanImgPath];
+                    if (!entImg) {
+                        entImg = new Image();
+                        entImg.crossOrigin = "anonymous";
+                        entImg.src = cleanImgPath;
+                        await new Promise((res) => {
+                            entImg.onload = res;
+                            entImg.onerror = res;
+                        });
+                        globalComponentCache[cleanImgPath] = entImg;
+                    }
 
                     return { ent, entMeta, entImg };
                 });
@@ -1431,7 +1451,7 @@ export default function GameCanvas({
                 ]);
 
                 // Synchronous processing begins
-                const grid = gridText.trim().split('\n').map(line => line.trim().split(/\s+/));
+                const grid = gridText.trim().split('\n').map(line => line.trim().split(/[\s,]+/));
                 const height = grid.length * tileSize;
                 const width = grid[0] ? grid[0].length * tileSize : 0;
 
@@ -2108,6 +2128,7 @@ export default function GameCanvas({
             if (x >= 580 && x <= 620 && y >= 710 && y <= 730) {
                 setDialogName("Centro Pokemon");
                 setActiveDialog("Entering the Pokémon Center...");
+                returnMapRef.current = '/assets/maps/tutorial/main.json';
                 returnCoordsRef.current = [600, 748]; // Spawn below door when returning
                 setTimeout(() => {
                     playerRef.current.x = 144;
@@ -2125,6 +2146,7 @@ export default function GameCanvas({
             if (x >= 560 && x <= 600 && y >= 1000 && y <= 1022) {
                 setDialogName("Comercio Pokemon");
                 setActiveDialog("Entering the PokeMart Store...");
+                returnMapRef.current = '/assets/maps/tutorial/main.json';
                 returnCoordsRef.current = [580, 1040]; // Spawn below door when returning
                 setTimeout(() => {
                     playerRef.current.x = 144;
@@ -2307,17 +2329,17 @@ export default function GameCanvas({
                 }, 100);
                 return true;
             }
-            // Bottom edge warp to Route 3 (long path)
+            // Bottom edge warp to Route 2 (long path)
             if (y >= 1280) {
-                setDialogName("Ruta 3");
-                setActiveDialog("Entering Route 3...");
+                setDialogName("Ruta 2");
+                setActiveDialog("Entering Route 2...");
                 setTimeout(() => {
                     playerRef.current.x = 44; // left edge
                     playerRef.current.y = 608; 
                     playerRef.current.targetX = 44;
                     playerRef.current.targetY = 608;
                     playerRef.current.isMoving = false;
-                    setCurrentMapPath('/assets/maps/route3/main.json');
+                    setCurrentMapPath('/assets/maps/route2/main.json');
                     setActiveDialog(null);
                 }, 100);
                 return true;
@@ -2332,17 +2354,17 @@ export default function GameCanvas({
                 setDialogName("Cueva Oscura");
                 setActiveDialog("Entering the Cave...");
                 setTimeout(() => {
-                    playerRef.current.x = 288; // x=9 in route2
+                    playerRef.current.x = 288; // x=9 in cave
                     playerRef.current.y = 1550; // bottom edge
                     playerRef.current.targetX = 288;
                     playerRef.current.targetY = 1550;
                     playerRef.current.isMoving = false;
-                    setCurrentMapPath('/assets/maps/route2/main.json');
+                    setCurrentMapPath('/assets/maps/cave/main.json');
                     setActiveDialog(null);
                 }, 100);
                 return true;
             }
-        } else if (currentPath.includes('route2')) {
+        } else if (currentPath.includes('cave')) {
             // Top edge warp to City 1
             if (y <= 12) {
                 setDialogName("Ciudad Nueva");
@@ -2373,7 +2395,7 @@ export default function GameCanvas({
                 }, 100);
                 return true;
             }
-        } else if (currentPath.includes('route3')) {
+        } else if (currentPath.includes('route2')) {
             // Left edge warp to Route 1 (bottom edge)
             if (x <= 12) {
                 setDialogName("Ruta 1");
@@ -2389,15 +2411,46 @@ export default function GameCanvas({
                 }, 100);
                 return true;
             }
-            // Right edge warp to Route 4 (enters from top)
+            // Right edge warp to Route 3 (enters from top)
             if (x >= 1560) {
-                setDialogName("Ruta 4");
-                setActiveDialog("Entering Route 4...");
+                setDialogName("Ruta 3");
+                setActiveDialog("Entering Route 3...");
                 setTimeout(() => {
-                    playerRef.current.x = 448; // middle of route 4 top path
+                    playerRef.current.x = 448; // middle of route 3 top path
                     playerRef.current.y = 44; 
                     playerRef.current.targetX = 448;
                     playerRef.current.targetY = 44;
+                    playerRef.current.isMoving = false;
+                    setCurrentMapPath('/assets/maps/route3/main.json');
+                    setActiveDialog(null);
+                }, 100);
+                return true;
+            }
+        } else if (currentPath.includes('route3')) {
+            // Top edge warp to Route 2 (enters from right)
+            if (y <= 12) {
+                setDialogName("Ruta 2");
+                setActiveDialog("Returning to Route 2...");
+                setTimeout(() => {
+                    playerRef.current.x = 1540; // Safely inside Route 2
+                    playerRef.current.y = 448; // middle of route 2 right path
+                    playerRef.current.targetX = 1540;
+                    playerRef.current.targetY = 448;
+                    playerRef.current.isMoving = false;
+                    setCurrentMapPath('/assets/maps/route2/main.json');
+                    setActiveDialog(null);
+                }, 100);
+                return true;
+            }
+            // Bottom edge warp to Route 4 (enters from left)
+            if (y >= 1560) {
+                setDialogName("Ruta 4");
+                setActiveDialog("Entering Route 4...");
+                setTimeout(() => {
+                    playerRef.current.x = 44; // left edge of Route 4
+                    playerRef.current.y = 640; // middle of left path in Route 4
+                    playerRef.current.targetX = 44;
+                    playerRef.current.targetY = 640;
                     playerRef.current.isMoving = false;
                     setCurrentMapPath('/assets/maps/route4/main.json');
                     setActiveDialog(null);
@@ -2405,55 +2458,79 @@ export default function GameCanvas({
                 return true;
             }
         } else if (currentPath.includes('route4')) {
-            // Top edge warp to Route 3 (enters from right)
-            if (y <= 12) {
+            // Left edge warp to Route 3 (enters from bottom)
+            if (x <= 12) {
                 setDialogName("Ruta 3");
                 setActiveDialog("Returning to Route 3...");
                 setTimeout(() => {
-                    playerRef.current.x = 1540; // Safely inside Route 3 so we don't trigger the x>=1560 warp!
-                    playerRef.current.y = 448; // middle of route 3 right path
-                    playerRef.current.targetX = 1540;
-                    playerRef.current.targetY = 448;
+                    playerRef.current.x = 448; // middle of Route 3 bottom path
+                    playerRef.current.y = 1540; // safely inside
+                    playerRef.current.targetX = 448;
+                    playerRef.current.targetY = 1540;
                     playerRef.current.isMoving = false;
                     setCurrentMapPath('/assets/maps/route3/main.json');
                     setActiveDialog(null);
                 }, 100);
                 return true;
             }
-            // Bottom edge warp is blocked for now
-            if (y >= 1560) {
-                setDialogName("En construcción");
-                showNotification("Ciudad Nueva", "Esta zona está en construcción.");
-                // push player back slightly
-                playerRef.current.y = 1530;
-                playerRef.current.targetY = 1530;
-                playerRef.current.isMoving = false;
+            // Right edge warp to City 1
+            if (x >= 1560) {
+                setDialogName("Ciudad Nueva");
+                setActiveDialog("Entering City 1...");
+                setTimeout(() => {
+                    playerRef.current.x = 44; // left edge of City 1
+                    playerRef.current.y = 640; // roughly middle West road of city 1
+                    playerRef.current.targetX = 44;
+                    playerRef.current.targetY = 640;
+                    playerRef.current.isMoving = false;
+                    setCurrentMapPath('/assets/maps/city1/main.json');
+                    setActiveDialog(null);
+                }, 100);
                 return true;
             }
         } else if (currentPath.includes('city1')) {
-            // Bottom edge warp to Route 2 Cave
-            if (y >= 1240 && x > 850) {
+            // Check tile-based Cave Entrance warp (CE)
+            const mapData = mapDataRef.current;
+            const tileSize = mapData.tileSize || 32;
+            const col = Math.floor(x / tileSize);
+            const row = Math.floor((y - 1) / tileSize);
+            if (mapData.grid[row]?.[col] === 'CE') {
                 setDialogName("Cueva Oscura");
                 setActiveDialog("Entering the Cave...");
                 setTimeout(() => {
                     playerRef.current.x = 1000; // x=31
-                    playerRef.current.y = 44; // route2 top edge
+                    playerRef.current.y = 44; // cave top edge
                     playerRef.current.targetX = 1000;
                     playerRef.current.targetY = 44;
                     playerRef.current.isMoving = false;
-                    setCurrentMapPath('/assets/maps/route2/main.json');
+                    setCurrentMapPath('/assets/maps/cave/main.json');
+                    setActiveDialog(null);
+                }, 100);
+                return true;
+            }
+            // Left edge warp to Route 4
+            if (x <= 12) {
+                setDialogName("Ruta 4");
+                setActiveDialog("Returning to Route 4...");
+                setTimeout(() => {
+                    playerRef.current.x = 1540;
+                    playerRef.current.y = 640;
+                    playerRef.current.targetX = 1540;
+                    playerRef.current.targetY = 640;
+                    playerRef.current.isMoving = false;
+                    setCurrentMapPath('/assets/maps/route4/main.json');
                     setActiveDialog(null);
                 }, 100);
                 return true;
             }
             // Other edges blocked
-            if (y <= 12 || x <= 12 || x >= 1250) {
+            if (y <= 12 || x >= 1250 || y >= 1250) {
                 setDialogName("En construcción");
                 showNotification("Aviso", "No puedes pasar por aquí.");
                 // Push back
                 if (y <= 12) { playerRef.current.y = 44; playerRef.current.targetY = 44; }
-                if (x <= 12) { playerRef.current.x = 44; playerRef.current.targetX = 44; }
                 if (x >= 1250) { playerRef.current.x = 1220; playerRef.current.targetX = 1220; }
+                if (y >= 1250) { playerRef.current.y = 1220; playerRef.current.targetY = 1220; }
                 playerRef.current.isMoving = false;
                 return true;
             }
@@ -2601,7 +2678,19 @@ export default function GameCanvas({
         setPlayerSpriteEffect('none');
 
         // Deterministic damage calculation (no randomness)
-        let playerDmg = Math.floor(move.power * (1 + (activePoke.level ?? 1) / 20));
+        const playerSpecies = pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === activePoke.id.toLowerCase());
+        const opponentSpecies = pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === activePvPBattle.opponentPokemon?.id.toLowerCase());
+
+        const playerAtk = playerSpecies?.attack || 50;
+        const opponentDef = opponentSpecies?.defense || 50;
+        const playerLevel = activePoke.level ?? 1;
+
+        let baseDmg = (((2 * playerLevel / 5 + 2) * move.power * (playerAtk / opponentDef)) / 50) + 2;
+
+        const opponentTypes = opponentSpecies?.types || ['normal'];
+        const mult = getTypeMultiplier(move.type, opponentTypes);
+
+        let playerDmg = Math.floor(baseDmg * mult);
         playerDmg = Math.max(1, playerDmg);
 
         if (move.power === 0) playerDmg = 5; // Status moves deal flat 5 in realtime PvP
@@ -2999,9 +3088,20 @@ export default function GameCanvas({
                 const playerAtkMult = getStageMultiplier(playerAtkStage);
                 const opponentDefMult = getStageMultiplier(opponentDefStage);
 
-                playerDmg = Math.floor(move.power * (1 + (activePoke.level ?? 1) / 20) * (Math.random() * 0.2 + 0.9));
-                playerDmg = Math.floor(playerDmg * playerAtkMult / opponentDefMult);
-                playerDmg = Math.max(1, Math.floor(playerDmg * mult)); // Minimum 1 damage on hit
+                const playerSpecies = pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === activePoke.id.toLowerCase());
+                const opponentSpecies = pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === activeWildBattle.name.toLowerCase());
+
+                const playerAtk = (playerSpecies?.attack || 50) * playerAtkMult;
+                const opponentDef = (opponentSpecies?.defense || 50) * opponentDefMult;
+                const playerLevel = activePoke.level ?? 1;
+
+                // Classic Damage Formula
+                let baseDmg = (((2 * playerLevel / 5 + 2) * move.power * (playerAtk / opponentDef)) / 50) + 2;
+                
+                // Add random variance (0.85 to 1.0)
+                baseDmg = baseDmg * (Math.random() * 0.15 + 0.85);
+
+                playerDmg = Math.max(1, Math.floor(baseDmg * mult)); // Minimum 1 damage on hit
                 
                 pMsg = `¡Tu ${activePoke.id} usó ${move.name} e infligió ${playerDmg} de daño!`;
                 if (mult > 1.5) pMsg += " ¡Es súper efectivo!";
@@ -3182,13 +3282,20 @@ export default function GameCanvas({
                 const opponentAtkMult = getStageMultiplier(opponentAtkStage);
                 const playerDefMult = getStageMultiplier(playerDefStage);
 
-                wildDmg = Math.floor(wildMove.power * (1 + activeWildBattle.level / 20) * (Math.random() * 0.2 + 0.9));
-                wildDmg = Math.floor(wildDmg * opponentAtkMult / playerDefMult);
-
                 const activePokeSpecies = pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === activePoke.id.toLowerCase());
+                const wildSpecies = pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === activeWildBattle.name.toLowerCase());
+
+                const wildAtk = (wildSpecies?.attack || 50) * opponentAtkMult;
+                const playerDef = (activePokeSpecies?.defense || 50) * playerDefMult;
+                const wildLevel = activeWildBattle.level;
+
+                let baseDmg = (((2 * wildLevel / 5 + 2) * wildMove.power * (wildAtk / playerDef)) / 50) + 2;
+                baseDmg = baseDmg * (Math.random() * 0.15 + 0.85);
+
                 const activePokeTypes = activePokeSpecies?.types || ['normal'];
                 const playerMult = getTypeMultiplier(wildMove.type, activePokeTypes);
-                wildDmg = Math.max(1, Math.floor(wildDmg * playerMult)); // Minimum 1 damage on hit
+                
+                wildDmg = Math.max(1, Math.floor(baseDmg * playerMult)); // Minimum 1 damage on hit
 
                 wMsg = `El ${activeWildBattle.name} salvaje usó ${wildMove.name} e infligió ${wildDmg} de daño.`;
                 if (playerMult > 1.5) wMsg += " ¡Es súper efectivo!";
@@ -3533,13 +3640,22 @@ export default function GameCanvas({
         }
     };
 
-    const handleNurseHeal = () => {
-        if (!economyRef.current.canFreeHeal()) {
+    const handleNurseHeal = async () => {
+        let trueDate = null;
+        try {
+            const res = await fetch('http://worldtimeapi.org/api/timezone/Etc/UTC');
+            const data = await res.json();
+            trueDate = data.datetime.split('T')[0];
+        } catch (e) {
+            console.warn("Could not fetch true date", e);
+        }
+
+        if (!economyRef.current.canFreeHeal(trueDate)) {
             showNotification("Centro Pokémon", "Joy: Ya has curado gratis a tu equipo 2 veces hoy. Vuelve mañana o usa la opción de revivir.");
             return;
         }
 
-        const success = economyRef.current.executeFreeHeal();
+        const success = economyRef.current.executeFreeHeal(trueDate);
         if (success) {
             const healedTeam = teamRef.current.map(p => ({ ...p, hp: p.maxHp }));
             setTeam(healedTeam);
