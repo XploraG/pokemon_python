@@ -806,6 +806,7 @@ export default function GameCanvas({
     const [hoveredPlayer, setHoveredPlayer] = useState<{ address: string; name: string; x: number; y: number } | null>(null);
     const [pendingPvPInvite, setPendingPvPInvite] = useState<string | null>(null);
     const pendingPvPInviteRef = useRef<string | null>(null);
+    useEffect(() => { pendingPvPInviteRef.current = pendingPvPInvite; }, [pendingPvPInvite]);
     const [pvpTurnTimer, setPvpTurnTimer] = useState<number>(45);
     const [incomingPvPInvite, setIncomingPvPInvite] = useState<{ from: string; fromName: string } | null>(null);
     const incomingPvPInviteRef = useRef<{ from: string; fromName: string } | null>(null);
