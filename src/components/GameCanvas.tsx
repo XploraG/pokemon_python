@@ -2300,9 +2300,9 @@ export default function GameCanvas({
                 setDialogName("Ruta 3");
                 setActiveDialog("Returning to Route 3...");
                 setTimeout(() => {
-                    playerRef.current.x = 1560; // right edge
+                    playerRef.current.x = 1540; // Safely inside Route 3 so we don't trigger the x>=1560 warp!
                     playerRef.current.y = 448; // middle of route 3 right path
-                    playerRef.current.targetX = 1560;
+                    playerRef.current.targetX = 1540;
                     playerRef.current.targetY = 448;
                     playerRef.current.isMoving = false;
                     setCurrentMapPath('/assets/maps/route3/main.json');
