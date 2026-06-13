@@ -494,6 +494,36 @@
           "y": 1200
         }
       ]
+    },
+    {
+      "location": "src/assets/entities/structures/sign/main.json",
+      "coordinates": {
+        "x": 1000,
+        "y": 350
+      },
+      "dialogs": [
+        "Ruta 1\n-> Entrada a la Cueva Oscura\n(Hacia Ciudad Nueva)"
+      ]
+    },
+    {
+      "location": "src/assets/entities/structures/sign/main.json",
+      "coordinates": {
+        "x": 608,
+        "y": 1200
+      },
+      "dialogs": [
+        "Ruta 1\nv Sur: Hacia Ruta 3"
+      ]
+    },
+    {
+      "location": "src/assets/entities/structures/sign/main.json",
+      "coordinates": {
+        "x": 500,
+        "y": 100
+      },
+      "dialogs": [
+        "Ruta 1\n^ Norte: Regresar a Pueblo Tutorial"
+      ]
     }
   ]
 }

@@ -1,0 +1,19 @@
+{
+    "name": "Letrero",
+    "img": "src/assets/entities/structures/sign/sign.png",
+    "scale": 1,
+    "type": "npc",
+    "dialog": "Mensaje en blanco.",
+    "color_to_be_erased": "#000000",
+    "valid_moves": [
+        "down"
+    ],
+    "down": [
+        {
+            "y": 0,
+            "x": 0,
+            "w": 32,
+            "h": 32
+        }
+    ]
+}

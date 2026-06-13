@@ -1415,6 +1415,26 @@
         "x": 1568,
         "y": 952
       }
+    },
+    {
+      "location": "src/assets/entities/structures/sign/main.json",
+      "coordinates": {
+        "x": 100,
+        "y": 608
+      },
+      "dialogs": [
+        "< Oeste: Regresar a Ruta 1\n> Este: Continuar por Ruta 3"
+      ]
+    },
+    {
+      "location": "src/assets/entities/structures/sign/main.json",
+      "coordinates": {
+        "x": 1450,
+        "y": 448
+      },
+      "dialogs": [
+        "Ruta 3\n> Este: Hacia Ruta 4"
+      ]
     }
   ]
 }

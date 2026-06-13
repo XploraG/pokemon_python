@@ -647,7 +647,6 @@ const makeColorTransparent = (imgElement: HTMLImageElement, colorHex: string): H
                 }
             }
         }
-
         tempCtx.putImageData(imgData, 0, 0);
         return tempCanvas;
     } catch (e) {
@@ -655,6 +654,30 @@ const makeColorTransparent = (imgElement: HTMLImageElement, colorHex: string): H
         return imgElement;
     }
 };
+
+const assetCache: Record<string, any> = {};
+async function cachedFetchJson(url: string) {
+    if (assetCache[url]) return assetCache[url];
+    try {
+        const res = await fetch(url).then(r => r.json());
+        assetCache[url] = res;
+        return res;
+    } catch (err) {
+        console.error("Failed to fetch JSON:", url, err);
+        throw err;
+    }
+}
+async function cachedFetchText(url: string) {
+    if (assetCache[url]) return assetCache[url];
+    try {
+        const res = await fetch(url).then(r => r.text());
+        assetCache[url] = res;
+        return res;
+    } catch (err) {
+        console.error("Failed to fetch Text:", url, err);
+        throw err;
+    }
+}
 
 export default function GameCanvas({
     saveName,
@@ -1337,7 +1360,7 @@ export default function GameCanvas({
 
         async function loadGameAssets() {
             try {
-                setLoadingMessage('Loading configuration...');
+                setLoadingMessage('Cargando configuración...');
                 
                 const playerImg = new Image();
                 playerImg.crossOrigin = "anonymous";
@@ -1349,15 +1372,15 @@ export default function GameCanvas({
 
                 // Load player config, player sprites, and map JSON in parallel
                 const [playerConfig, _, mapJson] = await Promise.all([
-                    fetch('/assets/entities/player/main.json').then(r => r.json()),
+                    cachedFetchJson('/assets/entities/player/main.json'),
                     playerImgPromise,
-                    fetch(currentMapPath).then(r => r.json())
+                    cachedFetchJson(currentMapPath)
                 ]);
 
                 const playerColorKey = playerConfig.color_to_be_erased ?? '#C8BFE7';
                 playerSpriteRef.current = makeColorTransparent(playerImg, playerColorKey);
 
-                setLoadingMessage('Preloading map grid and sprites...');
+                setLoadingMessage('Preparando el entorno...');
 
                 const gridPath = mapJson.map.replace('src/assets/', '/assets/');
                 const tileSize = mapJson.tile_size ?? 32;
@@ -1386,8 +1409,7 @@ export default function GameCanvas({
                 // Prepare entity config & sprite preloading
                 const entityDataPromises = mapJson.entities.map(async (ent: any) => {
                     const cleanLoc = ent.location.replace('src/assets/', '/assets/');
-                    const entRes = await fetch(cleanLoc);
-                    const entMeta = await entRes.json();
+                    const entMeta = await cachedFetchJson(cleanLoc);
 
                     const cleanImgPath = entMeta.img.replace('src/assets/', '/assets/');
                     const entImg = new Image();
@@ -1403,7 +1425,7 @@ export default function GameCanvas({
 
                 // Fetch grid text, preload tiles, and preload entities all in parallel!
                 const [gridText, _tileComponentResults, entityDatas] = await Promise.all([
-                    fetch(gridPath).then(r => r.text()),
+                    cachedFetchText(gridPath),
                     Promise.all(componentPromises),
                     Promise.all(entityDataPromises)
                 ]);
@@ -3697,6 +3719,15 @@ export default function GameCanvas({
                         >☰</div>
                     </div>
                 </div>
+
+                {/* Loading Overlay */}
+                {loading && (
+                    <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#fff', backdropFilter: 'blur(4px)' }}>
+                        <div style={{ marginBottom: '16px', animation: 'spin 1s linear infinite', border: '4px solid rgba(255,255,255,0.3)', borderTop: '4px solid #fff', borderRadius: '50%', width: '40px', height: '40px' }}></div>
+                        <h2 style={{ margin: '0 0 8px 0', fontFamily: 'var(--font-sans)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Cargando Zona...</h2>
+                        <p style={{ margin: 0, color: '#aaa', fontSize: '14px' }}>{loadingMessage}</p>
+                    </div>
+                )}
 
                 {/* Floating Menu Button */}
                 <button onClick={() => setShowMenuModal(true)} className="floating-menu-btn" style={{ zIndex: 100 }}>
