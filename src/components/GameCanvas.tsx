@@ -5282,245 +5282,229 @@ export default function GameCanvas({
                             </div>
 {/* Right Column: Gym Medals & Special Badges */}
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                                
-                                {/* Gym Medals Upgrade/Equip */}
-                                <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '12px' }}>
-                                    <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#00e676', marginBottom: '8px', borderBottom: '1px dashed rgba(255,255,255,0.1)', paddingBottom: '4px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <span>🏅 Medallas de Gimnasio</span>
-                                        {viewingProfile.isLocal && <span style={{ fontSize: '9px', color: '#aaa' }}>(Equipadas: {viewingProfile.equippedMedals.length}/2)</span>}
-                                    </div>
-                                    
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', paddingRight: '4px' }}>
-                                        {["Medalla Roca", "Medalla Cascada", "Medalla Trueno", "Medalla Arcoiris", "Medalla Alma", "Medalla Pantano", "Medalla Volcan", "Medalla Tierra"].map((medalName) => {
-                                            const hasMedal = viewingProfile.medals.includes(medalName);
-                                            const level = viewingProfile.medalLevels[medalName] || 1;
-                                            const levelText = level === 1 ? "🟤 Bronce" : level === 2 ? "⚪ Plata" : "🟡 Oro";
-                                            const isEquipped = viewingProfile.equippedMedals.includes(medalName);
-                                            
-                                            // Requirements check for local evolving
-                                            let evolveButton = null;
-                                            if (viewingProfile.isLocal && hasMedal && level < 3) {
-                                                const nextLvl = level + 1;
-                                                const defeatsReq = nextLvl === 2 ? 3 : 10;
-                                                const coinsReq = nextLvl === 2 ? 1000 : 3000;
-                                                
-                                                evolveButton = (
-                                                    <button
-                                                        onClick={() => {
-                                                            const res = economyRef.current.evolveMedal(medalName, team);
-                                                            if (res.success) {
-                                                                saveLocalEconomy();
-                                                                showNotification("¡Medalla Evolucionada!", `Tu ${medalName} ahora es de nivel ${nextLvl === 2 ? "Plata" : "Oro"}.`);
-                                                                handleViewLocalProfile();
-                                                            } else {
-                                                                showNotification("Requisitos no cumplidos", res.reason || "No se puede evolucionar.");
-                                                            }
-                                                        }}
-                                                        style={{
-                                                            fontSize: '8px',
-                                                            background: 'linear-gradient(135deg, #ff9800, #f57c00)',
-                                                            border: 'none',
-                                                            color: '#fff',
-                                                            borderRadius: '4px',
-                                                            padding: '3px 6px',
-                                                            cursor: 'pointer',
-                                                            fontWeight: 'bold',
-                                                            whiteSpace: 'nowrap',
-                                                            marginTop: '4px',
-                                                            width: '100%',
-                                                        }}
-                                                    >
-                                                        ✨ Subir ({defeatsReq}⚔️/{coinsReq}🪙)
-                                                    </button>
-                                                );
-                                            }
-
-                                            const MEDAL_ORDER = ["Medalla Roca", "Medalla Cascada", "Medalla Trueno", "Medalla Arcoiris", "Medalla Alma", "Medalla Pantano", "Medalla Volcan", "Medalla Tierra"];
-                                            const medalIdx = MEDAL_ORDER.indexOf(medalName);
-                                            // Sprite sheet is 4 columns × 2 rows
-                                            const COL = medalIdx % 4;
-                                            const ROW = Math.floor(medalIdx / 4);
-                                            const SHEET_COLS = 4;
-                                            const SHEET_ROWS = 2;
-                                            const DISPLAY_SIZE = 56; // display px
-                                            // The sprite sheet is ~1024×1024 so each cell = 256×512
-                                            // We render the container at DISPLAY_SIZE × DISPLAY_SIZE
-                                            // and scale the image so one cell fills it
-                                            const sheetFile = hasMedal
-                                                ? (level === 3 ? '/assets/imgs/medals/gold_row.png' : level === 2 ? '/assets/imgs/medals/silver_row.png' : '/assets/imgs/medals/bronze_row.png')
-                                                : '/assets/imgs/medals/bronze_row.png';
-                                            const tierBorderColor = !hasMedal ? 'rgba(255,255,255,0.1)' : isEquipped ? '#00e676' : level === 3 ? '#ffd700' : level === 2 ? '#b0bec5' : '#cd7f32';
-                                            const tierGlow = !hasMedal ? 'none' : isEquipped ? '0 0 10px rgba(0,230,118,0.7)' : level === 3 ? '0 0 12px rgba(255,215,0,0.6)' : level === 2 ? '0 0 8px rgba(176,190,197,0.5)' : '0 0 6px rgba(205,127,50,0.4)';
-                                            const cardBg = !hasMedal ? 'rgba(255,255,255,0.02)' : isEquipped ? 'rgba(0,230,118,0.1)' : level === 3 ? 'rgba(255,215,0,0.08)' : level === 2 ? 'rgba(176,190,197,0.08)' : 'rgba(205,127,50,0.08)';
-
-                                            return (
-                                                <div 
-                                                    key={medalName} 
-                                                    style={{ 
-                                                        display: 'flex', 
-                                                        flexDirection: 'column',
-                                                        alignItems: 'center', 
-                                                        gap: '6px', 
-                                                        background: cardBg,
-                                                        padding: '10px 8px', 
-                                                        borderRadius: '10px', 
-                                                        border: '1px solid',
-                                                        borderColor: tierBorderColor,
-                                                        boxShadow: tierGlow,
-                                                        opacity: hasMedal ? 1 : 0.45,
-                                                        transition: 'all 0.2s ease',
-                                                        position: 'relative',
-                                                    }}
-                                                >
-                                                    {/* Medal sprite */}
-                                                    <div style={{
-                                                        width: `${DISPLAY_SIZE}px`,
-                                                        height: `${DISPLAY_SIZE}px`,
-                                                        flexShrink: 0,
-                                                        overflow: 'hidden',
-                                                        position: 'relative',
-                                                        filter: hasMedal ? 'none' : 'grayscale(100%) brightness(0.35)',
-                                                        borderRadius: '6px',
-                                                    }}>
-                                                        <img
-                                                            src={sheetFile}
-                                                            alt={medalName}
-                                                            style={{
-                                                                width: `${DISPLAY_SIZE * SHEET_COLS}px`,
-                                                                height: `${DISPLAY_SIZE * SHEET_ROWS}px`,
-                                                                position: 'absolute',
-                                                                left: `${-COL * DISPLAY_SIZE}px`,
-                                                                top: `${-ROW * DISPLAY_SIZE}px`,
-                                                                imageRendering: 'auto',
-                                                            }}
-                                                        />
-                                                    </div>
-
-                                                    {/* Medal name */}
-                                                    <div style={{ textAlign: 'center' }}>
-                                                        <div style={{ fontSize: '9px', fontWeight: isEquipped ? 'bold' : 'normal', color: isEquipped ? '#00e676' : hasMedal ? '#e2e8f0' : '#64748b', lineHeight: 1.2 }}>
-                                                            {medalName.replace('Medalla ', '')}
-                                                        </div>
-                                                        {hasMedal && (
-                                                            <div style={{ fontSize: '8px', color: level === 3 ? '#ffd700' : level === 2 ? '#e0e0e0' : '#cd7f32', marginTop: '2px' }}>
-                                                                {levelText}
-                                                            </div>
-                                                        )}
-                                                        {!hasMedal && (
-                                                            <div style={{ fontSize: '8px', color: '#475569', marginTop: '2px' }}>Sin obtener</div>
-                                                        )}
-                                                    </div>
-
-                                                    {/* Equip checkbox */}
-                                                    {viewingProfile.isLocal && hasMedal && (
-                                                        <label style={{ display: 'flex', alignItems: 'center', gap: '3px', fontSize: '8px', color: isEquipped ? '#00e676' : '#94a3b8', cursor: 'pointer' }}>
-                                                            <input 
-                                                                type="checkbox"
-                                                                checked={isEquipped}
-                                                                onChange={(e) => {
-                                                                    let newEquipped = [...viewingProfile.equippedMedals];
-                                                                    if (e.target.checked) {
-                                                                        if (newEquipped.length >= 2) {
-                                                                            showNotification("Límite de Medallas", "Sólo puedes equipar hasta 2 medallas.");
-                                                                            return;
-                                                                        }
-                                                                        newEquipped.push(medalName);
-                                                                    } else {
-                                                                        newEquipped = newEquipped.filter(m => m !== medalName);
-                                                                    }
-                                                                    economyRef.current.equipped_medals = newEquipped;
-                                                                    saveLocalEconomy();
-                                                                    handleViewLocalProfile();
-                                                                }}
-                                                                style={{ cursor: 'pointer', accentColor: '#00e676' }}
-                                                            />
-                                                            Equipar
-                                                        </label>
-                                                    )}
-
-                                                    {evolveButton}
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-
-                                {/* Active Synergy */}
                                 {(() => {
-                                    const synergy = getMedalSynergy(viewingProfile.equippedMedals);
-                                    if (!synergy) return null;
-                                    return (
-                                        <div style={{ background: 'rgba(98, 0, 234, 0.15)', border: '1px solid #6200ea', borderRadius: '8px', padding: '12px' }}>
-                                            <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#b388ff', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
-                                                ✨ Sinergia: {synergy.name}
-                                            </div>
-                                            <div style={{ fontSize: '11px', color: '#ccc', marginBottom: '4px' }}>{synergy.description}</div>
-                                            <div style={{ fontSize: '11px', color: '#69f0ae', fontWeight: 'bold' }}>Efecto: {synergy.combatEffect}</div>
-                                        </div>
-                                    );
-                                })()}
-
-                                {/* Special Tournaments / Streak Badges */}
-                                {(() => {
-                                    const specialBadges = [
-                                        ...(viewingProfile.tournamentMedals || []),
-                                        ...getSpecialMedals(viewingProfile)
-                                    ];
-                                    if (specialBadges.length === 0) return null;
-                                    const SPECIAL_SPRITE_MAP: Record<string, { idx: number; glow: string; border: string }> = {
-                                        "Medalla Campeón PvP (S1)": { idx: 0, glow: '0 0 14px rgba(255,215,0,0.8)', border: '#ffd700' },
-                                        "Medalla Tamer Pionero":    { idx: 1, glow: '0 0 14px rgba(0,188,212,0.8)', border: '#00bcd4' },
+                                    const MEDAL_BADGE_MAP: Record<string, string> = {
+                                        "Medalla Roca": "/assets/imgs/medals/badges/boulder.png",
+                                        "Medalla Cascada": "/assets/imgs/medals/badges/cascade.png",
+                                        "Medalla Trueno": "/assets/imgs/medals/badges/thunder.png",
+                                        "Medalla Arcoiris": "/assets/imgs/medals/badges/rainbow.png",
+                                        "Medalla Alma": "/assets/imgs/medals/badges/soul.png",
+                                        "Medalla Pantano": "/assets/imgs/medals/badges/marsh.png",
+                                        "Medalla Volcan": "/assets/imgs/medals/badges/volcano.png",
+                                        "Medalla Tierra": "/assets/imgs/medals/badges/earth.png",
+                                        "Medalla Campeón PvP (S1)": "/assets/imgs/medals/badges/pvp_champion.png",
+                                        "Medalla Tamer Pionero": "/assets/imgs/medals/badges/pioneer_tamer.png"
                                     };
-                                    const SPECIAL_SIZE = 48;
-                                    const SPECIAL_SHEET_COLS = 2;
                                     return (
-                                        <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '12px' }}>
-                                            <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#ffd700', marginBottom: '10px', borderBottom: '1px dashed rgba(255,255,255,0.1)', paddingBottom: '4px' }}>
-                                                🏆 Insignias de Torneos y Eventos
-                                            </div>
-                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-                                                {specialBadges.map((badge, idx) => {
-                                                    const spr = SPECIAL_SPRITE_MAP[badge];
-                                                    if (spr) {
+                                        <>
+                                            {/* Gym Medals Upgrade/Equip */}
+                                            <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '12px' }}>
+                                                <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#00e676', marginBottom: '8px', borderBottom: '1px dashed rgba(255,255,255,0.1)', paddingBottom: '4px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                    <span>🏅 Medallas de Gimnasio</span>
+                                                    {viewingProfile.isLocal && <span style={{ fontSize: '9px', color: '#aaa' }}>(Equipadas: {viewingProfile.equippedMedals.length}/2)</span>}
+                                                </div>
+                                                
+                                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', paddingRight: '4px' }}>
+                                                    {["Medalla Roca", "Medalla Cascada", "Medalla Trueno", "Medalla Arcoiris", "Medalla Alma", "Medalla Pantano", "Medalla Volcan", "Medalla Tierra"].map((medalName) => {
+                                                        const hasMedal = viewingProfile.medals.includes(medalName);
+                                                        const level = viewingProfile.medalLevels[medalName] || 1;
+                                                        const levelText = level === 1 ? "🟤 Bronce" : level === 2 ? "⚪ Plata" : "🟡 Oro";
+                                                        const isEquipped = viewingProfile.equippedMedals.includes(medalName);
+                                                        
+                                                        // Requirements check for local evolving
+                                                        let evolveButton = null;
+                                                        if (viewingProfile.isLocal && hasMedal && level < 3) {
+                                                            const nextLvl = level + 1;
+                                                            const defeatsReq = nextLvl === 2 ? 3 : 10;
+                                                            const coinsReq = nextLvl === 2 ? 1000 : 3000;
+                                                            
+                                                            evolveButton = (
+                                                                <button
+                                                                    onClick={() => {
+                                                                        const res = economyRef.current.evolveMedal(medalName, team);
+                                                                        if (res.success) {
+                                                                            saveLocalEconomy();
+                                                                            showNotification("¡Medalla Evolucionada!", `Tu ${medalName} ahora es de nivel ${nextLvl === 2 ? "Plata" : "Oro"}.`);
+                                                                            handleViewLocalProfile();
+                                                                        } else {
+                                                                            showNotification("Requisitos no cumplidos", res.reason || "No se puede evolucionar.");
+                                                                        }
+                                                                    }}
+                                                                    style={{
+                                                                        fontSize: '8px',
+                                                                        background: 'linear-gradient(135deg, #ff9800, #f57c00)',
+                                                                        border: 'none',
+                                                                        color: '#fff',
+                                                                        borderRadius: '4px',
+                                                                        padding: '3px 6px',
+                                                                        cursor: 'pointer',
+                                                                        fontWeight: 'bold',
+                                                                        whiteSpace: 'nowrap',
+                                                                        marginTop: '4px',
+                                                                        width: '100%',
+                                                                    }}
+                                                                >
+                                                                    ✨ Subir ({defeatsReq}⚔️/{coinsReq}🪙)
+                                                                </button>
+                                                            );
+                                                        }
+
+                                                        const DISPLAY_SIZE = 56; // display px
+                                                        const tierBorderColor = !hasMedal ? 'rgba(255,255,255,0.1)' : isEquipped ? '#00e676' : level === 3 ? '#ffd700' : level === 2 ? '#b0bec5' : '#cd7f32';
+                                                        const tierGlow = !hasMedal ? 'none' : isEquipped ? '0 0 10px rgba(0,230,118,0.7)' : level === 3 ? '0 0 12px rgba(255,215,0,0.6)' : level === 2 ? '0 0 8px rgba(176,190,197,0.5)' : '0 0 6px rgba(205,127,50,0.4)';
+                                                        const cardBg = !hasMedal ? 'rgba(255,255,255,0.02)' : isEquipped ? 'rgba(0,230,118,0.1)' : level === 3 ? 'rgba(255,215,0,0.08)' : level === 2 ? 'rgba(176,190,197,0.08)' : 'rgba(205,127,50,0.08)';
+
                                                         return (
-                                                            <div key={idx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-                                                                <div style={{
-                                                                    width: `${SPECIAL_SIZE}px`,
-                                                                    height: `${SPECIAL_SIZE}px`,
-                                                                    overflow: 'hidden',
+                                                            <div 
+                                                                key={medalName} 
+                                                                style={{ 
+                                                                    display: 'flex', 
+                                                                    flexDirection: 'column',
+                                                                    alignItems: 'center', 
+                                                                    gap: '6px', 
+                                                                    background: cardBg,
+                                                                    padding: '10px 8px', 
+                                                                    borderRadius: '10px', 
+                                                                    border: '1px solid',
+                                                                    borderColor: tierBorderColor,
+                                                                    boxShadow: tierGlow,
+                                                                    opacity: hasMedal ? 1 : 0.45,
+                                                                    transition: 'all 0.2s ease',
                                                                     position: 'relative',
-                                                                    borderRadius: '50%',
-                                                                    boxShadow: spr.glow,
-                                                                    border: `2px solid ${spr.border}`
-                                                                }}>
-                                                                    <img
-                                                                        src="/assets/imgs/medals/special.png"
-                                                                        alt={badge}
-                                                                        style={{
-                                                                            width: `${SPECIAL_SIZE * SPECIAL_SHEET_COLS}px`,
-                                                                            height: `${SPECIAL_SIZE}px`,
-                                                                            position: 'absolute',
-                                                                            left: `${-spr.idx * SPECIAL_SIZE}px`,
-                                                                            top: 0,
-                                                                            imageRendering: 'auto',
-                                                                        }}
-                                                                    />
+                                                                }}
+                                                            >
+                                                                {/* Medal sprite */}
+                                                                <img
+                                                                    src={MEDAL_BADGE_MAP[medalName] || '/assets/imgs/medals/badges/boulder.png'}
+                                                                    alt={medalName}
+                                                                    style={{
+                                                                        width: `${DISPLAY_SIZE}px`,
+                                                                        height: `${DISPLAY_SIZE}px`,
+                                                                        objectFit: 'contain',
+                                                                        filter: hasMedal ? 'none' : 'grayscale(100%) brightness(0.2)',
+                                                                        borderRadius: '6px',
+                                                                        imageRendering: 'auto',
+                                                                    }}
+                                                                />
+
+                                                                {/* Medal name */}
+                                                                <div style={{ textAlign: 'center' }}>
+                                                                    <div style={{ fontSize: '9px', fontWeight: isEquipped ? 'bold' : 'normal', color: isEquipped ? '#00e676' : hasMedal ? '#e2e8f0' : '#64748b', lineHeight: 1.2 }}>
+                                                                        {medalName.replace('Medalla ', '')}
+                                                                    </div>
+                                                                    {hasMedal && (
+                                                                        <div style={{ fontSize: '8px', color: level === 3 ? '#ffd700' : level === 2 ? '#e0e0e0' : '#cd7f32', marginTop: '2px' }}>
+                                                                            {levelText}
+                                                                        </div>
+                                                                    )}
+                                                                    {!hasMedal && (
+                                                                        <div style={{ fontSize: '8px', color: '#475569', marginTop: '2px' }}>Sin obtener</div>
+                                                                    )}
                                                                 </div>
-                                                                <span style={{ fontSize: '9px', color: spr.border, fontWeight: 'bold', textAlign: 'center', maxWidth: '60px', lineHeight: 1.2 }}>{badge}</span>
+
+                                                                {/* Equip checkbox */}
+                                                                {viewingProfile.isLocal && hasMedal && (
+                                                                    <label style={{ display: 'flex', alignItems: 'center', gap: '3px', fontSize: '8px', color: isEquipped ? '#00e676' : '#94a3b8', cursor: 'pointer' }}>
+                                                                        <input 
+                                                                            type="checkbox"
+                                                                            checked={isEquipped}
+                                                                            onChange={(e) => {
+                                                                                let newEquipped = [...viewingProfile.equippedMedals];
+                                                                                if (e.target.checked) {
+                                                                                    if (newEquipped.length >= 2) {
+                                                                                        showNotification("Límite de Medallas", "Sólo puedes equipar hasta 2 medallas.");
+                                                                                        return;
+                                                                                    }
+                                                                                    newEquipped.push(medalName);
+                                                                                } else {
+                                                                                    newEquipped = newEquipped.filter(m => m !== medalName);
+                                                                                }
+                                                                                economyRef.current.equipped_medals = newEquipped;
+                                                                                saveLocalEconomy();
+                                                                                handleViewLocalProfile();
+                                                                            }}
+                                                                            style={{ cursor: 'pointer', accentColor: '#00e676' }}
+                                                                        />
+                                                                        Equipar
+                                                                    </label>
+                                                                )}
+
+                                                                {evolveButton}
                                                             </div>
                                                         );
-                                                    }
-                                                    return (
-                                                        <span key={idx} style={{ fontSize: '10px', background: 'rgba(255, 215, 0, 0.15)', border: '1px solid #ffd700', color: '#ffd700', padding: '4px 8px', borderRadius: '12px', fontWeight: 'bold' }}>
-                                                            🎗️ {badge}
-                                                        </span>
-                                                    );
-                                                })}
+                                                    })}
+                                                </div>
                                             </div>
-                                        </div>
+
+                                            {/* Active Synergy */}
+                                            {(() => {
+                                                const synergy = getMedalSynergy(viewingProfile.equippedMedals);
+                                                if (!synergy) return null;
+                                                return (
+                                                    <div style={{ background: 'rgba(98, 0, 234, 0.15)', border: '1px solid #6200ea', borderRadius: '8px', padding: '12px' }}>
+                                                        <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#b388ff', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                                                            ✨ Sinergia: {synergy.name}
+                                                        </div>
+                                                        <div style={{ fontSize: '11px', color: '#ccc', marginBottom: '4px' }}>{synergy.description}</div>
+                                                        <div style={{ fontSize: '11px', color: '#69f0ae', fontWeight: 'bold' }}>Efecto: {synergy.combatEffect}</div>
+                                                    </div>
+                                                );
+                                            })()}
+
+                                            {/* Special Tournaments / Streak Badges */}
+                                            {(() => {
+                                                const specialBadges = [
+                                                    ...(viewingProfile.tournamentMedals || []),
+                                                    ...getSpecialMedals(viewingProfile)
+                                                ];
+                                                if (specialBadges.length === 0) return null;
+                                                const SPECIAL_SPRITE_MAP: Record<string, { glow: string; border: string }> = {
+                                                    "Medalla Campeón PvP (S1)": { glow: '0 0 14px rgba(255,215,0,0.8)', border: '#ffd700' },
+                                                    "Medalla Tamer Pionero":    { glow: '0 0 14px rgba(0,188,212,0.8)', border: '#00bcd4' },
+                                                };
+                                                const SPECIAL_SIZE = 48;
+                                                return (
+                                                    <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '12px' }}>
+                                                        <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#ffd700', marginBottom: '10px', borderBottom: '1px dashed rgba(255,255,255,0.1)', paddingBottom: '4px' }}>
+                                                            🏆 Insignias de Torneos y Eventos
+                                                        </div>
+                                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                                                            {specialBadges.map((badge, idx) => {
+                                                                const spr = SPECIAL_SPRITE_MAP[badge];
+                                                                const badgePath = MEDAL_BADGE_MAP[badge];
+                                                                if (badgePath && spr) {
+                                                                    return (
+                                                                        <div key={idx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                                                                            <img
+                                                                                src={badgePath}
+                                                                                alt={badge}
+                                                                                style={{
+                                                                                    width: `${SPECIAL_SIZE}px`,
+                                                                                    height: `${SPECIAL_SIZE}px`,
+                                                                                    objectFit: 'contain',
+                                                                                    borderRadius: '50%',
+                                                                                    boxShadow: spr.glow,
+                                                                                    border: `2px solid ${spr.border}`,
+                                                                                    imageRendering: 'auto',
+                                                                                }}
+                                                                            />
+                                                                            <span style={{ fontSize: '9px', color: spr.border, fontWeight: 'bold', textAlign: 'center', maxWidth: '60px', lineHeight: 1.2 }}>{badge.replace('Medalla ', '')}</span>
+                                                                        </div>
+                                                                    );
+                                                                }
+                                                                return (
+                                                                    <span key={idx} style={{ fontSize: '10px', background: 'rgba(255, 215, 0, 0.15)', border: '1px solid #ffd700', color: '#ffd700', padding: '4px 8px', borderRadius: '12px', fontWeight: 'bold' }}>
+                                                                        🎗️ {badge}
+                                                                    </span>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })()}
+                                        </>
                                     );
                                 })()}
-                                
                             </div>
 
                         </div>
