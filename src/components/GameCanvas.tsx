@@ -5038,126 +5038,254 @@ export default function GameCanvas({
             )}
 
             {activePvPBattle && (
-                <div className="modal-overlay" style={{ background: 'rgba(0,0,0,0.9)', zIndex: 400 }}>
-                    <div className="modal-content pokemon-battle-modal" style={{ height: '85vh', maxHeight: '600px', display: 'flex', flexDirection: 'column' }}>
-                        
-                        <div className="modal-header" style={{ padding: '10px', background: '#3e2723', color: '#fff' }}>
-                            <h2 style={{ margin: 0, fontSize: '16px', display: 'flex', justifyContent: 'space-between' }}>
-                                <span>⚔️ PvP vs {activePvPBattle.opponentName}</span>
-                                {activePvPBattle.status === 'win' && <span style={{ color: '#4caf50' }}>¡VICTORIA!</span>}
-                                {activePvPBattle.status === 'loss' && <span style={{ color: '#f44336' }}>¡DERROTA!</span>}
-                            </h2>
+                <div style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    zIndex: 400,
+                    backgroundColor: '#f6ebd0',
+                    backgroundImage: 'radial-gradient(#ebd9b3 1px, transparent 1px), radial-gradient(#ebd9b3 1px, transparent 1px)',
+                    backgroundSize: '20px 20px',
+                    backgroundPosition: '0 0, 10px 10px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    boxSizing: 'border-box',
+                    padding: '8px',
+                    fontFamily: 'monospace',
+                    overflow: 'hidden'
+                }}>
+                    
+                    {/* Header */}
+                    <div style={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        background: '#3e2723',
+                        border: '2px solid #5d4037',
+                        borderRadius: '4px',
+                        color: '#fff',
+                        padding: '4px',
+                        fontWeight: 'bold',
+                        textTransform: 'uppercase',
+                        fontSize: '11px',
+                        letterSpacing: '1px'
+                    }}>
+                        <span>⚔️ PvP vs {activePvPBattle.opponentName}</span>
+                        {activePvPBattle.status === 'win' && <span style={{ marginLeft: '10px', color: '#4caf50' }}>¡VICTORIA!</span>}
+                        {activePvPBattle.status === 'loss' && <span style={{ marginLeft: '10px', color: '#f44336' }}>¡DERROTA!</span>}
+                    </div>
+
+                    {activePvPBattle.status === 'syncing' ? (
+                        <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#3e2723', fontSize: '16px', fontWeight: 'bold' }}>
+                            <div className="spinner animate-spin" style={{ border: '4px solid rgba(0,0,0,0.1)', width: '30px', height: '30px', borderRadius: '50%', borderLeftColor: '#3e2723', marginBottom: '15px' }}></div>
+                            Sincronizando batalla...
                         </div>
-
-                        {activePvPBattle.status === 'syncing' ? (
-                            <div style={{ flexGrow: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '18px' }}>
-                                Sincronizando batalla...
-                            </div>
-                        ) : (
-                            <div style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, justifyContent: 'space-between', padding: '0', position: 'relative' }}>
-                                
-                                {/* Opponent */}
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '10px', background: '#e0e0e0', borderBottom: '2px solid #ccc' }}>
-                                    <div className="pokemon-panel" style={{ width: '50%' }}>
-                                        <div style={{ fontWeight: 'bold', fontSize: '14px', textTransform: 'capitalize' }}>{activePvPBattle.opponentPokemon?.id || '?'}</div>
-                                        <div style={{ fontSize: '10px' }}>Lvl {activePvPBattle.opponentPokemon?.level || '?'}</div>
-                                        <div className="pokemon-hp-bar" style={{ width: '100%' }}>
-                                            <div className="hp-fill" style={{ width: `${Math.round((activePvPBattle.opponentHp / (activePvPBattle.opponentMaxHp || 1)) * 100)}%` }}></div>
-                                        </div>
+                    ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, justifyContent: 'space-between', padding: '10px 0', position: 'relative' }}>
+                            
+                            {/* Opponent Row (Info on Left, Sprite on Right) */}
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '0 8px' }}>
+                                {/* Opponent Info Box (Left) */}
+                                <div className="pokemon-panel" style={{
+                                    width: '50%',
+                                    padding: '6px',
+                                    background: '#fff',
+                                    border: '2px solid #3e2723',
+                                    borderRadius: '6px',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: '3px',
+                                    boxShadow: '2px 2px 0 rgba(0,0,0,0.1)'
+                                }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '10px', textTransform: 'capitalize', color: '#3e2723' }}>
+                                        <span>{activePvPBattle.opponentPokemon?.id || '?'}</span>
+                                        <span>L:{activePvPBattle.opponentPokemon?.level || '?'}</span>
                                     </div>
-                                    <div style={{ width: '45%', display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'relative', height: '100px' }}>
-                                        <img 
-                                            src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemonSpeciesList.find((s:any)=>s.name.toLowerCase() === activePvPBattle.opponentPokemon?.id)?.id || 25}.png`} 
-                                            alt="Opponent" 
-                                            className={opponentSpriteEffect === 'shake' ? 'battle-shake' : opponentSpriteEffect === 'flash' ? 'battle-flash' : ''}
-                                            style={{ width: '80px', height: '80px', objectFit: 'contain' }}
-                                        />
-                                        {floatingDamage && floatingDamage.target === 'opponent' && (
-                                            <div className="floating-damage-num" style={{ top: '10px', left: '30%' }}>{floatingDamage.value}</div>
-                                        )}
+                                    <div className="pokemon-hp-bar" style={{ height: '6px', background: '#e0e0e0', borderRadius: '3px', overflow: 'hidden', border: '1px solid #795548', margin: 0, width: '100%' }}>
+                                        <div style={{
+                                            height: '100%',
+                                            width: `${Math.round((activePvPBattle.opponentHp / (activePvPBattle.opponentMaxHp || 1)) * 100)}%`,
+                                            background: (activePvPBattle.opponentHp / (activePvPBattle.opponentMaxHp || 1)) < 0.2 ? '#f44336' : ((activePvPBattle.opponentHp / (activePvPBattle.opponentMaxHp || 1)) < 0.5 ? '#ffeb3b' : '#4caf50'),
+                                            transition: 'width 0.3s ease'
+                                        }}></div>
                                     </div>
-                                </div>
-
-                                {/* Player */}
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', padding: '10px', background: '#f5f5f5', borderTop: '2px solid #ccc' }}>
-                                    <div style={{ width: '45%', display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'relative', height: '100px' }}>
-                                        <img 
-                                            src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/back/${pokemonSpeciesList.find((s:any)=>s.name.toLowerCase() === team.find((p:any)=>p.hp>0)?.id)?.id || 25}.png`} 
-                                            alt="Player" 
-                                            className={playerSpriteEffect === 'bounce' ? 'battle-bounce' : playerSpriteEffect === 'shake' ? 'battle-shake' : ''}
-                                            style={{ width: '80px', height: '80px', objectFit: 'contain' }}
-                                        />
-                                        {floatingDamage && floatingDamage.target === 'player' && (
-                                            <div className="floating-damage-num" style={{ top: '10px', left: '30%' }}>{floatingDamage.value}</div>
-                                        )}
-                                    </div>
-                                    <div className="pokemon-panel" style={{ width: '50%' }}>
-                                        <div style={{ fontWeight: 'bold', fontSize: '14px', textTransform: 'capitalize' }}>{team.find((p:any)=>p.hp>0)?.id}</div>
-                                        <div style={{ fontSize: '10px' }}>Lvl {team.find((p:any)=>p.hp>0)?.level}</div>
-                                        <div className="pokemon-hp-bar" style={{ width: '100%' }}>
-                                            <div className="hp-fill" style={{ width: `${Math.round((activePvPBattle.myHp / (team.find((p:any)=>p.hp>0)?.maxHp || 1)) * 100)}%` }}></div>
-                                        </div>
+                                    <div style={{ fontSize: '8px', display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', color: '#5d4037' }}>
+                                        <span>HP: {activePvPBattle.opponentHp}/{activePvPBattle.opponentMaxHp}</span>
                                     </div>
                                 </div>
 
-                                {/* Controls */}
-                                <div style={{ background: '#fff', padding: '10px', borderTop: '4px solid #333' }}>
-                                    {activePvPBattle.status === 'battle' ? (
-                                        <>
-                                            <div style={{ textAlign: 'center', marginBottom: '8px', fontWeight: 'bold', fontSize: '14px', color: activePvPBattle.turn === walletAddress ? '#2e7d32' : '#c62828' }}>
-                                                {activePvPBattle.turn === walletAddress ? `⏳ Tu turno (${pvpTurnTimer}s)` : `⏳ Turno del oponente (${pvpTurnTimer}s)`}
-                                            </div>
-                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', width: '100%' }}>
-                                                {(() => {
-                                                    const activePoke = team.find(p => p.hp > 0);
-                                                    if (!activePoke) return null;
-                                                    const moves = typeof window !== 'undefined' && (window as any).POKEMON_MOVESET ? (window as any).POKEMON_MOVESET[activePoke.id] || [] : [];
-                                                    return moves.map((m: any, idx: number) => {
-                                                        const tc = typeof window !== 'undefined' && (window as any).TYPE_COLORS ? (window as any).TYPE_COLORS : {};
-                                                        return (
-                                                            <button 
-                                                                key={idx}
-                                                                className="pokemon-button animate-hover"
-                                                                onClick={() => handleExecutePvPMove(m.id)}
-                                                                disabled={activePvPBattle.turn !== walletAddress}
-                                                                style={{ 
-                                                                    background: tc[m.type] || '#a8a878',
-                                                                    color: m.type === 'electric' ? '#3e2723' : '#fff',
-                                                                    height: '38px', padding: '4px', margin: 0, fontSize: '11px', fontWeight: 'bold',
-                                                                    opacity: activePvPBattle.turn !== walletAddress ? 0.5 : 1
-                                                                }}
-                                                            >
-                                                                {m.name}
-                                                            </button>
-                                                        );
-                                                    });
-                                                })()}
-                                            </div>
-                                        </>
-                                    ) : (
-                                        <button 
-                                            className="pokemon-button"
-                                            onClick={() => {
-                                                if (activePvPBattle.status === 'win') {
-                                                    economyRef.current.pvp_wins = (economyRef.current.pvp_wins || 0) + 1;
-                                                    economyRef.current.addCoins(200);
-                                                    showNotification("¡Ganaste!", "¡Ganaste el duelo y te llevas 200 Coins!");
-                                                } else if (activePvPBattle.status === 'loss') {
-                                                    economyRef.current.pvp_losses = (economyRef.current.pvp_losses || 0) + 1;
-                                                    showNotification("Derrota", "Perdiste el duelo y tu apuesta de 100 Coins.");
-                                                }
-                                                setEconomy(new Economy(economyRef.current.toSaveData()));
-                                                saveLocalEconomy();
-                                                setActivePvPBattle(null);
-                                            }}
-                                        >
-                                            Finalizar
-                                        </button>
+                                {/* Opponent Sprite (Right) */}
+                                <div style={{ width: '45%', display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'relative', height: '100px' }}>
+                                    <img 
+                                        src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemonSpeciesList.find((s:any)=>s.name.toLowerCase() === activePvPBattle.opponentPokemon?.id?.toLowerCase())?.id || 25}.png`} 
+                                        alt="Opponent" 
+                                        className={opponentSpriteEffect === 'shake' ? 'battle-shake' : opponentSpriteEffect === 'flash' ? 'battle-flash' : ''}
+                                        style={{ width: '80px', height: '80px', objectFit: 'contain' }}
+                                    />
+                                    {floatingDamage && floatingDamage.target === 'opponent' && (
+                                        <div className="floating-damage-num" style={{ top: '10px', left: '30%' }}>{floatingDamage.value}</div>
                                     )}
                                 </div>
                             </div>
-                        )}
-                    </div>
+
+                            {/* Player Row (Sprite on Left, Info on Right) */}
+                            {(() => {
+                                const activePoke = team.find((p: any) => p.hp > 0);
+                                if (!activePoke) return <div style={{ color: '#d32f2f', fontWeight: 'bold', textAlign: 'center' }}>¡No tienes Pokémon activos!</div>;
+                                const pct = Math.round((activePvPBattle.myHp / (activePoke.maxHp || 1)) * 100);
+                                const activePokeSpecies = pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === activePoke.id.toLowerCase());
+                                
+                                return (
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '0 8px', marginTop: '4px' }}>
+                                        {/* Player Sprite (Left) */}
+                                        <div style={{ width: '45%', display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'relative', height: '100px' }}>
+                                            <img 
+                                                src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/back/${pokemonSpeciesList.find((s:any)=>s.name.toLowerCase() === activePoke.id.toLowerCase())?.id || 25}.png`} 
+                                                alt={activePoke.id} 
+                                                className={playerSpriteEffect === 'bounce' ? 'battle-bounce' : playerSpriteEffect === 'shake' ? 'battle-shake' : ''}
+                                                style={{ width: '80px', height: '80px', objectFit: 'contain' }}
+                                            />
+                                            {floatingDamage && floatingDamage.target === 'player' && (
+                                                <div className="floating-damage-num" style={{ top: '10px', left: '30%' }}>{floatingDamage.value}</div>
+                                            )}
+                                        </div>
+
+                                        {/* Player Info Box (Right) */}
+                                        <div className="pokemon-panel" style={{
+                                            width: '50%',
+                                            padding: '6px',
+                                            background: '#fff',
+                                            border: '2px solid #3e2723',
+                                            borderRadius: '6px',
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            gap: '3px',
+                                            boxShadow: '2px 2px 0 rgba(0,0,0,0.1)'
+                                        }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '10px', textTransform: 'capitalize', color: '#3e2723' }}>
+                                                <span>{activePoke.id}</span>
+                                                <span>L:{activePoke.level ?? 1}</span>
+                                            </div>
+                                            <div className="pokemon-hp-bar" style={{ height: '6px', background: '#e0e0e0', borderRadius: '3px', overflow: 'hidden', border: '1px solid #795548', margin: 0, width: '100%' }}>
+                                                <div style={{
+                                                    height: '100%',
+                                                    width: `${pct}%`,
+                                                    background: pct < 20 ? '#f44336' : (pct < 50 ? '#ffeb3b' : '#4caf50'),
+                                                    transition: 'width 0.3s ease'
+                                                }}></div>
+                                            </div>
+                                            <div style={{ fontSize: '8px', display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', color: '#5d4037' }}>
+                                                <span>HP: {activePvPBattle.myHp}/{activePoke.maxHp}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })()}
+                        </div>
+                    )}
+
+                    {/* Battle Dialog Log */}
+                    {activePvPBattle.status !== 'syncing' && (
+                        <div style={{
+                            background: '#f5f0e1',
+                            border: '2px solid #3e2723',
+                            borderRadius: '4px',
+                            padding: '8px',
+                            minHeight: '44px',
+                            maxHeight: '44px',
+                            fontSize: '11px',
+                            color: '#3e2723',
+                            fontWeight: 'bold',
+                            boxSizing: 'border-box',
+                            overflowY: 'auto',
+                            lineHeight: '1.3',
+                            marginBottom: '4px'
+                        }}>
+                            {activePvPBattle.status === 'battle' ? (
+                                activePvPBattle.turn === walletAddress ? "¡Es tu turno! Selecciona un movimiento." : `Esperando que ${activePvPBattle.opponentName} juegue...`
+                            ) : activePvPBattle.status === 'win' ? (
+                                "¡Felicidades! Has ganado la batalla PvP."
+                            ) : activePvPBattle.status === 'loss' ? (
+                                "Tu equipo ha sido derrotado. Has perdido la batalla PvP."
+                            ) : (
+                                "¡Duelo PvP finalizado!"
+                            )}
+                        </div>
+                    )}
+
+                    {/* Options/Controls Panel */}
+                    {activePvPBattle.status !== 'syncing' && (
+                        <div style={{
+                            background: '#fff',
+                            border: '2px solid #3e2723',
+                            borderRadius: '4px',
+                            padding: '8px',
+                            height: '90px',
+                            boxSizing: 'border-box',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            justifyContent: 'center'
+                        }}>
+                            {activePvPBattle.status === 'battle' ? (
+                                <>
+                                    <div style={{ textAlign: 'center', marginBottom: '6px', fontWeight: 'bold', fontSize: '11px', color: activePvPBattle.turn === walletAddress ? '#2e7d32' : '#c62828' }}>
+                                        {activePvPBattle.turn === walletAddress ? `⏳ Tu turno (${pvpTurnTimer}s)` : `⏳ Turno del oponente (${pvpTurnTimer}s)`}
+                                    </div>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', width: '100%' }}>
+                                        {(() => {
+                                            const activePoke = team.find(p => p.hp > 0);
+                                            if (!activePoke) return null;
+                                            const moves = typeof window !== 'undefined' && (window as any).POKEMON_MOVESET ? (window as any).POKEMON_MOVESET[activePoke.id] || [] : [];
+                                            return moves.map((m: any, idx: number) => {
+                                                const tc = typeof window !== 'undefined' && (window as any).TYPE_COLORS ? (window as any).TYPE_COLORS : {};
+                                                return (
+                                                    <button 
+                                                        key={idx}
+                                                        className="pokemon-button animate-hover"
+                                                        onClick={() => handleExecutePvPMove(m.id)}
+                                                        disabled={activePvPBattle.turn !== walletAddress}
+                                                        style={{ 
+                                                            background: tc[m.type] || '#a8a878',
+                                                            color: m.type === 'electric' ? '#3e2723' : '#fff',
+                                                            height: '32px', padding: '4px', margin: 0, fontSize: '10px', fontWeight: 'bold',
+                                                            opacity: activePvPBattle.turn !== walletAddress ? 0.5 : 1,
+                                                            border: '1px solid #333',
+                                                            borderRadius: '4px'
+                                                        }}
+                                                    >
+                                                        {m.name}
+                                                    </button>
+                                                );
+                                            });
+                                        })()}
+                                    </div>
+                                </>
+                            ) : (
+                                <button 
+                                    className="pokemon-button success"
+                                    onClick={() => {
+                                        if (activePvPBattle.status === 'win') {
+                                            economyRef.current.pvp_wins = (economyRef.current.pvp_wins || 0) + 1;
+                                            economyRef.current.addCoins(200);
+                                            showNotification("¡Ganaste!", "¡Ganaste el duelo y te llevas 200 Coins!");
+                                        } else if (activePvPBattle.status === 'loss') {
+                                            economyRef.current.pvp_losses = (economyRef.current.pvp_losses || 0) + 1;
+                                            showNotification("Derrota", "Perdiste el duelo y tu apuesta de 100 Coins.");
+                                        }
+                                        setEconomy(new Economy(economyRef.current.toSaveData()));
+                                        saveLocalEconomy();
+                                        setActivePvPBattle(null);
+                                    }}
+                                    style={{ height: '40px', fontSize: '14px', fontWeight: 'bold' }}
+                                >
+                                    Finalizar Duelo
+                                </button>
+                            )}
+                        </div>
+                    )}
                 </div>
             )}
         </div>
