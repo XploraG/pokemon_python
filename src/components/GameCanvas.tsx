@@ -829,6 +829,40 @@ const getSpecialMedals = (econ: any) => {
     return specials;
 };
 
+const getMapDisplayName = (mapPath: string): string => {
+    const path = mapPath.toLowerCase();
+    if (path.includes('tutorial')) {
+        return 'Pueblo Tutorial';
+    }
+    if (path.includes('pokecenter')) {
+        return 'Centro Pokémon';
+    }
+    if (path.includes('pokemart')) {
+        return 'Tienda Pokémon';
+    }
+    if (path.includes('gym')) {
+        return 'Gimnasio Pokémon';
+    }
+    if (path.includes('redhouse')) {
+        return 'Casa del Entrenador';
+    }
+    if (path.startsWith('procedural://')) {
+        const parts = path.replace('procedural://', '').split('_');
+        const type = parts[0];
+        const index = parts[1] || '1';
+        if (type === 'route') {
+            return `Ruta de Exploración ${index}`;
+        }
+        if (type === 'settlement') {
+            return `Pueblo Semilla ${index}`;
+        }
+        if (type === 'cave') {
+            return `Cueva Misteriosa ${index}`;
+        }
+    }
+    return 'Nueva Zona';
+};
+
 export default function GameCanvas({
     saveName,
     playerCoordinates,
@@ -1216,6 +1250,7 @@ export default function GameCanvas({
     // Engine loading flags
     const [loading, setLoading] = useState(true);
     const [loadingMessage, setLoadingMessage] = useState('Loading assets...');
+    const [mapNamePopup, setMapNamePopup] = useState<string | null>(null);
 
     // Refs to keep state variables fresh inside async loop and listeners
     const currentMapPathRef = useRef(currentMapPath);
@@ -1235,6 +1270,24 @@ export default function GameCanvas({
     useEffect(() => { inventoryRef.current = inventory; }, [inventory]);
     useEffect(() => { teamRef.current = team; }, [team]);
     useEffect(() => { pcPokemonRef.current = pcPokemon; }, [pcPokemon]);
+
+    useEffect(() => {
+        if (loading) {
+            setMapNamePopup(null);
+            return;
+        }
+        const displayName = getMapDisplayName(currentMapPath);
+        setMapNamePopup(displayName);
+
+        const timer = setTimeout(() => {
+            setMapNamePopup(null);
+        }, 15000);
+
+        return () => {
+            clearTimeout(timer);
+        };
+    }, [currentMapPath, loading]);
+
     // Anti-cheat Check: check if player left/disconnected during active PvP battle
     useEffect(() => {
         if (!loading && economy && economy.in_pvp_battle) {
@@ -2136,6 +2189,9 @@ export default function GameCanvas({
     useEffect(() => {
         if (loading) return;
 
+        // Reset key pressed states when loading completes to prevent automatic movement/drifting
+        keysPressed.current = {};
+
         const handleKeyDown = (e: KeyboardEvent) => {
             if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') {
                 return;
@@ -2952,7 +3008,7 @@ export default function GameCanvas({
                         "coordinates": { "x": 960, "y": 800 }
                     },
                     {
-                        "location": "src/assets/entities/npcs/persons/grandpa/main.json",
+                        "location": "src/assets/entities/npcs/persons/grandmarose/main.json",
                         "coordinates": { "x": 640, "y": 640 },
                         "dialogs": [
                             `¡Bienvenido a Pueblo Semilla ${index}!`,
@@ -4801,6 +4857,13 @@ export default function GameCanvas({
         <div className="game-container">
             {/* Visual game Canvas wrapper */}
             <div className="canvas-wrapper" ref={wrapperRef}>
+                {/* Map Transition Popup */}
+                {mapNamePopup && (
+                    <div className="map-popup" key={currentMapPath}>
+                        📍 {mapNamePopup}
+                    </div>
+                )}
+
                 <canvas 
                     ref={canvasRef}
                     width={canvasSize.width}

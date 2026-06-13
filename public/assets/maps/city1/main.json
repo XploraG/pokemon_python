@@ -101,7 +101,7 @@
             ]
         },
         {
-            "location": "src/assets/entities/npcs/persons/grandpa/main.json",
+            "location": "src/assets/entities/npcs/persons/grandmarose/main.json",
             "coordinates": {
                 "x": 750,
                 "y": 600
