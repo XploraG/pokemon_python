@@ -968,6 +968,8 @@ export default function GameCanvas({
     const [notification, setNotification] = useState<{ title: string; message: string } | null>(null);
     const [activeWildBattle, setActiveWildBattle] = useState<WildBattle | null>(null);
     const [battleMessage, setBattleMessage] = useState<string>('¿Qué hará tu Pokémon?');
+    const [wildBattleLog, setWildBattleLog] = useState<string[]>([]);
+    const wildBattleLogRef = useRef<HTMLDivElement | null>(null);
     const [showBallSelect, setShowBallSelect] = useState<boolean>(false);
     const [showMoveSelect, setShowMoveSelect] = useState<boolean>(false);
     const [catchBallState, setCatchBallState] = useState<'throw' | 'shake' | 'success' | 'fail' | null>(null);
@@ -1251,6 +1253,9 @@ export default function GameCanvas({
     const [loading, setLoading] = useState(true);
     const [loadingMessage, setLoadingMessage] = useState('Loading assets...');
     const [mapNamePopup, setMapNamePopup] = useState<string | null>(null);
+    const [joystickPos, setJoystickPos] = useState({ x: 0, y: 0 });
+    const [joystickActive, setJoystickActive] = useState(false);
+    const joystickRef = useRef<HTMLDivElement | null>(null);
 
     // Refs to keep state variables fresh inside async loop and listeners
     const currentMapPathRef = useRef(currentMapPath);
@@ -1287,6 +1292,26 @@ export default function GameCanvas({
             clearTimeout(timer);
         };
     }, [currentMapPath, loading]);
+
+    useEffect(() => {
+        if (activeWildBattle) {
+            setWildBattleLog(prev => {
+                if (prev.length === 0) {
+                    return [battleMessage];
+                }
+                if (prev[prev.length - 1] === battleMessage) return prev;
+                return [...prev, battleMessage];
+            });
+        } else {
+            setWildBattleLog([]);
+        }
+    }, [battleMessage, activeWildBattle]);
+
+    useEffect(() => {
+        if (wildBattleLogRef.current) {
+            wildBattleLogRef.current.scrollTop = wildBattleLogRef.current.scrollHeight;
+        }
+    }, [wildBattleLog]);
 
     // Anti-cheat Check: check if player left/disconnected during active PvP battle
     useEffect(() => {
@@ -4853,6 +4878,93 @@ export default function GameCanvas({
         );
     };
 
+    const handleJoystickStart = (e: React.PointerEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        e.currentTarget.setPointerCapture(e.pointerId);
+        setJoystickActive(true);
+        processJoystickTouch(e);
+    };
+
+    const handleJoystickMove = (e: React.PointerEvent<HTMLDivElement>) => {
+        if (!joystickActive) return;
+        e.preventDefault();
+        processJoystickTouch(e);
+    };
+
+    const handleJoystickEnd = (e: React.PointerEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        try {
+            e.currentTarget.releasePointerCapture(e.pointerId);
+        } catch (err) {}
+        setJoystickActive(false);
+        setJoystickPos({ x: 0, y: 0 });
+        
+        // Clear all keys
+        keysPressed.current['w'] = false;
+        keysPressed.current['a'] = false;
+        keysPressed.current['s'] = false;
+        keysPressed.current['d'] = false;
+        keysPressed.current['arrowup'] = false;
+        keysPressed.current['arrowleft'] = false;
+        keysPressed.current['arrowdown'] = false;
+        keysPressed.current['arrowright'] = false;
+    };
+
+    const processJoystickTouch = (e: React.PointerEvent<HTMLDivElement>) => {
+        const rect = joystickRef.current?.getBoundingClientRect();
+        if (!rect) return;
+
+        const centerX = rect.width / 2;
+        const centerY = rect.height / 2;
+
+        const touchX = e.clientX - rect.left;
+        const touchY = e.clientY - rect.top;
+
+        let dx = touchX - centerX;
+        let dy = touchY - centerY;
+
+        const maxRadius = 35; // max knob travel distance
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        if (distance > maxRadius) {
+            dx = (dx / distance) * maxRadius;
+            dy = (dy / distance) * maxRadius;
+        }
+
+        setJoystickPos({ x: dx, y: dy });
+
+        // Translate to keys
+        const threshold = 10;
+        const absX = Math.abs(dx);
+        const absY = Math.abs(dy);
+
+        // Reset movement keys first
+        keysPressed.current['w'] = false;
+        keysPressed.current['a'] = false;
+        keysPressed.current['s'] = false;
+        keysPressed.current['d'] = false;
+        keysPressed.current['arrowup'] = false;
+        keysPressed.current['arrowleft'] = false;
+        keysPressed.current['arrowdown'] = false;
+        keysPressed.current['arrowright'] = false;
+
+        if (distance > threshold) {
+            if (absX > absY) {
+                if (dx > 0) {
+                    keysPressed.current['d'] = true;
+                } else {
+                    keysPressed.current['a'] = true;
+                }
+            } else {
+                if (dy > 0) {
+                    keysPressed.current['s'] = true;
+                } else {
+                    keysPressed.current['w'] = true;
+                }
+            }
+        }
+    };
+
     return (
         <div className="game-container">
             {/* Visual game Canvas wrapper */}
@@ -4877,48 +4989,38 @@ export default function GameCanvas({
                 {/* Mobile Touch Controls Overlay */}
                 {!loading && (
                     <div className="mobile-controls">
-                        <div className="d-pad-container">
+                        {/* Virtual Joystick */}
+                        <div className="joystick-container">
                             <div 
-                                className="d-pad-btn d-pad-up"
-                                onPointerDown={() => keysPressed.current['w'] = true}
-                                onPointerUp={() => keysPressed.current['w'] = false}
-                                onPointerLeave={() => keysPressed.current['w'] = false}
-                            >▲</div>
-                            <div 
-                                className="d-pad-btn d-pad-left"
-                                onPointerDown={() => keysPressed.current['a'] = true}
-                                onPointerUp={() => keysPressed.current['a'] = false}
-                                onPointerLeave={() => keysPressed.current['a'] = false}
-                            >◀</div>
-                            <div 
-                                className="d-pad-btn d-pad-right"
-                                onPointerDown={() => keysPressed.current['d'] = true}
-                                onPointerUp={() => keysPressed.current['d'] = false}
-                                onPointerLeave={() => keysPressed.current['d'] = false}
-                            >▶</div>
-                            <div 
-                                className="d-pad-btn d-pad-down"
-                                onPointerDown={() => keysPressed.current['s'] = true}
-                                onPointerUp={() => keysPressed.current['s'] = false}
-                                onPointerLeave={() => keysPressed.current['s'] = false}
-                            >▼</div>
-                            <div className="d-pad-btn d-pad-center"></div>
+                                ref={joystickRef}
+                                className="joystick-base"
+                                onPointerDown={handleJoystickStart}
+                                onPointerMove={handleJoystickMove}
+                                onPointerUp={handleJoystickEnd}
+                                onPointerLeave={handleJoystickEnd}
+                            >
+                                <div 
+                                    className="joystick-knob"
+                                    style={{
+                                        transform: `translate(${joystickPos.x}px, ${joystickPos.y}px)`
+                                    }}
+                                />
+                            </div>
                         </div>
 
-                        <div className="action-buttons-container">
-                            <div 
-                                className="action-btn action-btn-a"
-                                onPointerDown={(e) => { e.preventDefault(); handleInteraction(); }}
-                            >A</div>
-                            <div 
-                                className="action-btn action-btn-b"
-                                onPointerDown={(e) => { e.preventDefault(); setIsBicycleActive(prev => !prev); }}
-                            >B</div>
-                            <div 
-                                className="action-btn action-btn-menu"
-                                onPointerDown={(e) => { e.preventDefault(); setShowMenuModal(prev => !prev); }}
-                            >☰</div>
-                        </div>
+                        {/* Action Buttons */}
+                        <div 
+                            className="action-btn action-btn-a"
+                            onPointerDown={(e) => { e.preventDefault(); handleInteraction(); }}
+                        >A</div>
+                        <div 
+                            className="action-btn action-btn-b"
+                            onPointerDown={(e) => { e.preventDefault(); setIsBicycleActive(prev => !prev); }}
+                        >B</div>
+                        <div 
+                            className="action-btn action-btn-menu"
+                            onPointerDown={(e) => { e.preventDefault(); setShowMenuModal(prev => !prev); }}
+                        >☰</div>
                     </div>
                 )}
 
@@ -7135,23 +7237,44 @@ export default function GameCanvas({
                         })()}
                     </div>
 
-                    {/* Battle Dialog Log */}
-                    <div style={{
-                        background: '#f5f0e1',
-                        border: '2px solid #3e2723',
-                        borderRadius: '4px',
-                        padding: '8px',
-                        minHeight: '44px',
-                        maxHeight: '44px',
-                        fontSize: '11px',
-                        color: '#3e2723',
-                        fontWeight: 'bold',
-                        boxSizing: 'border-box',
-                        overflowY: 'auto',
-                        lineHeight: '1.3',
-                        marginBottom: '4px'
-                    }}>
-                        {battleMessage}
+                    {/* Battle Dialog Log (Historial de Batalla) */}
+                    <div 
+                        ref={wildBattleLogRef}
+                        style={{
+                            background: '#f5f0e1',
+                            border: '2px solid #3e2723',
+                            borderRadius: '4px',
+                            padding: '6px 10px',
+                            minHeight: '72px',
+                            maxHeight: '72px',
+                            fontSize: '9px',
+                            color: '#3e2723',
+                            fontWeight: 'bold',
+                            boxSizing: 'border-box',
+                            overflowY: 'auto',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '2px',
+                            textAlign: 'left',
+                            boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.1)',
+                            marginBottom: '4px'
+                        }}
+                    >
+                        {wildBattleLog.slice(-5).map((log, idx) => (
+                            <div key={idx} style={{ 
+                                lineHeight: '1.2', 
+                                borderBottom: idx < wildBattleLog.slice(-5).length - 1 ? '1px dashed rgba(62, 39, 35, 0.15)' : 'none',
+                                paddingBottom: '2px',
+                                paddingTop: '2px'
+                            }}>
+                                {log}
+                            </div>
+                        ))}
+                        {wildBattleLog.length === 0 && (
+                            <div style={{ color: '#8d6e63', fontStyle: 'italic', textAlign: 'center', marginTop: '10px' }}>
+                                Esperando acciones de combate...
+                            </div>
+                        )}
                     </div>
 
                     {/* Options Panel */}
