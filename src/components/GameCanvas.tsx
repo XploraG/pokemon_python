@@ -775,6 +775,8 @@ export default function GameCanvas({
     const pendingPvPInviteRef = useRef<string | null>(null);
     const [pvpTurnTimer, setPvpTurnTimer] = useState<number>(45);
     const [incomingPvPInvite, setIncomingPvPInvite] = useState<{ from: string; fromName: string } | null>(null);
+    const incomingPvPInviteRef = useRef<{ from: string; fromName: string } | null>(null);
+    useEffect(() => { incomingPvPInviteRef.current = incomingPvPInvite; }, [incomingPvPInvite]);
     const [activePvPBattle, setActivePvPBattle] = useState<any | null>(null);
     const activePvPBattleRef = useRef<any | null>(null);
     useEffect(() => {
@@ -1084,6 +1086,22 @@ export default function GameCanvas({
                 if (payload.to === walletAddress) {
                     setActivePvPBattle((prev: any) => {
                         if (!prev) return prev;
+                        // If we are already in battle and receive a sync packet, it means the opponent missed our sync packet.
+                        // We must resend it so they can enter the battle state.
+                        if (prev.status === 'battle') {
+                            const activePoke = teamRef.current.find((p: any) => p.hp > 0);
+                            if (activePoke) {
+                                channel.send({
+                                    type: 'broadcast',
+                                    event: 'pvp_sync_pokemon',
+                                    payload: {
+                                        from: walletAddress,
+                                        to: payload.from,
+                                        pokemon: { id: activePoke.id, level: activePoke.level, hp: activePoke.hp, maxHp: activePoke.maxHp }
+                                    }
+                                });
+                            }
+                        }
                         return { ...prev, opponentPokemon: payload.pokemon, opponentHp: payload.pokemon.hp, opponentMaxHp: payload.pokemon.maxHp, status: 'battle' };
                     });
                 }
@@ -1136,6 +1154,39 @@ export default function GameCanvas({
         };
     }, [loading, walletAddress]);
 
+    // Auto-Save Loop (Every 15 seconds)
+    useEffect(() => {
+        const autoSaveTimer = setInterval(() => {
+            // No auto-save during battles to avoid saving inconsistent states
+            if (!activeWildBattleRef.current && !activePvPBattleRef.current && !isGymBattle) {
+                saveLocalEconomy();
+            }
+        }, 15000);
+        return () => clearInterval(autoSaveTimer);
+    }, [isGymBattle]);
+
+    // Save on beforeunload
+    useEffect(() => {
+        const handleBeforeUnload = () => {
+            if (!activeWildBattleRef.current && !activePvPBattleRef.current && !isGymBattle) {
+                const fullSaves = JSON.parse(localStorage.getItem('pixel_tamer_saves') || '{}');
+                fullSaves[walletAddress || saveName] = {
+                    name: playerNameRef.current,
+                    time: 0,
+                    player_coordinates: [playerRef.current.x, playerRef.current.y],
+                    map: currentMapPathRef.current,
+                    economy_data: economyRef.current.toSaveData(),
+                    inventory_data: inventoryRef.current.toSaveData(),
+                    team_data: teamRef.current,
+                    pc_pokemon: pcPokemonRef.current
+                };
+                localStorage.setItem('pixel_tamer_saves', JSON.stringify(fullSaves));
+            }
+        };
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, [walletAddress, saveName, isGymBattle]);
+
     // Timer: Sender Waiting for Accept (30s)
     useEffect(() => {
         if (pendingPvPInvite) {
@@ -1160,6 +1211,28 @@ export default function GameCanvas({
             return () => clearTimeout(timer);
         }
     }, [incomingPvPInvite]);
+
+    // Resend sync packets periodically if stuck in syncing state
+    useEffect(() => {
+        let syncInterval: any;
+        if (activePvPBattle && activePvPBattle.status === 'syncing' && channelRef.current) {
+            syncInterval = setInterval(() => {
+                const activePoke = teamRef.current.find((p: any) => p.hp > 0);
+                if (activePoke && activePvPBattle.opponentAddress) {
+                    channelRef.current.send({
+                        type: 'broadcast',
+                        event: 'pvp_sync_pokemon',
+                        payload: {
+                            from: walletAddress,
+                            to: activePvPBattle.opponentAddress,
+                            pokemon: { id: activePoke.id, level: activePoke.level, hp: activePoke.hp, maxHp: activePoke.maxHp }
+                        }
+                    });
+                }
+            }, 1000); // every 1 second
+        }
+        return () => clearInterval(syncInterval);
+    }, [activePvPBattle, walletAddress]);
 
     // Timer: PvP Turn logic (45s)
     useEffect(() => {
@@ -1926,7 +1999,7 @@ export default function GameCanvas({
                 }
             }
         } else {
-            // Block input and movement if any modal is active or dialog is open
+            // Block input and movement if any modal is active, dialog is open, or in PvP interactions
             if (
                 showMenuModal || 
                 showNurseJoyModal || 
@@ -1935,7 +2008,10 @@ export default function GameCanvas({
                 showMissions || 
                 showInventoryModal || 
                 activeWildBattleRef.current !== null ||
-                activeDialogRef.current !== null
+                activeDialogRef.current !== null ||
+                activePvPBattleRef.current !== null ||
+                pendingPvPInviteRef.current !== null ||
+                incomingPvPInviteRef.current !== null
             ) {
                 return;
             }
