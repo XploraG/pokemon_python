@@ -2051,6 +2051,7 @@ export default function GameCanvas({
                 showDaily || 
                 showMissions || 
                 showInventoryModal || 
+                pendingWarp !== null ||
                 activeWildBattleRef.current !== null ||
                 activeDialogRef.current !== null ||
                 activePvPBattleRef.current !== null ||
@@ -2083,6 +2084,10 @@ export default function GameCanvas({
                 const gridMoveDist = 32;
                 const nextX = player.x + moveX * gridMoveDist;
                 const nextY = player.y + moveY * gridMoveDist;
+
+                // Check map edge warps BEFORE collision to allow walking "off" the map to warp
+                const isWarping = checkAutoDoorEntry(nextX, nextY);
+                if (isWarping) return;
 
                 // Collision bounds check
                 if (nextX >= 0 && nextX < mapData.width && nextY >= 0 && nextY < mapData.height) {
@@ -3842,6 +3847,8 @@ export default function GameCanvas({
                             >
                                 🚲 Montar Bicicleta: {isBicycleActive ? 'OFF' : 'ON'}
                             </button>
+
+
 
 
 
