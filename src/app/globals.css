@@ -1414,3 +1414,47 @@ body::before {
   }
 }
 
+/* Medal Premium Animations */
+@keyframes gold-pulse {
+  0% { box-shadow: 0 0 6px rgba(255, 215, 0, 0.3); border-color: rgba(255, 215, 0, 0.5); }
+  50% { box-shadow: 0 0 16px rgba(255, 215, 0, 0.85); border-color: rgba(255, 215, 0, 1); }
+  100% { box-shadow: 0 0 6px rgba(255, 215, 0, 0.3); border-color: rgba(255, 215, 0, 0.5); }
+}
+
+@keyframes silver-pulse {
+  0% { box-shadow: 0 0 4px rgba(180, 180, 180, 0.2); border-color: rgba(180, 180, 180, 0.4); }
+  50% { box-shadow: 0 0 12px rgba(180, 180, 180, 0.6); border-color: rgba(180, 180, 180, 0.9); }
+  100% { box-shadow: 0 0 4px rgba(180, 180, 180, 0.2); border-color: rgba(180, 180, 180, 0.4); }
+}
+
+@keyframes gold-shine {
+  0% { filter: drop-shadow(0 0 2px rgba(255, 215, 0, 0.4)) saturate(1.1); }
+  50% { filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.85)) saturate(1.4) brightness(1.1); }
+  100% { filter: drop-shadow(0 0 2px rgba(255, 215, 0, 0.4)) saturate(1.1); }
+}
+
+@keyframes silver-shine {
+  0% { filter: drop-shadow(0 0 2px rgba(220, 220, 220, 0.3)) brightness(1.0); }
+  50% { filter: drop-shadow(0 0 8px rgba(220, 220, 220, 0.7)) brightness(1.2) contrast(1.1); }
+  100% { filter: drop-shadow(0 0 2px rgba(220, 220, 220, 0.3)) brightness(1.0); }
+}
+
+.medal-gold-card {
+  animation: gold-pulse 2s infinite ease-in-out;
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.12) 0%, rgba(255, 255, 255, 0.02) 50%, rgba(255, 160, 0, 0.12) 100%) !important;
+}
+
+.medal-silver-card {
+  animation: silver-pulse 2.5s infinite ease-in-out;
+  background: linear-gradient(135deg, rgba(224, 224, 224, 0.12) 0%, rgba(255, 255, 255, 0.02) 50%, rgba(144, 164, 174, 0.12) 100%) !important;
+}
+
+.medal-gold-img {
+  animation: gold-shine 2s infinite ease-in-out;
+}
+
+.medal-silver-img {
+  animation: silver-shine 2.5s infinite ease-in-out;
+}
+
+

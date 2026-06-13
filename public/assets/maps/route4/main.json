@@ -4,12 +4,12 @@
     "components": [
         {
             "type": "G",
-            "image": "src/assets/maps/tutorial/grass.png",
+            "image": "src/assets/maps/tutorial/imgs/grass.png",
             "size": 32
         },
         {
             "type": "P",
-            "image": "src/assets/maps/tutorial/path.png",
+            "image": "src/assets/maps/tutorial/imgs/path/path5.png",
             "size": 32
         }
     ],

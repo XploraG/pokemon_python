@@ -1225,6 +1225,8 @@ export default function GameCanvas({
     const teamRef = useRef(team);
     const pcPokemonRef = useRef(pcPokemon);
     const activeWildBattleRef = useRef(activeWildBattle);
+    const gymLeaderTeamRef = useRef<any[]>([]);
+    const gymLeaderCurrentPokeIndexRef = useRef<number>(0);
 
     useEffect(() => { currentMapPathRef.current = currentMapPath; }, [currentMapPath]);
     useEffect(() => { activeWildBattleRef.current = activeWildBattle; }, [activeWildBattle]);
@@ -3134,11 +3136,44 @@ export default function GameCanvas({
                     setShowShop(true);
                 }
                 else if (entity.name === "Gym Leader Brock") {
-                    setDialogName(entity.name);
+                    // Extract procedural town index from returnMapRef.current
+                    let gymIndex = 1;
+                    const returnMap = returnMapRef.current.toLowerCase();
+                    if (returnMap.includes('procedural://settlement_')) {
+                        const parts = returnMap.replace('procedural://settlement_', '').split('_');
+                        gymIndex = parseInt(parts[0] || '1', 10);
+                    }
+
+                    if (gymIndex > 13) {
+                        setDialogName("Gimnasio");
+                        setActiveDialog("Este gimnasio parece estar sellado. ¡No hay más líderes en esta región!");
+                        return;
+                    }
+
+                    const gymBosses = [
+                        { name: "Onix", level: 12, hp: 90, leader: "Brock" },
+                        { name: "Starmie", level: 22, hp: 130, leader: "Misty" },
+                        { name: "Raichu", level: 32, hp: 170, leader: "Lt. Surge" },
+                        { name: "Vileplume", level: 42, hp: 210, leader: "Erika" },
+                        { name: "Weezing", level: 52, hp: 250, leader: "Koga" },
+                        { name: "Alakazam", level: 62, hp: 290, leader: "Sabrina" },
+                        { name: "Arcanine", level: 72, hp: 330, leader: "Blaine" },
+                        { name: "Dragonite", level: 82, hp: 370, leader: "Giovanni" }
+                    ];
+
+                    const boss = gymIndex <= 8 ? gymBosses[gymIndex - 1] : {
+                        name: gymIndex === 9 ? "Mewtwo" : gymIndex === 10 ? "Mew" : gymIndex === 11 ? "Articuno" : gymIndex === 12 ? "Zapdos" : gymIndex === 13 ? "Moltres" : "Mewtwo",
+                        level: gymIndex * 10,
+                        hp: 300 + gymIndex * 20,
+                        leader: gymIndex === 9 ? "Master Mewtwo" : gymIndex === 10 ? "Master Mew" : gymIndex === 11 ? "Master Articuno" : gymIndex === 12 ? "Master Zapdos" : gymIndex === 13 ? "Master Moltres" : `Master ${gymIndex}`
+                    };
+
+                    setDialogName(`Gym Leader ${boss.leader}`);
+                    setActiveDialog(`Especializo en Pokémon poderosos. ¿Estás listo para enfrentar a mi equipo?`);
 
                     // Check if there is at least one active Pokemon
                     const activePokes = teamRef.current.filter(p => p.hp > 0);
-                    if (activePokes.filter(p => p.hp > 0).length === 0) {
+                    if (activePokes.length === 0) {
                         setActiveDialog("¡Tus Pokémon están debilitados! Ve al Centro Pokémon para curarlos antes de retarme.");
                         return;
                     }
@@ -3153,16 +3188,133 @@ export default function GameCanvas({
                     setOpponentSpriteEffect('none' as any);
                     setFloatingDamage(null);
 
+                    // Define leader team: 3 Pokémon for gyms 1-3, 6 Pokémon for gyms 4-13
+                    let leaderTeam: any[] = [];
+                    if (gymIndex === 1) {
+                        leaderTeam = [
+                            { name: "geodude", level: 10, hp: 60 },
+                            { name: "graveler", level: 11, hp: 75 },
+                            { name: "onix", level: 12, hp: 90 }
+                        ];
+                    } else if (gymIndex === 2) {
+                        leaderTeam = [
+                            { name: "psyduck", level: 18, hp: 80 },
+                            { name: "staryu", level: 20, hp: 95 },
+                            { name: "starmie", level: 22, hp: 130 }
+                        ];
+                    } else if (gymIndex === 3) {
+                        leaderTeam = [
+                            { name: "voltorb", level: 28, hp: 110 },
+                            { name: "pikachu", level: 30, hp: 130 },
+                            { name: "raichu", level: 32, hp: 170 }
+                        ];
+                    } else if (gymIndex === 4) {
+                        leaderTeam = [
+                            { name: "oddish", level: 38, hp: 140 },
+                            { name: "gloom", level: 39, hp: 160 },
+                            { name: "weepinbell", level: 40, hp: 170 },
+                            { name: "tangela", level: 40, hp: 180 },
+                            { name: "victreebel", level: 41, hp: 195 },
+                            { name: "vileplume", level: 42, hp: 210 }
+                        ];
+                    } else if (gymIndex === 5) {
+                        leaderTeam = [
+                            { name: "koffing", level: 48, hp: 180 },
+                            { name: "grimer", level: 49, hp: 190 },
+                            { name: "arbok", level: 50, hp: 210 },
+                            { name: "muk", level: 50, hp: 220 },
+                            { name: "golbat", level: 51, hp: 230 },
+                            { name: "weezing", level: 52, hp: 250 }
+                        ];
+                    } else if (gymIndex === 6) {
+                        leaderTeam = [
+                            { name: "abra", level: 58, hp: 210 },
+                            { name: "drowzee", level: 59, hp: 225 },
+                            { name: "kadabra", level: 60, hp: 240 },
+                            { name: "mr-mime", level: 60, hp: 250 },
+                            { name: "hypno", level: 61, hp: 270 },
+                            { name: "alakazam", level: 62, hp: 290 }
+                        ];
+                    } else if (gymIndex === 7) {
+                        leaderTeam = [
+                            { name: "growlithe", level: 68, hp: 250 },
+                            { name: "ponyta", level: 69, hp: 260 },
+                            { name: "flareon", level: 70, hp: 280 },
+                            { name: "rapidash", level: 70, hp: 295 },
+                            { name: "ninetales", level: 71, hp: 310 },
+                            { name: "arcanine", level: 72, hp: 330 }
+                        ];
+                    } else if (gymIndex === 8) {
+                        leaderTeam = [
+                            { name: "dugtrio", level: 78, hp: 280 },
+                            { name: "rhydon", level: 79, hp: 300 },
+                            { name: "nidoqueen", level: 80, hp: 320 },
+                            { name: "nidoking", level: 80, hp: 335 },
+                            { name: "golem", level: 81, hp: 350 },
+                            { name: "dragonite", level: 82, hp: 370 }
+                        ];
+                    } else if (gymIndex === 9) {
+                        leaderTeam = [
+                            { name: "slowbro", level: 86, hp: 350 },
+                            { name: "exeggutor", level: 87, hp: 360 },
+                            { name: "gengar", level: 88, hp: 375 },
+                            { name: "hypno", level: 88, hp: 390 },
+                            { name: "alakazam", level: 89, hp: 410 },
+                            { name: "mewtwo", level: 90, hp: 480 }
+                        ];
+                    } else if (gymIndex === 10) {
+                        leaderTeam = [
+                            { name: "clefable", level: 96, hp: 370 },
+                            { name: "wigglytuff", level: 97, hp: 390 },
+                            { name: "togetic", level: 98, hp: 410 },
+                            { name: "chansey", level: 98, hp: 430 },
+                            { name: "blissey", level: 99, hp: 450 },
+                            { name: "mew", level: 100, hp: 500 }
+                        ];
+                    } else if (gymIndex === 11) {
+                        leaderTeam = [
+                            { name: "dewgong", level: 106, hp: 390 },
+                            { name: "jynx", level: 107, hp: 405 },
+                            { name: "cloyster", level: 108, hp: 420 },
+                            { name: "lapras", level: 108, hp: 440 },
+                            { name: "blastoise", level: 109, hp: 460 },
+                            { name: "articuno", level: 110, hp: 520 }
+                        ];
+                    } else if (gymIndex === 12) {
+                        leaderTeam = [
+                            { name: "jolteon", level: 116, hp: 410 },
+                            { name: "electabuzz", level: 117, hp: 430 },
+                            { name: "magneton", level: 118, hp: 445 },
+                            { name: "ampharos", level: 118, hp: 460 },
+                            { name: "raichu", level: 119, hp: 480 },
+                            { name: "zapdos", level: 120, hp: 540 }
+                        ];
+                    } else if (gymIndex === 13) {
+                        leaderTeam = [
+                            { name: "ninetales", level: 126, hp: 430 },
+                            { name: "flareon", level: 127, hp: 450 },
+                            { name: "rapidash", level: 128, hp: 465 },
+                            { name: "magmar", level: 128, hp: 480 },
+                            { name: "charizard", level: 129, hp: 500 },
+                            { name: "moltres", level: 130, hp: 560 }
+                        ];
+                    }
+
+                    gymLeaderTeamRef.current = leaderTeam;
+                    gymLeaderCurrentPokeIndexRef.current = 0;
+
                     // Start actual Gym Battle
                     setIsGymBattle(true);
-                    setGymLeaderName(entity.name.replace("Gym Leader ", ""));
-                    setBattleMessage("¡El Líder de Gimnasio Brock te desafía!");
+                    setGymLeaderName(boss.leader);
+                    setBattleMessage(`¡El Líder de Gimnasio ${boss.leader} te desafía con su equipo!`);
                     setShowBallSelect(false);
+
+                    const firstPoke = leaderTeam[0] || boss;
                     setActiveWildBattle({
-                        name: "Onix",
-                        level: 12,
-                        hp: 90,
-                        maxHp: 90,
+                        name: firstPoke.name,
+                        level: firstPoke.level,
+                        hp: firstPoke.hp,
+                        maxHp: firstPoke.hp,
                         captureRate: 0.0 // Can't capture Gym Leader's Pokémon!
                     });
                 }
@@ -3381,6 +3533,27 @@ export default function GameCanvas({
                 await delay(1500);
 
                 if (newWildHp <= 0) {
+                    if (isGymBattle && gymLeaderTeamRef.current && gymLeaderCurrentPokeIndexRef.current < gymLeaderTeamRef.current.length - 1) {
+                        const nextIndex = gymLeaderCurrentPokeIndexRef.current + 1;
+                        gymLeaderCurrentPokeIndexRef.current = nextIndex;
+                        const nextPoke = gymLeaderTeamRef.current[nextIndex];
+                        
+                        setBattleMessage(`¡Derrotaste al ${activeWildBattle.name.toUpperCase()} del Líder! Saca a su siguiente Pokémon: ${nextPoke.name.toUpperCase()} (Nvl. ${nextPoke.level}).`);
+                        
+                        setActiveWildBattle({
+                            name: nextPoke.name,
+                            level: nextPoke.level,
+                            hp: nextPoke.hp,
+                            maxHp: nextPoke.hp,
+                            captureRate: 0.0
+                        });
+                        
+                        await delay(2500);
+                        setIsBattleAnimating(false);
+                        setBattleMessage(`¿Qué debería hacer tu ${activePoke.id.toUpperCase()}?`);
+                        return;
+                    }
+
                     // --- VICTORY PROCESS ---
                     // Compute XP earned
                     const xpGained = Math.floor(activeWildBattle.level * 25 * (Math.random() * 0.2 + 0.9));
@@ -3430,8 +3603,41 @@ export default function GameCanvas({
                     setTeam(updatedTeam);
                     
                     if (isGymBattle) {
-                        const result = economyRef.current.getGymReward(1);
-                        if (result.coins > 0) {
+                        // Extract procedural town index from returnMapRef.current
+                        let gymIndex = 1;
+                        const returnMap = returnMapRef.current.toLowerCase();
+                        if (returnMap.includes('procedural://settlement_')) {
+                            const parts = returnMap.replace('procedural://settlement_', '').split('_');
+                            gymIndex = parseInt(parts[0] || '1', 10);
+                        }
+
+                        const gymBosses = [
+                            { name: "Onix", level: 12, hp: 90, leader: "Brock" },
+                            { name: "Starmie", level: 22, hp: 130, leader: "Misty" },
+                            { name: "Raichu", level: 32, hp: 170, leader: "Lt. Surge" },
+                            { name: "Vileplume", level: 42, hp: 210, leader: "Erika" },
+                            { name: "Weezing", level: 52, hp: 250, leader: "Koga" },
+                            { name: "Alakazam", level: 62, hp: 290, leader: "Sabrina" },
+                            { name: "Arcanine", level: 72, hp: 330, leader: "Blaine" },
+                            { name: "Dragonite", level: 82, hp: 370, leader: "Giovanni" }
+                        ];
+
+                        const boss = gymIndex <= 8 ? gymBosses[gymIndex - 1] : {
+                            name: gymIndex === 9 ? "Mewtwo" : gymIndex === 10 ? "Mew" : gymIndex === 11 ? "Articuno" : gymIndex === 12 ? "Zapdos" : gymIndex === 13 ? "Moltres" : "Mewtwo",
+                            level: gymIndex * 10,
+                            hp: 300 + gymIndex * 20,
+                            leader: gymIndex === 9 ? "Master Mewtwo" : gymIndex === 10 ? "Master Mew" : gymIndex === 11 ? "Master Articuno" : gymIndex === 12 ? "Master Zapdos" : gymIndex === 13 ? "Master Moltres" : `Master ${gymIndex}`
+                        };
+
+                        const maxTeamLevel = Math.max(...updatedTeam.map((p: any) => p.level), 1);
+                        const result = economyRef.current.getGymReward(gymIndex, maxTeamLevel);
+
+                        if (result.isOverleveled) {
+                            showNotification(
+                                "¡Victoria de Gimnasio!", 
+                                `¡Derrotaste al ${boss.name.toUpperCase()} de ${boss.leader}! Buen combate.\n⚠️ Tu nivel de Pokémon es superior al nivel del Líder por más de 5 niveles. No recibes monedas ni XP para evitar el multifarmeo.\n${msg}`
+                            );
+                        } else if (result.coins > 0) {
                             economyRef.current.updateMissionProgress('battle');
                             setDoubleRewardCoins(result.coins);
                             setDoubleRewardType('gym');
@@ -3441,14 +3647,21 @@ export default function GameCanvas({
                                 gymTrainerMsg += ` \n🎉 ¡Tu Nivel de Entrenador subió al Nivel ${result.newLevel}!`;
                             }
 
+                            let rewardDetailMsg = "";
+                            if (result.medal) {
+                                rewardDetailMsg = `Ganaste la ${result.medal}, ${result.coins} Coins y ${result.xpGained} XP.`;
+                            } else {
+                                rewardDetailMsg = `Ganaste ${result.coins} Coins y ${result.xpGained} XP.`;
+                            }
+
                             showNotification(
                                 "¡Victoria de Gimnasio!", 
-                                `¡Derrotaste al Onix de Brock! Ganaste la Medalla Roca, ${result.coins} Coins y ${result.xpGained} XP. ${gymTrainerMsg}\n${msg}`
+                                `¡Derrotaste al ${boss.name.toUpperCase()} de ${boss.leader}! ${rewardDetailMsg} ${gymTrainerMsg}\n${msg}`
                             );
                         } else {
                             showNotification(
                                 "Victoria", 
-                                `¡Derrotaste al Onix de Brock! Buen combate. \n${msg}`
+                                `¡Derrotaste al ${boss.name.toUpperCase()} de ${boss.leader}! Buen combate. \n${msg}`
                             );
                         }
                         
@@ -3462,9 +3675,17 @@ export default function GameCanvas({
                     }
 
                     // Wild Pokémon defeated!
-                    const minCoins = economyConfig.wild_battle_min_coins ?? 30;
-                    const maxCoins = economyConfig.wild_battle_max_coins ?? 50;
-                    const coinsEarned = Math.floor(Math.random() * (maxCoins - minCoins + 1)) + minCoins;
+                    const wildSpecies = pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === activeWildBattle.name.toLowerCase());
+                    const rarity = wildSpecies?.rarity || "COMMON";
+                    let rarityMult = 1.0;
+                    if (rarity === "RARE") rarityMult = 1.5;
+                    else if (rarity === "ULTRA_RARE") rarityMult = 2.0;
+                    else if (rarity === "LEGENDARY") rarityMult = 3.0;
+
+                    const baseCoins = Math.floor(Math.random() * (30 - 15 + 1)) + 15;
+                    const levelScale = 1.0 + ((activeWildBattle.level ?? 1) - 1) * 0.10;
+                    const coinsEarned = Math.floor((baseCoins * rarityMult) * levelScale);
+
                     economyRef.current.addCoins(coinsEarned);
                     economyRef.current.updateMissionProgress('battle');
                     
@@ -5357,6 +5578,7 @@ export default function GameCanvas({
                                                         return (
                                                             <div 
                                                                 key={medalName} 
+                                                                className={level === 3 && hasMedal ? 'medal-gold-card' : level === 2 && hasMedal ? 'medal-silver-card' : ''}
                                                                 style={{ 
                                                                     display: 'flex', 
                                                                     flexDirection: 'column',
@@ -5367,7 +5589,7 @@ export default function GameCanvas({
                                                                     borderRadius: '10px', 
                                                                     border: '1px solid',
                                                                     borderColor: tierBorderColor,
-                                                                    boxShadow: tierGlow,
+                                                                    boxShadow: isEquipped ? tierGlow : (level === 1 ? tierGlow : undefined),
                                                                     opacity: hasMedal ? 1 : 0.45,
                                                                     transition: 'all 0.2s ease',
                                                                     position: 'relative',
@@ -5377,6 +5599,7 @@ export default function GameCanvas({
                                                                 <img
                                                                     src={MEDAL_BADGE_MAP[medalName] || '/assets/imgs/medals/badges/boulder.png'}
                                                                     alt={medalName}
+                                                                    className={level === 3 && hasMedal ? 'medal-gold-img' : level === 2 && hasMedal ? 'medal-silver-img' : ''}
                                                                     style={{
                                                                         width: `${DISPLAY_SIZE}px`,
                                                                         height: `${DISPLAY_SIZE}px`,

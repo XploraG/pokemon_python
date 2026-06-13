@@ -269,15 +269,29 @@ export class Economy {
         };
     }
 
-    public getGymReward(gymId: number): { coins: number; medal: string | null; isFirst: boolean; xpGained: number; leveledUp: boolean; newLevel: number } {
+    public getGymReward(gymId: number, maxPlayerPokemonLevel?: number): { coins: number; medal: string | null; isFirst: boolean; xpGained: number; leveledUp: boolean; newLevel: number; isOverleveled: boolean } {
         const gymIdStr = String(gymId);
+
+        // Determine leader level to check overleveling
+        const gymLevels = [12, 22, 32, 42, 52, 62, 72, 82];
+        const leaderLevel = gymId <= 8 ? gymLevels[gymId - 1] : gymId * 10;
+        const isOverleveled = maxPlayerPokemonLevel !== undefined && (maxPlayerPokemonLevel - leaderLevel) >= 5;
+
+        if (isOverleveled) {
+            return { coins: 0, medal: null, isFirst: false, xpGained: 0, leveledUp: false, newLevel: this.level, isOverleveled: true };
+        }
+
+        // Capped at 13 gyms total (8 standard + 5 legendary)
+        if (gymId > 13) {
+            return { coins: 0, medal: null, isFirst: false, xpGained: 0, leveledUp: false, newLevel: this.level, isOverleveled: false };
+        }
 
         // Check cooldown
         if (this.gym_cooldowns[gymIdStr]) {
             const cooldownHours = economyConfig.gym_rebattle_cooldown_hours ?? 24;
             const lastTime = this.gym_cooldowns[gymIdStr];
             if (Date.now() / 1000 - lastTime < cooldownHours * 3600) {
-                return { coins: 0, medal: null, isFirst: false, xpGained: 0, leveledUp: false, newLevel: this.level };
+                return { coins: 0, medal: null, isFirst: false, xpGained: 0, leveledUp: false, newLevel: this.level, isOverleveled: false };
             }
         }
 
@@ -290,28 +304,49 @@ export class Economy {
             }
         }
 
-        if (!gymConfig) {
-            return { coins: 0, medal: null, isFirst: false, xpGained: 0, leveledUp: false, newLevel: this.level };
-        }
-
-        // Determine if first victory
         const timesDefeated = this.defeated_gyms[gymIdStr] ?? 0;
         const isFirst = timesDefeated === 0;
 
-        // Calculate coins
-        const minCoins = gymConfig.min_coins;
-        const maxCoins = gymConfig.max_coins;
-        let coins = Math.floor(Math.random() * (maxCoins - minCoins + 1)) + minCoins;
-
+        let coins = 0;
         let medal: string | null = null;
-        if (isFirst) {
-            coins += gymConfig.first_victory_bonus ?? 0;
-            medal = gymConfig.medal ?? '';
-            if (medal) {
-                this.medals.push(medal);
-                if (!this.medal_levels[medal]) {
-                    this.medal_levels[medal] = 1;
+        let xpGained = 500;
+
+        if (!gymConfig) {
+            // Support for infinite post-game gyms (gymId 9 to 13)
+            if (gymId > 8 && gymId <= 13) {
+                if (isFirst) {
+                    const minCoins = 500 + (gymId - 8) * 50;
+                    const maxCoins = 550 + (gymId - 8) * 50;
+                    coins = Math.floor(Math.random() * (maxCoins - minCoins + 1)) + minCoins + 200; // First victory bonus
+                    xpGained = 500 + (gymId - 8) * 50;
+                } else {
+                    // Re-match: randomly 50 to 75 coins, scaled by 10% per gym level
+                    const baseCoins = Math.floor(Math.random() * (75 - 50 + 1)) + 50;
+                    coins = Math.floor(baseCoins * (1.0 + (gymId - 1) * 0.10));
+                    xpGained = 100;
                 }
+            } else {
+                return { coins: 0, medal: null, isFirst: false, xpGained: 0, leveledUp: false, newLevel: this.level, isOverleveled: false };
+            }
+        } else {
+            if (isFirst) {
+                const minCoins = gymConfig.min_coins;
+                const maxCoins = gymConfig.max_coins;
+                coins = Math.floor(Math.random() * (maxCoins - minCoins + 1)) + minCoins;
+                coins += gymConfig.first_victory_bonus ?? 0;
+                medal = gymConfig.medal ?? '';
+                if (medal) {
+                    this.medals.push(medal);
+                    if (!this.medal_levels[medal]) {
+                        this.medal_levels[medal] = 1;
+                    }
+                }
+                xpGained = 500;
+            } else {
+                // Re-match: randomly 50 to 75 coins, scaled by 10% per gym level
+                const baseCoins = Math.floor(Math.random() * (75 - 50 + 1)) + 50;
+                coins = Math.floor(baseCoins * (1.0 + (gymId - 1) * 0.10));
+                xpGained = 150;
             }
         }
 
@@ -320,16 +355,16 @@ export class Economy {
         this.defeated_gyms[gymIdStr] = timesDefeated + 1;
         this.gym_cooldowns[gymIdStr] = Date.now() / 1000;
 
-        // Award 500 Trainer XP for Gym victory
-        const xpResult = this.addTrainerXp(500);
+        const xpResult = this.addTrainerXp(xpGained);
 
         return {
             coins,
             medal,
             isFirst,
-            xpGained: 500,
+            xpGained,
             leveledUp: xpResult.leveledUp,
-            newLevel: xpResult.newLevel
+            newLevel: xpResult.newLevel,
+            isOverleveled: false
         };
     }
 
