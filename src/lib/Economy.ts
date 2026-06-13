@@ -29,6 +29,9 @@ export interface EconomySaveData {
     last_ad_date?: string;
     last_pvp_loss_time?: number;
     pvp_cooldown_duration?: number;
+    equipped_medals?: string[];
+    medal_levels?: Record<string, number>;
+    tournament_medals?: string[];
 }
 
 export class Economy {
@@ -54,6 +57,9 @@ export class Economy {
     public last_ad_date: string = '';
     public last_pvp_loss_time: number = 0;
     public pvp_cooldown_duration: number = 0;
+    public equipped_medals: string[] = [];
+    public medal_levels: Record<string, number> = {};
+    public tournament_medals: string[] = [];
 
     constructor(saveData?: EconomySaveData) {
         if (saveData) {
@@ -86,6 +92,9 @@ export class Economy {
         this.last_ad_date = '';
         this.last_pvp_loss_time = 0;
         this.pvp_cooldown_duration = 0;
+        this.equipped_medals = [];
+        this.medal_levels = {};
+        this.tournament_medals = [];
     }
 
     private loadFromSave(data: EconomySaveData): void {
@@ -111,6 +120,14 @@ export class Economy {
         this.last_ad_date = data.last_ad_date ?? '';
         this.last_pvp_loss_time = data.last_pvp_loss_time ?? 0;
         this.pvp_cooldown_duration = data.pvp_cooldown_duration ?? 0;
+        this.equipped_medals = data.equipped_medals ?? [];
+        this.medal_levels = data.medal_levels ?? {};
+        this.tournament_medals = data.tournament_medals ?? [];
+        for (const medal of this.medals) {
+            if (!this.medal_levels[medal]) {
+                this.medal_levels[medal] = 1;
+            }
+        }
     }
 
     public toSaveData(): EconomySaveData {
@@ -136,7 +153,10 @@ export class Economy {
             ads_viewed_today: this.ads_viewed_today,
             last_ad_date: this.last_ad_date,
             last_pvp_loss_time: this.last_pvp_loss_time,
-            pvp_cooldown_duration: this.pvp_cooldown_duration
+            pvp_cooldown_duration: this.pvp_cooldown_duration,
+            equipped_medals: this.equipped_medals,
+            medal_levels: this.medal_levels,
+            tournament_medals: this.tournament_medals
         };
     }
 
@@ -284,6 +304,9 @@ export class Economy {
             medal = gymConfig.medal ?? '';
             if (medal) {
                 this.medals.push(medal);
+                if (!this.medal_levels[medal]) {
+                    this.medal_levels[medal] = 1;
+                }
             }
         }
 
@@ -322,10 +345,103 @@ export class Economy {
                 baseCoins = Math.floor(baseCoins * 1.25);
             }
 
+            const medalTypeMap: Record<string, string[]> = {
+                "Medalla Roca": ["rock"],
+                "Medalla Cascada": ["water"],
+                "Medalla Trueno": ["electric"],
+                "Medalla Arcoiris": ["grass"],
+                "Medalla Alma": ["poison"],
+                "Medalla Pantano": ["psychic"],
+                "Medalla Volcan": ["fire"],
+                "Medalla Tierra": ["ground", "dragon"]
+            };
+
+            let boostPercent = 0;
+            const pokemonTypes: string[] = species ? species.types : [];
+            for (const [medalName, types] of Object.entries(medalTypeMap)) {
+                const medalLvl = this.medal_levels[medalName] || 1;
+                if (medalLvl > 1 && this.medals.includes(medalName)) {
+                    if (pokemonTypes.some(t => types.includes(t.toLowerCase()))) {
+                        const medalBoost = medalLvl === 2 ? 0.10 : 0.25;
+                        boostPercent = Math.max(boostPercent, medalBoost);
+                    }
+                }
+            }
+            if (boostPercent > 0) {
+                baseCoins = Math.floor(baseCoins * (1 + boostPercent));
+            }
+
             total += baseCoins;
         }
 
         return total;
+    }
+
+    public evolveMedal(medalName: string, team: any[]): { success: boolean; reason?: string } {
+        const medalGymMap: Record<string, { gymId: string; types: string[] }> = {
+            "Medalla Roca": { gymId: "1", types: ["rock"] },
+            "Medalla Cascada": { gymId: "2", types: ["water"] },
+            "Medalla Trueno": { gymId: "3", types: ["electric"] },
+            "Medalla Arcoiris": { gymId: "4", types: ["grass"] },
+            "Medalla Alma": { gymId: "5", types: ["poison"] },
+            "Medalla Pantano": { gymId: "6", types: ["psychic"] },
+            "Medalla Volcan": { gymId: "7", types: ["fire"] },
+            "Medalla Tierra": { gymId: "8", types: ["ground", "dragon"] }
+        };
+
+        const config = medalGymMap[medalName];
+        if (!config) {
+            return { success: false, reason: "Medalla no reconocida." };
+        }
+
+        if (!this.medals.includes(medalName)) {
+            return { success: false, reason: "No posees esta medalla en nivel Bronce aún." };
+        }
+
+        const currentLvl = this.medal_levels[medalName] || 1;
+        if (currentLvl >= 3) {
+            return { success: false, reason: "La medalla ya está en su nivel máximo (Oro)." };
+        }
+
+        const nextLvl = currentLvl + 1;
+        const cost = nextLvl === 2 ? 1000 : 3000;
+        const requiredDefeats = nextLvl === 2 ? 3 : 10;
+        const requiredTypeCount = nextLvl === 2 ? 1 : 2;
+
+        // Verify defeats
+        const defeats = this.defeated_gyms[config.gymId] || 0;
+        if (defeats < requiredDefeats) {
+            return { success: false, reason: `Requiere derrotar al líder ${requiredDefeats} veces (llevas ${defeats}).` };
+        }
+
+        // Verify team types
+        let matchingCount = 0;
+        for (const pokemon of team) {
+            const nameLower = (pokemon.id || '').toLowerCase();
+            const species = pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === nameLower);
+            const pokemonTypes: string[] = species ? species.types : [];
+            if (pokemonTypes.some(t => config.types.includes(t.toLowerCase()))) {
+                matchingCount++;
+            }
+        }
+
+        if (matchingCount < requiredTypeCount) {
+            return { 
+                success: false, 
+                reason: `Requiere al menos ${requiredTypeCount} Pokémon de tipo ${config.types.join('/')} en tu equipo activo (tienes ${matchingCount}).` 
+            };
+        }
+
+        // Verify coins
+        if (this.coins < cost) {
+            return { success: false, reason: `No tienes suficientes coins (se requieren ${cost} coins).` };
+        }
+
+        // Deduct and upgrade
+        this.spendCoins(cost);
+        this.medal_levels[medalName] = nextLvl;
+
+        return { success: true };
     }
 
     public claimPassiveIncome(team: any[]): number {

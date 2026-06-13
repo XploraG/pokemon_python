@@ -749,6 +749,85 @@ async function cachedFetchText(url: string) {
         throw err;
     }
 }
+interface MedalSynergyInfo {
+    name: string;
+    auraColor1: string;
+    auraColor2: string;
+    description: string;
+    combatEffect: string;
+}
+
+const getMedalSynergy = (equipped: string[] | undefined): MedalSynergyInfo | null => {
+    if (!equipped || equipped.length !== 2) return null;
+    const sorted = [...equipped].sort();
+    
+    if (sorted.includes("Medalla Roca") && sorted.includes("Medalla Volcan")) {
+        return {
+            name: "Magma Volcánico",
+            auraColor1: "rgba(255, 69, 0, 0.8)",
+            auraColor2: "rgba(255, 140, 0, 0.0)",
+            description: "Aura incandescente de fuego y roca fundida.",
+            combatEffect: "+10% daño infligido en PvP"
+        };
+    }
+    
+    if (sorted.includes("Medalla Cascada") && sorted.includes("Medalla Trueno")) {
+        return {
+            name: "Tempestad Eléctrica",
+            auraColor1: "rgba(0, 191, 255, 0.8)",
+            auraColor2: "rgba(255, 215, 0, 0.0)",
+            description: "Aura chispeante que combina electricidad y agua.",
+            combatEffect: "+10% probabilidad de crítico en PvP"
+        };
+    }
+    
+    if (sorted.includes("Medalla Arcoiris") && sorted.includes("Medalla Alma")) {
+        return {
+            name: "Pantano Tóxico",
+            auraColor1: "rgba(50, 205, 50, 0.8)",
+            auraColor2: "rgba(148, 0, 211, 0.0)",
+            description: "Aura brumosa de toxinas y naturaleza salvaje.",
+            combatEffect: "+10% daño en ataques de estado (flat 8 en PvP)"
+        };
+    }
+    
+    if (sorted.includes("Medalla Pantano") && sorted.includes("Medalla Tierra")) {
+        return {
+            name: "Fuerza Mística",
+            auraColor1: "rgba(0, 255, 255, 0.8)",
+            auraColor2: "rgba(255, 215, 0, 0.0)",
+            description: "Aura sagrada que protege al entrenador.",
+            combatEffect: "-10% daño recibido en PvP"
+        };
+    }
+    
+    return {
+        name: "Duo Versátil",
+        auraColor1: "rgba(135, 206, 235, 0.8)",
+        auraColor2: "rgba(70, 130, 180, 0.0)",
+        description: "Aura equilibrada de dos disciplinas combinadas.",
+        combatEffect: "+5% HP máximo en combates PvP"
+    };
+};
+
+const synergyAuras: Record<string, { color1: string; color2: string }> = {
+    "Magma Volcánico": { color1: "rgba(255, 69, 0, 0.8)", color2: "rgba(255, 140, 0, 0.0)" },
+    "Tempestad Eléctrica": { color1: "rgba(0, 191, 255, 0.8)", color2: "rgba(255, 215, 0, 0.0)" },
+    "Pantano Tóxico": { color1: "rgba(50, 205, 50, 0.8)", color2: "rgba(148, 0, 211, 0.0)" },
+    "Fuerza Mística": { color1: "rgba(0, 255, 255, 0.8)", color2: "rgba(255, 215, 0, 0.0)" },
+    "Duo Versátil": { color1: "rgba(135, 206, 235, 0.8)", color2: "rgba(70, 130, 180, 0.0)" }
+};
+
+const getSpecialMedals = (econ: any) => {
+    const specials: string[] = [];
+    if ((econ.pvpWins || econ.pvp_wins || 0) >= 10) {
+        specials.push("Medalla Campeón PvP (S1)");
+    }
+    if ((econ.loginStreak || econ.login_streak || 0) >= 7) {
+        specials.push("Medalla Tamer Pionero");
+    }
+    return specials;
+};
 
 export default function GameCanvas({
     saveName,
@@ -825,11 +904,15 @@ export default function GameCanvas({
     const [otherPlayers, setOtherPlayers] = useState<Record<string, any>>({});
     const otherPlayersRef = useRef<Record<string, any>>({});
     const channelRef = useRef<any>(null);
-    const lastBroadcastRef = useRef({ x: 0, y: 0, dir: '', animFrame: 0, map: '' });
+    const lastBroadcastRef = useRef({ x: 0, y: 0, dir: '', animFrame: 0, map: '', aura: null as string | null });
 
     useEffect(() => {
         otherPlayersRef.current = otherPlayers;
     }, [otherPlayers]);
+    
+    // Profile / Medals inspect states
+    const [viewingProfile, setViewingProfile] = useState<any | null>(null);
+    const [isLoadingProfile, setIsLoadingProfile] = useState(false);
     
     // HUD and Modal States
     const [activeDialog, setActiveDialog] = useState<string | null>(null);
@@ -884,6 +967,7 @@ export default function GameCanvas({
     useEffect(() => {
         activePvPBattleRef.current = activePvPBattle;
     }, [activePvPBattle]);
+    const [pvpBattleLog, setPvpBattleLog] = useState<string[]>([]);
     const [pvpItemsUsed, setPvpItemsUsed] = useState<number>(0);
     const pvpItemsUsedRef = useRef<number>(0);
     useEffect(() => { pvpItemsUsedRef.current = pvpItemsUsed; }, [pvpItemsUsed]);
@@ -916,6 +1000,63 @@ export default function GameCanvas({
             const mins = Math.ceil(timeRemaining / 60);
             showNotification("No Disponible", `Ya has reclamado hoy. Tiempo restante: ${mins} minutos.`);
         }
+    };
+
+    const handleViewOpponentProfile = async (address: string) => {
+        setIsLoadingProfile(true);
+        try {
+            const { data, error } = await supabase
+                .from('player_saves')
+                .select('save_data')
+                .eq('wallet_address', address)
+                .single();
+                
+            if (data && data.save_data) {
+                const saveData = data.save_data;
+                const econData = saveData.economy_data || {};
+                
+                setViewingProfile({
+                    isLocal: false,
+                    address: address,
+                    name: saveData.name || "Entrenador",
+                    level: econData.level || 1,
+                    xp: econData.xp || 0,
+                    pvpWins: econData.pvp_wins || 0,
+                    pvpLosses: econData.pvp_losses || 0,
+                    loginStreak: econData.login_streak || 0,
+                    medals: econData.medals || [],
+                    medalLevels: econData.medal_levels || {},
+                    equippedMedals: econData.equipped_medals || [],
+                    tournamentMedals: econData.tournament_medals || [],
+                    team: saveData.team || []
+                });
+            } else {
+                showNotification("Perfil de Entrenador", "No se pudo cargar el perfil del oponente.");
+            }
+        } catch (err) {
+            console.error("Error loading opponent profile:", err);
+            showNotification("Perfil de Entrenador", "Error al cargar el perfil.");
+        } finally {
+            setIsLoadingProfile(false);
+        }
+    };
+
+    const handleViewLocalProfile = () => {
+        setViewingProfile({
+            isLocal: true,
+            address: walletAddress || "local",
+            name: playerName || "Tamer",
+            level: economy.level,
+            xp: economy.xp,
+            pvpWins: economy.pvp_wins,
+            pvpLosses: economy.pvp_losses,
+            loginStreak: economy.login_streak,
+            medals: economy.medals,
+            medalLevels: economy.medal_levels,
+            equippedMedals: economy.equipped_medals,
+            tournamentMedals: economy.tournament_medals,
+            team: team
+        });
     };
 
     const handleUpdateNickname = async (newName: string) => {
@@ -954,7 +1095,8 @@ export default function GameCanvas({
                     y: playerRef.current.y,
                     dir: playerRef.current.moveDirection,
                     animFrame: playerRef.current.animFrame,
-                    map: currentMapPathRef.current
+                    map: currentMapPathRef.current,
+                    aura: getMedalSynergy(economyRef.current.equipped_medals)?.name || null
                 }
             });
         }
@@ -1144,7 +1286,8 @@ export default function GameCanvas({
                         y: payload.y,
                         dir: payload.dir,
                         animFrame: payload.animFrame,
-                        map: payload.map
+                        map: payload.map,
+                        aura: payload.aura
                     }
                 }));
             })
@@ -1188,11 +1331,16 @@ export default function GameCanvas({
             })
             .on('broadcast', { event: 'pvp_use_item' }, ({ payload }) => {
                 if (payload.to === walletAddress) {
+                    setPvpBattleLog(prev => [
+                        ...prev,
+                        `🧪 El oponente usó un objeto curativo en su ${activePvPBattleRef.current?.opponentPokemon?.id.toUpperCase() || 'Pokémon'}.`
+                    ]);
                     setActivePvPBattle((prev: any) => {
                         if (!prev) return prev;
                         return {
                             ...prev,
                             opponentHp: payload.new_hp,
+                            opponentStatus: payload.new_status !== undefined ? payload.new_status : prev.opponentStatus,
                             turn: walletAddress
                         };
                     });
@@ -1226,30 +1374,45 @@ export default function GameCanvas({
                     setEconomy(new Economy(economyRef.current.toSaveData()));
                     saveLocalEconomy();
  
+                    const activePoke = teamRef.current.find((p: any) => p.hp > 0);
+                    const synergy = getMedalSynergy(economyRef.current.equipped_medals);
+                    const hpMult = synergy?.name === "Duo Versátil" ? 1.05 : 1.0;
+
                     // Start battle as challenger
                     setActivePvPBattle({
                         opponentAddress: payload.from,
                         opponentName: payload.fromName,
                         opponentPokemon: null,
-                        myHp: teamRef.current.find((p: any) => p.hp > 0)?.hp || 100,
+                        myHp: Math.floor((activePoke?.hp || 100) * hpMult),
                         opponentHp: 100,
                         opponentMaxHp: 100,
                         status: 'syncing',
                         turn: walletAddress
                     });
                     
+                    setPvpBattleLog([
+                        "¡Comienza el duelo PvP!",
+                        `¡Duelo contra ${payload.fromName}!`,
+                        "Sincronizando..."
+                    ]);
+                    
                     // Reset PvP items used counter
                     setPvpItemsUsed(0);
                     
-                    const activePoke = teamRef.current.find((p: any) => p.hp > 0);
                     if (activePoke) {
                         channel.send({
                             type: 'broadcast',
                             event: 'pvp_sync_pokemon',
                             payload: {
                                 from: walletAddress,
+                                security: payload.from,
                                 to: payload.from,
-                                pokemon: { id: activePoke.id, level: activePoke.level, hp: activePoke.hp, maxHp: activePoke.maxHp }
+                                pokemon: { 
+                                    id: activePoke.id, 
+                                    level: activePoke.level, 
+                                    hp: Math.floor((activePoke.hp || 100) * hpMult), 
+                                    maxHp: Math.floor((activePoke.maxHp || 100) * hpMult) 
+                                }
                             }
                         });
                     }
@@ -1264,18 +1427,31 @@ export default function GameCanvas({
             })
             .on('broadcast', { event: 'pvp_sync_pokemon' }, ({ payload }) => {
                 if (payload.to === walletAddress) {
+                    const activePoke = teamRef.current.find((p: any) => p.hp > 0);
+                    setPvpBattleLog(prev => [
+                        ...prev,
+                        "¡Equipos sincronizados!",
+                        `Tu ${activePoke?.id.toUpperCase()} vs ${payload.pokemon.id.toUpperCase()} (Nvl ${payload.pokemon.level})`
+                    ]);
                     setActivePvPBattle((prev: any) => {
                         if (!prev) return prev;
                         if (prev.status === 'battle') {
                             const activePoke = teamRef.current.find((p: any) => p.hp > 0);
                             if (activePoke) {
+                                const synergy = getMedalSynergy(economyRef.current.equipped_medals);
+                                const hpMult = synergy?.name === "Duo Versátil" ? 1.05 : 1.0;
                                 channel.send({
                                     type: 'broadcast',
                                     event: 'pvp_sync_pokemon',
                                     payload: {
                                         from: walletAddress,
                                         to: payload.from,
-                                        pokemon: { id: activePoke.id, level: activePoke.level, hp: activePoke.hp, maxHp: activePoke.maxHp }
+                                        pokemon: { 
+                                            id: activePoke.id, 
+                                            level: activePoke.level, 
+                                            hp: Math.floor((activePoke.hp || 100) * hpMult), 
+                                            maxHp: Math.floor((activePoke.maxHp || 100) * hpMult) 
+                                        }
                                     }
                                 });
                             }
@@ -1286,15 +1462,37 @@ export default function GameCanvas({
             })
             .on('broadcast', { event: 'pvp_damage' }, ({ payload }) => {
                 if (payload.to === walletAddress) {
+                    let finalDamage = payload.damage;
+                    const synergy = getMedalSynergy(economyRef.current.equipped_medals);
+                    let synergyMsg = "";
+                    if (synergy?.name === "Fuerza Mística") {
+                        finalDamage = Math.max(1, Math.floor(finalDamage * 0.90));
+                        synergyMsg = " (¡Fuerza Mística redujo el daño!)";
+                    }
+
+                    const activePoke = teamRef.current.find((p: any) => p.hp > 0);
+                    const newHp = Math.max(0, (activePvPBattleRef.current?.myHp || 100) - finalDamage);
+                    setPvpBattleLog(prev => {
+                        const logs = [
+                            ...prev,
+                            `💥 ${activePvPBattleRef.current?.opponentPokemon?.id.toUpperCase() || 'El oponente'} causó ${finalDamage} de daño a tu ${activePoke?.id.toUpperCase()}${synergyMsg}.`
+                        ];
+                        if (newHp <= 0 && activePoke) {
+                            logs.push(`💀 ¡Tu ${activePoke.id.toUpperCase()} se debilitó!`);
+                        }
+                        return logs;
+                    });
+
                     setActivePvPBattle((prev: any) => {
                         if (!prev) return prev;
-                        const newHp = Math.max(0, prev.myHp - payload.damage);
                         
-                        setFloatingDamage({ value: payload.damage, target: 'player' });
+                        const newHpVal = Math.max(0, prev.myHp - finalDamage);
+                        
+                        setFloatingDamage({ value: finalDamage, target: 'player' });
                         setPlayerSpriteEffect('shake');
                         setTimeout(() => { setPlayerSpriteEffect('none'); setFloatingDamage(null); }, 800);
  
-                        if (newHp <= 0) {
+                        if (newHpVal <= 0) {
                             channel.send({
                                 type: 'broadcast',
                                 event: 'pvp_result',
@@ -1900,13 +2098,15 @@ export default function GameCanvas({
             processMovement();
 
             // Broadcast movement changes if connected
+            const currentAura = getMedalSynergy(economyRef.current.equipped_medals)?.name || null;
             if (
                 channelRef.current &&
                 (player.x !== lastBroadcastRef.current.x ||
                  player.y !== lastBroadcastRef.current.y ||
                  player.moveDirection !== lastBroadcastRef.current.dir ||
                  player.animFrame !== lastBroadcastRef.current.animFrame ||
-                 currentMapPathRef.current !== lastBroadcastRef.current.map)
+                 currentMapPathRef.current !== lastBroadcastRef.current.map ||
+                 currentAura !== lastBroadcastRef.current.aura)
             ) {
                 channelRef.current.send({
                     type: 'broadcast',
@@ -1918,7 +2118,8 @@ export default function GameCanvas({
                         y: player.y,
                         dir: player.moveDirection,
                         animFrame: player.animFrame,
-                        map: currentMapPathRef.current
+                        map: currentMapPathRef.current,
+                        aura: currentAura
                     }
                 });
                 lastBroadcastRef.current = {
@@ -1926,7 +2127,8 @@ export default function GameCanvas({
                     y: player.y,
                     dir: player.moveDirection,
                     animFrame: player.animFrame,
-                    map: currentMapPathRef.current
+                    map: currentMapPathRef.current,
+                    aura: currentAura
                 };
             }
 
@@ -2007,6 +2209,50 @@ export default function GameCanvas({
                 draw: (c) => {
                     const sprite = playerSpriteRef.current;
                     if (sprite) {
+                        // Draw local player aura
+                        const synergy = getMedalSynergy(economyRef.current.equipped_medals);
+                        const activeAura = synergy ? synergy.name : null;
+                        if (activeAura && synergyAuras[activeAura]) {
+                            const colors = synergyAuras[activeAura];
+                            const radiusX = 16;
+                            const radiusY = 6;
+                            const grad = c.createRadialGradient(
+                                player.x - camX + offsetX,
+                                player.y - camY - 2 + offsetY,
+                                2,
+                                player.x - camX + offsetX,
+                                player.y - camY - 2 + offsetY,
+                                radiusX
+                            );
+                            grad.addColorStop(0, colors.color1);
+                            grad.addColorStop(1, colors.color2);
+                            
+                            c.save();
+                            c.beginPath();
+                            if (c.ellipse) {
+                                c.ellipse(
+                                    player.x - camX + offsetX,
+                                    player.y - camY - 2 + offsetY,
+                                    radiusX,
+                                    radiusY,
+                                    0,
+                                    0,
+                                    2 * Math.PI
+                                );
+                            } else {
+                                c.arc(
+                                    player.x - camX + offsetX,
+                                    player.y - camY - 2 + offsetY,
+                                    radiusX,
+                                    0,
+                                    2 * Math.PI
+                                );
+                            }
+                            c.fillStyle = grad;
+                            c.fill();
+                            c.restore();
+                        }
+
                         let dirOffset = 0;
                         if (player.moveDirection === 'left') dirOffset = 48;
                         else if (player.moveDirection === 'up') dirOffset = 96;
@@ -2059,6 +2305,49 @@ export default function GameCanvas({
                         draw: (c) => {
                             const sprite = playerSpriteRef.current;
                             if (sprite) {
+                                // Draw Aura under remote player
+                                const auraName = otherPlayer.aura;
+                                if (auraName && synergyAuras[auraName]) {
+                                    const colors = synergyAuras[auraName];
+                                    const radiusX = 16;
+                                    const radiusY = 6;
+                                    const grad = c.createRadialGradient(
+                                        otherPlayer.x - camX + offsetX,
+                                        otherPlayer.y - camY - 2 + offsetY,
+                                        2,
+                                        otherPlayer.x - camX + offsetX,
+                                        otherPlayer.y - camY - 2 + offsetY,
+                                        radiusX
+                                    );
+                                    grad.addColorStop(0, colors.color1);
+                                    grad.addColorStop(1, colors.color2);
+                                    
+                                    c.save();
+                                    c.beginPath();
+                                    if (c.ellipse) {
+                                        c.ellipse(
+                                            otherPlayer.x - camX + offsetX,
+                                            otherPlayer.y - camY - 2 + offsetY,
+                                            radiusX,
+                                            radiusY,
+                                            0,
+                                            0,
+                                            2 * Math.PI
+                                        );
+                                    } else {
+                                        c.arc(
+                                            otherPlayer.x - camX + offsetX,
+                                            otherPlayer.y - camY - 2 + offsetY,
+                                            radiusX,
+                                            0,
+                                            2 * Math.PI
+                                        );
+                                    }
+                                    c.fillStyle = grad;
+                                    c.fill();
+                                    c.restore();
+                                }
+
                                 let dirOffset = 0;
                                 if (otherPlayer.dir === 'left') dirOffset = 48;
                                 else if (otherPlayer.dir === 'up') dirOffset = 96;
@@ -2465,20 +2754,29 @@ export default function GameCanvas({
             }
         });
         
+        const activePoke = teamRef.current.find((p: any) => p.hp > 0);
+        const synergy = getMedalSynergy(economyRef.current.equipped_medals);
+        const hpMult = synergy?.name === "Duo Versátil" ? 1.05 : 1.0;
+
         setActivePvPBattle({
             opponentAddress: incomingPvPInvite.from,
             opponentName: incomingPvPInvite.fromName,
             opponentPokemon: null,
-            myHp: teamRef.current.find((p: any) => p.hp > 0)?.hp || 100,
+            myHp: Math.floor((activePoke?.hp || 100) * hpMult),
             opponentHp: 100,
             opponentMaxHp: 100,
             status: 'syncing',
             turn: incomingPvPInvite.from
         });
         
+        setPvpBattleLog([
+            "¡Comienza el duelo PvP!",
+            `¡Enfréntate a ${incomingPvPInvite.fromName}!`,
+            "Sincronizando..."
+        ]);
+        
         setPvpItemsUsed(0);
         
-        const activePoke = teamRef.current.find((p: any) => p.hp > 0);
         if (activePoke) {
             channelRef.current.send({
                 type: 'broadcast',
@@ -2486,7 +2784,12 @@ export default function GameCanvas({
                 payload: {
                     from: walletAddress,
                     to: incomingPvPInvite.from,
-                    pokemon: { id: activePoke.id, level: activePoke.level, hp: activePoke.hp, maxHp: activePoke.maxHp }
+                    pokemon: { 
+                        id: activePoke.id, 
+                        level: activePoke.level, 
+                        hp: Math.floor((activePoke.hp || 100) * hpMult), 
+                        maxHp: Math.floor((activePoke.maxHp || 100) * hpMult) 
+                    }
                 }
             });
         }
@@ -2525,12 +2828,43 @@ export default function GameCanvas({
 
         if (move.power === 0) playerDmg = 5; // Status moves deal flat 5 in realtime PvP
 
+        const synergy = getMedalSynergy(economyRef.current.equipped_medals);
+        if (synergy?.name === "Magma Volcánico") {
+            playerDmg = Math.floor(playerDmg * 1.10);
+        } else if (synergy?.name === "Tempestad Eléctrica") {
+            if (Math.random() < 0.10) {
+                playerDmg = Math.floor(playerDmg * 1.5);
+                showNotification("¡Golpe Crítico!", "¡Tu Sinergia Tempestad Eléctrica ha causado un golpe crítico!");
+            }
+        } else if (synergy?.name === "Pantano Tóxico" && move.power === 0) {
+            playerDmg = 8;
+        }
+
+        const nextOpponentHp = Math.max(0, activePvPBattle.opponentHp - playerDmg);
+        let synergyMsg = "";
+        if (synergy?.name === "Magma Volcánico") {
+            synergyMsg = " (¡Boost de Magma Volcánico!)";
+        } else if (synergy?.name === "Pantano Tóxico" && move.power === 0) {
+            synergyMsg = " (¡Boost de Pantano Tóxico!)";
+        }
+
+        setPvpBattleLog(prev => {
+            const logs = [
+                ...prev,
+                `⚔️ Tu ${activePoke.id.toUpperCase()} usó ${move.name} e infligió ${playerDmg} de daño${synergyMsg}.`
+            ];
+            if (nextOpponentHp <= 0) {
+                logs.push(`💀 ¡El ${activePvPBattle.opponentPokemon?.id.toUpperCase() || 'Pokémon oponente'} se debilitó!`);
+            }
+            return logs;
+        });
+
         setOpponentSpriteEffect('shake');
         setFloatingDamage({ value: playerDmg, target: 'opponent' });
         
         setActivePvPBattle((prev: any) => ({ 
             ...prev, 
-            opponentHp: Math.max(0, prev.opponentHp - playerDmg),
+            opponentHp: nextOpponentHp,
             turn: prev.opponentAddress
         }));
         
@@ -3373,12 +3707,23 @@ export default function GameCanvas({
             finalHp = target.hp;
         }
 
+        let finalStatus = activePvPBattle.myStatus;
+        if (usingItem.id === 'full_heal' && idx === activePokeIdxBefore) {
+            finalStatus = null;
+        }
+
         const nextItemsUsed = pvpItemsUsed + 1;
         setPvpItemsUsed(nextItemsUsed);
+
+        setPvpBattleLog(prev => [
+            ...prev,
+            `🧪 Usaste ${itemInfo.name || usingItem.id} en tu ${target.id.toUpperCase()}${usingItem.id === 'full_heal' && idx === activePokeIdxBefore ? ' (¡Cura de Estados!)' : ''}.`
+        ]);
 
         setActivePvPBattle((prev: any) => ({
             ...prev,
             myHp: finalHp,
+            myStatus: finalStatus,
             turn: prev.opponentAddress
         }));
 
@@ -3391,6 +3736,7 @@ export default function GameCanvas({
                 item_id: usingItem.id,
                 item_name: itemInfo.name || usingItem.id,
                 new_hp: finalHp,
+                new_status: finalStatus,
                 target_idx: idx
             }
         });
@@ -4001,6 +4347,17 @@ export default function GameCanvas({
                                 <div style={{ fontSize: '12px', fontWeight: 'bold', marginBottom: '6px' }}>Tu Equipo:</div>
                                 {renderTeamHpList()}
                             </div>
+
+                            <button 
+                                onClick={() => {
+                                    handleViewLocalProfile();
+                                    setShowMenuModal(false);
+                                }}
+                                className="pokemon-button"
+                                style={{ background: '#e3f2fd', color: '#1565c0', border: '1px solid #90caf9', fontWeight: 'bold' }}
+                            >
+                                🔎 Mi Perfil
+                            </button>
 
                             <button 
                                 onClick={() => {
@@ -4665,7 +5022,242 @@ export default function GameCanvas({
                         </div>
                     </div>
                 </div>
-            )}               {showDaily && (
+            )}
+
+            {isLoadingProfile && (
+                <div className="modal-overlay" style={{ zIndex: 10001, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.5)' }}>
+                    <div className="modal-card pokemon-panel" style={{ width: 'auto', padding: '20px', textAlign: 'center' }}>
+                        <div style={{ marginBottom: '10px', animation: 'spin 1s linear infinite', border: '4px solid rgba(255,255,255,0.2)', borderTopColor: '#2196f3', borderRadius: '50%', width: '30px', height: '30px', margin: '0 auto' }}></div>
+                        <div style={{ color: '#fff', fontSize: '12px' }}>Cargando Perfil...</div>
+                    </div>
+                </div>
+            )}
+
+            {viewingProfile && (
+                <div className="modal-overlay" style={{ zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div className="modal-card pokemon-panel" style={{ width: '90%', maxWidth: '650px', background: 'linear-gradient(135deg, #120c1f 0%, #1a103c 100%)', color: '#fff', border: '2px solid #6200ea', boxShadow: '0 0 20px rgba(98, 0, 234, 0.4)', borderRadius: '12px', padding: '20px', position: 'relative', overflowY: 'auto', maxHeight: '90%', textAlign: 'left' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '10px', marginBottom: '15px' }}>
+                            <h3 style={{ margin: 0, fontSize: '18px', color: '#b388ff', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                🏆 {viewingProfile.isLocal ? "Mi Perfil de Entrenador" : `Perfil: ${viewingProfile.name}`}
+                            </h3>
+                            <button 
+                                onClick={() => setViewingProfile(null)} 
+                                style={{ background: 'transparent', border: 'none', color: '#b388ff', fontSize: '24px', cursor: 'pointer', lineHeight: 1 }}
+                            >
+                                &times;
+                            </button>
+                        </div>
+
+                        {/* Layout Grid */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr', gap: '20px' }}>
+                            
+                            {/* Left Column: Stats & Team */}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                                {/* Stats Card */}
+                                <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '12px' }}>
+                                    <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#e040fb', marginBottom: '8px', borderBottom: '1px dashed rgba(255,255,255,0.1)', paddingBottom: '4px' }}>
+                                        📊 Estadísticas
+                                    </div>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '12px' }}>
+                                        <div><strong>Nivel:</strong> {viewingProfile.level}</div>
+                                        <div><strong>XP:</strong> {viewingProfile.xp}</div>
+                                        <div><strong>Victorias:</strong> {viewingProfile.pvpWins}</div>
+                                        <div><strong>Derrotas:</strong> {viewingProfile.pvpLosses}</div>
+                                    </div>
+                                    <div style={{ fontSize: '11px', color: '#888', marginTop: '6px' }}>
+                                        Win Rate: {viewingProfile.pvpWins + viewingProfile.pvpLosses > 0 
+                                            ? `${((viewingProfile.pvpWins / (viewingProfile.pvpWins + viewingProfile.pvpLosses)) * 100).toFixed(1)}%` 
+                                            : '0%'}
+                                    </div>
+                                </div>
+
+                                {/* Active Team */}
+                                <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '12px', flexGrow: 1 }}>
+                                    <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#2979ff', marginBottom: '8px', borderBottom: '1px dashed rgba(255,255,255,0.1)', paddingBottom: '4px' }}>
+                                        ⚔️ Equipo Pokémon
+                                    </div>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '180px', overflowY: 'auto' }}>
+                                        {viewingProfile.team && viewingProfile.team.length > 0 ? (
+                                            viewingProfile.team.map((poke: any, idx: number) => {
+                                                const nameLower = (poke.id || '').toLowerCase();
+                                                const species = pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === nameLower);
+                                                const spriteUrl = species ? species.sprite : '';
+                                                return (
+                                                    <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,0.05)', padding: '6px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                                                        {spriteUrl ? (
+                                                            <img src={spriteUrl} alt={poke.id} style={{ width: '32px', height: '32px', objectFit: 'contain' }} />
+                                                        ) : (
+                                                            <div style={{ width: '32px', height: '32px', background: '#333', borderRadius: '4px' }} />
+                                                        )}
+                                                        <div>
+                                                            <div style={{ textTransform: 'capitalize', fontSize: '11px', fontWeight: 'bold' }}>{poke.id}</div>
+                                                            <div style={{ fontSize: '9px', color: '#ccc' }}>Nvl: {poke.level} | HP: {poke.hp}/{poke.maxHp}</div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })
+                                        ) : (
+                                            <div style={{ fontSize: '11px', color: '#888', textAlign: 'center', padding: '10px' }}>Sin Pokémon activos</div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Right Column: Gym Medals & Special Badges */}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                                
+                                {/* Gym Medals Upgrade/Equip */}
+                                <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '12px' }}>
+                                    <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#00e676', marginBottom: '8px', borderBottom: '1px dashed rgba(255,255,255,0.1)', paddingBottom: '4px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <span>🏅 Medallas de Gimnasio</span>
+                                        {viewingProfile.isLocal && <span style={{ fontSize: '9px', color: '#aaa' }}>(Equipadas: {viewingProfile.equippedMedals.length}/2)</span>}
+                                    </div>
+                                    
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '6px', maxHeight: '220px', overflowY: 'auto', paddingRight: '4px' }}>
+                                        {["Medalla Roca", "Medalla Cascada", "Medalla Trueno", "Medalla Arcoiris", "Medalla Alma", "Medalla Pantano", "Medalla Volcan", "Medalla Tierra"].map((medalName) => {
+                                            const hasMedal = viewingProfile.medals.includes(medalName);
+                                            const level = viewingProfile.medalLevels[medalName] || 1;
+                                            const levelText = level === 1 ? "🟤 Bronce" : level === 2 ? "⚪ Plata" : "🟡 Oro";
+                                            const isEquipped = viewingProfile.equippedMedals.includes(medalName);
+                                            
+                                            // Requirements check for local evolving
+                                            let evolveButton = null;
+                                            if (viewingProfile.isLocal && hasMedal && level < 3) {
+                                                const nextLvl = level + 1;
+                                                const defeatsReq = nextLvl === 2 ? 3 : 10;
+                                                const coinsReq = nextLvl === 2 ? 1000 : 3000;
+                                                
+                                                evolveButton = (
+                                                    <button
+                                                        onClick={() => {
+                                                            const res = economyRef.current.evolveMedal(medalName, team);
+                                                            if (res.success) {
+                                                                saveLocalEconomy();
+                                                                showNotification("¡Medalla Evolucionada!", `Tu ${medalName} ahora es de nivel ${nextLvl === 2 ? "Plata" : "Oro"}.`);
+                                                                handleViewLocalProfile();
+                                                            } else {
+                                                                showNotification("Requisitos no cumplidos", res.reason || "No se puede evolucionar.");
+                                                            }
+                                                        }}
+                                                        style={{
+                                                            fontSize: '9px',
+                                                            background: '#ff9800',
+                                                            border: 'none',
+                                                            color: '#fff',
+                                                            borderRadius: '3px',
+                                                            padding: '2px 6px',
+                                                            cursor: 'pointer',
+                                                            fontWeight: 'bold',
+                                                            marginLeft: 'auto'
+                                                        }}
+                                                    >
+                                                        ✨ Subir (Req: {defeatsReq}⚔️, {coinsReq}🪙)
+                                                    </button>
+                                                );
+                                            }
+
+                                            return (
+                                                <div 
+                                                    key={medalName} 
+                                                    style={{ 
+                                                        display: 'flex', 
+                                                        alignItems: 'center', 
+                                                        gap: '8px', 
+                                                        background: hasMedal ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.02)', 
+                                                        padding: '6px 8px', 
+                                                        borderRadius: '6px', 
+                                                        border: '1px solid',
+                                                        borderColor: isEquipped ? '#00e676' : 'rgba(255,255,255,0.05)',
+                                                        opacity: hasMedal ? 1 : 0.4
+                                                    }}
+                                                >
+                                                    {viewingProfile.isLocal && hasMedal && (
+                                                        <input 
+                                                            type="checkbox"
+                                                            checked={isEquipped}
+                                                            onChange={(e) => {
+                                                                let newEquipped = [...viewingProfile.equippedMedals];
+                                                                if (e.target.checked) {
+                                                                    if (newEquipped.length >= 2) {
+                                                                        showNotification("Límite de Medallas", "Sólo puedes equipar hasta 2 medallas.");
+                                                                        return;
+                                                                    }
+                                                                    newEquipped.push(medalName);
+                                                                } else {
+                                                                    newEquipped = newEquipped.filter(m => m !== medalName);
+                                                                }
+                                                                
+                                                                economyRef.current.equipped_medals = newEquipped;
+                                                                saveLocalEconomy();
+                                                                handleViewLocalProfile();
+                                                            }}
+                                                            style={{ cursor: 'pointer' }}
+                                                        />
+                                                    )}
+                                                    
+                                                    <span style={{ fontSize: '11px', fontWeight: isEquipped ? 'bold' : 'normal', color: isEquipped ? '#00e676' : '#fff' }}>
+                                                        {medalName}
+                                                    </span>
+                                                    
+                                                    {hasMedal && (
+                                                        <span style={{ fontSize: '10px', color: level === 3 ? '#ffd700' : level === 2 ? '#e0e0e0' : '#cd7f32', marginLeft: '6px' }}>
+                                                            ({levelText})
+                                                        </span>
+                                                    )}
+
+                                                    {evolveButton}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+
+                                {/* Active Synergy */}
+                                {(() => {
+                                    const synergy = getMedalSynergy(viewingProfile.equippedMedals);
+                                    if (!synergy) return null;
+                                    return (
+                                        <div style={{ background: 'rgba(98, 0, 234, 0.15)', border: '1px solid #6200ea', borderRadius: '8px', padding: '12px' }}>
+                                            <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#b388ff', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                                                ✨ Sinergia: {synergy.name}
+                                            </div>
+                                            <div style={{ fontSize: '11px', color: '#ccc', marginBottom: '4px' }}>{synergy.description}</div>
+                                            <div style={{ fontSize: '11px', color: '#69f0ae', fontWeight: 'bold' }}>Efecto: {synergy.combatEffect}</div>
+                                        </div>
+                                    );
+                                })()}
+
+                                {/* Special Tournaments / Streak Badges */}
+                                {(() => {
+                                    const specialBadges = [
+                                        ...(viewingProfile.tournamentMedals || []),
+                                        ...getSpecialMedals(viewingProfile)
+                                    ];
+                                    if (specialBadges.length === 0) return null;
+                                    return (
+                                        <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '12px' }}>
+                                            <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#ffd700', marginBottom: '8px', borderBottom: '1px dashed rgba(255,255,255,0.1)', paddingBottom: '4px' }}>
+                                                🏆 Insignias de Torneos y Eventos
+                                            </div>
+                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                                                {specialBadges.map((badge, idx) => (
+                                                    <span key={idx} style={{ fontSize: '10px', background: 'rgba(255, 215, 0, 0.15)', border: '1px solid #ffd700', color: '#ffd700', padding: '4px 8px', borderRadius: '12px', fontWeight: 'bold' }}>
+                                                        🎗️ {badge}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    );
+                                })()}
+                                
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showDaily && (
                 <div className="modal-overlay" style={{ zIndex: 400 }}>
                     <div className="modal-card pokemon-panel" style={{ width: '95%', maxWidth: '420px' }}>
                         <div className="modal-header">
@@ -5863,13 +6455,20 @@ export default function GameCanvas({
                     <button 
                         onClick={(e) => { e.stopPropagation(); handlePvPInvite(playerContextMenu.address); setPlayerContextMenu(null); }}
                         className="btn-primary" 
-                        style={{ padding: '8px 16px', fontSize: '12px' }}
+                        style={{ padding: '8px 16px', fontSize: '12px', width: '100%' }}
                     >
                         ⚔️ Desafiar
                     </button>
                     <button 
+                        onClick={(e) => { e.stopPropagation(); handleViewOpponentProfile(playerContextMenu.address); setPlayerContextMenu(null); }}
+                        className="pokemon-button animate-hover" 
+                        style={{ padding: '6px 12px', fontSize: '11px', margin: '4px 0 0 0', width: '100%', background: '#e3f2fd', border: '1px solid #90caf9', color: '#1565c0', cursor: 'pointer' }}
+                    >
+                        🔎 Ver Perfil
+                    </button>
+                    <button 
                         onClick={(e) => { e.stopPropagation(); setPlayerContextMenu(null); }}
-                        style={{ background: '#eee', color: '#333', border: '1px solid #ccc', borderRadius: '4px', padding: '4px 8px', fontSize: '10px', cursor: 'pointer' }}
+                        style={{ background: '#eee', color: '#333', border: '1px solid #ccc', borderRadius: '4px', padding: '4px 8px', fontSize: '10px', cursor: 'pointer', marginTop: '4px', width: '100%', textAlign: 'center' }}
                     >
                         Cancelar
                     </button>
@@ -6001,8 +6600,26 @@ export default function GameCanvas({
                                     gap: '3px',
                                     boxShadow: '2px 2px 0 rgba(0,0,0,0.1)'
                                 }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '10px', textTransform: 'capitalize', color: '#3e2723' }}>
-                                        <span>{activePvPBattle.opponentPokemon?.id || '?'}</span>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '10px', textTransform: 'capitalize', color: '#3e2723', alignItems: 'center' }}>
+                                        <span style={{ display: 'flex', alignItems: 'center' }}>
+                                            {activePvPBattle.opponentPokemon?.id || '?'}
+                                            {activePvPBattle.opponentStatus && (
+                                                <span style={{ 
+                                                    marginLeft: '4px', 
+                                                    padding: '1px 3px', 
+                                                    fontSize: '7px', 
+                                                    fontWeight: 'bold', 
+                                                    borderRadius: '2px', 
+                                                    color: '#fff',
+                                                    background: activePvPBattle.opponentStatus === 'PAR' ? '#ffb300' :
+                                                                activePvPBattle.opponentStatus === 'SLP' ? '#90a4ae' :
+                                                                activePvPBattle.opponentStatus === 'PSN' ? '#ba68c8' :
+                                                                activePvPBattle.opponentStatus === 'CON' ? '#4db6ac' : '#ff8a65'
+                                                }}>
+                                                    {activePvPBattle.opponentStatus}
+                                                </span>
+                                            )}
+                                        </span>
                                         <span>L:{activePvPBattle.opponentPokemon?.level || '?'}</span>
                                     </div>
                                     <div className="pokemon-hp-bar" style={{ height: '6px', background: '#e0e0e0', borderRadius: '3px', overflow: 'hidden', border: '1px solid #795548', margin: 0, width: '100%' }}>
@@ -6031,6 +6648,44 @@ export default function GameCanvas({
                                     )}
                                 </div>
                             </div>
+
+                            {/* Combat Log History (Middle space) */}
+                            {activePvPBattle.status !== 'syncing' && (
+                                <div style={{
+                                    background: '#faf6eb',
+                                    border: '1px solid #795548',
+                                    borderRadius: '6px',
+                                    padding: '6px 10px',
+                                    margin: '6px 8px',
+                                    minHeight: '72px',
+                                    maxHeight: '72px',
+                                    boxSizing: 'border-box',
+                                    overflowY: 'auto',
+                                    fontSize: '9px',
+                                    color: '#5d4037',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: '2px',
+                                    textAlign: 'left',
+                                    boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.1)'
+                                }}>
+                                    {pvpBattleLog.slice(-5).map((log, idx) => (
+                                        <div key={idx} style={{ 
+                                            lineHeight: '1.2', 
+                                            borderBottom: idx < pvpBattleLog.slice(-5).length - 1 ? '1px dashed rgba(121, 85, 72, 0.15)' : 'none',
+                                            paddingBottom: '2px',
+                                            paddingTop: '2px'
+                                        }}>
+                                            {log}
+                                        </div>
+                                    ))}
+                                    {pvpBattleLog.length === 0 && (
+                                        <div style={{ color: '#8d6e63', fontStyle: 'italic', textAlign: 'center', marginTop: '20px' }}>
+                                            Esperando acciones de combate...
+                                        </div>
+                                    )}
+                                </div>
+                            )}
 
                             {/* Player Row (Sprite on Left, Info on Right) */}
                             {(() => {
@@ -6066,8 +6721,26 @@ export default function GameCanvas({
                                             gap: '3px',
                                             boxShadow: '2px 2px 0 rgba(0,0,0,0.1)'
                                         }}>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '10px', textTransform: 'capitalize', color: '#3e2723' }}>
-                                                <span>{activePoke.id}</span>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '10px', textTransform: 'capitalize', color: '#3e2723', alignItems: 'center' }}>
+                                                <span style={{ display: 'flex', alignItems: 'center' }}>
+                                                    {activePoke.id}
+                                                    {activePvPBattle.myStatus && (
+                                                        <span style={{ 
+                                                            marginLeft: '4px', 
+                                                            padding: '1px 3px', 
+                                                            fontSize: '7px', 
+                                                            fontWeight: 'bold', 
+                                                            borderRadius: '2px', 
+                                                            color: '#fff',
+                                                            background: activePvPBattle.myStatus === 'PAR' ? '#ffb300' :
+                                                                        activePvPBattle.myStatus === 'SLP' ? '#90a4ae' :
+                                                                        activePvPBattle.myStatus === 'PSN' ? '#ba68c8' :
+                                                                        activePvPBattle.myStatus === 'CON' ? '#4db6ac' : '#ff8a65'
+                                                        }}>
+                                                            {activePvPBattle.myStatus}
+                                                        </span>
+                                                    )}
+                                                </span>
                                                 <span>L:{activePoke.level ?? 1}</span>
                                             </div>
                                             <div className="pokemon-hp-bar" style={{ height: '6px', background: '#e0e0e0', borderRadius: '3px', overflow: 'hidden', border: '1px solid #795548', margin: 0, width: '100%' }}>
