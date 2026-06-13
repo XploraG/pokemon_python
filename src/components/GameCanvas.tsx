@@ -4404,88 +4404,124 @@ export default function GameCanvas({
 
             {/* --- Modals --- */}
             {showMenuModal && (
-                <div className="modal-overlay">
-                    <div className="modal-card pokemon-panel">
-                        <div className="modal-header">
-                            <h3 className="modal-title">Pixel Tamer Menu</h3>
-                            <button onClick={() => setShowMenuModal(false)} className="modal-close-btn">&times;</button>
+                <div className="modal-overlay" style={{ zIndex: 300 }}>
+                    <div style={{
+                        background: 'linear-gradient(160deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)',
+                        border: '2px solid rgba(255,255,255,0.12)',
+                        borderRadius: '16px',
+                        width: '95%',
+                        maxWidth: '400px',
+                        maxHeight: '90vh',
+                        overflowY: 'auto',
+                        boxShadow: '0 24px 60px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.1)',
+                        fontFamily: "'Segoe UI', monospace",
+                    }}>
+                        {/* Header */}
+                        <div style={{
+                            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                            padding: '16px 20px 12px',
+                            borderBottom: '1px solid rgba(255,255,255,0.08)',
+                        }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span style={{ fontSize: '18px' }}>🎮</span>
+                                <span style={{ color: '#e2e8f0', fontWeight: 'bold', fontSize: '14px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>PIXEL TAMER</span>
+                            </div>
+                            <button onClick={() => setShowMenuModal(false)} style={{
+                                background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)',
+                                borderRadius: '8px', color: '#94a3b8', cursor: 'pointer',
+                                width: '28px', height: '28px', display: 'flex', alignItems: 'center',
+                                justifyContent: 'center', fontSize: '16px', fontWeight: 'bold',
+                            }}>&times;</button>
                         </div>
-                        <div className="modal-body">
-                            <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255, 255, 255, 0.45)', border: '1px dashed #3e2723', padding: '8px 12px', borderRadius: '4px' }}>
-                                <div>
-                                    <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#3e2723' }}>
-                                        Tamer: <span style={{ color: '#0288d1' }}>{playerName}</span>
-                                    </div>
-                                    <div style={{ fontSize: '10px', color: '#5d4037', marginTop: '2px' }}>
-                                        Nivel: {economy.level}
-                                    </div>
-                                </div>
-                                <button 
-                                    onClick={() => {
-                                        setNicknameInput(playerName);
-                                        setShowEditNicknameModal(true);
-                                        setShowMenuModal(false);
+
+                        <div style={{ padding: '16px 16px 20px' }}>
+
+                            {/* TOP CARDS — Perfil y Pokémon */}
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '16px' }}>
+
+                                {/* Mi Perfil card */}
+                                <button
+                                    onClick={() => { handleViewLocalProfile(); setShowMenuModal(false); }}
+                                    style={{
+                                        background: 'linear-gradient(135deg, rgba(99,102,241,0.25) 0%, rgba(139,92,246,0.2) 100%)',
+                                        border: '1px solid rgba(139,92,246,0.4)',
+                                        borderRadius: '12px', padding: '14px 10px', cursor: 'pointer',
+                                        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px',
+                                        textAlign: 'center', transition: 'all 0.2s',
                                     }}
-                                    className="pokemon-button animate-hover"
-                                    style={{ margin: 0, padding: '4px 8px', fontSize: '10px', width: 'auto', background: '#ffe082', border: '1px solid #ffca28', color: '#3e2723', cursor: 'pointer' }}
+                                    onMouseEnter={e => (e.currentTarget.style.background = 'linear-gradient(135deg, rgba(99,102,241,0.4) 0%, rgba(139,92,246,0.35) 100%)')}
+                                    onMouseLeave={e => (e.currentTarget.style.background = 'linear-gradient(135deg, rgba(99,102,241,0.25) 0%, rgba(139,92,246,0.2) 100%)')}
                                 >
-                                    ✏️ Editar Nick
+                                    <div style={{ fontSize: '28px', lineHeight: 1 }}>👤</div>
+                                    <div style={{ color: '#c4b5fd', fontWeight: 'bold', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Mi Perfil</div>
+                                    <div style={{ color: '#a78bfa', fontSize: '9px', background: 'rgba(139,92,246,0.2)', borderRadius: '4px', padding: '1px 6px', fontWeight: 'bold' }}>{playerName}</div>
+                                    <div style={{ color: '#7c6fc9', fontSize: '9px' }}>Nv. {economy.level}</div>
+                                </button>
+
+                                {/* Mis Pokémons card */}
+                                <button
+                                    onClick={() => { setShowPcModal(true); setShowMenuModal(false); }}
+                                    style={{
+                                        background: 'linear-gradient(135deg, rgba(16,185,129,0.2) 0%, rgba(5,150,105,0.25) 100%)',
+                                        border: '1px solid rgba(16,185,129,0.35)',
+                                        borderRadius: '12px', padding: '14px 10px', cursor: 'pointer',
+                                        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px',
+                                        textAlign: 'center', transition: 'all 0.2s',
+                                    }}
+                                    onMouseEnter={e => (e.currentTarget.style.background = 'linear-gradient(135deg, rgba(16,185,129,0.35) 0%, rgba(5,150,105,0.4) 100%)')}
+                                    onMouseLeave={e => (e.currentTarget.style.background = 'linear-gradient(135deg, rgba(16,185,129,0.2) 0%, rgba(5,150,105,0.25) 100%)')}
+                                >
+                                    <div style={{ fontSize: '28px', lineHeight: 1 }}>🎴</div>
+                                    <div style={{ color: '#6ee7b7', fontWeight: 'bold', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Mis Pokémon</div>
+                                    <div style={{ color: '#34d399', fontSize: '9px', background: 'rgba(16,185,129,0.2)', borderRadius: '4px', padding: '1px 6px', fontWeight: 'bold' }}>PC Storage</div>
+                                    <div style={{ color: '#6ee7b7', fontSize: '9px' }}>{team.length} en equipo</div>
                                 </button>
                             </div>
-                            
-                            {/* Render Pokemon HP Bars inside Menu */}
-                            <div style={{ marginBottom: '16px' }}>
-                                <div style={{ fontSize: '12px', fontWeight: 'bold', marginBottom: '6px' }}>Tu Equipo:</div>
-                                {renderTeamHpList()}
+
+                            {/* SEPARATOR label */}
+                            <div style={{ fontSize: '9px', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.07)' }} />
+                                ACCIONES
+                                <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.07)' }} />
                             </div>
 
-                            <button 
-                                onClick={() => {
-                                    handleViewLocalProfile();
-                                    setShowMenuModal(false);
+                            {/* ACTION GRID */}
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '16px' }}>
+
+                                {/* PokeMart */}
+                                <button onClick={() => { setShowShop(true); setShowMenuModal(false); }} style={{
+                                    background: 'rgba(251,191,36,0.12)', border: '1px solid rgba(251,191,36,0.3)',
+                                    borderRadius: '10px', padding: '12px 8px', cursor: 'pointer',
+                                    display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s', margin: 0,
                                 }}
-                                className="pokemon-button"
-                                style={{ background: '#e3f2fd', color: '#1565c0', border: '1px solid #90caf9', fontWeight: 'bold' }}
-                            >
-                                🔎 Mi Perfil
-                            </button>
+                                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(251,191,36,0.22)')}
+                                    onMouseLeave={e => (e.currentTarget.style.background = 'rgba(251,191,36,0.12)')}
+                                >
+                                    <span style={{ fontSize: '18px' }}>🛒</span>
+                                    <div style={{ textAlign: 'left' }}>
+                                        <div style={{ color: '#fbbf24', fontWeight: 'bold', fontSize: '10px' }}>PokéMart</div>
+                                        <div style={{ color: '#78716c', fontSize: '8px' }}>Tienda</div>
+                                    </div>
+                                </button>
 
-                            <button 
-                                onClick={() => {
-                                    setIsBicycleActive(prev => !prev);
-                                    setShowMenuModal(false);
+                                {/* Mochila */}
+                                <button onClick={() => { setShowInventoryModal(true); setShowMenuModal(false); }} style={{
+                                    background: 'rgba(249,115,22,0.12)', border: '1px solid rgba(249,115,22,0.3)',
+                                    borderRadius: '10px', padding: '12px 8px', cursor: 'pointer',
+                                    display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s', margin: 0,
                                 }}
-                                className="pokemon-button success"
-                            >
-                                🚲 Montar Bicicleta: {isBicycleActive ? 'OFF' : 'ON'}
-                            </button>
+                                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(249,115,22,0.22)')}
+                                    onMouseLeave={e => (e.currentTarget.style.background = 'rgba(249,115,22,0.12)')}
+                                >
+                                    <span style={{ fontSize: '18px' }}>🎒</span>
+                                    <div style={{ textAlign: 'left' }}>
+                                        <div style={{ color: '#fb923c', fontWeight: 'bold', fontSize: '10px' }}>Mochila</div>
+                                        <div style={{ color: '#78716c', fontSize: '8px' }}>Items</div>
+                                    </div>
+                                </button>
 
-
-
-
-
-                            <button 
-                                onClick={() => {
-                                    setShowPassiveModal(true);
-                                    setShowMenuModal(false);
-                                }}
-                                className="pokemon-button"
-                            >
-                                Claim Passive Income
-                            </button>
-
-                            <button 
-                                onClick={() => {
-                                    setShowShop(true);
-                                    setShowMenuModal(false);
-                                }}
-                                className="pokemon-button"
-                            >
-                                🛒 PokeMart Store
-                            </button>
-
-                            <button 
-                                onClick={() => {
+                                {/* Login Streak */}
+                                <button onClick={() => {
                                     const result = economy.checkLoginStreak();
                                     if (result.reward_coins > 0) {
                                         showNotification("Recompensa Diaria", `¡Recompensa del Día ${result.streak}: Recibiste ${result.reward_coins} Coins!`);
@@ -4495,55 +4531,76 @@ export default function GameCanvas({
                                     }
                                     setShowDaily(true);
                                     setShowMenuModal(false);
+                                }} style={{
+                                    background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)',
+                                    borderRadius: '10px', padding: '12px 8px', cursor: 'pointer',
+                                    display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s', margin: 0,
                                 }}
-                                className="pokemon-button"
-                            >
-                                🔥 Login Streak
-                            </button>
+                                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(239,68,68,0.22)')}
+                                    onMouseLeave={e => (e.currentTarget.style.background = 'rgba(239,68,68,0.12)')}
+                                >
+                                    <span style={{ fontSize: '18px' }}>🔥</span>
+                                    <div style={{ textAlign: 'left' }}>
+                                        <div style={{ color: '#f87171', fontWeight: 'bold', fontSize: '10px' }}>Login Streak</div>
+                                        <div style={{ color: '#78716c', fontSize: '8px' }}>Día {economy.login_streak ?? 0}</div>
+                                    </div>
+                                </button>
 
-                            <button 
-                                onClick={() => {
-                                    setShowMissions(true);
-                                    setShowMenuModal(false);
+                                {/* Misiones */}
+                                <button onClick={() => { setShowMissions(true); setShowMenuModal(false); }} style={{
+                                    background: 'rgba(168,85,247,0.12)', border: '1px solid rgba(168,85,247,0.3)',
+                                    borderRadius: '10px', padding: '12px 8px', cursor: 'pointer',
+                                    display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s', margin: 0,
                                 }}
-                                className="pokemon-button"
-                            >
-                                🏆 Daily Missions
-                            </button>
+                                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(168,85,247,0.22)')}
+                                    onMouseLeave={e => (e.currentTarget.style.background = 'rgba(168,85,247,0.12)')}
+                                >
+                                    <span style={{ fontSize: '18px' }}>🏆</span>
+                                    <div style={{ textAlign: 'left' }}>
+                                        <div style={{ color: '#c084fc', fontWeight: 'bold', fontSize: '10px' }}>Misiones</div>
+                                        <div style={{ color: '#78716c', fontSize: '8px' }}>Daily</div>
+                                    </div>
+                                </button>
 
-                            <button 
-                                onClick={() => {
-                                    setShowInventoryModal(true);
-                                    setShowMenuModal(false);
+                                {/* Passive Income — full width */}
+                                <button onClick={() => { setShowPassiveModal(true); setShowMenuModal(false); }} style={{
+                                    background: 'rgba(20,184,166,0.12)', border: '1px solid rgba(20,184,166,0.3)',
+                                    borderRadius: '10px', padding: '12px 8px', cursor: 'pointer',
+                                    display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s',
+                                    gridColumn: 'span 2', margin: 0,
                                 }}
-                                className="pokemon-button"
-                            >
-                                🎒 Mochila (Items)
-                            </button>
+                                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(20,184,166,0.22)')}
+                                    onMouseLeave={e => (e.currentTarget.style.background = 'rgba(20,184,166,0.12)')}
+                                >
+                                    <span style={{ fontSize: '18px' }}>💰</span>
+                                    <div style={{ textAlign: 'left' }}>
+                                        <div style={{ color: '#2dd4bf', fontWeight: 'bold', fontSize: '10px' }}>Ingresos Pasivos</div>
+                                        <div style={{ color: '#78716c', fontSize: '8px' }}>Reclamar Coins acumulados</div>
+                                    </div>
+                                </button>
+                            </div>
 
-                            <button 
-                                onClick={() => {
-                                    setShowPcModal(true);
-                                    setShowMenuModal(false);
-                                }}
-                                className="pokemon-button"
-                            >
-                                💻 Almacenamiento PC
-                            </button>
+                            {/* Divider */}
+                            <div style={{ height: '1px', background: 'rgba(255,255,255,0.07)', marginBottom: '12px' }} />
 
-                            <button 
-                                onClick={() => {
-                                    saveLocalEconomy();
-                                    onBackToMenu();
-                                }}
-                                className="pokemon-button danger"
+                            {/* LOGOUT */}
+                            <button onClick={() => { saveLocalEconomy(); onBackToMenu(); }} style={{
+                                width: '100%', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)',
+                                borderRadius: '10px', padding: '10px 16px', cursor: 'pointer',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                                color: '#f87171', fontWeight: 'bold', fontSize: '11px',
+                                textTransform: 'uppercase', letterSpacing: '0.06em', transition: 'all 0.2s', margin: 0,
+                            }}
+                                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(239,68,68,0.2)')}
+                                onMouseLeave={e => (e.currentTarget.style.background = 'rgba(239,68,68,0.1)')}
                             >
-                                Cerrar Sesión (Log Out)
+                                <span>🚪</span> Cerrar Sesión
                             </button>
                         </div>
                     </div>
                 </div>
             )}
+
 
 
             {showNurseJoyModal && (
@@ -4685,38 +4742,42 @@ export default function GameCanvas({
                                 </button>
                             </div>
 
-                            {/* Tabs Bar */}
-                            <div style={{ display: 'flex', border: '2px solid #3e2723', borderRadius: '8px', overflow: 'hidden', marginBottom: '12px', background: '#fff' }}>
-                                <button 
-                                    onClick={() => setShopTab('balls')} 
-                                    style={{
-                                        flex: 1, padding: '8px 4px', border: 'none', background: shopTab === 'balls' ? '#3e2723' : 'transparent',
-                                        color: shopTab === 'balls' ? '#fff' : '#3e2723', fontWeight: 'bold', fontSize: '11px', cursor: 'pointer',
-                                        transition: 'all 0.2s'
-                                    }}
-                                >
-                                    🔴 Tamer Balls
-                                </button>
-                                <button 
-                                    onClick={() => setShopTab('items')} 
-                                    style={{
-                                        flex: 1, padding: '8px 4px', border: 'none', background: shopTab === 'items' ? '#3e2723' : 'transparent',
-                                        color: shopTab === 'items' ? '#fff' : '#3e2723', fontWeight: 'bold', fontSize: '11px', cursor: 'pointer',
-                                        transition: 'all 0.2s'
-                                    }}
-                                >
-                                    🧪 Objetos
-                                </button>
-                                <button 
-                                    onClick={() => setShopTab('tms')} 
-                                    style={{
-                                        flex: 1, padding: '8px 4px', border: 'none', background: shopTab === 'tms' ? '#3e2723' : 'transparent',
-                                        color: shopTab === 'tms' ? '#fff' : '#3e2723', fontWeight: 'bold', fontSize: '11px', cursor: 'pointer',
-                                        transition: 'all 0.2s'
-                                    }}
-                                >
-                                    💿 Ataques / TMs
-                                </button>
+                            {/* Persistent Category Tabs */}
+                            <div style={{
+                                display: 'flex',
+                                gap: '4px',
+                                padding: '10px 0 6px 0',
+                                borderBottom: '2px solid #d7ccc8',
+                                marginBottom: '10px'
+                            }}>
+                                {([
+                                    { key: 'balls', label: '🔴 Balls', bg: 'linear-gradient(135deg, #ff8a80 0%, #ff5252 100%)', border: '#c62828' },
+                                    { key: 'items', label: '🧪 Objetos', bg: 'linear-gradient(135deg, #81c784 0%, #4caf50 100%)', border: '#2e7d32' },
+                                    { key: 'tms',   label: '💿 TMs',    bg: 'linear-gradient(135deg, #64b5f6 0%, #2196f3 100%)', border: '#1565c0' },
+                                ] as const).map(tab => (
+                                    <button
+                                        key={tab.key}
+                                        onClick={() => setShopTab(tab.key)}
+                                        style={{
+                                            flex: 1,
+                                            padding: '7px 4px',
+                                            fontSize: '9px',
+                                            fontWeight: 'bold',
+                                            fontFamily: 'monospace',
+                                            border: shopTab === tab.key ? `2px solid ${tab.border}` : '2px solid #d7ccc8',
+                                            borderRadius: '6px 6px 0 0',
+                                            background: shopTab === tab.key ? tab.bg : '#f5f5f5',
+                                            color: shopTab === tab.key ? '#fff' : '#757575',
+                                            cursor: 'pointer',
+                                            transition: 'all 0.15s ease',
+                                            boxShadow: shopTab === tab.key ? `0 2px 0 ${tab.border}` : 'none',
+                                            transform: shopTab === tab.key ? 'translateY(2px)' : 'none',
+                                            margin: 0,
+                                        }}
+                                    >
+                                        {tab.label}
+                                    </button>
+                                ))}
                             </div>
 
                             {/* Shop Content Grid */}
@@ -5217,8 +5278,7 @@ export default function GameCanvas({
                                     </div>
                                 </div>
                             </div>
-
-                            {/* Right Column: Gym Medals & Special Badges */}
+{/* Right Column: Gym Medals & Special Badges */}
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                                 
                                 {/* Gym Medals Upgrade/Equip */}
@@ -5228,7 +5288,7 @@ export default function GameCanvas({
                                         {viewingProfile.isLocal && <span style={{ fontSize: '9px', color: '#aaa' }}>(Equipadas: {viewingProfile.equippedMedals.length}/2)</span>}
                                     </div>
                                     
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '6px', maxHeight: '220px', overflowY: 'auto', paddingRight: '4px' }}>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '6px', maxHeight: '260px', overflowY: 'auto', paddingRight: '4px' }}>
                                         {["Medalla Roca", "Medalla Cascada", "Medalla Trueno", "Medalla Arcoiris", "Medalla Alma", "Medalla Pantano", "Medalla Volcan", "Medalla Tierra"].map((medalName) => {
                                             const hasMedal = viewingProfile.medals.includes(medalName);
                                             const level = viewingProfile.medalLevels[medalName] || 1;
@@ -5256,20 +5316,31 @@ export default function GameCanvas({
                                                         }}
                                                         style={{
                                                             fontSize: '9px',
-                                                            background: '#ff9800',
+                                                            background: 'linear-gradient(135deg, #ff9800, #f57c00)',
                                                             border: 'none',
                                                             color: '#fff',
-                                                            borderRadius: '3px',
-                                                            padding: '2px 6px',
+                                                            borderRadius: '4px',
+                                                            padding: '3px 7px',
                                                             cursor: 'pointer',
                                                             fontWeight: 'bold',
-                                                            marginLeft: 'auto'
+                                                            marginLeft: 'auto',
+                                                            flexShrink: 0,
+                                                            whiteSpace: 'nowrap'
                                                         }}
                                                     >
-                                                        ✨ Subir (Req: {defeatsReq}⚔️, {coinsReq}🪙)
+                                                        ✨ Subir ({defeatsReq}⚔️/{coinsReq}🪙)
                                                     </button>
                                                 );
                                             }
+
+                                            const MEDAL_ORDER = ["Medalla Roca", "Medalla Cascada", "Medalla Trueno", "Medalla Arcoiris", "Medalla Alma", "Medalla Pantano", "Medalla Volcan", "Medalla Tierra"];
+                                            const medalIdx = MEDAL_ORDER.indexOf(medalName);
+                                            const SPRITE_SIZE = 40; 
+                                            const sheetFile = hasMedal
+                                                ? (level === 3 ? '/assets/imgs/medals/gold_row.png' : level === 2 ? '/assets/imgs/medals/silver_row.png' : '/assets/imgs/medals/bronze_row.png')
+                                                : '/assets/imgs/medals/bronze_row.png';
+                                            const tierBorderColor = !hasMedal ? 'rgba(255,255,255,0.05)' : isEquipped ? '#00e676' : level === 3 ? '#ffd700' : level === 2 ? '#b0bec5' : '#cd7f32';
+                                            const tierGlow = !hasMedal ? 'none' : isEquipped ? '0 0 8px rgba(0,230,118,0.6)' : level === 3 ? '0 0 10px rgba(255,215,0,0.5)' : level === 2 ? '0 0 6px rgba(176,190,197,0.4)' : '0 0 4px rgba(205,127,50,0.3)';
 
                                             return (
                                                 <div 
@@ -5278,14 +5349,38 @@ export default function GameCanvas({
                                                         display: 'flex', 
                                                         alignItems: 'center', 
                                                         gap: '8px', 
-                                                        background: hasMedal ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.02)', 
-                                                        padding: '6px 8px', 
-                                                        borderRadius: '6px', 
+                                                        background: hasMedal ? (isEquipped ? 'rgba(0,230,118,0.08)' : 'rgba(255,255,255,0.06)') : 'rgba(255,255,255,0.02)', 
+                                                        padding: '5px 8px', 
+                                                        borderRadius: '8px', 
                                                         border: '1px solid',
-                                                        borderColor: isEquipped ? '#00e676' : 'rgba(255,255,255,0.05)',
-                                                        opacity: hasMedal ? 1 : 0.4
+                                                        borderColor: tierBorderColor,
+                                                        boxShadow: tierGlow,
+                                                        opacity: hasMedal ? 1 : 0.4,
+                                                        transition: 'all 0.2s ease'
                                                     }}
                                                 >
+                                                    <div style={{
+                                                        width: `${SPRITE_SIZE}px`,
+                                                        height: `${SPRITE_SIZE}px`,
+                                                        flexShrink: 0,
+                                                        overflow: 'hidden',
+                                                        position: 'relative',
+                                                        filter: hasMedal ? 'none' : 'grayscale(100%) brightness(0.4)',
+                                                    }}>
+                                                        <img
+                                                            src={sheetFile}
+                                                            alt={medalName}
+                                                            style={{
+                                                                width: `${SPRITE_SIZE * 8}px`,
+                                                                height: `${SPRITE_SIZE}px`,
+                                                                position: 'absolute',
+                                                                left: `${-medalIdx * SPRITE_SIZE}px`,
+                                                                top: 0,
+                                                                imageRendering: 'auto',
+                                                            }}
+                                                        />
+                                                    </div>
+
                                                     {viewingProfile.isLocal && hasMedal && (
                                                         <input 
                                                             type="checkbox"
@@ -5310,15 +5405,19 @@ export default function GameCanvas({
                                                         />
                                                     )}
                                                     
-                                                    <span style={{ fontSize: '11px', fontWeight: isEquipped ? 'bold' : 'normal', color: isEquipped ? '#00e676' : '#fff' }}>
-                                                        {medalName}
-                                                    </span>
-                                                    
-                                                    {hasMedal && (
-                                                        <span style={{ fontSize: '10px', color: level === 3 ? '#ffd700' : level === 2 ? '#e0e0e0' : '#cd7f32', marginLeft: '6px' }}>
-                                                            ({levelText})
+                                                    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
+                                                        <span style={{ fontSize: '11px', fontWeight: isEquipped ? 'bold' : 'normal', color: isEquipped ? '#00e676' : '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                            {medalName}
                                                         </span>
-                                                    )}
+                                                        {hasMedal && (
+                                                            <span style={{ fontSize: '9px', color: level === 3 ? '#ffd700' : level === 2 ? '#e0e0e0' : '#cd7f32' }}>
+                                                                {levelText}
+                                                            </span>
+                                                        )}
+                                                        {!hasMedal && (
+                                                            <span style={{ fontSize: '9px', color: '#666' }}>Sin obtener</span>
+                                                        )}
+                                                    </div>
 
                                                     {evolveButton}
                                                 </div>
@@ -5349,17 +5448,55 @@ export default function GameCanvas({
                                         ...getSpecialMedals(viewingProfile)
                                     ];
                                     if (specialBadges.length === 0) return null;
+                                    const SPECIAL_SPRITE_MAP: Record<string, { idx: number; glow: string; border: string }> = {
+                                        "Medalla Campeón PvP (S1)": { idx: 0, glow: '0 0 14px rgba(255,215,0,0.8)', border: '#ffd700' },
+                                        "Medalla Tamer Pionero":    { idx: 1, glow: '0 0 14px rgba(0,188,212,0.8)', border: '#00bcd4' },
+                                    };
+                                    const SPECIAL_SIZE = 48;
+                                    const SPECIAL_SHEET_COLS = 2;
                                     return (
                                         <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '12px' }}>
-                                            <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#ffd700', marginBottom: '8px', borderBottom: '1px dashed rgba(255,255,255,0.1)', paddingBottom: '4px' }}>
+                                            <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#ffd700', marginBottom: '10px', borderBottom: '1px dashed rgba(255,255,255,0.1)', paddingBottom: '4px' }}>
                                                 🏆 Insignias de Torneos y Eventos
                                             </div>
-                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                                                {specialBadges.map((badge, idx) => (
-                                                    <span key={idx} style={{ fontSize: '10px', background: 'rgba(255, 215, 0, 0.15)', border: '1px solid #ffd700', color: '#ffd700', padding: '4px 8px', borderRadius: '12px', fontWeight: 'bold' }}>
-                                                        🎗️ {badge}
-                                                    </span>
-                                                ))}
+                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                                                {specialBadges.map((badge, idx) => {
+                                                    const spr = SPECIAL_SPRITE_MAP[badge];
+                                                    if (spr) {
+                                                        return (
+                                                            <div key={idx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                                                                <div style={{
+                                                                    width: `${SPECIAL_SIZE}px`,
+                                                                    height: `${SPECIAL_SIZE}px`,
+                                                                    overflow: 'hidden',
+                                                                    position: 'relative',
+                                                                    borderRadius: '50%',
+                                                                    boxShadow: spr.glow,
+                                                                    border: `2px solid ${spr.border}`
+                                                                }}>
+                                                                    <img
+                                                                        src="/assets/imgs/medals/special.png"
+                                                                        alt={badge}
+                                                                        style={{
+                                                                            width: `${SPECIAL_SIZE * SPECIAL_SHEET_COLS}px`,
+                                                                            height: `${SPECIAL_SIZE}px`,
+                                                                            position: 'absolute',
+                                                                            left: `${-spr.idx * SPECIAL_SIZE}px`,
+                                                                            top: 0,
+                                                                            imageRendering: 'auto',
+                                                                        }}
+                                                                    />
+                                                                </div>
+                                                                <span style={{ fontSize: '9px', color: spr.border, fontWeight: 'bold', textAlign: 'center', maxWidth: '60px', lineHeight: 1.2 }}>{badge}</span>
+                                                            </div>
+                                                        );
+                                                    }
+                                                    return (
+                                                        <span key={idx} style={{ fontSize: '10px', background: 'rgba(255, 215, 0, 0.15)', border: '1px solid #ffd700', color: '#ffd700', padding: '4px 8px', borderRadius: '12px', fontWeight: 'bold' }}>
+                                                            🎗️ {badge}
+                                                        </span>
+                                                    );
+                                                })}
                                             </div>
                                         </div>
                                     );
