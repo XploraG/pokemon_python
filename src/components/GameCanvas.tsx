@@ -5118,12 +5118,12 @@ export default function GameCanvas({
                                 </div>
 
                                 {/* Opponent Sprite (Right) */}
-                                <div style={{ width: '45%', display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'relative', height: '100px' }}>
+                                <div style={{ width: '45%', display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'relative', height: '130px' }}>
                                     <img 
                                         src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemonSpeciesList.find((s:any)=>s.name.toLowerCase() === activePvPBattle.opponentPokemon?.id?.toLowerCase())?.id || 25}.png`} 
                                         alt="Opponent" 
                                         className={opponentSpriteEffect === 'shake' ? 'battle-shake' : opponentSpriteEffect === 'flash' ? 'battle-flash' : ''}
-                                        style={{ width: '80px', height: '80px', objectFit: 'contain' }}
+                                        style={{ width: '110px', height: '110px', objectFit: 'contain' }}
                                     />
                                     {floatingDamage && floatingDamage.target === 'opponent' && (
                                         <div className="floating-damage-num" style={{ top: '10px', left: '30%' }}>{floatingDamage.value}</div>
@@ -5141,12 +5141,12 @@ export default function GameCanvas({
                                 return (
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '0 8px', marginTop: '4px' }}>
                                         {/* Player Sprite (Left) */}
-                                        <div style={{ width: '45%', display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'relative', height: '100px' }}>
+                                        <div style={{ width: '45%', display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'relative', height: '130px' }}>
                                             <img 
                                                 src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/back/${pokemonSpeciesList.find((s:any)=>s.name.toLowerCase() === activePoke.id.toLowerCase())?.id || 25}.png`} 
                                                 alt={activePoke.id} 
                                                 className={playerSpriteEffect === 'bounce' ? 'battle-bounce' : playerSpriteEffect === 'shake' ? 'battle-shake' : ''}
-                                                style={{ width: '80px', height: '80px', objectFit: 'contain' }}
+                                                style={{ width: '110px', height: '110px', objectFit: 'contain' }}
                                             />
                                             {floatingDamage && floatingDamage.target === 'player' && (
                                                 <div className="floating-damage-num" style={{ top: '10px', left: '30%' }}>{floatingDamage.value}</div>
@@ -5223,44 +5223,51 @@ export default function GameCanvas({
                             border: '2px solid #3e2723',
                             borderRadius: '4px',
                             padding: '8px',
-                            height: '90px',
+                            minHeight: '135px',
                             boxSizing: 'border-box',
                             display: 'flex',
                             flexDirection: 'column',
-                            justifyContent: 'center'
+                            justifyContent: 'space-between',
+                            alignItems: 'stretch'
                         }}>
                             {activePvPBattle.status === 'battle' ? (
                                 <>
-                                    <div style={{ textAlign: 'center', marginBottom: '6px', fontWeight: 'bold', fontSize: '11px', color: activePvPBattle.turn === walletAddress ? '#2e7d32' : '#c62828' }}>
-                                        {activePvPBattle.turn === walletAddress ? `⏳ Tu turno (${pvpTurnTimer}s)` : `⏳ Turno del oponente (${pvpTurnTimer}s)`}
-                                    </div>
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', width: '100%' }}>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', width: '100%', marginBottom: '6px' }}>
                                         {(() => {
                                             const activePoke = team.find(p => p.hp > 0);
                                             if (!activePoke) return null;
-                                            const moves = typeof window !== 'undefined' && (window as any).POKEMON_MOVESET ? (window as any).POKEMON_MOVESET[activePoke.id] || [] : [];
-                                            return moves.map((m: any, idx: number) => {
-                                                const tc = typeof window !== 'undefined' && (window as any).TYPE_COLORS ? (window as any).TYPE_COLORS : {};
+                                            const activePokeMoves = getPokemonMoves(activePoke.id, activePoke.level ?? 1);
+                                            return activePokeMoves.map((moveId) => {
+                                                const m = MOVES_DATABASE[moveId] || { name: moveId, type: 'normal', power: 40 };
                                                 return (
                                                     <button 
-                                                        key={idx}
+                                                        key={moveId}
                                                         className="pokemon-button animate-hover"
-                                                        onClick={() => handleExecutePvPMove(m.id)}
+                                                        onClick={() => handleExecutePvPMove(moveId)}
                                                         disabled={activePvPBattle.turn !== walletAddress}
                                                         style={{ 
-                                                            background: tc[m.type] || '#a8a878',
+                                                            background: getTypeColor(m.type),
                                                             color: m.type === 'electric' ? '#3e2723' : '#fff',
-                                                            height: '32px', padding: '4px', margin: 0, fontSize: '10px', fontWeight: 'bold',
+                                                            height: '38px', padding: '4px', margin: 0, fontSize: '10px', fontWeight: 'bold',
                                                             opacity: activePvPBattle.turn !== walletAddress ? 0.5 : 1,
                                                             border: '1px solid #333',
-                                                            borderRadius: '4px'
+                                                            borderRadius: '4px',
+                                                            display: 'flex',
+                                                            flexDirection: 'column',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center',
+                                                            textTransform: 'capitalize'
                                                         }}
                                                     >
-                                                        {m.name}
+                                                        <span style={{ fontWeight: 'bold', fontSize: '11px' }}>{m.name}</span>
+                                                        <span style={{ fontSize: '8px', opacity: 0.8 }}>Poder: {m.power} | {m.type}</span>
                                                     </button>
                                                 );
                                             });
                                         })()}
+                                    </div>
+                                    <div style={{ textAlign: 'center', fontWeight: 'bold', fontSize: '12px', color: activePvPBattle.turn === walletAddress ? '#2e7d32' : '#c62828', paddingBottom: '4px' }}>
+                                        {activePvPBattle.turn === walletAddress ? `⏳ Tu turno (${pvpTurnTimer}s)` : `⏳ Turno del oponente (${pvpTurnTimer}s)`}
                                     </div>
                                 </>
                             ) : (
