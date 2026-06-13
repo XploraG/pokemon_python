@@ -4605,34 +4605,39 @@ export default function GameCanvas({
 
             {showNurseJoyModal && (
                 <div className="modal-overlay">
-                    <div className="modal-card pokemon-panel">
-                        <div className="modal-header">
-                            <h3 className="modal-title">Centro Pokémon - Joy</h3>
+                    <div style={{ background: 'linear-gradient(160deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%)', border: '2px solid rgba(255,255,255,0.12)', borderRadius: '16px', width: '95%', maxWidth: '440px', maxHeight: '88vh', overflowY: 'auto', boxShadow: '0 24px 60px rgba(0,0,0,0.7),inset 0 1px 0 rgba(255,255,255,0.1)', fontFamily: "'Segoe UI',monospace" }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px 12px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span style={{ fontSize: '18px' }}>💊</span>
+                                <span style={{ color: '#e2e8f0', fontWeight: 'bold', fontSize: '14px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Centro Pokémon</span>
+                            </div>
                             <button onClick={() => {
                                 setShowNurseJoyModal(false);
                                 setActiveDialog(null);
-                            }} className="modal-close-btn">&times;</button>
+                            }} style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: '#94a3b8', cursor: 'pointer', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', fontWeight: 'bold' }}>&times;</button>
                         </div>
-                        <div className="modal-body">
-                            <p style={{ fontWeight: 'bold', fontSize: '15px', marginBottom: '16px' }}>
+                        <div style={{ padding: '16px 16px 20px', color: '#e2e8f0', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                            <p style={{ fontWeight: 'bold', fontSize: '13px', margin: 0, color: '#94a3b8' }}>
                                 Joy: "¡Hola! ¿Qué te gustaría hacer hoy?"
                             </p>
                             
-                            <div style={{ marginBottom: '16px' }}>
-                                <div style={{ fontSize: '12px', fontWeight: 'bold', marginBottom: '6px' }}>Estado de tu Equipo:</div>
-                                {renderTeamHpList()}
+                            <div>
+                                <div style={{ fontSize: '11px', fontWeight: 'bold', marginBottom: '6px', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Estado de tu Equipo:</div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                    {renderTeamHpList()}
+                                </div>
                             </div>
 
                             <button 
                                 onClick={handleNurseHeal}
-                                className="pokemon-button success"
+                                style={{ background: 'rgba(16,185,129,0.2)', border: '1px solid rgba(16,185,129,0.4)', borderRadius: '8px', color: '#6ee7b7', cursor: 'pointer', padding: '9px 14px', fontSize: '12px', fontWeight: 'bold', width: '100%', margin: 0 }}
                             >
                                 💚 Curar Equipo (Gratis, {2 - economy.heals_today}/2 Hoy)
                             </button>
 
                             {adHealSelectMode ? (
-                                <div style={{ background: 'rgba(235, 255, 235, 0.5)', border: '1px dashed #2e7d32', padding: '10px', borderRadius: '4px', marginBottom: '16px' }}>
-                                    <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#2e7d32', marginBottom: '8px', textTransform: 'uppercase' }}>
+                                <div style={{ background: 'rgba(16,185,129,0.08)', border: '1px dashed rgba(52,211,153,0.4)', padding: '10px', borderRadius: '10px' }}>
+                                    <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#34d399', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                                         Selecciona un Pokémon para curar al 100%:
                                     </div>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
@@ -4640,12 +4645,11 @@ export default function GameCanvas({
                                             <button
                                                 key={idx}
                                                 onClick={() => handleSelectPokemonToHeal(idx)}
-                                                className="pokemon-button animate-hover"
-                                                style={{ margin: 0, padding: '6px 12px', fontSize: '11px', textTransform: 'capitalize', display: 'flex', justifyContent: 'space-between', opacity: p.hp >= p.maxHp ? 0.6 : 1 }}
+                                                style={{ margin: 0, padding: '6px 12px', fontSize: '11px', textTransform: 'capitalize', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#e2e8f0', cursor: 'pointer', opacity: p.hp >= p.maxHp ? 0.5 : 1 }}
                                                 disabled={p.hp >= p.maxHp}
                                             >
                                                 <span>{p.id} (HP: {p.hp}/{p.maxHp})</span>
-                                                <span style={{ fontWeight: 'bold', color: '#2e7d32' }}>{p.hp >= p.maxHp ? 'Lleno' : 'Curar'}</span>
+                                                <span style={{ fontWeight: 'bold', color: '#34d399' }}>{p.hp >= p.maxHp ? 'Lleno' : 'Curar'}</span>
                                             </button>
                                         ))}
                                     </div>
@@ -4653,8 +4657,7 @@ export default function GameCanvas({
                             ) : (
                                 <button 
                                     onClick={handleWatchHealAd}
-                                    className="pokemon-button animate-hover"
-                                    style={{ background: '#e1f5fe', border: '1px solid #0288d1', color: '#0288d1' }}
+                                    style={{ margin: 0, padding: '9px 14px', fontSize: '12px', fontWeight: 'bold', width: '100%', background: 'rgba(96,165,250,0.15)', border: '1px solid rgba(96,165,250,0.35)', borderRadius: '8px', color: '#60a5fa', cursor: 'pointer' }}
                                 >
                                     💚 Curar 1 Pokémon (Ver Anuncio: {adHealsViewed}/2)
                                 </button>
@@ -4662,8 +4665,7 @@ export default function GameCanvas({
 
                             <button 
                                 onClick={handleNurseRevive}
-                                className="pokemon-button"
-                                style={{ background: '#ffe082' }}
+                                style={{ margin: 0, padding: '9px 14px', fontSize: '12px', fontWeight: 'bold', width: '100%', background: 'rgba(251,191,36,0.15)', border: '1px solid rgba(251,191,36,0.3)', borderRadius: '8px', color: '#fbbf24', cursor: 'pointer' }}
                             >
                                 ⚡ Revivir y Curar (Costo: {economy.getReviveCost()} Coins)
                             </button>
@@ -4674,7 +4676,7 @@ export default function GameCanvas({
                                     setShowNurseJoyModal(false);
                                     setActiveDialog(null);
                                 }}
-                                className="pokemon-button danger"
+                                style={{ margin: 0, padding: '9px 14px', fontSize: '12px', fontWeight: 'bold', width: '100%', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: '8px', color: '#f87171', cursor: 'pointer' }}
                             >
                                 Cerrar
                             </button>
@@ -5288,7 +5290,7 @@ export default function GameCanvas({
                                         {viewingProfile.isLocal && <span style={{ fontSize: '9px', color: '#aaa' }}>(Equipadas: {viewingProfile.equippedMedals.length}/2)</span>}
                                     </div>
                                     
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '6px', maxHeight: '260px', overflowY: 'auto', paddingRight: '4px' }}>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', paddingRight: '4px' }}>
                                         {["Medalla Roca", "Medalla Cascada", "Medalla Trueno", "Medalla Arcoiris", "Medalla Alma", "Medalla Pantano", "Medalla Volcan", "Medalla Tierra"].map((medalName) => {
                                             const hasMedal = viewingProfile.medals.includes(medalName);
                                             const level = viewingProfile.medalLevels[medalName] || 1;
@@ -5315,17 +5317,17 @@ export default function GameCanvas({
                                                             }
                                                         }}
                                                         style={{
-                                                            fontSize: '9px',
+                                                            fontSize: '8px',
                                                             background: 'linear-gradient(135deg, #ff9800, #f57c00)',
                                                             border: 'none',
                                                             color: '#fff',
                                                             borderRadius: '4px',
-                                                            padding: '3px 7px',
+                                                            padding: '3px 6px',
                                                             cursor: 'pointer',
                                                             fontWeight: 'bold',
-                                                            marginLeft: 'auto',
-                                                            flexShrink: 0,
-                                                            whiteSpace: 'nowrap'
+                                                            whiteSpace: 'nowrap',
+                                                            marginTop: '4px',
+                                                            width: '100%',
                                                         }}
                                                     >
                                                         ✨ Subir ({defeatsReq}⚔️/{coinsReq}🪙)
@@ -5335,89 +5337,106 @@ export default function GameCanvas({
 
                                             const MEDAL_ORDER = ["Medalla Roca", "Medalla Cascada", "Medalla Trueno", "Medalla Arcoiris", "Medalla Alma", "Medalla Pantano", "Medalla Volcan", "Medalla Tierra"];
                                             const medalIdx = MEDAL_ORDER.indexOf(medalName);
-                                            const SPRITE_SIZE = 40; 
+                                            // Sprite sheet is 4 columns × 2 rows
+                                            const COL = medalIdx % 4;
+                                            const ROW = Math.floor(medalIdx / 4);
+                                            const SHEET_COLS = 4;
+                                            const SHEET_ROWS = 2;
+                                            const DISPLAY_SIZE = 56; // display px
+                                            // The sprite sheet is ~1024×1024 so each cell = 256×512
+                                            // We render the container at DISPLAY_SIZE × DISPLAY_SIZE
+                                            // and scale the image so one cell fills it
                                             const sheetFile = hasMedal
                                                 ? (level === 3 ? '/assets/imgs/medals/gold_row.png' : level === 2 ? '/assets/imgs/medals/silver_row.png' : '/assets/imgs/medals/bronze_row.png')
                                                 : '/assets/imgs/medals/bronze_row.png';
-                                            const tierBorderColor = !hasMedal ? 'rgba(255,255,255,0.05)' : isEquipped ? '#00e676' : level === 3 ? '#ffd700' : level === 2 ? '#b0bec5' : '#cd7f32';
-                                            const tierGlow = !hasMedal ? 'none' : isEquipped ? '0 0 8px rgba(0,230,118,0.6)' : level === 3 ? '0 0 10px rgba(255,215,0,0.5)' : level === 2 ? '0 0 6px rgba(176,190,197,0.4)' : '0 0 4px rgba(205,127,50,0.3)';
+                                            const tierBorderColor = !hasMedal ? 'rgba(255,255,255,0.1)' : isEquipped ? '#00e676' : level === 3 ? '#ffd700' : level === 2 ? '#b0bec5' : '#cd7f32';
+                                            const tierGlow = !hasMedal ? 'none' : isEquipped ? '0 0 10px rgba(0,230,118,0.7)' : level === 3 ? '0 0 12px rgba(255,215,0,0.6)' : level === 2 ? '0 0 8px rgba(176,190,197,0.5)' : '0 0 6px rgba(205,127,50,0.4)';
+                                            const cardBg = !hasMedal ? 'rgba(255,255,255,0.02)' : isEquipped ? 'rgba(0,230,118,0.1)' : level === 3 ? 'rgba(255,215,0,0.08)' : level === 2 ? 'rgba(176,190,197,0.08)' : 'rgba(205,127,50,0.08)';
 
                                             return (
                                                 <div 
                                                     key={medalName} 
                                                     style={{ 
                                                         display: 'flex', 
+                                                        flexDirection: 'column',
                                                         alignItems: 'center', 
-                                                        gap: '8px', 
-                                                        background: hasMedal ? (isEquipped ? 'rgba(0,230,118,0.08)' : 'rgba(255,255,255,0.06)') : 'rgba(255,255,255,0.02)', 
-                                                        padding: '5px 8px', 
-                                                        borderRadius: '8px', 
+                                                        gap: '6px', 
+                                                        background: cardBg,
+                                                        padding: '10px 8px', 
+                                                        borderRadius: '10px', 
                                                         border: '1px solid',
                                                         borderColor: tierBorderColor,
                                                         boxShadow: tierGlow,
-                                                        opacity: hasMedal ? 1 : 0.4,
-                                                        transition: 'all 0.2s ease'
+                                                        opacity: hasMedal ? 1 : 0.45,
+                                                        transition: 'all 0.2s ease',
+                                                        position: 'relative',
                                                     }}
                                                 >
+                                                    {/* Medal sprite */}
                                                     <div style={{
-                                                        width: `${SPRITE_SIZE}px`,
-                                                        height: `${SPRITE_SIZE}px`,
+                                                        width: `${DISPLAY_SIZE}px`,
+                                                        height: `${DISPLAY_SIZE}px`,
                                                         flexShrink: 0,
                                                         overflow: 'hidden',
                                                         position: 'relative',
-                                                        filter: hasMedal ? 'none' : 'grayscale(100%) brightness(0.4)',
+                                                        filter: hasMedal ? 'none' : 'grayscale(100%) brightness(0.35)',
+                                                        borderRadius: '6px',
                                                     }}>
                                                         <img
                                                             src={sheetFile}
                                                             alt={medalName}
                                                             style={{
-                                                                width: `${SPRITE_SIZE * 8}px`,
-                                                                height: `${SPRITE_SIZE}px`,
+                                                                width: `${DISPLAY_SIZE * SHEET_COLS}px`,
+                                                                height: `${DISPLAY_SIZE * SHEET_ROWS}px`,
                                                                 position: 'absolute',
-                                                                left: `${-medalIdx * SPRITE_SIZE}px`,
-                                                                top: 0,
+                                                                left: `${-COL * DISPLAY_SIZE}px`,
+                                                                top: `${-ROW * DISPLAY_SIZE}px`,
                                                                 imageRendering: 'auto',
                                                             }}
                                                         />
                                                     </div>
 
-                                                    {viewingProfile.isLocal && hasMedal && (
-                                                        <input 
-                                                            type="checkbox"
-                                                            checked={isEquipped}
-                                                            onChange={(e) => {
-                                                                let newEquipped = [...viewingProfile.equippedMedals];
-                                                                if (e.target.checked) {
-                                                                    if (newEquipped.length >= 2) {
-                                                                        showNotification("Límite de Medallas", "Sólo puedes equipar hasta 2 medallas.");
-                                                                        return;
-                                                                    }
-                                                                    newEquipped.push(medalName);
-                                                                } else {
-                                                                    newEquipped = newEquipped.filter(m => m !== medalName);
-                                                                }
-                                                                
-                                                                economyRef.current.equipped_medals = newEquipped;
-                                                                saveLocalEconomy();
-                                                                handleViewLocalProfile();
-                                                            }}
-                                                            style={{ cursor: 'pointer' }}
-                                                        />
-                                                    )}
-                                                    
-                                                    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
-                                                        <span style={{ fontSize: '11px', fontWeight: isEquipped ? 'bold' : 'normal', color: isEquipped ? '#00e676' : '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                                            {medalName}
-                                                        </span>
+                                                    {/* Medal name */}
+                                                    <div style={{ textAlign: 'center' }}>
+                                                        <div style={{ fontSize: '9px', fontWeight: isEquipped ? 'bold' : 'normal', color: isEquipped ? '#00e676' : hasMedal ? '#e2e8f0' : '#64748b', lineHeight: 1.2 }}>
+                                                            {medalName.replace('Medalla ', '')}
+                                                        </div>
                                                         {hasMedal && (
-                                                            <span style={{ fontSize: '9px', color: level === 3 ? '#ffd700' : level === 2 ? '#e0e0e0' : '#cd7f32' }}>
+                                                            <div style={{ fontSize: '8px', color: level === 3 ? '#ffd700' : level === 2 ? '#e0e0e0' : '#cd7f32', marginTop: '2px' }}>
                                                                 {levelText}
-                                                            </span>
+                                                            </div>
                                                         )}
                                                         {!hasMedal && (
-                                                            <span style={{ fontSize: '9px', color: '#666' }}>Sin obtener</span>
+                                                            <div style={{ fontSize: '8px', color: '#475569', marginTop: '2px' }}>Sin obtener</div>
                                                         )}
                                                     </div>
+
+                                                    {/* Equip checkbox */}
+                                                    {viewingProfile.isLocal && hasMedal && (
+                                                        <label style={{ display: 'flex', alignItems: 'center', gap: '3px', fontSize: '8px', color: isEquipped ? '#00e676' : '#94a3b8', cursor: 'pointer' }}>
+                                                            <input 
+                                                                type="checkbox"
+                                                                checked={isEquipped}
+                                                                onChange={(e) => {
+                                                                    let newEquipped = [...viewingProfile.equippedMedals];
+                                                                    if (e.target.checked) {
+                                                                        if (newEquipped.length >= 2) {
+                                                                            showNotification("Límite de Medallas", "Sólo puedes equipar hasta 2 medallas.");
+                                                                            return;
+                                                                        }
+                                                                        newEquipped.push(medalName);
+                                                                    } else {
+                                                                        newEquipped = newEquipped.filter(m => m !== medalName);
+                                                                    }
+                                                                    economyRef.current.equipped_medals = newEquipped;
+                                                                    saveLocalEconomy();
+                                                                    handleViewLocalProfile();
+                                                                }}
+                                                                style={{ cursor: 'pointer', accentColor: '#00e676' }}
+                                                            />
+                                                            Equipar
+                                                        </label>
+                                                    )}
 
                                                     {evolveButton}
                                                 </div>
@@ -5511,27 +5530,30 @@ export default function GameCanvas({
 
             {showDaily && (
                 <div className="modal-overlay" style={{ zIndex: 400 }}>
-                    <div className="modal-card pokemon-panel" style={{ width: '95%', maxWidth: '420px' }}>
-                        <div className="modal-header">
-                            <h3 className="modal-title">📅 Calendario de Racha</h3>
-                            <button onClick={() => setShowDaily(false)} className="modal-close-btn">&times;</button>
+                    <div style={{ background: 'linear-gradient(160deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%)', border: '2px solid rgba(255,255,255,0.12)', borderRadius: '16px', width: '95%', maxWidth: '440px', maxHeight: '88vh', overflowY: 'auto', boxShadow: '0 24px 60px rgba(0,0,0,0.7),inset 0 1px 0 rgba(255,255,255,0.1)', fontFamily: "'Segoe UI',monospace" }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px 12px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span style={{ fontSize: '18px' }}>🔥</span>
+                                <span style={{ color: '#e2e8f0', fontWeight: 'bold', fontSize: '14px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Login Streak</span>
+                            </div>
+                            <button onClick={() => setShowDaily(false)} style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: '#94a3b8', cursor: 'pointer', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', fontWeight: 'bold' }}>&times;</button>
                         </div>
-                        <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        <div style={{ padding: '16px 16px 20px', color: '#e2e8f0', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                             {/* Current Streak Header */}
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'linear-gradient(135deg, #e3f2fd, #bbdefb)', border: '2px solid #1e88e5', borderRadius: '8px', padding: '10px 14px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '10px 14px' }}>
                                 <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
-                                    <span style={{ fontSize: '9px', fontWeight: 'bold', color: '#1565c0', textTransform: 'uppercase' }}>Racha Actual</span>
-                                    <span style={{ fontSize: '18px', fontWeight: 'bold', color: '#0d47a1' }}>{economy.login_streak} Días</span>
+                                    <span style={{ fontSize: '9px', fontWeight: 'bold', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Racha Actual</span>
+                                    <span style={{ fontSize: '18px', fontWeight: 'bold', color: '#fbbf24' }}>{economy.login_streak} Días</span>
                                 </div>
                                 <span style={{ fontSize: '32px' }}>🔥</span>
                             </div>
 
-                            <p style={{ fontSize: '9px', color: '#5d4037', margin: 0, textAlign: 'left', lineHeight: '1.3' }}>
-                                Entra al juego todos los días consecutivamente para avanzar en el calendario. <strong>Si fallas un día, la racha se reiniciará al Día 1.</strong>
+                            <p style={{ fontSize: '9px', color: '#94a3b8', margin: 0, textAlign: 'left', lineHeight: '1.3' }}>
+                                Entra al juego todos los días consecutivamente para avanzar en el calendario. <strong style={{ color: '#fbbf24' }}>Si fallas un día, la racha se reiniciará al Día 1.</strong>
                             </p>
 
                             {/* 7-Day Calendar Grid */}
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', margin: '8px 0' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', margin: '4px 0' }}>
                                 {[1, 2, 3, 4, 5, 6, 7].map(day => {
                                     const isCompleted = economy.login_streak >= day;
                                     const isCurrent = economy.login_streak === day;
@@ -5553,28 +5575,28 @@ export default function GameCanvas({
                                             alignItems: 'center',
                                             justifyContent: 'space-between',
                                             padding: '6px',
-                                            borderRadius: '6px',
+                                            borderRadius: '8px',
                                             border: '2px solid',
                                             fontSize: '9px',
                                             minHeight: '60px',
-                                            background: isCompleted ? '#e8f5e9' : (isCurrent ? '#fff9c4' : '#fff'),
-                                            borderColor: isCompleted ? '#2e7d32' : (isCurrent ? '#fbc02d' : '#efebe9'),
-                                            boxShadow: isCurrent ? '0 0 6px rgba(251, 192, 45, 0.5)' : 'none',
+                                            background: isCompleted ? 'rgba(16,185,129,0.2)' : (isCurrent ? 'rgba(251,191,36,0.2)' : 'rgba(255,255,255,0.05)'),
+                                            borderColor: isCompleted ? '#34d399' : (isCurrent ? '#fbbf24' : 'rgba(255,255,255,0.1)'),
+                                            boxShadow: isCurrent ? '0 0 8px rgba(251,191,36,0.35)' : 'none',
                                             opacity: isCompleted ? 0.9 : 1
                                         }}>
-                                            <span style={{ fontWeight: 'bold', color: isCompleted ? '#2e7d32' : (isCurrent ? '#fbc02d' : '#8d6e63') }}>Día {day}</span>
+                                            <span style={{ fontWeight: 'bold', color: isCompleted ? '#34d399' : (isCurrent ? '#fbbf24' : '#64748b') }}>Día {day}</span>
                                             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
-                                                <span style={{ fontSize: '8px', color: '#666', fontWeight: 'bold' }}>{rewardText}</span>
-                                                {giftIcon && <span style={{ fontSize: '7px', background: '#ffe082', padding: '1px 3px', borderRadius: '3px', fontWeight: 'bold' }}>{giftIcon}</span>}
+                                                <span style={{ fontSize: '8px', color: '#e2e8f0', fontWeight: 'bold' }}>{rewardText}</span>
+                                                {giftIcon && <span style={{ fontSize: '7px', background: 'rgba(251,191,36,0.2)', color: '#fbbf24', padding: '1px 3px', borderRadius: '3px', fontWeight: 'bold' }}>{giftIcon}</span>}
                                             </div>
                                             <div>
                                                 {isCompleted ? (
-                                                    <span style={{ color: '#2e7d32', fontWeight: 'bold' }}>✓</span>
+                                                    <span style={{ color: '#34d399', fontWeight: 'bold' }}>✓</span>
                                                 ) : (
                                                     isCurrent ? (
-                                                        <span style={{ color: '#fbc02d', fontWeight: 'bold' }}>🔥</span>
+                                                        <span style={{ color: '#fbbf24', fontWeight: 'bold' }}>🔥</span>
                                                     ) : (
-                                                        <span style={{ color: '#bdbdbd' }}>🔒</span>
+                                                        <span style={{ color: '#64748b' }}>🔒</span>
                                                     )
                                                 )}
                                             </div>
@@ -5588,30 +5610,30 @@ export default function GameCanvas({
                                     alignItems: 'center',
                                     justifyContent: 'center',
                                     padding: '6px',
-                                    borderRadius: '6px',
-                                    border: '2px dashed #bcaaa4',
-                                    background: '#fafafa',
+                                    borderRadius: '8px',
+                                    border: '2px dashed rgba(255,255,255,0.15)',
+                                    background: 'rgba(255,255,255,0.03)',
                                     fontSize: '9px',
                                     minHeight: '60px'
                                 }}>
-                                    <span style={{ fontWeight: 'bold', color: '#8d6e63' }}>Milestones</span>
+                                    <span style={{ fontWeight: 'bold', color: '#94a3b8' }}>Milestones</span>
                                     <span style={{ fontSize: '14px', marginTop: '4px' }}>🚀</span>
                                 </div>
                             </div>
 
                             {/* Future High Rewards Row */}
-                            <div style={{ borderTop: '1px solid #efebe9', paddingTop: '10px', display: 'flex', flexDirection: 'column', gap: '6px', textAlign: 'left' }}>
-                                <span style={{ fontSize: '9px', fontWeight: 'bold', color: '#3e2723' }}>Próximas Súper Recompensas:</span>
+                            <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '10px', display: 'flex', flexDirection: 'column', gap: '6px', textAlign: 'left' }}>
+                                <span style={{ fontSize: '9px', fontWeight: 'bold', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Próximas Súper Recompensas:</span>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 8px', background: '#f5f0e1', border: '1px solid #3e2723', borderRadius: '4px', fontSize: '9px' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', fontSize: '9px', color: '#e2e8f0' }}>
                                         <span>Día 14 • Recompensa Media</span>
-                                        <span style={{ fontWeight: 'bold' }}>🪙 5,000 + 🟡 Ultra Ball x2</span>
+                                        <span style={{ fontWeight: 'bold', color: '#fbbf24' }}>🪙 5,000 + 🟡 Ultra Ball x2</span>
                                     </div>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 8px', background: '#f5f0e1', border: '1px solid #3e2723', borderRadius: '4px', fontSize: '9px' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', fontSize: '9px', color: '#e2e8f0' }}>
                                         <span>Día 21 • Recompensa Épica</span>
-                                        <span style={{ fontWeight: 'bold' }}>🪙 8,000 + 🧪 Hiperpoción x3</span>
+                                        <span style={{ fontWeight: 'bold', color: '#c084fc' }}>🪙 8,000 + 🧪 Hiperpoción x3</span>
                                     </div>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 8px', background: 'linear-gradient(135deg, #ffe082, #ffb300)', border: '1.5px solid #ff8f00', borderRadius: '4px', fontSize: '9px', fontWeight: 'bold', color: '#3e2723' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 10px', background: 'rgba(251,191,36,0.1)', border: '1.5px solid rgba(251,191,36,0.35)', borderRadius: '8px', fontSize: '9px', fontWeight: 'bold', color: '#fbbf24' }}>
                                         <span>Día 30 • ¡Recompensa Legendaria!</span>
                                         <span>🪙 15,000 + 🟣 Master Ball x1</span>
                                     </div>
@@ -5624,25 +5646,28 @@ export default function GameCanvas({
 
             {showMissions && (
                 <div className="modal-overlay">
-                    <div className="modal-card pokemon-panel">
-                        <div className="modal-header">
-                            <h3 className="modal-title">Daily Missions</h3>
-                            <button onClick={() => setShowMissions(false)} className="modal-close-btn">&times;</button>
+                    <div style={{ background: 'linear-gradient(160deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%)', border: '2px solid rgba(255,255,255,0.12)', borderRadius: '16px', width: '95%', maxWidth: '440px', maxHeight: '88vh', overflowY: 'auto', boxShadow: '0 24px 60px rgba(0,0,0,0.7),inset 0 1px 0 rgba(255,255,255,0.1)', fontFamily: "'Segoe UI',monospace" }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px 12px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span style={{ fontSize: '18px' }}>🏆</span>
+                                <span style={{ color: '#e2e8f0', fontWeight: 'bold', fontSize: '14px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Misiones Diarias</span>
+                            </div>
+                            <button onClick={() => setShowMissions(false)} style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: '#94a3b8', cursor: 'pointer', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', fontWeight: 'bold' }}>&times;</button>
                         </div>
-                        <div className="modal-body">
+                        <div style={{ padding: '16px 16px 20px', color: '#e2e8f0', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                             {dailyMissions.missions.map((m: any) => {
                                 const prog = economy.daily_missions_progress[m.id] ?? 0;
                                 const pct = Math.min(100, (prog / m.target) * 100);
                                 return (
-                                    <div key={m.id} className="mission-item-row">
-                                        <div className="mission-header">
-                                            <span>{m.description}</span>
-                                            <span className="mission-progress-lbl">{prog}/{m.target}</span>
+                                    <div key={m.id} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <span style={{ fontSize: '12px', color: '#e2e8f0', fontWeight: 'bold' }}>{m.description}</span>
+                                            <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 'bold' }}>{prog}/{m.target}</span>
                                         </div>
-                                        <div className="progress-bar-container">
-                                            <div className="progress-bar-fill" style={{ width: `${pct}%` }}></div>
+                                        <div style={{ background: 'rgba(255,255,255,0.1)', borderRadius: '4px', height: '6px', overflow: 'hidden' }}>
+                                            <div style={{ width: `${pct}%`, height: '100%', background: 'linear-gradient(90deg,#6366f1,#8b5cf6)', borderRadius: '4px', transition: 'width 0.3s ease' }}></div>
                                         </div>
-                                        <div className="mission-reward">Reward: {m.reward_coins} Coins</div>
+                                        <div style={{ fontSize: '10px', color: '#fbbf24' }}>Reward: {m.reward_coins} Coins</div>
                                     </div>
                                 );
                             })}
@@ -5748,18 +5773,21 @@ export default function GameCanvas({
 
             {showInventoryModal && (
                 <div className="modal-overlay">
-                    <div className="modal-card pokemon-panel" style={{ maxWidth: '420px', width: '90%' }}>
-                        <div className="modal-header">
-                            <h3 className="modal-title">Mochila (Items)</h3>
+                    <div style={{ background: 'linear-gradient(160deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%)', border: '2px solid rgba(255,255,255,0.12)', borderRadius: '16px', width: '95%', maxWidth: '440px', maxHeight: '88vh', overflowY: 'auto', boxShadow: '0 24px 60px rgba(0,0,0,0.7),inset 0 1px 0 rgba(255,255,255,0.1)', fontFamily: "'Segoe UI',monospace" }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px 12px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span style={{ fontSize: '18px' }}>🎒</span>
+                                <span style={{ color: '#e2e8f0', fontWeight: 'bold', fontSize: '14px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Mochila</span>
+                            </div>
                             <button onClick={() => {
                                 setShowInventoryModal(false);
                                 setUsingItem(null);
-                            }} className="modal-close-btn">&times;</button>
+                            }} style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: '#94a3b8', cursor: 'pointer', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', fontWeight: 'bold' }}>&times;</button>
                         </div>
-                        <div className="modal-body">
+                        <div style={{ padding: '16px 16px 20px', color: '#e2e8f0', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                             {usingItem ? (
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                    <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#3e2723', marginBottom: '8px', textAlign: 'center' }}>
+                                    <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#94a3b8', marginBottom: '4px', textAlign: 'center' }}>
                                         Usar {usingItem.name || usingItem.id} en:
                                     </div>
                                     {team.map((p: any, idx: number) => {
@@ -5768,22 +5796,24 @@ export default function GameCanvas({
                                             <button
                                                 key={idx}
                                                 onClick={() => handleApplyItemToPokemon(p, idx)}
-                                                className="pokemon-button"
                                                 style={{ 
                                                     display: 'flex', 
                                                     justifyContent: 'space-between', 
                                                     alignItems: 'center', 
                                                     padding: '8px 12px',
-                                                    background: '#efe5fd',
-                                                    border: '1px solid #7c4dff',
-                                                    marginBottom: '4px'
+                                                    background: 'rgba(192,132,252,0.1)',
+                                                    border: '1px solid rgba(192,132,252,0.3)',
+                                                    borderRadius: '8px',
+                                                    color: '#e2e8f0',
+                                                    cursor: 'pointer',
+                                                    margin: 0
                                                 }}
                                             >
                                                 <div style={{ textAlign: 'left' }}>
-                                                    <span style={{ textTransform: 'capitalize', fontWeight: 'bold', color: '#311b92' }}>{p.id}</span>
-                                                    <span style={{ fontSize: '10px', marginLeft: '6px', color: '#5e35b1' }}>Nvl. {p.level ?? 5}</span>
+                                                    <span style={{ textTransform: 'capitalize', fontWeight: 'bold', color: '#c084fc' }}>{p.id}</span>
+                                                    <span style={{ fontSize: '10px', marginLeft: '6px', color: '#94a3b8' }}>Nvl. {p.level ?? 5}</span>
                                                 </div>
-                                                <div style={{ fontSize: '11px', color: p.hp === 0 ? '#d32f2f' : '#2e7d32', fontWeight: 'bold' }}>
+                                                <div style={{ fontSize: '11px', color: p.hp === 0 ? '#f87171' : '#34d399', fontWeight: 'bold' }}>
                                                     HP: {p.hp}/{p.maxHp} ({pct}%)
                                                 </div>
                                             </button>
@@ -5791,28 +5821,29 @@ export default function GameCanvas({
                                     })}
                                     <button 
                                         onClick={() => setUsingItem(null)}
-                                        className="pokemon-button danger"
-                                        style={{ marginTop: '8px' }}
+                                        style={{ margin: 0, marginTop: '4px', padding: '9px 14px', fontSize: '12px', fontWeight: 'bold', width: '100%', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: '8px', color: '#f87171', cursor: 'pointer' }}
                                     >
                                         Cancelar
                                     </button>
                                 </div>
                             ) : inventory.getAllItems().length === 0 ? (
-                                <div className="inventory-empty">Tu mochila está vacía.</div>
+                                <div style={{ textAlign: 'center', padding: '20px', color: '#64748b', fontStyle: 'italic', fontSize: '12px' }}>Tu mochila está vacía.</div>
                             ) : (
                                 inventory.getAllItems().map((item: any) => {
                                     const isUsable = item.id.includes('potion') || item.id.includes('revive') || item.id.includes('stone');
                                     return (
-                                        <div key={item.id} className="shop-item-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid #efebe9' }}>
-                                            <div className="shop-item-info" style={{ flex: 1 }}>
-                                                <div className="shop-item-name" style={{ fontWeight: 'bold', fontSize: '12px' }}>{item.name || item.id} <span style={{ fontSize: '10px', color: '#757575', marginLeft: '4px' }}>x{item.quantity}</span></div>
-                                                <div className="shop-item-desc" style={{ fontSize: '10px', color: '#5d4037' }}>{item.description}</div>
+                                        <div key={item.id} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '10px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <div style={{ flex: 1 }}>
+                                                <div style={{ fontWeight: 'bold', fontSize: '12px', color: '#e2e8f0', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                    {item.name || item.id}
+                                                    <span style={{ fontSize: '10px', color: '#fbbf24', background: 'rgba(251,191,36,0.15)', border: '1px solid rgba(251,191,36,0.3)', borderRadius: '4px', padding: '1px 5px' }}>x{item.quantity}</span>
+                                                </div>
+                                                <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '2px' }}>{item.description}</div>
                                             </div>
                                             {isUsable && (
                                                 <button
                                                     onClick={() => setUsingItem(item)}
-                                                    className="pokemon-button success"
-                                                    style={{ width: 'auto', padding: '4px 10px', fontSize: '10px', marginLeft: '12px' }}
+                                                    style={{ margin: 0, marginLeft: '12px', padding: '5px 12px', fontSize: '10px', fontWeight: 'bold', background: 'rgba(16,185,129,0.2)', border: '1px solid rgba(16,185,129,0.4)', borderRadius: '8px', color: '#6ee7b7', cursor: 'pointer', whiteSpace: 'nowrap' }}
                                                 >
                                                     Usar
                                                 </button>
@@ -5829,17 +5860,21 @@ export default function GameCanvas({
 
             {showPcModal && (
                 <div className="modal-overlay">
-                    <div className="modal-card pokemon-panel">
-                        <div className="modal-header">
-                            <h3 className="modal-title">Almacenamiento PC</h3>
-                            <button onClick={() => setShowPcModal(false)} className="modal-close-btn">&times;</button>
+                    <div style={{ background: 'linear-gradient(160deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%)', border: '2px solid rgba(255,255,255,0.12)', borderRadius: '16px', width: '95%', maxWidth: '440px', maxHeight: '88vh', overflowY: 'auto', boxShadow: '0 24px 60px rgba(0,0,0,0.7),inset 0 1px 0 rgba(255,255,255,0.1)', fontFamily: "'Segoe UI',monospace" }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px 12px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span style={{ fontSize: '18px' }}>💻</span>
+                                <span style={{ color: '#e2e8f0', fontWeight: 'bold', fontSize: '14px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>PC Storage</span>
+                            </div>
+                            <button onClick={() => setShowPcModal(false)} style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: '#94a3b8', cursor: 'pointer', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', fontWeight: 'bold' }}>&times;</button>
                         </div>
-                        <div className="modal-body" style={{ maxHeight: '450px', overflowY: 'auto' }}>
-                            <div style={{ marginBottom: '16px' }}>
-                                <h4 style={{ fontWeight: 'bold', fontSize: '13px', margin: '0 0 8px 0', borderBottom: '1px solid #3e2723', paddingBottom: '4px' }}>
+                        <div style={{ padding: '16px 16px 20px', color: '#e2e8f0', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            {/* Team Section */}
+                            <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '12px' }}>
+                                <h4 style={{ fontWeight: 'bold', fontSize: '12px', margin: '0 0 10px 0', color: '#60a5fa', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '6px' }}>
                                     Tu Equipo ({team.length}/6)
                                 </h4>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '180px', overflowY: 'auto', paddingRight: '4px' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '180px', overflowY: 'auto', paddingRight: '4px' }}>
                                     {team.map((p: any, idx: number) => {
                                         const species = pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === p.id.toLowerCase());
                                         const sprite = species ? species.sprite : '';
@@ -5847,29 +5882,27 @@ export default function GameCanvas({
                                         const dailyIncome = p.is_evolved ? Math.floor(hourlyRate * 24 * 1.25) : (hourlyRate * 24);
 
                                         return (
-                                            <div key={idx} className="shop-item-row" style={{ display: 'flex', alignItems: 'center', padding: '6px 10px', gap: '8px', margin: 0 }}>
+                                            <div key={idx} style={{ display: 'flex', alignItems: 'center', padding: '6px 8px', gap: '8px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px' }}>
                                                 {sprite && <img src={sprite} alt={p.id} style={{ width: '36px', height: '36px', imageRendering: 'pixelated' }} />}
                                                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                                                    <span style={{ textTransform: 'capitalize', fontWeight: 'bold', fontSize: '12px' }}>
-                                                        {p.id} <span style={{ fontSize: '9px', color: '#7e57c2', fontWeight: 'normal' }}>(Nvl. {p.level ?? 5})</span>
+                                                    <span style={{ textTransform: 'capitalize', fontWeight: 'bold', fontSize: '12px', color: '#e2e8f0' }}>
+                                                        {p.id} <span style={{ fontSize: '9px', color: '#c084fc', fontWeight: 'normal' }}>(Nvl. {p.level ?? 5})</span>
                                                     </span>
-                                                    <span style={{ fontSize: '10px', color: '#5d4037' }}>
+                                                    <span style={{ fontSize: '10px', color: '#34d399' }}>
                                                         +{dailyIncome} Coins/Día
                                                     </span>
                                                 </div>
                                                 <div style={{ display: 'flex', gap: '4px' }}>
                                                     <button
                                                         onClick={() => setSelectedInfoPoke(p)}
-                                                        className="shop-buy-btn"
-                                                        style={{ padding: '4px 8px', fontSize: '10px', background: '#bbdefb', color: '#0d47a1', border: '1px solid #90caf9' }}
+                                                        style={{ padding: '4px 8px', fontSize: '10px', background: 'rgba(96,165,250,0.15)', border: '1px solid rgba(96,165,250,0.35)', borderRadius: '6px', color: '#60a5fa', cursor: 'pointer', margin: 0 }}
                                                     >
                                                         Info
                                                     </button>
                                                     <button
                                                         onClick={() => handleMoveToPc(idx)}
                                                         disabled={team.length <= 1}
-                                                        className="shop-buy-btn"
-                                                        style={{ padding: '4px 8px', fontSize: '10px', opacity: team.length <= 1 ? 0.5 : 1, cursor: team.length <= 1 ? 'not-allowed' : 'pointer' }}
+                                                        style={{ padding: '4px 8px', fontSize: '10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: '#94a3b8', cursor: team.length <= 1 ? 'not-allowed' : 'pointer', opacity: team.length <= 1 ? 0.5 : 1, margin: 0 }}
                                                     >
                                                         Mover a PC
                                                     </button>
@@ -5880,16 +5913,17 @@ export default function GameCanvas({
                                 </div>
                             </div>
 
-                            <div style={{ marginBottom: '16px' }}>
-                                <h4 style={{ fontWeight: 'bold', fontSize: '13px', margin: '0 0 8px 0', borderBottom: '1px solid #3e2723', paddingBottom: '4px' }}>
+                            {/* PC Section */}
+                            <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '12px' }}>
+                                <h4 style={{ fontWeight: 'bold', fontSize: '12px', margin: '0 0 10px 0', color: '#c084fc', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '6px' }}>
                                     Almacenamiento PC ({pcPokemon.length})
                                 </h4>
                                 {pcPokemon.length === 0 ? (
-                                    <div style={{ textAlign: 'center', padding: '16px', fontSize: '12px', color: '#5d4037', fontStyle: 'italic' }}>
+                                    <div style={{ textAlign: 'center', padding: '16px', fontSize: '12px', color: '#64748b', fontStyle: 'italic' }}>
                                         No tienes Pokémon en la PC.
                                     </div>
                                 ) : (
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '180px', overflowY: 'auto', paddingRight: '4px' }}>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '180px', overflowY: 'auto', paddingRight: '4px' }}>
                                         {pcPokemon.map((p: any, idx: number) => {
                                             const species = pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === p.id.toLowerCase());
                                             const sprite = species ? species.sprite : '';
@@ -5897,29 +5931,27 @@ export default function GameCanvas({
                                             const dailyIncome = p.is_evolved ? Math.floor(hourlyRate * 24 * 1.25) : (hourlyRate * 24);
 
                                             return (
-                                                <div key={idx} className="shop-item-row" style={{ display: 'flex', alignItems: 'center', padding: '6px 10px', gap: '8px', margin: 0 }}>
+                                                <div key={idx} style={{ display: 'flex', alignItems: 'center', padding: '6px 8px', gap: '8px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px' }}>
                                                     {sprite && <img src={sprite} alt={p.id} style={{ width: '36px', height: '36px', imageRendering: 'pixelated' }} />}
                                                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                                                        <span style={{ textTransform: 'capitalize', fontWeight: 'bold', fontSize: '12px' }}>
-                                                            {p.id} <span style={{ fontSize: '9px', color: '#7e57c2', fontWeight: 'normal' }}>(Nvl. {p.level ?? 5})</span>
+                                                        <span style={{ textTransform: 'capitalize', fontWeight: 'bold', fontSize: '12px', color: '#e2e8f0' }}>
+                                                            {p.id} <span style={{ fontSize: '9px', color: '#c084fc', fontWeight: 'normal' }}>(Nvl. {p.level ?? 5})</span>
                                                         </span>
-                                                        <span style={{ fontSize: '10px', color: '#5d4037' }}>
+                                                        <span style={{ fontSize: '10px', color: '#34d399' }}>
                                                             +{dailyIncome} Coins/Día
                                                         </span>
                                                     </div>
                                                     <div style={{ display: 'flex', gap: '4px' }}>
                                                         <button
                                                             onClick={() => setSelectedInfoPoke(p)}
-                                                            className="shop-buy-btn"
-                                                            style={{ padding: '4px 8px', fontSize: '10px', background: '#bbdefb', color: '#0d47a1', border: '1px solid #90caf9' }}
+                                                            style={{ padding: '4px 8px', fontSize: '10px', background: 'rgba(96,165,250,0.15)', border: '1px solid rgba(96,165,250,0.35)', borderRadius: '6px', color: '#60a5fa', cursor: 'pointer', margin: 0 }}
                                                         >
                                                             Info
                                                         </button>
                                                         <button
                                                             onClick={() => handleMoveToTeam(idx)}
                                                             disabled={team.length >= 6}
-                                                            className="shop-buy-btn"
-                                                            style={{ padding: '4px 8px', fontSize: '10px', opacity: team.length >= 6 ? 0.5 : 1, cursor: team.length >= 6 ? 'not-allowed' : 'pointer' }}
+                                                            style={{ padding: '4px 8px', fontSize: '10px', background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.35)', borderRadius: '6px', color: '#34d399', cursor: team.length >= 6 ? 'not-allowed' : 'pointer', opacity: team.length >= 6 ? 0.5 : 1, margin: 0 }}
                                                         >
                                                             Mover a Equipo
                                                         </button>
@@ -5934,8 +5966,7 @@ export default function GameCanvas({
                             <AdsterraBanner />
                             <button 
                                 onClick={() => setShowPcModal(false)}
-                                className="pokemon-button danger"
-                                style={{ width: '100%', marginTop: '8px' }}
+                                style={{ margin: 0, padding: '9px 14px', fontSize: '12px', fontWeight: 'bold', width: '100%', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: '8px', color: '#f87171', cursor: 'pointer' }}
                             >
                                 Cerrar
                             </button>
