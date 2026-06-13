@@ -273,8 +273,8 @@ export default function Home() {
             <div className="w-full h-full">
                 <GameCanvas
                     saveName={activeSave.name}
-                    playerCoordinates={activeSave.player_coordinates}
-                    initialMapPath={activeSave.map}
+                    playerCoordinates={[632, 428]}
+                    initialMapPath="/assets/maps/tutorial/main.json"
                     economyData={activeSave.economy_data}
                     inventoryData={activeSave.inventory_data}
                     teamData={activeSave.team_data}
