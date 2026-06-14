@@ -998,6 +998,8 @@ export default function GameCanvas({
     const [wildBattleLog, setWildBattleLog] = useState<string[]>([]);
     const wildBattleLogRef = useRef<HTMLDivElement | null>(null);
     const [showBallSelect, setShowBallSelect] = useState<boolean>(false);
+    const [showBagSelect, setShowBagSelect] = useState<boolean>(false);
+    const [showSwitchSelect, setShowSwitchSelect] = useState<boolean>(false);
     const [showMoveSelect, setShowMoveSelect] = useState<boolean>(false);
     const [catchBallState, setCatchBallState] = useState<'throw' | 'shake' | 'success' | 'fail' | null>(null);
     const [usingItem, setUsingItem] = useState<any | null>(null);
@@ -2642,7 +2644,9 @@ export default function GameCanvas({
                     const col = Math.floor(player.x / mapData.tileSize);
                     const row = Math.floor((player.y - 1) / mapData.tileSize);
                     const tileType = mapData.grid[row]?.[col];
-                    const isEncounterTile = (tileType === 'G2') || (currentMapPathStr.includes('cave') && tileType === 'CF');
+                    // W tile = water encounter (only in procedural lake routes)
+                    const isWaterTile = tileType === 'W';
+                    const isEncounterTile = (tileType === 'G2') || (currentMapPathStr.includes('cave') && tileType === 'CF') || isWaterTile;
 
                     if (isWildArea && isEncounterTile) {
                         const hasActivePoke = teamRef.current.some((p: any) => p.hp > 0);
@@ -2655,7 +2659,8 @@ export default function GameCanvas({
                             player.animFrame = 0;
 
                             const playerLevel = economyRef.current.level;
-                            const wild = generateWildPokemon(currentMapPathStr, playerLevel);
+                            const isWater = tileType === 'W';
+                            const wild = generateWildPokemon(currentMapPathStr, playerLevel, isWater);
 
                             // Reset battle stages and animations
                             setPlayerAtkStage(0);
@@ -2672,6 +2677,8 @@ export default function GameCanvas({
                             
                             setBattleMessage("¿Qué hará tu Pokémon?");
                             setShowBallSelect(false);
+                            setShowBagSelect(false);
+                            setShowSwitchSelect(false);
                             setActiveWildBattle({
                                 name: wild.name,
                                 level: wild.level,
@@ -2899,8 +2906,18 @@ export default function GameCanvas({
     };
 
     // Generate themed wild pokemon based on location
-    const generateWildPokemon = (mapPath: string, playerLevel: number) => {
+    const generateWildPokemon = (mapPath: string, playerLevel: number, isWater?: boolean) => {
         const path = mapPath.toLowerCase();
+        // Water Pokémon pool for lake encounters
+        if (isWater) {
+            const waterPool = ['poliwag', 'psyduck', 'slowpoke', 'magikarp', 'tentacool', 'shellder', 'horsea'];
+            const waterName = waterPool[Math.floor(Math.random() * waterPool.length)];
+            const waterSpecies = pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === waterName) || { name: waterName, hp: 30, types: ['water'] };
+            const wildLvl = Math.max(1, playerLevel * 2 + Math.floor(Math.random() * 3) - 1);
+            const wildHp = (waterSpecies.hp || 30) + wildLvl * 5;
+            const displayName = waterSpecies.name.charAt(0).toUpperCase() + waterSpecies.name.slice(1);
+            return { id: `wild_${waterSpecies.name}`, name: displayName, level: wildLvl, hp: wildHp, maxHp: wildHp, type: 'Water' };
+        }
         let pool = ['rattata', 'pidgey', 'caterpie', 'weedle', 'pikachu']; // default route1 pool
 
         if (path.includes('cave')) {
@@ -2937,6 +2954,45 @@ export default function GameCanvas({
         };
     };
 
+
+    // ═══════════════════════════════════════════════════════════════
+    // WORLD LAYOUT — 25 zonas fijas en orden
+    // Tipos: 'city' | 'route' | 'cave' | 'legendary'
+    // ═══════════════════════════════════════════════════════════════
+    const WORLD_LAYOUT: Array<{
+        type: 'city' | 'route' | 'cave' | 'legendary';
+        name: string;
+        hasGym: boolean;
+        hasLake: boolean;
+        hasTrainers: boolean;
+        caveIndex?: number;
+        legendaryPokemon?: string[];
+    }> = [
+        // Zone 1-8: Ciudades normales con rutas entre ellas
+        { type: 'city',      name: 'Ciudad Aurora',    hasGym: true,  hasLake: false, hasTrainers: false },
+        { type: 'route',     name: 'Ruta Esmeralda',   hasGym: false, hasLake: false, hasTrainers: true  },
+        { type: 'city',      name: 'Ciudad Bruma',      hasGym: true,  hasLake: false, hasTrainers: false },
+        { type: 'route',     name: 'Ruta del Lago',    hasGym: false, hasLake: true,  hasTrainers: false },
+        { type: 'city',      name: 'Ciudad Coral',     hasGym: true,  hasLake: false, hasTrainers: false },
+        { type: 'cave',      name: 'Cueva Sombría',    hasGym: false, hasLake: false, hasTrainers: false, caveIndex: 1 },
+        { type: 'city',      name: 'Ciudad Volcán',    hasGym: true,  hasLake: false, hasTrainers: false },
+        { type: 'route',     name: 'Ruta Tormenta',    hasGym: false, hasLake: false, hasTrainers: true  },
+        { type: 'city',      name: 'Ciudad Pétalo',    hasGym: true,  hasLake: false, hasTrainers: false },
+        { type: 'route',     name: 'Ruta del Mar',     hasGym: false, hasLake: true,  hasTrainers: false },
+        { type: 'city',      name: 'Ciudad Glaciar',   hasGym: true,  hasLake: false, hasTrainers: false },
+        { type: 'cave',      name: 'Cueva Cristal',    hasGym: false, hasLake: false, hasTrainers: false, caveIndex: 2 },
+        { type: 'city',      name: 'Ciudad Prisma',    hasGym: true,  hasLake: false, hasTrainers: false },
+        { type: 'route',     name: 'Ruta Celestial',   hasGym: false, hasLake: false, hasTrainers: true  },
+        { type: 'cave',      name: 'Cueva Infinita',   hasGym: false, hasLake: false, hasTrainers: false, caveIndex: 3 },
+        { type: 'city',      name: 'Ciudad Cumbre',    hasGym: true,  hasLake: false, hasTrainers: false },
+        // Zone 17-21: 5 Ciudades Legendarias
+        { type: 'legendary', name: 'Santuario Articulado', hasGym: false, hasLake: true, hasTrainers: false, legendaryPokemon: ['articuno'] },
+        { type: 'legendary', name: 'Santuario Eléctrico',  hasGym: false, hasLake: false, hasTrainers: false, legendaryPokemon: ['zapdos'] },
+        { type: 'legendary', name: 'Santuario Fuego',      hasGym: false, hasLake: false, hasTrainers: false, legendaryPokemon: ['moltres'] },
+        { type: 'legendary', name: 'Santuario Psíquico',   hasGym: false, hasLake: false, hasTrainers: false, legendaryPokemon: ['mewtwo'] },
+        { type: 'legendary', name: 'Santuario Divino',     hasGym: false, hasLake: true,  hasTrainers: false, legendaryPokemon: ['mew'] },
+    ];
+
     // Seeded Random Number Generator
     const createRandom = (seedStr: string) => {
         let h = 2166136261 >>> 0;
@@ -2952,7 +3008,9 @@ export default function GameCanvas({
         };
     };
 
-    // Seeded Procedural Map Generator (Settlements, Routes, Caves)
+    // ═══════════════════════════════════════════════════════════════
+    // PROCEDURAL MAP GENERATOR — usa WORLD_LAYOUT para zonas fijas
+    // ═══════════════════════════════════════════════════════════════
     const prepareProceduralMap = (mapId: string) => {
         if (assetCache[mapId]) return;
 
@@ -2961,27 +3019,58 @@ export default function GameCanvas({
         const index = parseInt(parts[1] || '1', 10);
         const rand = createRandom(mapId);
 
+        // Map procedural IDs to WORLD_LAYOUT
+        // route_1 → index 1 (layout[1]), route_2 → layout[3], etc.
+        // settlement_N → city zones
+        // cave_N → cave zones
+        const zoneInfo = (() => {
+            if (type === 'route') {
+                // Route indices: 1,2,3 map to layout indices 1,3,7,9,13
+                const routeLayouts = WORLD_LAYOUT.filter(z => z.type === 'route');
+                return routeLayouts[(index - 1) % routeLayouts.length] || routeLayouts[0];
+            } else if (type === 'settlement') {
+                const cityLayouts = WORLD_LAYOUT.filter(z => z.type === 'city' || z.type === 'legendary');
+                return cityLayouts[(index - 1) % cityLayouts.length] || cityLayouts[0];
+            } else if (type === 'cave') {
+                const caveLayouts = WORLD_LAYOUT.filter(z => z.type === 'cave');
+                return caveLayouts[(index - 1) % caveLayouts.length] || caveLayouts[0];
+            }
+            return WORLD_LAYOUT[0];
+        })();
+
         let mapJson: any = {};
         let gridText = "";
 
         if (type === 'route') {
-            const cols = 30;
-            const rows = 45;
+            const hasLake = zoneInfo.hasLake;
+            const hasTrainers = zoneInfo.hasTrainers;
+            const zoneName = zoneInfo.name;
+
+            // Random map size: 28-50 cols, 40-70 rows
+            const cols = 28 + Math.floor(rand() * 23); // 28 to 50
+            const rows = 40 + Math.floor(rand() * 31); // 40 to 70
             const grid: string[][] = Array.from({ length: rows }, () => Array(cols).fill('G1'));
 
-            // Generate winding path
-            let pathCenter = 14 + Math.floor(rand() * 3);
+            // ── Path generation (3 styles by seed) ──────────────────
+            const pathStyle = Math.floor(rand() * 3); // 0=sinuous, 1=zigzag, 2=straight
+            let pathCenter = Math.floor(cols / 2) + Math.floor((rand() - 0.5) * 4);
+
             for (let r = rows - 1; r >= 0; r--) {
-                if (r < rows - 1 && rand() < 0.35) {
-                    pathCenter += rand() < 0.5 ? -1 : 1;
-                    pathCenter = Math.max(5, Math.min(cols - 6, pathCenter));
+                if (pathStyle === 0) {
+                    // Sinuous: slow drift
+                    if (rand() < 0.3) pathCenter += rand() < 0.5 ? -1 : 1;
+                } else if (pathStyle === 1) {
+                    // Zigzag: sharper turns every 8 rows
+                    if (r % 8 === 0) pathCenter += rand() < 0.5 ? -3 : 3;
                 }
+                // Straight: pathCenter stays fixed
+                pathCenter = Math.max(5, Math.min(cols - 6, pathCenter));
                 grid[r][pathCenter - 1] = 'p4';
-                grid[r][pathCenter] = 'p5';
+                grid[r][pathCenter]     = 'p5';
                 grid[r][pathCenter + 1] = 'p6';
             }
 
-            // Fill borders with cliffs and trees
+            // ── Borders: cliff walls + tree rows ────────────────────
             for (let r = 0; r < rows; r++) {
                 grid[r][0] = 'CW';
                 grid[r][1] = 'T';
@@ -2991,181 +3080,301 @@ export default function GameCanvas({
                 grid[r][cols - 1] = 'CW';
             }
 
-            // Add tall grass G2 patches
-            for (let r = 5; r < rows - 5; r += 8) {
-                if (rand() < 0.7) {
-                    const grassCol = 3 + Math.floor(rand() * 4);
-                    for (let gr = r; gr < r + 4 && gr < rows; gr++) {
-                        for (let gc = grassCol; gc < grassCol + 4 && gc < cols; gc++) {
-                            if (grid[gr][gc] === 'G1') grid[gr][gc] = 'G2';
-                        }
-                    }
-                }
-                if (rand() < 0.7) {
-                    const grassCol = cols - 7 - Math.floor(rand() * 4);
-                    for (let gr = r; gr < r + 4 && gr < rows; gr++) {
-                        for (let gc = grassCol; gc < grassCol + 4 && gc < cols; gc++) {
-                            if (grid[gr][gc] === 'G1') grid[gr][gc] = 'G2';
-                        }
-                    }
-                }
-            }
-
-            gridText = grid.map(line => line.join(' ')).join('\n');
-
-            mapJson = {
-                "map": `${mapId.replace('.json', '')}.txt`,
-                "tile_size": 32,
-                "components": [
-                    { "type": "G1", "size": [32, 32], "image": "src/assets/maps/tutorial/imgs/grass1.png" },
-                    { "type": "G2", "size": [32, 32], "image": "src/assets/maps/tutorial/imgs/grass2.png" },
-                    { "type": "p4", "size": [32, 32], "image": "src/assets/maps/tutorial/imgs/path/path4.png" },
-                    { "type": "p5", "size": [32, 32], "image": "src/assets/maps/tutorial/imgs/path/path5.png" },
-                    { "type": "p6", "size": [32, 32], "image": "src/assets/maps/tutorial/imgs/path/path6.png" },
-                    { "type": "T", "size": [32, 32], "image": "src/assets/entities/structures/tree/tree.png", "isSolid": true },
-                    { "type": "CW", "size": [32, 32], "image": "src/assets/maps/tutorial/imgs/cave_wall.png", "isSolid": true }
-                ],
-                "entities": [
-                    {
-                        "location": "src/assets/entities/structures/sign/main.json",
-                        "coordinates": { "x": (pathCenter + 2) * 32, "y": 350 },
-                        "dialogs": [
-                            `Ruta de Exploración ${index}\n^ Norte: Siguiente Zona\nv Sur: Regresar`
-                        ]
-                    },
-                    {
-                        "location": "src/assets/entities/npcs/pokemons/pikachu/main.json",
-                        "coordinates": { "x": 160, "y": 500 }
-                    }
-                ]
-            };
-        } else if (type === 'settlement') {
-            const cols = 40;
-            const rows = 40;
-            const grid: string[][] = Array.from({ length: rows }, () => Array(cols).fill('G1'));
-
-            for (let r = 15; r < 25; r++) {
-                for (let c = 15; c < 25; c++) {
-                    grid[r][c] = 'p5';
-                }
-            }
-
-            for (let r = 0; r < rows; r++) {
-                for (let c = 18; c <= 21; c++) {
-                    grid[r][c] = 'p5';
-                }
-            }
-
-            for (let r = 0; r < rows; r++) {
-                for (let c = 0; c < cols; c++) {
-                    const isRoad = c >= 18 && c <= 21;
-                    const isBorder = r < 3 || r > rows - 4 || c < 3 || c > cols - 4;
-                    if (isBorder && !isRoad) {
+            // ── Scattered interior trees ─────────────────────────────
+            for (let r = 5; r < rows - 5; r++) {
+                for (let c = 3; c < cols - 3; c++) {
+                    if (grid[r][c] === 'G1' && rand() < 0.04) {
                         grid[r][c] = 'T';
                     }
                 }
             }
 
+            // ── Tall grass G2 patches ────────────────────────────────
+            const grassPatchCount = 4 + Math.floor(rand() * 5); // 4-8 patches
+            for (let p = 0; p < grassPatchCount; p++) {
+                const pRow = 5 + Math.floor(rand() * (rows - 10));
+                const pSize = 3 + Math.floor(rand() * 4); // 3-6 tiles wide/tall
+                const pSide = rand() < 0.5 ? 3 : cols - 3 - pSize; // left or right of path
+                for (let gr = pRow; gr < pRow + pSize && gr < rows - 3; gr++) {
+                    for (let gc = pSide; gc < pSide + pSize && gc < cols - 3; gc++) {
+                        if (grid[gr][gc] === 'G1') grid[gr][gc] = 'G2';
+                    }
+                }
+            }
+
+            // ── Lake zone (W tiles + bridge) ─────────────────────────
+            if (hasLake) {
+                const lakeRow = Math.floor(rows * 0.35);
+                const lakeRows = 6 + Math.floor(rand() * 4); // 6-9 rows tall
+                const lakeCols = 8 + Math.floor(rand() * 6); // 8-13 wide
+                const lakeStartCol = 3 + Math.floor(rand() * (cols - lakeCols - 6));
+
+                for (let r = lakeRow; r < lakeRow + lakeRows && r < rows - 3; r++) {
+                    for (let c = lakeStartCol; c < lakeStartCol + lakeCols && c < cols - 3; c++) {
+                        // Don't place water on path tiles
+                        if (grid[r][c] !== 'p4' && grid[r][c] !== 'p5' && grid[r][c] !== 'p6') {
+                            grid[r][c] = 'W';
+                        }
+                    }
+                }
+
+                // Bridge over lake (replace W tiles on path with bridge tiles)
+                for (let r = lakeRow; r < lakeRow + lakeRows && r < rows - 3; r++) {
+                    grid[r][pathCenter - 1] = 'BR';
+                    grid[r][pathCenter]     = 'BR';
+                    grid[r][pathCenter + 1] = 'BR';
+                }
+            }
+
             gridText = grid.map(line => line.join(' ')).join('\n');
 
+            // ── Entities: sign + optional trainer NPCs ───────────────
+            const entities: any[] = [
+                {
+                    location: "src/assets/entities/structures/sign/main.json",
+                    coordinates: { x: (pathCenter + 2) * 32, y: Math.floor(rows * 0.6) * 32 },
+                    dialogs: [
+                        `${zoneName}\n^ Explorar al Norte\nv Regresar al Sur`
+                    ]
+                }
+            ];
+
+            // Trainer NPCs (2-3 in trainer routes)
+            if (hasTrainers) {
+                const trainerSprites = [
+                    "src/assets/entities/npcs/persons/grandmarose/main.json",
+                    "src/assets/entities/npcs/persons/grandmarose/main.json"
+                ];
+                const trainerCount = 2 + Math.floor(rand() * 2); // 2-3 trainers
+                const trainerLevels = [index + 1, index + 2, index + 3];
+
+                for (let t = 0; t < trainerCount; t++) {
+                    const trainerRow = Math.floor(rows * (0.25 + t * 0.2));
+                    const trainerCol = rand() < 0.5
+                        ? pathCenter - 4 - Math.floor(rand() * 3)
+                        : pathCenter + 4 + Math.floor(rand() * 3);
+                    const safeCol = Math.max(3, Math.min(cols - 4, trainerCol));
+                    const trainerLvl = trainerLevels[t % trainerLevels.length];
+                    const trainerPoke = ['pikachu', 'rattata', 'pidgey', 'mankey', 'geodude', 'abra'][Math.floor(rand() * 6)];
+
+                    entities.push({
+                        location: trainerSprites[t % trainerSprites.length],
+                        coordinates: { x: safeCol * 32, y: trainerRow * 32 },
+                        dialogs: [
+                            `ENTRENADOR: ¡Alto! ¡Tú, Tamer!`,
+                            `¡Voy a retarte con mi ${trainerPoke.charAt(0).toUpperCase() + trainerPoke.slice(1)} de Nvl. ${trainerLvl}!`,
+                            `TRAINER_BATTLE:${trainerPoke}:${trainerLvl}`
+                        ]
+                    });
+                }
+            }
+
             mapJson = {
-                "map": `${mapId.replace('.json', '')}.txt`,
-                "tile_size": 32,
-                "components": [
-                    { "type": "G1", "size": [32, 32], "image": "src/assets/maps/tutorial/imgs/grass1.png" },
-                    { "type": "p5", "size": [32, 32], "image": "src/assets/maps/tutorial/imgs/path/path5.png" },
-                    { "type": "T", "size": [32, 32], "image": "src/assets/entities/structures/tree/tree.png", "isSolid": true }
+                map: `${mapId.replace('.json', '')}.txt`,
+                tile_size: 32,
+                components: [
+                    { type: "G1",  size: [32, 32], image: "src/assets/maps/tutorial/imgs/grass1.png" },
+                    { type: "G2",  size: [32, 32], image: "src/assets/maps/tutorial/imgs/grass2.png" },
+                    { type: "p4",  size: [32, 32], image: "src/assets/maps/tutorial/imgs/path/path4.png" },
+                    { type: "p5",  size: [32, 32], image: "src/assets/maps/tutorial/imgs/path/path5.png" },
+                    { type: "p6",  size: [32, 32], image: "src/assets/maps/tutorial/imgs/path/path6.png" },
+                    { type: "T",   size: [32, 32], image: "src/assets/entities/structures/tree/tree.png", isSolid: true },
+                    { type: "CW",  size: [32, 32], image: "src/assets/maps/tutorial/imgs/cave_wall.png", isSolid: true },
+                    { type: "W",   size: [32, 32], image: "src/assets/maps/tutorial/imgs/water.png", isSolid: true },
+                    { type: "BR",  size: [32, 32], image: "src/assets/maps/tutorial/imgs/path/path5.png" }
                 ],
-                "entities": [
-                    {
-                        "location": "src/assets/entities/structures/pokemoncenter/main.json",
-                        "coordinates": { "x": 160, "y": 160 }
-                    },
-                    {
-                        "location": "src/assets/entities/structures/pokemonmarket/main.json",
-                        "coordinates": { "x": 960, "y": 160 }
-                    },
-                    {
-                        "location": "src/assets/entities/structures/redhouse/main.json",
-                        "coordinates": { "x": 160, "y": 800 }
-                    },
-                    {
-                        "location": "src/assets/entities/structures/redhouse/main.json",
-                        "coordinates": { "x": 960, "y": 800 }
-                    },
-                    {
-                        "location": "src/assets/entities/npcs/persons/grandmarose/main.json",
-                        "coordinates": { "x": 640, "y": 640 },
-                        "dialogs": [
-                            `¡Bienvenido a Pueblo Semilla ${index}!`,
-                            "Un refugio pacífico en medio de la exploración infinita.",
-                            "Si sigues hacia el norte, encontrarás una cueva misteriosa."
-                        ]
-                    },
-                    {
-                        "location": "src/assets/entities/structures/sign/main.json",
-                        "coordinates": { "x": 544, "y": 800 },
-                        "dialogs": [
-                            `Pueblo Semilla ${index}\n^ Norte: Hacia Cueva\nv Sur: Hacia Ruta`
-                        ]
-                    }
-                ]
+                entities
             };
 
-            if (index <= 12) {
-                mapJson.entities.push({
-                    "location": "src/assets/entities/structures/gym/main.json",
-                    "coordinates": { "x": 512, "y": 480 }
+        } else if (type === 'settlement') {
+            const isLegendary = zoneInfo?.type === 'legendary';
+            const zoneName = zoneInfo?.name || `Pueblo Semilla ${index}`;
+            const hasGym = zoneInfo?.hasGym ?? (index <= 8);
+            const hasLake = zoneInfo?.hasLake ?? false;
+            const legendaryPokemon = (zoneInfo as any)?.legendaryPokemon || [];
+
+            const cols = isLegendary ? 50 : 40;
+            const rows = isLegendary ? 50 : 40;
+            const grid: string[][] = Array.from({ length: rows }, () => Array(cols).fill('G1'));
+
+            // Central plaza
+            const plazaSize = isLegendary ? 14 : 10;
+            const plazaStartR = Math.floor(rows / 2) - Math.floor(plazaSize / 2);
+            const plazaStartC = Math.floor(cols / 2) - Math.floor(plazaSize / 2);
+            for (let r = plazaStartR; r < plazaStartR + plazaSize; r++) {
+                for (let c = plazaStartC; c < plazaStartC + plazaSize; c++) {
+                    grid[r][c] = 'p5';
+                }
+            }
+
+            // Main road (vertical)
+            for (let r = 0; r < rows; r++) {
+                const roadC = Math.floor(cols / 2);
+                grid[r][roadC - 1] = 'p5';
+                grid[r][roadC]     = 'p5';
+                grid[r][roadC + 1] = 'p5';
+            }
+
+            // Tree borders
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    const isRoad = c >= Math.floor(cols / 2) - 1 && c <= Math.floor(cols / 2) + 1;
+                    const isBorder = r < 3 || r > rows - 4 || c < 3 || c > cols - 4;
+                    if (isBorder && !isRoad) grid[r][c] = 'T';
+                }
+            }
+
+            // Lake in legendary cities
+            if (hasLake) {
+                for (let r = 8; r < 18; r++) {
+                    for (let c = 5; c < 18; c++) {
+                        const isRoad = c >= Math.floor(cols / 2) - 1 && c <= Math.floor(cols / 2) + 1;
+                        if (!isRoad && grid[r][c] === 'G1') grid[r][c] = 'W';
+                    }
+                }
+            }
+
+            gridText = grid.map(line => line.join(' ')).join('\n');
+
+            const roadC = Math.floor(cols / 2);
+            const entities: any[] = [
+                {
+                    location: "src/assets/entities/structures/pokemoncenter/main.json",
+                    coordinates: { x: (roadC - 10) * 32, y: 5 * 32 }
+                },
+                {
+                    location: "src/assets/entities/structures/pokemonmarket/main.json",
+                    coordinates: { x: (roadC + 5) * 32, y: 5 * 32 }
+                },
+                {
+                    location: "src/assets/entities/npcs/persons/grandmarose/main.json",
+                    coordinates: { x: roadC * 32, y: Math.floor(rows / 2) * 32 },
+                    dialogs: isLegendary
+                        ? [
+                            `¡Bienvenido al ${zoneName}!`,
+                            "Este lugar sagrado alberga pokémon de leyenda.",
+                            "Solo los Tamers más poderosos pueden encontrarlos aquí.",
+                            ...(legendaryPokemon.length > 0
+                                ? [`Se dice que ${legendaryPokemon[0].charAt(0).toUpperCase() + legendaryPokemon[0].slice(1)} acecha por estas tierras...`]
+                                : [])
+                          ]
+                        : [
+                            `¡Bienvenido a ${zoneName}!`,
+                            "Un refugio en medio de la exploración.",
+                            "Si sigues al norte encontrarás nuevos desafíos."
+                          ]
+                },
+                {
+                    location: "src/assets/entities/structures/sign/main.json",
+                    coordinates: { x: (roadC + 2) * 32, y: (Math.floor(rows / 2) + 4) * 32 },
+                    dialogs: [
+                        `${zoneName}\n^ Norte: Próxima Zona\nv Sur: Zona Anterior`
+                    ]
+                }
+            ];
+
+            // Add gym for normal cities
+            if (hasGym) {
+                entities.push({
+                    location: "src/assets/entities/structures/gym/main.json",
+                    coordinates: { x: (roadC - 3) * 32, y: Math.floor(rows * 0.4) * 32 }
                 });
             }
+
+            // Add 2 houses
+            entities.push(
+                { location: "src/assets/entities/structures/redhouse/main.json", coordinates: { x: (roadC - 9) * 32, y: Math.floor(rows * 0.55) * 32 } },
+                { location: "src/assets/entities/structures/redhouse/main.json", coordinates: { x: (roadC + 5) * 32, y: Math.floor(rows * 0.55) * 32 } }
+            );
+
+            // Legendary grass patches around the lake (G2 = encounters)
+            if (isLegendary) {
+                for (let r = 5; r < rows - 5; r += 5) {
+                    for (let c = 5; c < cols - 5; c += 5) {
+                        const isRoad = c >= Math.floor(cols / 2) - 1 && c <= Math.floor(cols / 2) + 1;
+                        if (!isRoad && grid[r][c] === 'G1' && rand() < 0.4) {
+                            for (let dr = 0; dr < 2; dr++) for (let dc = 0; dc < 2; dc++) {
+                                if (grid[r + dr]?.[c + dc] === 'G1') grid[r + dr][c + dc] = 'G2';
+                            }
+                        }
+                    }
+                }
+                gridText = grid.map(line => line.join(' ')).join('\n');
+            }
+
+            mapJson = {
+                map: `${mapId.replace('.json', '')}.txt`,
+                tile_size: 32,
+                components: [
+                    { type: "G1", size: [32, 32], image: "src/assets/maps/tutorial/imgs/grass1.png" },
+                    { type: "G2", size: [32, 32], image: "src/assets/maps/tutorial/imgs/grass2.png" },
+                    { type: "p5", size: [32, 32], image: "src/assets/maps/tutorial/imgs/path/path5.png" },
+                    { type: "T",  size: [32, 32], image: "src/assets/entities/structures/tree/tree.png", isSolid: true },
+                    { type: "W",  size: [32, 32], image: "src/assets/maps/tutorial/imgs/water.png", isSolid: true }
+                ],
+                entities
+            };
+
         } else if (type === 'cave') {
-            const cols = 30;
-            const rows = 40;
+            const caveIdx = (zoneInfo as any)?.caveIndex ?? index;
+            const zoneName = zoneInfo?.name || `Cueva ${caveIdx}`;
+
+            const cols = 30 + Math.floor(rand() * 10); // 30-39
+            const rows = 35 + Math.floor(rand() * 15); // 35-49
             const grid: string[][] = Array.from({ length: rows }, () => Array(cols).fill('CW'));
 
             const carveCircle = (cx: number, cy: number, r: number) => {
                 for (let y = cy - r; y <= cy + r; y++) {
                     for (let x = cx - r; x <= cx + r; x++) {
                         if (x >= 2 && x < cols - 2 && y >= 2 && y < rows - 2) {
-                            const dx = x - cx;
-                            const dy = y - cy;
-                            if (dx * dx + dy * dy <= r * r) {
-                                grid[y][x] = 'CF';
-                            }
+                            const dx = x - cx; const dy = y - cy;
+                            if (dx * dx + dy * dy <= r * r) grid[y][x] = 'CF';
                         }
                     }
                 }
             };
 
-            carveCircle(15, 30, 6);
-            carveCircle(15, 10, 6);
+            // 2-4 chambers based on cave index
+            const chamberCount = 2 + (caveIdx % 3);
+            for (let ch = 0; ch < chamberCount; ch++) {
+                const cx = 5 + Math.floor(rand() * (cols - 10));
+                const cy = 5 + Math.floor(rand() * (rows - 10));
+                const radius = 4 + Math.floor(rand() * 4);
+                carveCircle(cx, cy, radius);
+            }
 
-            for (let r = 0; r < rows; r++) {
-                grid[r][14] = 'CF';
-                grid[r][15] = 'CF';
-                grid[r][16] = 'CF';
+            // Vertical corridor connecting chambers
+            const corridorC = Math.floor(cols / 2);
+            for (let r = 2; r < rows - 2; r++) {
+                grid[r][corridorC - 1] = 'CF';
+                grid[r][corridorC]     = 'CF';
+                grid[r][corridorC + 1] = 'CF';
+            }
+
+            // Rare ore patches (visual variety)
+            for (let r = 3; r < rows - 3; r++) {
+                for (let c = 3; c < cols - 3; c++) {
+                    if (grid[r][c] === 'CW' && rand() < 0.03) grid[r][c] = 'CO';
+                }
             }
 
             gridText = grid.map(line => line.join(' ')).join('\n');
 
             mapJson = {
-                "map": `${mapId.replace('.json', '')}.txt`,
-                "tile_size": 32,
-                "components": [
-                    { "type": "CF", "size": [32, 32], "image": "src/assets/maps/tutorial/imgs/cave_floor.png" },
-                    { "type": "CW", "size": [32, 32], "image": "src/assets/maps/tutorial/imgs/cave_wall.png", "isSolid": true }
+                map: `${mapId.replace('.json', '')}.txt`,
+                tile_size: 32,
+                components: [
+                    { type: "CF", size: [32, 32], image: "src/assets/maps/tutorial/imgs/cave_floor.png" },
+                    { type: "CW", size: [32, 32], image: "src/assets/maps/tutorial/imgs/cave_wall.png", isSolid: true },
+                    { type: "CO", size: [32, 32], image: "src/assets/maps/tutorial/imgs/cave_wall.png", isSolid: true }
                 ],
-                "entities": [
+                entities: [
                     {
-                        "location": "src/assets/entities/structures/sign/main.json",
-                        "coordinates": { "x": 576, "y": 640 },
-                        "dialogs": [
-                            `Cueva Oscura Procedural ${index}\n^ Norte: Siguiente Ruta\nv Sur: Regresar al Pueblo`
+                        location: "src/assets/entities/structures/sign/main.json",
+                        coordinates: { x: (corridorC + 2) * 32, y: Math.floor(rows * 0.5) * 32 },
+                        dialogs: [
+                            `${zoneName}\n^ Norte: Siguiente Zona\nv Sur: Regresar`
                         ]
-                    },
-                    {
-                        "location": "src/assets/entities/npcs/pokemons/pokeball/main.json",
-                        "coordinates": { "x": 288, "y": 320 }
                     }
                 ]
             };
@@ -3174,6 +3383,7 @@ export default function GameCanvas({
         assetCache[mapId] = mapJson;
         assetCache[`${mapId.replace('.json', '')}.txt`] = gridText;
     };
+
 
     // Check if player is standing on a door tile and automatically enter/interact
     const checkAutoDoorEntry = (x: number, y: number) => {
@@ -3832,6 +4042,8 @@ export default function GameCanvas({
                     setGymLeaderName(boss.leader);
                     setBattleMessage(`¡El Líder de Gimnasio ${boss.leader} te desafía con su equipo!`);
                     setShowBallSelect(false);
+                    setShowBagSelect(false);
+                    setShowSwitchSelect(false);
 
                     const firstPoke = leaderTeam[0] || boss;
                     setActiveWildBattle({
@@ -4634,6 +4846,8 @@ export default function GameCanvas({
         setInventory(new Inventory(inventoryRef.current.toSaveData()));
         
         setShowBallSelect(false);
+        setShowBagSelect(false);
+        setShowSwitchSelect(false);
         setIsBattleAnimating(true);
         setBattleMessage(`¡Lanzaste una ${info.name || ballId}!`);
         setCatchBallState('throw');
@@ -4743,6 +4957,111 @@ export default function GameCanvas({
                 }
             }, 2000);
         }, 800);
+    };
+
+    // ── T4: Use item (potion) during wild battle — consumes opponent's turn ──
+    const handleBattleUseItem = (itemId: string) => {
+        if (!activeWildBattle || isBattleAnimating) return;
+        const activePokeIdx = team.findIndex((p: any) => p.hp > 0);
+        if (activePokeIdx === -1) return;
+        const activePoke = team[activePokeIdx];
+        const itemInfo = inventoryRef.current.getItemInfo(itemId);
+
+        if (!inventoryRef.current.hasItem(itemId)) {
+            showNotification("Mochila", `¡No tienes ${itemInfo.name || itemId}!`);
+            return;
+        }
+
+        const healAmount: number = itemInfo.heal_amount ?? (itemId === 'super_potion' ? 50 : itemId === 'hyper_potion' ? 120 : 20);
+        const oldHp: number = activePoke.hp;
+        const newHp: number = Math.min(activePoke.maxHp || 100, oldHp + healAmount);
+
+        if (newHp === oldHp) {
+            showNotification("Mochila", `¡${activePoke.id} ya tiene la vida al máximo!`);
+            return;
+        }
+
+        // Use the item
+        inventoryRef.current.removeItem(itemId);
+        setInventory(new Inventory(inventoryRef.current.toSaveData()));
+        const updatedTeam = [...team];
+        updatedTeam[activePokeIdx] = { ...activePoke, hp: newHp };
+        setTeam(updatedTeam);
+        setShowBagSelect(false);
+
+        // Wild Pokémon counter-attacks (consuming the player's turn)
+        setIsBattleAnimating(true);
+        setBattleMessage(`¡Usaste ${itemInfo.name || itemId}! ${activePoke.id} recuperó ${newHp - oldHp} HP.`);
+
+        setTimeout(() => {
+            const opponentMoves = getPokemonMoves(activeWildBattle.name, activeWildBattle.level);
+            const wildMove = MOVES_DATABASE[opponentMoves[Math.floor(Math.random() * opponentMoves.length)]] || { name: 'Placaje', type: 'normal', power: 35 };
+            const wildSpecies = pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === activeWildBattle.name.toLowerCase());
+            const wildAtk = (wildSpecies?.attack || 50) * (1 + (activeWildBattle.level - 1) * 0.08);
+            const playerDef = (wildSpecies?.defense || 40);
+            const wildDmg = Math.max(1, Math.floor((wildAtk / playerDef) * (wildMove.power / 15) * (0.85 + Math.random() * 0.3)));
+
+            const freshActivePoke = updatedTeam[activePokeIdx];
+            const newPokeHp = Math.max(0, freshActivePoke.hp - wildDmg);
+            const afterTeam = [...updatedTeam];
+            afterTeam[activePokeIdx] = { ...freshActivePoke, hp: newPokeHp };
+            setTeam(afterTeam);
+
+            setBattleMessage(`El ${activeWildBattle.name} salvaje usó ${wildMove.name} e infligió ${wildDmg} de daño.`);
+            setIsBattleAnimating(false);
+
+            if (newPokeHp <= 0 && !afterTeam.some((p: any) => p.hp > 0)) {
+                setTimeout(() => {
+                    setActiveWildBattle(null);
+                    showNotification("Derrota", "¡Todos tus Pokémon se debilitaron! Fuiste llevado al Centro Pokémon.");
+                }, 500);
+            }
+        }, 1200);
+    };
+
+    // ── T5: Switch active Pokémon during wild battle — consumes opponent's turn ──
+    const handleBattleSwitchPokemon = (newIdx: number) => {
+        if (!activeWildBattle || isBattleAnimating) return;
+        const switchTarget = team[newIdx];
+        if (!switchTarget || switchTarget.hp <= 0) return;
+
+        setShowSwitchSelect(false);
+        setIsBattleAnimating(true);
+        setBattleMessage(`¡Cambiaste a ${switchTarget.id}! El ${activeWildBattle.name} aprovechó para atacar.`);
+
+        // Reorder team so the new Pokémon is first (active)
+        const newTeam = [...team];
+        const [removed] = newTeam.splice(newIdx, 1);
+        // Find current active index and put switch target before it
+        const currentActiveIdx = newTeam.findIndex((p: any) => p.hp > 0);
+        newTeam.splice(currentActiveIdx >= 0 ? currentActiveIdx : 0, 0, removed);
+        setTeam(newTeam);
+
+        // Wild Pokémon attacks the new lead
+        setTimeout(() => {
+            const opponentMoves = getPokemonMoves(activeWildBattle.name, activeWildBattle.level);
+            const wildMove = MOVES_DATABASE[opponentMoves[Math.floor(Math.random() * opponentMoves.length)]] || { name: 'Placaje', type: 'normal', power: 35 };
+            const wildSpecies = pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === activeWildBattle.name.toLowerCase());
+            const wildAtk = (wildSpecies?.attack || 50) * (1 + (activeWildBattle.level - 1) * 0.08);
+            const newActivePoke = newTeam[newTeam.findIndex((p: any) => p.hp > 0)];
+            const playerDef = (wildSpecies?.defense || 40);
+            const wildDmg = Math.max(1, Math.floor((wildAtk / playerDef) * (wildMove.power / 15) * (0.85 + Math.random() * 0.3)));
+            const newPokeHp = Math.max(0, newActivePoke.hp - wildDmg);
+
+            const afterTeam = newTeam.map((p: any) =>
+                p === newActivePoke ? { ...p, hp: newPokeHp } : p
+            );
+            setTeam(afterTeam);
+            setBattleMessage(`El ${activeWildBattle.name} salvaje usó ${wildMove.name} sobre ${switchTarget.id} e infligió ${wildDmg} de daño.`);
+            setIsBattleAnimating(false);
+
+            if (newPokeHp <= 0 && !afterTeam.some((p: any) => p.hp > 0)) {
+                setTimeout(() => {
+                    setActiveWildBattle(null);
+                    showNotification("Derrota", "¡Todos tus Pokémon se debilitaron! Fuiste llevado al Centro Pokémon.");
+                }, 500);
+            }
+        }, 1200);
     };
 
     const handleBattleRun = () => {
@@ -7392,31 +7711,134 @@ export default function GameCanvas({
                                 Atrás
                             </button>
                         </div>
+                    ) : showBagSelect ? (
+                        /* ── Bag / Potion selection ── */
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <div style={{ fontSize: '10px', color: '#ffe082', fontWeight: 'bold', marginBottom: '2px', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                                💊 Usar Objeto
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px' }}>
+                                {['potion', 'super_potion', 'hyper_potion', 'max_potion'].map((itemId) => {
+                                    const qty = inventory.getQuantity(itemId);
+                                    const info = inventory.getItemInfo(itemId);
+                                    const label = info.name || itemId;
+                                    if (qty <= 0) return null;
+                                    return (
+                                        <button
+                                            key={itemId}
+                                            onClick={() => handleBattleUseItem(itemId)}
+                                            className="pokemon-button"
+                                            style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 8px', margin: 0, fontSize: '10px', alignItems: 'center', background: '#388e3c', color: '#fff' }}
+                                        >
+                                            <span>💊 {label}</span>
+                                            <span style={{ fontWeight: 'bold' }}>x{qty}</span>
+                                        </button>
+                                    );
+                                })}
+                                {['potion', 'super_potion', 'hyper_potion', 'max_potion'].every(id => inventory.getQuantity(id) <= 0) && (
+                                    <div style={{ gridColumn: 'span 2', color: '#ffcdd2', fontSize: '10px', textAlign: 'center', padding: '8px' }}>
+                                        No tienes pociones disponibles
+                                    </div>
+                                )}
+                            </div>
+                            <button
+                                onClick={() => setShowBagSelect(false)}
+                                className="pokemon-button danger"
+                                style={{ margin: 0, padding: '6px' }}
+                            >
+                                Atrás
+                            </button>
+                        </div>
+                    ) : showSwitchSelect ? (
+                        /* ── Pokémon switch selection ── */
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <div style={{ fontSize: '10px', color: '#80deea', fontWeight: 'bold', marginBottom: '2px', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                                🔄 Cambiar Pokémon
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                {team.map((poke: any, idx: number) => {
+                                    const isActive = idx === team.findIndex((p: any) => p.hp > 0);
+                                    const isDown = poke.hp <= 0;
+                                    if (isActive || isDown) return null;
+                                    const hpPct = Math.round((poke.hp / (poke.maxHp || 100)) * 100);
+                                    return (
+                                        <button
+                                            key={idx}
+                                            onClick={() => handleBattleSwitchPokemon(idx)}
+                                            className="pokemon-button"
+                                            style={{
+                                                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                                                padding: '6px 10px', margin: 0, fontSize: '10px',
+                                                background: '#1565c0', color: '#fff'
+                                            }}
+                                        >
+                                            <span style={{ textTransform: 'capitalize' }}>⬡ {poke.id} Nvl.{poke.level ?? 1}</span>
+                                            <span style={{ color: hpPct > 50 ? '#a5d6a7' : hpPct > 20 ? '#ffe082' : '#ef9a9a' }}>
+                                                HP {hpPct}%
+                                            </span>
+                                        </button>
+                                    );
+                                })}
+                                {team.filter((_: any, idx: number) => {
+                                    const isActive = idx === team.findIndex((p: any) => p.hp > 0);
+                                    const isDown = team[idx].hp <= 0;
+                                    return !isActive && !isDown;
+                                }).length === 0 && (
+                                    <div style={{ color: '#ffcdd2', fontSize: '10px', textAlign: 'center', padding: '8px' }}>
+                                        No hay más Pokémon disponibles
+                                    </div>
+                                )}
+                            </div>
+                            <button
+                                onClick={() => setShowSwitchSelect(false)}
+                                className="pokemon-button danger"
+                                style={{ margin: 0, padding: '6px' }}
+                            >
+                                Atrás
+                            </button>
+                        </div>
                     ) : !showBallSelect ? (
+                        /* ── Main 4-button action grid ── */
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px' }}>
-                            <button 
+                            <button
                                 onClick={handleBattleAttack}
                                 className="pokemon-button success"
-                                style={{ background: '#d32f2f', color: '#fff', gridColumn: 'span 2', margin: 0, padding: '10px' }}
+                                style={{ background: '#d32f2f', color: '#fff', margin: 0, padding: '10px', fontSize: '10px' }}
                                 disabled={!team.some((p: any) => p.hp > 0)}
                             >
-                                ⚔️ Luchar (Atacar)
+                                ⚔️ Luchar
                             </button>
-                            <button 
-                                onClick={() => setShowBallSelect(true)}
+                            <button
+                                onClick={() => { setShowSwitchSelect(true); setShowBallSelect(false); setShowBagSelect(false); }}
                                 className="pokemon-button"
-                                style={{ background: '#ffe082', margin: 0, padding: '8px', fontSize: '10px' }}
+                                style={{ background: '#1565c0', color: '#fff', margin: 0, padding: '10px', fontSize: '10px' }}
+                                disabled={team.filter((p: any, i: number) => p.hp > 0 && i !== team.findIndex((x: any) => x.hp > 0)).length === 0}
                             >
-                                🎒 Capturar
+                                🔄 Cambiar
                             </button>
-                            <button 
+                            <button
+                                onClick={() => { setShowBallSelect(true); setShowSwitchSelect(false); setShowBagSelect(false); }}
+                                className="pokemon-button"
+                                style={{ background: '#e65100', color: '#fff', margin: 0, padding: '10px', fontSize: '10px' }}
+                            >
+                                🎯 Capturar
+                            </button>
+                            <button
+                                onClick={() => { setShowBagSelect(true); setShowSwitchSelect(false); setShowBallSelect(false); }}
+                                className="pokemon-button"
+                                style={{ background: '#388e3c', color: '#fff', margin: 0, padding: '10px', fontSize: '10px' }}
+                            >
+                                💊 Mochila
+                            </button>
+                            <button
                                 onClick={handleBattleRun}
                                 className="pokemon-button danger"
-                                style={{ margin: 0, padding: '8px', fontSize: '10px' }}
+                                style={{ margin: 0, padding: '8px', fontSize: '10px', gridColumn: 'span 2' }}
                             >
                                 🏃 Huir
                             </button>
                         </div>
+
                     ) : (
                         /* Ball Selection */
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
