@@ -4343,6 +4343,10 @@ export default function GameCanvas({
                         
                         setBattleMessage(`¡Derrotaste al ${activeWildBattle.name.toUpperCase()} del Líder! Saca a su siguiente Pokémon: ${nextPoke.name.toUpperCase()} (Nvl. ${nextPoke.level}).`);
                         
+                        // Reset opponent stages (buffs/debuffs) when they switch to a new Pokemon
+                        setOpponentAtkStage(0);
+                        setOpponentDefStage(0);
+
                         setActiveWildBattle({
                             name: nextPoke.name,
                             level: nextPoke.level,
@@ -4683,6 +4687,8 @@ export default function GameCanvas({
                         setBattleMessage(
                             `¡Tu ${activePoke.id} se debilitó! ¡Adelante, ${updatedTeam[nextActiveIdx].id}!`
                         );
+                        setPlayerAtkStage(0);
+                        setPlayerDefStage(0);
                         await delay(2000);
                     }
                 }
@@ -5075,6 +5081,8 @@ export default function GameCanvas({
                                 setIsTrainerBattle(false);
                             } else {
                                 setBattleMessage(`El ${activeWildBattle.name} salvaje escapó y contraatacó con ${wildDmg} de daño, debilitando a tu ${activePoke.id}.`);
+                                setPlayerAtkStage(0);
+                                setPlayerDefStage(0);
                             }
                         } else {
                             setBattleMessage(`El ${activeWildBattle.name} salvaje se escapó y te atacó. ¡Infligió ${wildDmg} de daño!`);
@@ -5172,6 +5180,10 @@ export default function GameCanvas({
         setShowSwitchSelect(false);
         setIsBattleAnimating(true);
         setBattleMessage(`¡Cambiaste a ${switchTarget.id}! El ${activeWildBattle.name} aprovechó para atacar.`);
+
+        // Reset player's stat stages (buffs/debuffs) upon switching
+        setPlayerAtkStage(0);
+        setPlayerDefStage(0);
 
         // Reorder team so the new Pokémon is first (active)
         const newTeam = [...team];
@@ -5286,6 +5298,8 @@ export default function GameCanvas({
                     setBattleMessage(
                         `¡No pudiste escapar! El ${activeWildBattle.name} salvaje te atacó e infligió ${wildDmg} de daño, debilitando a tu ${activePoke.id}. ¡Adelante, ${updatedTeam[nextActiveIdx].id}!`
                     );
+                    setPlayerAtkStage(0);
+                    setPlayerDefStage(0);
                 }
             } else {
                 setBattleMessage(
@@ -7696,6 +7710,46 @@ export default function GameCanvas({
                             );
                         })()}
 
+                        {/* Battle Dialog Log (Historial de Batalla) */}
+                        <div 
+                            ref={wildBattleLogRef}
+                            style={{
+                                background: '#f5f0e1',
+                                border: '2px solid #3e2723',
+                                borderRadius: '4px',
+                                padding: '6px 10px',
+                                minHeight: '72px',
+                                maxHeight: '72px',
+                                fontSize: '9px',
+                                color: '#3e2723',
+                                fontWeight: 'bold',
+                                boxSizing: 'border-box',
+                                overflowY: 'auto',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '2px',
+                                textAlign: 'left',
+                                boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.1)',
+                                margin: '4px 8px'
+                            }}
+                        >
+                            {wildBattleLog.slice(-5).map((log, idx) => (
+                                <div key={idx} style={{ 
+                                    lineHeight: '1.2', 
+                                    borderBottom: idx < wildBattleLog.slice(-5).length - 1 ? '1px dashed rgba(62, 39, 35, 0.15)' : 'none',
+                                    paddingBottom: '2px',
+                                    paddingTop: '2px'
+                                }}>
+                                    {log}
+                                </div>
+                            ))}
+                            {wildBattleLog.length === 0 && (
+                                <div style={{ color: '#8d6e63', fontStyle: 'italic', textAlign: 'center', marginTop: '10px' }}>
+                                    Esperando acciones de combate...
+                                </div>
+                            )}
+                        </div>
+
                         {/* 2. Player Row */}
                         {(() => {
                             const activePoke = team.find((p: any) => p.hp > 0);
@@ -7781,46 +7835,6 @@ export default function GameCanvas({
                                 </div>
                             );
                         })()}
-                    </div>
-
-                    {/* Battle Dialog Log (Historial de Batalla) */}
-                    <div 
-                        ref={wildBattleLogRef}
-                        style={{
-                            background: '#f5f0e1',
-                            border: '2px solid #3e2723',
-                            borderRadius: '4px',
-                            padding: '6px 10px',
-                            minHeight: '72px',
-                            maxHeight: '72px',
-                            fontSize: '9px',
-                            color: '#3e2723',
-                            fontWeight: 'bold',
-                            boxSizing: 'border-box',
-                            overflowY: 'auto',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            gap: '2px',
-                            textAlign: 'left',
-                            boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.1)',
-                            marginBottom: '4px'
-                        }}
-                    >
-                        {wildBattleLog.slice(-5).map((log, idx) => (
-                            <div key={idx} style={{ 
-                                lineHeight: '1.2', 
-                                borderBottom: idx < wildBattleLog.slice(-5).length - 1 ? '1px dashed rgba(62, 39, 35, 0.15)' : 'none',
-                                paddingBottom: '2px',
-                                paddingTop: '2px'
-                            }}>
-                                {log}
-                            </div>
-                        ))}
-                        {wildBattleLog.length === 0 && (
-                            <div style={{ color: '#8d6e63', fontStyle: 'italic', textAlign: 'center', marginTop: '10px' }}>
-                                Esperando acciones de combate...
-                            </div>
-                        )}
                     </div>
 
                     {/* Options Panel */}
