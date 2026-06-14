@@ -257,9 +257,9 @@ const isTmCompatible = (pokemonId: string, tmId: string): boolean => {
 
 const TAMERBALLS_SHOP = [
     { id: 'pokeball', name: 'Tamer Ball', desc: 'Esfera básica de captura (30% éxito)', coins: 300, icon: '🔴' },
-    { id: 'superball', name: 'Super Ball', desc: 'Mayor ratio de captura (50% éxito)', coins: 500, icon: '🔵' },
-    { id: 'ultraball', name: 'Ultra Ball', desc: 'Ratio de captura muy alto (70% éxito)', pusdt: 1.00, icon: '🟡' },
-    { id: 'masterball', name: 'Master Ball', desc: 'Captura garantizada (100% éxito)', pusdt: 3.00, icon: '🟣' }
+    { id: 'great_ball', name: 'Super Ball', desc: 'Mayor ratio de captura (50% éxito)', coins: 500, icon: '🔵' },
+    { id: 'ultra_ball', name: 'Ultra Ball', desc: 'Ratio de captura muy alto (75% éxito)', pusdt: 1.00, icon: '🟡' },
+    { id: 'master_ball', name: 'Master Ball', desc: 'Captura garantizada (100% éxito)', pusdt: 3.00, icon: '🟣' }
 ];
 
 const ITEMS_SHOP = [
@@ -1938,7 +1938,8 @@ export default function GameCanvas({
                         type: comp.type,
                         size: comp.size,
                         image: cleanPath,
-                        imgElement: img
+                        imgElement: img,
+                        isSolid: comp.isSolid ?? false
                     };
                 });
 
@@ -5639,15 +5640,15 @@ export default function GameCanvas({
                                             let rarityClass = 'rarity-common';
                                             let badgeClass = 'common';
                                             let badgeText = 'Común';
-                                            if (item.id === 'superball') {
+                                            if (item.id === 'great_ball') {
                                                 rarityClass = 'rarity-uncommon';
                                                 badgeClass = 'uncommon';
                                                 badgeText = 'Inusual';
-                                            } else if (item.id === 'ultraball') {
+                                            } else if (item.id === 'ultra_ball') {
                                                 rarityClass = 'rarity-rare';
                                                 badgeClass = 'rare';
                                                 badgeText = 'Rara';
-                                            } else if (item.id === 'masterball') {
+                                            } else if (item.id === 'master_ball') {
                                                 rarityClass = 'rarity-legendary';
                                                 badgeClass = 'legendary';
                                                 badgeText = 'Leyenda';
@@ -6058,21 +6059,26 @@ export default function GameCanvas({
 
             {viewingProfile && (
                 <div className="modal-overlay" style={{ zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <div className="modal-card pokemon-panel" style={{ width: '90%', maxWidth: '650px', background: 'linear-gradient(135deg, #120c1f 0%, #1a103c 100%)', color: '#fff', border: '2px solid #6200ea', boxShadow: '0 0 20px rgba(98, 0, 234, 0.4)', borderRadius: '12px', padding: '20px', position: 'relative', overflowY: 'auto', maxHeight: '90%', textAlign: 'left' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '10px', marginBottom: '15px' }}>
-                            <h3 style={{ margin: 0, fontSize: '18px', color: '#b388ff', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                🏆 {viewingProfile.isLocal ? "Mi Perfil de Entrenador" : `Perfil: ${viewingProfile.name}`}
-                            </h3>
+                    <div style={{ background: 'linear-gradient(160deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%)', border: '2px solid rgba(255,255,255,0.12)', borderRadius: '16px', width: '95%', maxWidth: '650px', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 24px 60px rgba(0,0,0,0.7),inset 0 1px 0 rgba(255,255,255,0.1)', fontFamily: "'Segoe UI',monospace", color: '#fff', position: 'relative' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px 12px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span style={{ fontSize: '20px' }}>🏆</span>
+                                <span style={{ color: '#e2e8f0', fontWeight: 'bold', fontSize: '14px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                                    {viewingProfile.isLocal ? 'Mi Perfil de Entrenador' : `Perfil: ${viewingProfile.name}`}
+                                </span>
+                            </div>
                             <button 
                                 onClick={() => setViewingProfile(null)} 
-                                style={{ background: 'transparent', border: 'none', color: '#b388ff', fontSize: '24px', cursor: 'pointer', lineHeight: 1 }}
+                                style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: '#94a3b8', cursor: 'pointer', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', fontWeight: 'bold' }}
                             >
                                 &times;
                             </button>
                         </div>
 
+                        <div style={{ padding: '16px 20px 20px' }}>
                         {/* Layout Grid */}
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr', gap: '20px' }}>
+
                             
                             {/* Left Column: Stats & Team */}
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
@@ -6354,7 +6360,8 @@ export default function GameCanvas({
                                 })()}
                             </div>
 
-                        </div>
+                        </div>{/* end layout grid */}
+                        </div>{/* end padding wrapper */}
                     </div>
                 </div>
             )}
@@ -6371,102 +6378,66 @@ export default function GameCanvas({
                         </div>
                         <div style={{ padding: '16px 16px 20px', color: '#e2e8f0', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                             {/* Current Streak Header */}
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '10px 14px' }}>
-                                <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
-                                    <span style={{ fontSize: '9px', fontWeight: 'bold', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Racha Actual</span>
-                                    <span style={{ fontSize: '18px', fontWeight: 'bold', color: '#fbbf24' }}>{economy.login_streak} Días</span>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'linear-gradient(135deg, rgba(251,191,36,0.15) 0%, rgba(245,158,11,0.08) 100%)', border: '1px solid rgba(251,191,36,0.3)', borderRadius: '12px', padding: '12px 16px', boxShadow: '0 0 20px rgba(251,191,36,0.1)' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left', gap: '2px' }}>
+                                    <span style={{ fontSize: '9px', fontWeight: 'bold', color: '#fbbf24', textTransform: 'uppercase', letterSpacing: '0.08em' }}>🔥 Racha Actual</span>
+                                    <span style={{ fontSize: '22px', fontWeight: 'bold', color: '#fff' }}>{economy.login_streak} {economy.login_streak === 1 ? 'Día' : 'Días'}</span>
+                                    <span style={{ fontSize: '9px', color: '#94a3b8' }}>Recompensa del día: <strong style={{ color: '#fbbf24' }}>🪙 {20 + (economy.login_streak - 1) * 10} Coins</strong></span>
                                 </div>
-                                <span style={{ fontSize: '32px' }}>🔥</span>
+                                <div style={{ textAlign: 'center' }}>
+                                    <div style={{ fontSize: '36px', lineHeight: 1 }}>🔥</div>
+                                    <div style={{ fontSize: '9px', color: '#94a3b8', marginTop: '4px' }}>¡Sigue así!</div>
+                                </div>
                             </div>
 
-                            <p style={{ fontSize: '9px', color: '#94a3b8', margin: 0, textAlign: 'left', lineHeight: '1.3' }}>
-                                Entra al juego todos los días consecutivamente para avanzar en el calendario. <strong style={{ color: '#fbbf24' }}>Si fallas un día, la racha se reiniciará al Día 1.</strong>
+                            <p style={{ fontSize: '9px', color: '#94a3b8', margin: 0, textAlign: 'left', lineHeight: '1.4', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '8px', padding: '8px 10px' }}>
+                                💡 Las recompensas escalan <strong style={{ color: '#fb923c' }}>+10 Coins por día consecutivo</strong>. Empiezas con 🪙20 el Día 1 y ganas más cada día. <strong style={{ color: '#f87171' }}>Si fallas un día, la racha vuelve a 0.</strong>
                             </p>
 
-                            {/* 7-Day Calendar Grid */}
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', margin: '4px 0' }}>
-                                {[1, 2, 3, 4, 5, 6, 7].map(day => {
-                                    const isCompleted = economy.login_streak >= day;
-                                    const isCurrent = economy.login_streak === day;
-                                    
-                                    // Rewards preview for the 7 days
-                                    let rewardText = "🪙100";
-                                    let giftIcon = "";
-                                    if (day === 2) rewardText = "🪙200";
-                                    else if (day === 3) rewardText = "🪙500";
-                                    else if (day === 4) rewardText = "🪙500";
-                                    else if (day === 5) { rewardText = "🪙1K"; giftIcon = "🧪x2"; }
-                                    else if (day === 6) rewardText = "🪙1K";
-                                    else if (day === 7) { rewardText = "🪙2K"; giftIcon = "🔵x3"; }
+                            {/* 7-Day Dynamic Calendar */}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                <span style={{ fontSize: '9px', fontWeight: 'bold', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Próximos 7 días:</span>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
+                                    {[0, 1, 2, 3, 4, 5, 6].map(offset => {
+                                        const day = economy.login_streak + offset;
+                                        const reward = 20 + (day - 1) * 10;
+                                        const isPast = offset < 0;
+                                        const isCurrent = offset === 0;
+                                        const isFuture = offset > 0;
 
-                                    return (
-                                        <div key={day} style={{
-                                            display: 'flex',
-                                            flexDirection: 'column',
-                                            alignItems: 'center',
-                                            justifyContent: 'space-between',
-                                            padding: '6px',
-                                            borderRadius: '8px',
-                                            border: '2px solid',
-                                            fontSize: '9px',
-                                            minHeight: '60px',
-                                            background: isCompleted ? 'rgba(16,185,129,0.2)' : (isCurrent ? 'rgba(251,191,36,0.2)' : 'rgba(255,255,255,0.05)'),
-                                            borderColor: isCompleted ? '#34d399' : (isCurrent ? '#fbbf24' : 'rgba(255,255,255,0.1)'),
-                                            boxShadow: isCurrent ? '0 0 8px rgba(251,191,36,0.35)' : 'none',
-                                            opacity: isCompleted ? 0.9 : 1
-                                        }}>
-                                            <span style={{ fontWeight: 'bold', color: isCompleted ? '#34d399' : (isCurrent ? '#fbbf24' : '#64748b') }}>Día {day}</span>
-                                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
-                                                <span style={{ fontSize: '8px', color: '#e2e8f0', fontWeight: 'bold' }}>{rewardText}</span>
-                                                {giftIcon && <span style={{ fontSize: '7px', background: 'rgba(251,191,36,0.2)', color: '#fbbf24', padding: '1px 3px', borderRadius: '3px', fontWeight: 'bold' }}>{giftIcon}</span>}
-                                            </div>
-                                            <div>
-                                                {isCompleted ? (
-                                                    <span style={{ color: '#34d399', fontWeight: 'bold' }}>✓</span>
-                                                ) : (
-                                                    isCurrent ? (
-                                                        <span style={{ color: '#fbbf24', fontWeight: 'bold' }}>🔥</span>
+                                        return (
+                                            <div key={offset} style={{
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                alignItems: 'center',
+                                                justifyContent: 'space-between',
+                                                padding: '7px 4px',
+                                                borderRadius: '8px',
+                                                border: '2px solid',
+                                                fontSize: '8px',
+                                                minHeight: '62px',
+                                                background: isCurrent ? 'linear-gradient(135deg,rgba(251,191,36,0.25) 0%,rgba(245,158,11,0.1) 100%)' : (isPast ? 'rgba(16,185,129,0.15)' : 'rgba(255,255,255,0.04)'),
+                                                borderColor: isCurrent ? '#fbbf24' : (isPast ? '#34d399' : 'rgba(255,255,255,0.1)'),
+                                                boxShadow: isCurrent ? '0 0 12px rgba(251,191,36,0.4)' : 'none',
+                                            }}>
+                                                <span style={{ fontWeight: 'bold', fontSize: '7px', color: isCurrent ? '#fbbf24' : (isPast ? '#34d399' : '#64748b') }}>Día {day}</span>
+                                                <span style={{ fontSize: '10px', fontWeight: 'bold', color: isCurrent ? '#fff' : (isFuture ? '#94a3b8' : '#34d399') }}>🪙{reward}</span>
+                                                <div>
+                                                    {isPast ? (
+                                                        <span style={{ color: '#34d399', fontSize: '10px' }}>✓</span>
+                                                    ) : isCurrent ? (
+                                                        <span style={{ color: '#fbbf24', fontSize: '10px' }}>🔥</span>
                                                     ) : (
-                                                        <span style={{ color: '#64748b' }}>🔒</span>
-                                                    )
-                                                )}
+                                                        <span style={{ color: '#475569', fontSize: '10px' }}>🔒</span>
+                                                    )}
+                                                </div>
                                             </div>
-                                        </div>
-                                    );
-                                })}
-                                {/* Place 8th cell as a next milestones indicator card */}
-                                <div style={{
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    padding: '6px',
-                                    borderRadius: '8px',
-                                    border: '2px dashed rgba(255,255,255,0.15)',
-                                    background: 'rgba(255,255,255,0.03)',
-                                    fontSize: '9px',
-                                    minHeight: '60px'
-                                }}>
-                                    <span style={{ fontWeight: 'bold', color: '#94a3b8' }}>Milestones</span>
-                                    <span style={{ fontSize: '14px', marginTop: '4px' }}>🚀</span>
-                                </div>
-                            </div>
-
-                            {/* Future High Rewards Row */}
-                            <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '10px', display: 'flex', flexDirection: 'column', gap: '6px', textAlign: 'left' }}>
-                                <span style={{ fontSize: '9px', fontWeight: 'bold', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Próximas Súper Recompensas:</span>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', fontSize: '9px', color: '#e2e8f0' }}>
-                                        <span>Día 14 • Recompensa Media</span>
-                                        <span style={{ fontWeight: 'bold', color: '#fbbf24' }}>🪙 5,000 + 🟡 Ultra Ball x2</span>
-                                    </div>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', fontSize: '9px', color: '#e2e8f0' }}>
-                                        <span>Día 21 • Recompensa Épica</span>
-                                        <span style={{ fontWeight: 'bold', color: '#c084fc' }}>🪙 8,000 + 🧪 Hiperpoción x3</span>
-                                    </div>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 10px', background: 'rgba(251,191,36,0.1)', border: '1.5px solid rgba(251,191,36,0.35)', borderRadius: '8px', fontSize: '9px', fontWeight: 'bold', color: '#fbbf24' }}>
-                                        <span>Día 30 • ¡Recompensa Legendaria!</span>
-                                        <span>🪙 15,000 + 🟣 Master Ball x1</span>
+                                        );
+                                    })}
+                                    {/* Infinity card */}
+                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '7px 4px', borderRadius: '8px', border: '2px dashed rgba(148,163,184,0.25)', background: 'rgba(255,255,255,0.02)', fontSize: '8px', minHeight: '62px', gap: '3px' }}>
+                                        <span style={{ fontSize: '14px' }}>∞</span>
+                                        <span style={{ color: '#64748b', textAlign: 'center', lineHeight: '1.2' }}>Sin<br/>límite</span>
                                     </div>
                                 </div>
                             </div>
@@ -6945,85 +6916,95 @@ export default function GameCanvas({
                 );
             })()}
 
+
             {/* --- Passive Generation Detailed Modal --- */}
             {showPassiveModal && (
                 <div className="modal-overlay">
-                    <div className="modal-card pokemon-panel">
-                        <div className="modal-header">
-                            <h3 className="modal-title">Generación Pasiva</h3>
-                            <button onClick={() => setShowPassiveModal(false)} className="modal-close-btn">&times;</button>
+                    <div style={{ background: 'linear-gradient(160deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%)', border: '2px solid rgba(255,255,255,0.12)', borderRadius: '16px', width: '95%', maxWidth: '440px', maxHeight: '88vh', overflowY: 'auto', boxShadow: '0 24px 60px rgba(0,0,0,0.7),inset 0 1px 0 rgba(255,255,255,0.1)', fontFamily: "'Segoe UI',monospace" }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px 12px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span style={{ fontSize: '20px' }}>💰</span>
+                                <div>
+                                    <div style={{ color: '#e2e8f0', fontWeight: 'bold', fontSize: '14px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Generación Pasiva</div>
+                                    <div style={{ color: '#64748b', fontSize: '9px' }}>Coins automáticos cada 24 horas</div>
+                                </div>
+                            </div>
+                            <button onClick={() => setShowPassiveModal(false)} style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: '#94a3b8', cursor: 'pointer', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', fontWeight: 'bold' }}>&times;</button>
                         </div>
-                        <div className="modal-body">
-                            <p style={{ fontWeight: 'bold', fontSize: '13px', marginBottom: '12px' }}>
-                                Tus Pokémon generan monedas pasivas automáticamente cada 24 horas:
+                        <div style={{ padding: '16px 16px 20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                            <p style={{ fontSize: '10px', color: '#94a3b8', margin: 0, lineHeight: 1.5, background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: '8px', padding: '8px 10px' }}>
+                                🌟 Tus Pokémon generan Coins pasivos automáticamente cada 24 horas. Los Pokémon evolucionados generan <strong style={{ color: '#34d399' }}>+25% extra</strong>.
                             </p>
-                            
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                 {team.slice(0, 6).map((p: any, idx: number) => {
                                     const species = pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === p.id.toLowerCase());
                                     const rarity = p.rarity || (species ? species.rarity.toLowerCase() : 'common');
                                     const hourlyRate = species ? species.gold_per_hour : 5;
                                     const base = hourlyRate * 24;
                                     const finalRate = p.is_evolved ? Math.floor(base * 1.25) : base;
+                                    const rarityColors: Record<string, string> = {
+                                        common: '#94a3b8', uncommon: '#34d399', rare: '#60a5fa',
+                                        epic: '#a78bfa', ultra_rare: '#a78bfa', legendary: '#fbbf24'
+                                    };
+                                    const rarityColor = rarityColors[rarity] || '#94a3b8';
 
                                     return (
-                                        <div key={idx} className="pokemon-team-item" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '4px', background: 'rgba(255, 255, 255, 0.45)', border: '1px dashed #3e2723', padding: '8px 12px', borderRadius: '4px' }}>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', fontWeight: 'bold' }}>
-                                                <span style={{ textTransform: 'capitalize' }}>{p.id}</span>
-                                                <span style={{ 
-                                                    fontSize: '10px', 
-                                                    textTransform: 'uppercase', 
-                                                    color: rarity === 'common' || rarity === 'common' ? '#71717a' : 
-                                                           rarity === 'uncommon' || rarity === 'uncommon' ? '#2e7d32' : 
-                                                           rarity === 'rare' || rarity === 'rare' ? '#1976d2' : 
-                                                           rarity === 'epic' || rarity === 'ultra_rare' ? '#7b1fa2' : 
-                                                           rarity === 'legendary' || rarity === 'legendary' ? '#f57c00' : '#d32f2f' 
-                                                }}>
-                                                    {rarity}
-                                                </span>
+                                        <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', padding: '8px 12px' }}>
+                                            <div>
+                                                <div style={{ fontWeight: 'bold', color: '#e2e8f0', fontSize: '12px', textTransform: 'capitalize' }}>{p.id} {p.is_evolved && <span style={{ color: '#34d399', fontSize: '9px' }}>★ Evol.</span>}</div>
+                                                <div style={{ fontSize: '8px', color: rarityColor, textTransform: 'uppercase', fontWeight: 'bold', letterSpacing: '0.05em' }}>{rarity}</div>
                                             </div>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', fontSize: '11px', color: '#5d4037' }}>
-                                                <span>Base: {base} Coins/Día ({hourlyRate}/hora)</span>
-                                                {p.is_evolved && <span style={{ color: '#2e7d32' }}>Evolved (+25%)</span>}
-                                                <span style={{ fontWeight: 'bold' }}>+{finalRate} Coins/Día</span>
+                                            <div style={{ textAlign: 'right' }}>
+                                                <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#fbbf24' }}>🪙 +{finalRate}</div>
+                                                <div style={{ fontSize: '8px', color: '#64748b' }}>{hourlyRate}/hora</div>
                                             </div>
                                         </div>
                                     );
                                 })}
                             </div>
 
-                            <div style={{ borderTop: '2px solid #3e2723', paddingTop: '12px', marginBottom: '16px' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '14px', marginBottom: '8px' }}>
-                                    <span>Total Diario:</span>
-                                    <span>{economy.calculatePassiveIncome(team).toLocaleString()} Coins</span>
+                            <div style={{ background: 'rgba(251,191,36,0.1)', border: '1.5px solid rgba(251,191,36,0.25)', borderRadius: '10px', padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div>
+                                    <div style={{ fontSize: '9px', color: '#94a3b8', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Total Diario</div>
+                                    <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#fbbf24' }}>🪙 {economy.calculatePassiveIncome(team).toLocaleString()}</div>
                                 </div>
-                                <div style={{ fontSize: '12px', color: '#5d4037', display: 'flex', justifyContent: 'space-between' }}>
-                                    <span>Estado del reclamo:</span>
-                                    <span style={{ fontWeight: 'bold', color: economy.getPassiveTimeRemaining() <= 0 ? '#2e7d32' : '#d32f2f' }}>
-                                        {economy.getPassiveTimeRemaining() <= 0 ? '¡Disponible!' : `Reclamado (Espera: ${formatTimeRemaining(economy.getPassiveTimeRemaining())})`}
-                                    </span>
+                                <div style={{ textAlign: 'right' }}>
+                                    <div style={{ fontSize: '9px', color: '#94a3b8', marginBottom: '2px' }}>Estado</div>
+                                    <div style={{ fontSize: '10px', fontWeight: 'bold', color: economy.getPassiveTimeRemaining() <= 0 ? '#34d399' : '#f87171' }}>
+                                        {economy.getPassiveTimeRemaining() <= 0 ? '✅ ¡Disponible!' : `⏳ ${formatTimeRemaining(economy.getPassiveTimeRemaining())}`}
+                                    </div>
                                 </div>
                             </div>
 
-                            <button 
+                            <button
                                 onClick={handleExecuteClaim}
-                                className={`pokemon-button ${economy.getPassiveTimeRemaining() <= 0 ? 'success' : ''}`}
                                 disabled={economy.getPassiveTimeRemaining() > 0}
-                                style={{ opacity: economy.getPassiveTimeRemaining() > 0 ? 0.6 : 1, cursor: economy.getPassiveTimeRemaining() > 0 ? 'not-allowed' : 'pointer' }}
+                                style={{
+                                    background: economy.getPassiveTimeRemaining() <= 0
+                                        ? 'linear-gradient(135deg, #10b981, #059669)'
+                                        : 'rgba(255,255,255,0.05)',
+                                    border: economy.getPassiveTimeRemaining() <= 0
+                                        ? '1px solid #34d399'
+                                        : '1px solid rgba(255,255,255,0.1)',
+                                    borderRadius: '10px',
+                                    color: economy.getPassiveTimeRemaining() <= 0 ? '#fff' : '#475569',
+                                    fontWeight: 'bold',
+                                    fontSize: '13px',
+                                    padding: '12px',
+                                    cursor: economy.getPassiveTimeRemaining() > 0 ? 'not-allowed' : 'pointer',
+                                    width: '100%',
+                                    transition: 'all 0.2s'
+                                }}
                             >
-                                💰 Reclamar Coins
-                            </button>
-
-                            <button 
-                                onClick={() => setShowPassiveModal(false)}
-                                className="pokemon-button danger"
-                            >
-                                Cerrar
+                                💰 Reclamar Coins Pasivos
                             </button>
                         </div>
                     </div>
                 </div>
             )}
+
+
 
             {/* Wild Battle Modal */}
             {activeWildBattle && !activeDialog && (
@@ -7635,42 +7616,86 @@ export default function GameCanvas({
                 </div>
             )}
 
+
             {showLeaderboard && (
                 <div className="modal-overlay" style={{ zIndex: 300 }}>
-                    <div className="modal-content" style={{ width: '90%', maxWidth: '400px' }}>
-                        <div className="modal-header">
-                            <h2>🏆 Ranking Global PvP 🏆</h2>
-                            <button className="close-button" onClick={() => setShowLeaderboard(false)}>×</button>
+                    <div style={{ background: 'linear-gradient(160deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%)', border: '2px solid rgba(255,255,255,0.12)', borderRadius: '16px', width: '95%', maxWidth: '420px', maxHeight: '88vh', overflowY: 'auto', boxShadow: '0 24px 60px rgba(0,0,0,0.7),inset 0 1px 0 rgba(255,255,255,0.1)', fontFamily: "'Segoe UI',monospace" }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px 12px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span style={{ fontSize: '20px' }}>🏆</span>
+                                <div>
+                                    <div style={{ color: '#e2e8f0', fontWeight: 'bold', fontSize: '14px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Ranking Global PvP</div>
+                                    <div style={{ color: '#64748b', fontSize: '9px' }}>Top jugadores por victorias</div>
+                                </div>
+                            </div>
+                            <button onClick={() => setShowLeaderboard(false)} style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: '#94a3b8', cursor: 'pointer', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', fontWeight: 'bold' }}>&times;</button>
                         </div>
-                        <div style={{ maxHeight: '300px', overflowY: 'auto', marginTop: '10px' }}>
-                            {!pvpLeaderboard ? <p>Cargando...</p> : (
-                                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
-                                    <thead>
-                                        <tr style={{ background: '#fbc02d', color: '#000' }}>
-                                            <th style={{ padding: '8px', border: '1px solid #ddd' }}>#</th>
-                                            <th style={{ padding: '8px', border: '1px solid #ddd' }}>Nick</th>
-                                            <th style={{ padding: '8px', border: '1px solid #ddd' }}>V</th>
-                                            <th style={{ padding: '8px', border: '1px solid #ddd' }}>D</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {pvpLeaderboard.map((p, i) => (
-                                            <tr key={p.address} style={{ background: i % 2 === 0 ? '#fff' : '#f9f9f9', color: '#333' }}>
-                                                <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>{i + 1}</td>
-                                                <td style={{ padding: '8px', border: '1px solid #ddd' }} title={p.name}>
-                                                    {p.name.length > 10 ? p.name.slice(0, 10) + '...' : p.name}
-                                                </td>
-                                                <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center', color: '#2e7d32', fontWeight: 'bold' }}>{p.wins}</td>
-                                                <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center', color: '#c62828' }}>{p.losses}</td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                        <div style={{ padding: '12px 16px 20px' }}>
+                            {!pvpLeaderboard ? (
+                                <div style={{ textAlign: 'center', color: '#94a3b8', padding: '24px', fontSize: '12px' }}>
+                                    <div style={{ fontSize: '24px', marginBottom: '8px' }}>⏳</div>
+                                    Cargando ranking...
+                                </div>
+                            ) : pvpLeaderboard.length === 0 ? (
+                                <div style={{ textAlign: 'center', color: '#64748b', padding: '24px', fontSize: '11px' }}>
+                                    <div style={{ fontSize: '24px', marginBottom: '8px' }}>🎮</div>
+                                    Aún no hay jugadores en el ranking. ¡Sé el primero!
+                                </div>
+                            ) : (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                    {/* Header Row */}
+                                    <div style={{ display: 'grid', gridTemplateColumns: '32px 1fr 48px 48px 52px', gap: '6px', padding: '6px 10px', fontSize: '8px', fontWeight: 'bold', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.06em', borderBottom: '1px solid rgba(255,255,255,0.06)', marginBottom: '2px' }}>
+                                        <span>#</span>
+                                        <span>Jugador</span>
+                                        <span style={{ textAlign: 'center' }}>V</span>
+                                        <span style={{ textAlign: 'center' }}>D</span>
+                                        <span style={{ textAlign: 'center' }}>%Win</span>
+                                    </div>
+                                    {pvpLeaderboard.map((p, i) => {
+                                        const isMe = p.address === walletAddress;
+                                        const rankBadge = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i + 1}`;
+                                        const winRate = (p.wins + p.losses) > 0 ? Math.round((p.wins / (p.wins + p.losses)) * 100) : 0;
+                                        const isTop3 = i < 3;
+
+                                        return (
+                                            <div key={p.address} style={{
+                                                display: 'grid',
+                                                gridTemplateColumns: '32px 1fr 48px 48px 52px',
+                                                gap: '6px',
+                                                padding: '8px 10px',
+                                                borderRadius: '8px',
+                                                border: '1px solid',
+                                                background: isMe ? 'linear-gradient(135deg, rgba(99,102,241,0.2) 0%, rgba(79,70,229,0.1) 100%)' :
+                                                    isTop3 ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.02)',
+                                                borderColor: isMe ? 'rgba(99,102,241,0.4)' :
+                                                    i === 0 ? 'rgba(251,191,36,0.3)' :
+                                                    i === 1 ? 'rgba(148,163,184,0.3)' :
+                                                    i === 2 ? 'rgba(180,83,9,0.3)' :
+                                                    'rgba(255,255,255,0.06)',
+                                                boxShadow: i === 0 ? '0 0 10px rgba(251,191,36,0.1)' : 'none',
+                                                alignItems: 'center',
+                                                fontSize: '11px',
+                                            }}>
+                                                <span style={{ fontSize: i < 3 ? '14px' : '9px', textAlign: 'center', fontWeight: 'bold', color: i < 3 ? undefined : '#64748b' }}>{rankBadge}</span>
+                                                <div style={{ overflow: 'hidden' }}>
+                                                    <div style={{ fontWeight: 'bold', color: isMe ? '#a5b4fc' : '#e2e8f0', fontSize: '11px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                        {isMe ? '⭐ ' : ''}{p.name.length > 12 ? p.name.slice(0, 12) + '…' : p.name}
+                                                    </div>
+                                                    {isMe && <div style={{ fontSize: '8px', color: '#818cf8' }}>Tú</div>}
+                                                </div>
+                                                <div style={{ textAlign: 'center', fontWeight: 'bold', color: '#34d399', fontSize: '12px' }}>{p.wins}</div>
+                                                <div style={{ textAlign: 'center', color: '#f87171', fontSize: '11px' }}>{p.losses}</div>
+                                                <div style={{ textAlign: 'center', fontSize: '9px', fontWeight: 'bold', color: winRate >= 60 ? '#34d399' : winRate >= 40 ? '#fbbf24' : '#f87171' }}>{winRate}%</div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
                             )}
                         </div>
                     </div>
                 </div>
             )}
+
 
             {activePvPBattle && (
                 <div style={{

@@ -540,15 +540,9 @@ export class Economy {
 
         this.last_login_date = today;
 
-        // Find applicable reward
-        let rewardCoins = 0;
-        let rewardItems: any = {};
-        for (const reward of loginRewards.rewards) {
-            if (this.login_streak >= reward.day) {
-                rewardCoins = reward.coins;
-                rewardItems = reward.items ?? {};
-            }
-        }
+        // Dynamic reward: starts at 20 coins on day 1, +10 per consecutive day
+        const rewardCoins = 20 + (this.login_streak - 1) * 10;
+        const rewardItems: any = {};
 
         if (rewardCoins > 0) {
             this.addCoins(rewardCoins);
