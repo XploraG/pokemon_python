@@ -169,7 +169,7 @@ export default function Home() {
                 },
                 inventory_data: {
                     items: {
-                        "pokeball": 5,
+                        "tamer_ball": 5,
                         "potion": 3
                     }
                 },

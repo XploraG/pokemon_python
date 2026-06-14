@@ -256,8 +256,8 @@ const isTmCompatible = (pokemonId: string, tmId: string): boolean => {
 };
 
 const TAMERBALLS_SHOP = [
-    { id: 'pokeball', name: 'Tamer Ball', desc: 'Esfera básica de captura (30% éxito)', coins: 300, icon: '🔴' },
-    { id: 'great_ball', name: 'Super Ball', desc: 'Mayor ratio de captura (50% éxito)', coins: 500, icon: '🔵' },
+    { id: 'tamer_ball', name: 'Tamer Ball', desc: 'Esfera básica de captura (30% éxito)', coins: 300, icon: '🔴' },
+    { id: 'super_ball', name: 'Super Ball', desc: 'Mayor ratio de captura (50% éxito)', coins: 500, icon: '🔵' },
     { id: 'ultra_ball', name: 'Ultra Ball', desc: 'Ratio de captura muy alto (75% éxito)', pusdt: 1.00, icon: '🟡' },
     { id: 'master_ball', name: 'Master Ball', desc: 'Captura garantizada (100% éxito)', pusdt: 3.00, icon: '🟣' }
 ];
@@ -846,6 +846,18 @@ const getMapDisplayName = (mapPath: string): string => {
     if (path.includes('redhouse')) {
         return 'Casa del Entrenador';
     }
+    if (path.includes('route1')) {
+        return 'Ruta 01';
+    }
+    if (path.includes('route2')) {
+        return 'Ruta 02';
+    }
+    if (path.includes('route3')) {
+        return 'Ruta 03';
+    }
+    if (path.includes('route4')) {
+        return 'Ruta 04';
+    }
     if (path.startsWith('procedural://')) {
         const parts = path.replace('procedural://', '').split('_');
         const type = parts[0];
@@ -860,7 +872,7 @@ const getMapDisplayName = (mapPath: string): string => {
             return `Cueva Misteriosa ${index}`;
         }
     }
-    return 'Nueva Zona';
+    return 'Zona Desconocida';
 };
 
 export default function GameCanvas({
@@ -880,7 +892,22 @@ export default function GameCanvas({
     
     // Core game state
     const [economy, setEconomy] = useState<Economy>(() => new Economy(economyData));
-    const [inventory, setInventory] = useState<Inventory>(() => new Inventory(inventoryData));
+    const [inventory, setInventory] = useState<Inventory>(() => {
+        // Migrate legacy ball IDs: pokeball→tamer_ball, great_ball→super_ball
+        const migratedData = inventoryData ? JSON.parse(JSON.stringify(inventoryData)) : undefined;
+        if (migratedData?.items) {
+            if (migratedData.items['pokeball'] !== undefined) {
+                migratedData.items['tamer_ball'] = (migratedData.items['tamer_ball'] ?? 0) + migratedData.items['pokeball'];
+                delete migratedData.items['pokeball'];
+            }
+            if (migratedData.items['great_ball'] !== undefined) {
+                migratedData.items['super_ball'] = (migratedData.items['super_ball'] ?? 0) + migratedData.items['great_ball'];
+                delete migratedData.items['great_ball'];
+            }
+        }
+        return new Inventory(migratedData);
+    });
+
     const [team, setTeam] = useState<any[]>(() => {
         return teamData.map((p: any) => {
             const lvl = p.level !== undefined ? p.level : 1;
@@ -2770,27 +2797,17 @@ export default function GameCanvas({
                 return true;
             }
             if (nextY >= mapDataRef.current.height && dir === 'down') {
-                transitionToMap('/assets/maps/route2/main.json', 96, 608);
+                // Route 1 connects directly to Route 3 (skipping lake route2)
+                transitionToMap('/assets/maps/route3/main.json', 448, 32);
                 return true;
             }
         }
 
-        // 3. Route 2 map transitions
-        if (path.includes('route2')) {
-            if (nextX < 0 && dir === 'left') {
-                transitionToMap('/assets/maps/route1/main.json', 800, 1280);
-                return true;
-            }
-            if (nextX >= mapDataRef.current.width && dir === 'right') {
-                transitionToMap('/assets/maps/route3/main.json', 448, 128);
-                return true;
-            }
-        }
-
-        // 4. Route 3 map transitions
+        // 3. Route 3 map transitions (formerly route2 in chain)
         if (path.includes('route3')) {
             if (nextY < 0 && dir === 'up') {
-                transitionToMap('/assets/maps/route2/main.json', 1440, 448);
+                // Route 3 top connects back to Route 1 bottom
+                transitionToMap('/assets/maps/route1/main.json', 480, 1280);
                 return true;
             }
             if (nextY >= mapDataRef.current.height && dir === 'down') {
@@ -4632,7 +4649,8 @@ export default function GameCanvas({
         const info = inventoryRef.current.getItemInfo(ballId);
 
         if (!inventoryRef.current.hasItem(ballId)) {
-            showNotification("Mochila", "¡No tienes esa Pokeball!");
+            const ballInfo = inventoryRef.current.getItemInfo(ballId);
+            showNotification("Mochila", `¡No tienes ${ballInfo.name || ballId}!`);
             return;
         }
 
@@ -4645,7 +4663,7 @@ export default function GameCanvas({
         setCatchBallState('throw');
 
         let ballRate = 0.3;
-        if (ballId === 'great_ball') ballRate = 0.5;
+        if (ballId === 'super_ball') ballRate = 0.5;
         else if (ballId === 'ultra_ball') ballRate = 0.75;
         else if (ballId === 'master_ball') ballRate = 1.0;
 
@@ -5640,7 +5658,7 @@ export default function GameCanvas({
                                             let rarityClass = 'rarity-common';
                                             let badgeClass = 'common';
                                             let badgeText = 'Común';
-                                            if (item.id === 'great_ball') {
+                                            if (item.id === 'super_ball') {
                                                 rarityClass = 'rarity-uncommon';
                                                 badgeClass = 'uncommon';
                                                 badgeText = 'Inusual';
@@ -7427,7 +7445,7 @@ export default function GameCanvas({
                         /* Ball Selection */
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px' }}>
-                                {['pokeball', 'great_ball', 'ultra_ball', 'master_ball'].map((ballId) => {
+                                {['tamer_ball', 'super_ball', 'ultra_ball', 'master_ball'].map((ballId) => {
                                     const qty = inventory.getQuantity(ballId);
                                     const info = inventory.getItemInfo(ballId);
                                     const label = info.name || ballId;
