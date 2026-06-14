@@ -274,7 +274,21 @@ export default function Home() {
                 <GameCanvas
                     saveName={activeSave.name}
                     playerCoordinates={activeSave.player_coordinates || [632, 428]}
-                    initialMapPath={activeSave.map || "/assets/maps/tutorial/main.json"}
+                    initialMapPath={(() => {
+                        const saved = activeSave.map || '/assets/maps/tutorial/main.json';
+                        // Known playable maps — redirect to tutorial if player is on a removed/broken map
+                        const knownMaps = [
+                            'tutorial', 'route1', 'route3', 'route4',
+                            'city1', 'pokecenter', 'pokemart', 'gym',
+                            'redhouse', 'cave', 'procedural://'
+                        ];
+                        const isSafe = knownMaps.some(m => saved.includes(m));
+                        if (!isSafe) {
+                            console.warn(`[MapFix] Map "${saved}" no encontrado — redirigiendo a Tutorial`);
+                            return '/assets/maps/tutorial/main.json';
+                        }
+                        return saved;
+                    })()}
                     economyData={activeSave.economy_data}
                     inventoryData={activeSave.inventory_data}
                     teamData={activeSave.team_data}
