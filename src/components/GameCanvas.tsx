@@ -2797,53 +2797,28 @@ export default function GameCanvas({
                 return true;
             }
             if (nextY >= mapDataRef.current.height && dir === 'down') {
-                // Route 1 connects directly to Route 3 (skipping lake route2)
-                transitionToMap('/assets/maps/route3/main.json', 448, 32);
-                return true;
-            }
-        }
-
-        // 3. Route 3 map transitions (formerly route2 in chain)
-        if (path.includes('route3')) {
-            if (nextY < 0 && dir === 'up') {
-                // Route 3 top connects back to Route 1 bottom
-                transitionToMap('/assets/maps/route1/main.json', 480, 1280);
-                return true;
-            }
-            if (nextY >= mapDataRef.current.height && dir === 'down') {
-                // Route 3 bottom connects directly to City 1 left edge
-                transitionToMap('/assets/maps/city1/main.json', 32, 640);
-                return true;
-            }
-        }
-
-        // 5. City 1 (Ciudad Nueva) map transitions
-        if (path.includes('city1')) {
-            if (nextX < 0 && dir === 'left') {
-                // City 1 left edge connects directly back to Route 3 bottom
-                transitionToMap('/assets/maps/route3/main.json', 480, 1568);
-                return true;
-            }
-            if (nextY < 0 && dir === 'up') {
+                // Route 1 conecta directamente con la zona procedural infinita
                 prepareProceduralMap('procedural://route_1');
-                transitionToMap('procedural://route_1', 480, 1216);
+                transitionToMap('procedural://route_1', 480, 32);
                 return true;
             }
         }
 
-        // 6. Cave map transitions
-        if (path.includes('cave')) {
+        // 3. Cave map transitions (static cave in route1)
+        if (path.includes('/cave')) {
             if (nextY < 0 && dir === 'up') {
-                transitionToMap('/assets/maps/city1/main.json', 1184, 1280); // Spawn right below City 1 cave entrance CE
+                // Salida norte de cueva → vuelve a Ruta 01
+                transitionToMap('/assets/maps/route1/main.json', 1120, 384);
                 return true;
             }
             if (nextY >= mapDataRef.current.height && dir === 'down') {
-                transitionToMap('/assets/maps/route1/main.json', 1120, 384); // Spawn right below Route 1 cave entrance CE
+                // Salida sur de cueva → vuelve a Ruta 01 (entrada cueva)
+                transitionToMap('/assets/maps/route1/main.json', 1120, 384);
                 return true;
             }
         }
 
-        // 7. Infinite Procedural map transitions (Progresses Southwards)
+        // 4. Infinite Procedural map transitions (Progresses Southwards)
         if (path.startsWith('procedural://')) {
             const parts = path.replace('procedural://', '').split('_');
             const type = parts[0];
@@ -2852,11 +2827,12 @@ export default function GameCanvas({
             if (type === 'route') {
                 if (dir === 'up') {
                     if (index === 1) {
-                        transitionToMap('/assets/maps/city1/main.json', 608, 1248); // Spawn at bottom of City 1
+                        // Procedural Ruta 1 regresa a Ruta 01 estática
+                        transitionToMap('/assets/maps/route1/main.json', 480, 1280);
                     } else {
                         const nextMap = `procedural://cave_${index - 1}`;
                         prepareProceduralMap(nextMap);
-                        transitionToMap(nextMap, 512, 1216); // Spawn at cave bottom exit
+                        transitionToMap(nextMap, 512, 1216);
                     }
                     return true;
                 }

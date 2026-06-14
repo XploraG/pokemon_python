@@ -278,8 +278,8 @@ export default function Home() {
                         const saved = activeSave.map || '/assets/maps/tutorial/main.json';
                         // Known playable maps — redirect to tutorial if player is on a removed/broken map
                         const knownMaps = [
-                            'tutorial', 'route1', 'route3', 'route4',
-                            'city1', 'pokecenter', 'pokemart', 'gym',
+                            'tutorial', 'route1',
+                            'pokecenter', 'pokemart', 'gym',
                             'redhouse', 'cave', 'procedural://'
                         ];
                         const isSafe = knownMaps.some(m => saved.includes(m));
