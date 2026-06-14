@@ -1853,6 +1853,7 @@ export default function GameCanvas({
 
     const playerSpriteRef = useRef<HTMLCanvasElement | HTMLImageElement | null>(null);
     const keysPressed = useRef<Record<string, boolean>>({});
+    const lastCloudSaveTimeRef = useRef<number>(0);
 
     // Track layout resizing and client dimensions
     useEffect(() => {
@@ -2653,6 +2654,7 @@ export default function GameCanvas({
                         }
                     }
                 }
+                saveLocalEconomy(undefined, undefined, undefined, false);
             } else {
                 player.x += (dx / dist) * player.speed;
                 player.y += (dy / dist) * player.speed;
@@ -2754,14 +2756,76 @@ export default function GameCanvas({
 
         // 1. Tutorial map transitions (Pueblo Tutorial)
         if (path.includes('tutorial')) {
-            if (dir === 'down') {
-                prepareProceduralMap('procedural://route_1');
-                transitionToMap('procedural://route_1', 480, 32);
+            if (nextY >= mapDataRef.current.height && dir === 'down') {
+                transitionToMap('/assets/maps/route1/main.json', 480, 32);
                 return true;
             }
         }
 
-        // 2. Infinite Procedural map transitions (Progresses Southwards)
+        // 2. Route 1 map transitions
+        if (path.includes('route1')) {
+            if (nextY < 0 && dir === 'up') {
+                transitionToMap('/assets/maps/tutorial/main.json', 480, 1056);
+                return true;
+            }
+            if (nextY >= mapDataRef.current.height && dir === 'down') {
+                transitionToMap('/assets/maps/route2/main.json', 96, 608);
+                return true;
+            }
+        }
+
+        // 3. Route 2 map transitions
+        if (path.includes('route2')) {
+            if (nextX < 0 && dir === 'left') {
+                transitionToMap('/assets/maps/route1/main.json', 800, 1280);
+                return true;
+            }
+            if (nextX >= mapDataRef.current.width && dir === 'right') {
+                transitionToMap('/assets/maps/route3/main.json', 448, 128);
+                return true;
+            }
+        }
+
+        // 4. Route 3 map transitions
+        if (path.includes('route3')) {
+            if (nextY < 0 && dir === 'up') {
+                transitionToMap('/assets/maps/route2/main.json', 1440, 448);
+                return true;
+            }
+            if (nextY >= mapDataRef.current.height && dir === 'down') {
+                // Route 3 bottom connects directly to City 1 left edge
+                transitionToMap('/assets/maps/city1/main.json', 32, 640);
+                return true;
+            }
+        }
+
+        // 5. City 1 (Ciudad Nueva) map transitions
+        if (path.includes('city1')) {
+            if (nextX < 0 && dir === 'left') {
+                // City 1 left edge connects directly back to Route 3 bottom
+                transitionToMap('/assets/maps/route3/main.json', 480, 1568);
+                return true;
+            }
+            if (nextY < 0 && dir === 'up') {
+                prepareProceduralMap('procedural://route_1');
+                transitionToMap('procedural://route_1', 480, 1216);
+                return true;
+            }
+        }
+
+        // 6. Cave map transitions
+        if (path.includes('cave')) {
+            if (nextY < 0 && dir === 'up') {
+                transitionToMap('/assets/maps/city1/main.json', 1184, 1280); // Spawn right below City 1 cave entrance CE
+                return true;
+            }
+            if (nextY >= mapDataRef.current.height && dir === 'down') {
+                transitionToMap('/assets/maps/route1/main.json', 1120, 384); // Spawn right below Route 1 cave entrance CE
+                return true;
+            }
+        }
+
+        // 7. Infinite Procedural map transitions (Progresses Southwards)
         if (path.startsWith('procedural://')) {
             const parts = path.replace('procedural://', '').split('_');
             const type = parts[0];
@@ -2770,7 +2834,7 @@ export default function GameCanvas({
             if (type === 'route') {
                 if (dir === 'up') {
                     if (index === 1) {
-                        transitionToMap('/assets/maps/tutorial/main.json', 480, 1056); // Spawn at tutorial bottom path exit
+                        transitionToMap('/assets/maps/city1/main.json', 608, 1248); // Spawn at bottom of City 1
                     } else {
                         const nextMap = `procedural://cave_${index - 1}`;
                         prepareProceduralMap(nextMap);
@@ -2835,6 +2899,9 @@ export default function GameCanvas({
         setTimeout(() => {
             setActiveDialog(null);
         }, 100);
+
+        // Force cloud save immediately upon map change
+        saveLocalEconomy(undefined, undefined, undefined, true);
     };
 
     // Generate themed wild pokemon based on location
@@ -3117,98 +3184,19 @@ export default function GameCanvas({
     // Check if player is standing on a door tile and automatically enter/interact
     const checkAutoDoorEntry = (x: number, y: number) => {
         const currentPath = currentMapPathRef.current;
+        const isInterior = currentPath.includes('pokecenter')
+            || currentPath.includes('pokemart')
+            || currentPath.includes('gym')
+            || currentPath.includes('redhouse');
 
-        if (currentPath.includes('tutorial')) {
-            // 1. Pokémon Center door check
-            if (x >= 580 && x <= 620 && y >= 710 && y <= 730) {
-                setDialogName("Centro Pokemon");
-                setActiveDialog("Entering the Pokémon Center...");
-                returnMapRef.current = '/assets/maps/tutorial/main.json';
-                returnCoordsRef.current = [600, 748]; // Spawn below door when returning
-                playerRef.current.x = 144;
-                playerRef.current.y = 224;
-                playerRef.current.targetX = 144;
-                playerRef.current.targetY = 224;
-                playerRef.current.isMoving = false;
-                setCurrentMapPath('/assets/maps/pokecenter/main.json');
-                setActiveDialog(null);
-                playerRef.current.isMoving = false;
-                return true;
-            }
-
-            // 2. PokeMart door check
-            if (x >= 560 && x <= 600 && y >= 1000 && y <= 1022) {
-                setDialogName("Comercio Pokemon");
-                setActiveDialog("Entering the PokeMart Store...");
-                returnMapRef.current = '/assets/maps/tutorial/main.json';
-                returnCoordsRef.current = [580, 1040]; // Spawn below door when returning
-                playerRef.current.x = 144;
-                playerRef.current.y = 224;
-                playerRef.current.targetX = 144;
-                playerRef.current.targetY = 224;
-                playerRef.current.isMoving = false;
-                setCurrentMapPath('/assets/maps/pokemart/main.json');
-                setActiveDialog(null);
-                playerRef.current.isMoving = false;
-                return true;
-            }
-
-            // 3. Gym door check
-            if (x >= 370 && x <= 410 && y >= 180 && y <= 204) {
-                setDialogName("Gimnasio");
-                setActiveDialog("Entering the Gym...");
-                returnCoordsRef.current = [396, 228];
-                playerRef.current.x = 176;
-                playerRef.current.y = 288;
-                playerRef.current.targetX = 176;
-                playerRef.current.targetY = 288;
-                playerRef.current.isMoving = false;
-                setCurrentMapPath('/assets/maps/gym/main.json');
-                setActiveDialog(null);
-                playerRef.current.isMoving = false;
-                return true;
-            }
-
-            // 4. House 1 door check
-            if (x >= 140 && x <= 170 && y >= 700 && y <= 724) {
-                setDialogName("Casa");
-                setActiveDialog("Entering house...");
-                returnCoordsRef.current = [154, 748];
-                playerRef.current.x = 144;
-                playerRef.current.y = 224;
-                playerRef.current.targetX = 144;
-                playerRef.current.targetY = 224;
-                playerRef.current.isMoving = false;
-                setCurrentMapPath('/assets/maps/redhouse/main.json');
-                setActiveDialog(null);
-                playerRef.current.isMoving = false;
-                return true;
-            }
-
-            // 5. House 2 door check
-            if (x >= 310 && x <= 340 && y >= 700 && y <= 724) {
-                setDialogName("Casa");
-                setActiveDialog("Entering house...");
-                returnMapRef.current = '/assets/maps/tutorial/main.json';
-                returnCoordsRef.current = [329, 748];
-                playerRef.current.x = 144;
-                playerRef.current.y = 224;
-                playerRef.current.targetX = 144;
-                playerRef.current.targetY = 224;
-                playerRef.current.isMoving = false;
-                setCurrentMapPath('/assets/maps/redhouse/main.json');
-                setActiveDialog(null);
-                playerRef.current.isMoving = false;
-                return true;
-            }
-        } else {
-            // Interior maps exit checks: trigger warp if player steps on exit carpet (CP)
+        // ── INTERIOR EXIT ─────────────────────────────────────────────────────
+        if (isInterior) {
             const mapData = mapDataRef.current;
+            if (!mapData) return false;
             const tileSize = mapData.tileSize || 32;
             const col = Math.floor(x / tileSize);
             const row = Math.floor((y - 1) / tileSize);
-            const tileType = mapData.grid[row]?.[col];
-
+            const tileType = mapData.grid?.[row]?.[col];
             if (tileType === 'CP') {
                 setDialogName("Exit");
                 setActiveDialog("Exiting building...");
@@ -3221,6 +3209,93 @@ export default function GameCanvas({
                 setActiveDialog(null);
                 playerRef.current.isMoving = false;
                 return true;
+            }
+        }
+
+        // ── CAVE ENTRANCE WARP ────────────────────────────────────────────────
+        if (!isInterior) {
+            const mapData = mapDataRef.current;
+            if (mapData) {
+                const tileSize = mapData.tileSize || 32;
+                const col = Math.floor(x / tileSize);
+                const row = Math.floor((y - 1) / tileSize);
+                const tileType = mapData.grid?.[row]?.[col];
+                if (tileType === 'CE') {
+                    if (currentPath.includes('route1')) {
+                        // Enter cave from the south (bottom) entrance
+                        transitionToMap('/assets/maps/cave/main.json', 256, 1536);
+                        return true;
+                    } else if (currentPath.includes('city1')) {
+                        // Enter cave from the north (top) entrance
+                        transitionToMap('/assets/maps/cave/main.json', 992, 32);
+                        return true;
+                    }
+                }
+            }
+        }
+
+        // ── PARENT MAP ENTRY ──────────────────────────────────────────────────
+        const mapData = mapDataRef.current;
+        if (!mapData || !mapData.entities) return false;
+
+        const isNearDoor = (px: number, py: number, ent: any) => {
+            const doorX = ent.x + ent.w / 2;
+            const doorY = ent.y + ent.h;
+            const xTolerance = ent.w >= 180 ? 24 : 20;
+            return Math.abs(px - doorX) <= xTolerance && py >= doorY - 20 && py <= doorY + 8;
+        };
+
+        for (const ent of mapData.entities) {
+            const lowerLoc = ent.location.toLowerCase();
+            
+            const isCenter = lowerLoc.includes('pokemoncenter');
+            const isMart = lowerLoc.includes('pokemonmarket') || lowerLoc.includes('pokemart');
+            const isGym = lowerLoc.includes('gym');
+            const isHouse = lowerLoc.includes('redhouse') || lowerLoc.includes('casa') || (lowerLoc.includes('house') && !lowerLoc.includes('greenhouse'));
+
+            if (isCenter || isMart || isGym || isHouse) {
+                if (isNearDoor(x, y, ent)) {
+                    let destMap = '';
+                    let dialogTitle = '';
+                    let dialogMsg = '';
+                    
+                    if (isCenter) {
+                        destMap = '/assets/maps/pokecenter/main.json';
+                        dialogTitle = "Centro Pokemon";
+                        dialogMsg = "Entering the Pokémon Center...";
+                    } else if (isMart) {
+                        destMap = '/assets/maps/pokemart/main.json';
+                        dialogTitle = "Comercio Pokemon";
+                        dialogMsg = "Entering the PokeMart Store...";
+                    } else if (isGym) {
+                        destMap = '/assets/maps/gym/main.json';
+                        dialogTitle = "Gimnasio";
+                        dialogMsg = "Entering the Gym...";
+                    } else {
+                        destMap = '/assets/maps/redhouse/main.json';
+                        dialogTitle = "Casa";
+                        dialogMsg = "Entering house...";
+                    }
+
+                    // Save return details
+                    returnMapRef.current = currentPath;
+                    const doorX = ent.x + ent.w / 2;
+                    const doorY = ent.y + ent.h;
+                    returnCoordsRef.current = [Math.round(doorX), Math.round(doorY + 16)];
+
+                    setDialogName(dialogTitle);
+                    setActiveDialog(dialogMsg);
+                    
+                    playerRef.current.x = 144;
+                    playerRef.current.y = 224;
+                    playerRef.current.targetX = 144;
+                    playerRef.current.targetY = 224;
+                    playerRef.current.isMoving = false;
+                    
+                    setCurrentMapPath(destMap);
+                    setActiveDialog(null);
+                    return true;
+                }
             }
         }
 
@@ -3804,7 +3879,7 @@ export default function GameCanvas({
         }
     };
 
-    const saveLocalEconomy = async (updatedTeam?: any[], updatedPcPokemon?: any[], nameOverride?: string) => {
+    const saveLocalEconomy = async (updatedTeam?: any[], updatedPcPokemon?: any[], nameOverride?: string, forceCloud: boolean = true) => {
         const economyData = economyRef.current.toSaveData();
         const inventoryData = inventoryRef.current.toSaveData();
         const teamToSave = updatedTeam !== undefined ? updatedTeam : teamRef.current;
@@ -3829,19 +3904,23 @@ export default function GameCanvas({
 
         // 2. Cloud sync to Supabase
         if (walletAddress) {
-            try {
-                const { error: syncError } = await supabase
-                    .from('player_saves')
-                    .upsert({
-                        wallet_address: walletAddress,
-                        save_data: saveState,
-                        updated_at: new Date().toISOString()
-                    });
-                if (syncError) {
-                    console.error("Failed to sync progress to cloud:", syncError);
+            const now = Date.now();
+            if (forceCloud || now - lastCloudSaveTimeRef.current >= 10000) {
+                lastCloudSaveTimeRef.current = now;
+                try {
+                    const { error: syncError } = await supabase
+                        .from('player_saves')
+                        .upsert({
+                            wallet_address: walletAddress,
+                            save_data: saveState,
+                            updated_at: new Date().toISOString()
+                        });
+                    if (syncError) {
+                        console.error("Failed to sync progress to cloud:", syncError);
+                    }
+                } catch (err) {
+                    console.error("Cloud sync error:", err);
                 }
-            } catch (err) {
-                console.error("Cloud sync error:", err);
             }
         }
     };
