@@ -40,6 +40,7 @@ interface MapEntity {
     h: number;
     name: string;
     dialog?: string;
+    dialogs?: string[];
     imgElement?: HTMLCanvasElement | HTMLImageElement;
     scale: number;
     frame?: { x: number; y: number; w: number; h: number };
@@ -955,6 +956,9 @@ export default function GameCanvas({
     const [doubleRewardType, setDoubleRewardType] = useState<'gym' | 'wild' | 'trainer' | null>(null);
     const [isGymBattle, setIsGymBattle] = useState<boolean>(false);
     const [gymLeaderName, setGymLeaderName] = useState<string | null>(null);
+    const [isTrainerBattle, setIsTrainerBattle] = useState<boolean>(false);
+    const [currentDialogList, setCurrentDialogList] = useState<string[]>([]);
+    const [currentDialogIndex, setCurrentDialogIndex] = useState<number>(0);
 
     useEffect(() => {
         setPlayerName(saveName);
@@ -2048,6 +2052,7 @@ export default function GameCanvas({
                             h,
                             name: entMeta.name,
                             dialog: entMeta.dialog,
+                            dialogs: ent.dialogs,
                             imgElement: transparentEntImg,
                             scale,
                             frame: firstFrame
@@ -3807,7 +3812,56 @@ export default function GameCanvas({
             if (showNurseJoyModal) {
                 return; // Don't close text bubble with Space while Joy's menu is open
             }
-            setActiveDialog(null);
+            
+            // Advance through dialogs queue
+            if (currentDialogList && currentDialogList.length > 0 && currentDialogIndex < currentDialogList.length - 1) {
+                const nextIdx = currentDialogIndex + 1;
+                const nextText = currentDialogList[nextIdx];
+                setCurrentDialogIndex(nextIdx);
+                
+                if (nextText.startsWith('TRAINER_BATTLE:')) {
+                    const parts = nextText.split(':');
+                    const wildName = parts[1] || 'pikachu';
+                    const wildLvl = parseInt(parts[2] || '5', 10);
+                    
+                    // Close dialogue
+                    setActiveDialog(null);
+                    setCurrentDialogList([]);
+                    setCurrentDialogIndex(0);
+
+                    // Reset battle stages and animations
+                    setPlayerAtkStage(0);
+                    setPlayerDefStage(0);
+                    setOpponentAtkStage(0);
+                    setOpponentDefStage(0);
+                    setIsBattleAnimating(false);
+                    setPlayerSpriteEffect('none' as any);
+                    setOpponentSpriteEffect('none' as any);
+                    setFloatingDamage(null);
+
+                    // Start Trainer Battle
+                    setIsTrainerBattle(true);
+                    setBattleMessage(`¡El Entrenador te desafía con su ${wildName.toUpperCase()}!`);
+                    setShowBallSelect(false);
+                    setShowBagSelect(false);
+                    setShowSwitchSelect(false);
+
+                    const stats = getPokemonStats(wildName, wildLvl);
+                    setActiveWildBattle({
+                        name: wildName,
+                        level: wildLvl,
+                        hp: stats.maxHp,
+                        maxHp: stats.maxHp,
+                        captureRate: 0.0 // Can't capture Trainer's Pokémon!
+                    });
+                } else {
+                    setActiveDialog(nextText);
+                }
+            } else {
+                setActiveDialog(null);
+                setCurrentDialogList([]);
+                setCurrentDialogIndex(0);
+            }
             return;
         }
 
@@ -4075,9 +4129,18 @@ export default function GameCanvas({
                     setDialogName(entity.name);
                     setActiveDialog("Walk inside the door to visit!");
                 }
+                // Trainer / Multi-dialog NPCs
+                else if (entity.dialogs && entity.dialogs.length > 0) {
+                    setDialogName(entity.name);
+                    setCurrentDialogList(entity.dialogs);
+                    setCurrentDialogIndex(0);
+                    setActiveDialog(entity.dialogs[0]);
+                }
                 // Other general dialog NPCs
                 else if (entity.dialog) {
                     setDialogName(entity.name);
+                    setCurrentDialogList([]);
+                    setCurrentDialogIndex(0);
                     setActiveDialog(entity.dialog);
                 }
                 break;
@@ -4314,7 +4377,10 @@ export default function GameCanvas({
                     let evolved = false;
                     let evolvedName = activePoke.id;
                     let oldName = activePoke.id;
-                    
+
+                    const currentMoves = activePoke.moves || getPokemonMoves(activePoke.id, activePoke.level ?? 1);
+                    let finalMoves = [...currentMoves];
+
                     if (leveledUp) {
                         msg += ` ¡Subió al nivel ${currentLvl}!`;
                         const evo = EVOLUTION_DATABASE[activePoke.id.toLowerCase()];
@@ -4326,6 +4392,16 @@ export default function GameCanvas({
                         if (evolved) {
                             msg += ` ¡Increíble! Ha evolucionado en ${evolvedName.toUpperCase()}!`;
                         }
+
+                        // Check for new learnable moves based on the evolved (or original) species at the new level
+                        const learnableMoves = getPokemonMoves(evolvedName, currentLvl);
+                        for (const mId of learnableMoves) {
+                            if (!finalMoves.includes(mId)) {
+                                finalMoves.push(mId);
+                                const moveName = MOVES_DATABASE[mId]?.name || mId;
+                                msg += ` \n🎉 ¡Aprendió ${moveName.toUpperCase()}!`;
+                            }
+                        }
                     }
                     
                     const updatedTeam = [...team];
@@ -4335,12 +4411,46 @@ export default function GameCanvas({
                         id: evolvedName,
                         level: currentLvl,
                         xp: currentXp,
+                        moves: finalMoves,
                         is_evolved: evolved ? true : activePoke.is_evolved,
                         maxHp: stats.maxHp,
                         hp: leveledUp ? stats.maxHp : Math.min(activePoke.hp, stats.maxHp)
                     };
                     
                     setTeam(updatedTeam);
+
+                    if (isTrainerBattle) {
+                        const baseCoins = Math.floor(Math.random() * (40 - 25 + 1)) + 25;
+                        const levelScale = 1.0 + ((activeWildBattle.level ?? 1) - 1) * 0.12;
+                        const coinsEarned = Math.floor(baseCoins * levelScale * 1.5);
+                        
+                        economyRef.current.addCoins(coinsEarned);
+                        economyRef.current.updateMissionProgress('battle');
+                        
+                        const trainerXpEarned = (activeWildBattle.level ?? 1) * 15;
+                        const xpResult = economyRef.current.addTrainerXp(trainerXpEarned);
+                        let trainerMsg = `\nGanaste ${trainerXpEarned} XP de Entrenador.`;
+                        if (xpResult.leveledUp) {
+                            trainerMsg += ` \n🎉 ¡Tu Nivel de Entrenador subió al Nivel ${xpResult.newLevel}!`;
+                        }
+                        
+                        setDoubleRewardCoins(coinsEarned);
+                        setDoubleRewardType('trainer');
+
+                        showNotification(
+                            "¡Victoria contra Entrenador!", 
+                            `¡Tu ${oldName} derrotó al Pokémon del Entrenador! Ganaste ${coinsEarned} Coins. ${trainerMsg}\n${msg}`
+                        );
+                        
+                        setIsTrainerBattle(false);
+                        setIsGymBattle(false);
+                        setGymLeaderName(null);
+                        setActiveWildBattle(null);
+                        saveLocalEconomy(updatedTeam);
+                        setEconomy(new Economy(economyRef.current.toSaveData()));
+                        setIsBattleAnimating(false);
+                        return;
+                    }
                     
                     if (isGymBattle) {
                         // Extract procedural town index from returnMapRef.current
@@ -4415,6 +4525,9 @@ export default function GameCanvas({
                     }
 
                     // Wild Pokémon defeated!
+                    setIsGymBattle(false);
+                    setGymLeaderName(null);
+                    setIsTrainerBattle(false);
                     const wildSpecies = pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === activeWildBattle.name.toLowerCase());
                     const rarity = wildSpecies?.rarity || "COMMON";
                     let rarityMult = 1.0;
@@ -4876,12 +4989,19 @@ export default function GameCanvas({
                         const species = pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === nameLower);
                         const rarity = species ? species.rarity.toLowerCase() : "uncommon";
 
+                        const wildLvl = activeWildBattle.level ?? 5;
+                        const stats = getPokemonStats(activeWildBattle.name.toLowerCase(), wildLvl);
+                        const caughtMoves = getPokemonMoves(activeWildBattle.name.toLowerCase(), wildLvl);
+
                         const newPoke = {
                             id: activeWildBattle.name.toLowerCase(),
                             rarity: rarity,
                             is_evolved: false,
-                            hp: 100,
-                            maxHp: 100
+                            level: wildLvl,
+                            xp: 0,
+                            hp: stats.maxHp,
+                            maxHp: stats.maxHp,
+                            moves: caughtMoves
                         };
 
                         economyRef.current.updateMissionProgress('capture');
@@ -4901,6 +5021,9 @@ export default function GameCanvas({
 
                         setEconomy(new Economy(newEconomyData));
                         setActiveWildBattle(null);
+                        setIsGymBattle(false);
+                        setGymLeaderName(null);
+                        setIsTrainerBattle(false);
                         setIsBattleAnimating(false);
                         setOpponentSpriteEffect('none' as any);
                         setCatchBallState(null);
@@ -4916,6 +5039,9 @@ export default function GameCanvas({
                         const activePokeIdx = team.findIndex((p: any) => p.hp > 0);
                         if (activePokeIdx === -1) {
                             setActiveWildBattle(null);
+                            setIsGymBattle(false);
+                            setGymLeaderName(null);
+                            setIsTrainerBattle(false);
                             setIsBattleAnimating(false);
                             return;
                         }
@@ -4944,6 +5070,9 @@ export default function GameCanvas({
                                 setTeam(updatedTeam);
                                 saveLocalEconomy(updatedTeam);
                                 setActiveWildBattle(null);
+                                setIsGymBattle(false);
+                                setGymLeaderName(null);
+                                setIsTrainerBattle(false);
                             } else {
                                 setBattleMessage(`El ${activeWildBattle.name} salvaje escapó y contraatacó con ${wildDmg} de daño, debilitando a tu ${activePoke.id}.`);
                             }
@@ -5012,8 +5141,23 @@ export default function GameCanvas({
 
             if (newPokeHp <= 0 && !afterTeam.some((p: any) => p.hp > 0)) {
                 setTimeout(() => {
-                    setActiveWildBattle(null);
                     showNotification("Derrota", "¡Todos tus Pokémon se debilitaron! Fuiste llevado al Centro Pokémon.");
+                    returnMapRef.current = '/assets/maps/tutorial/main.json';
+                    returnCoordsRef.current = [600, 748];
+                    playerRef.current.x = 144;
+                    playerRef.current.y = 224;
+                    playerRef.current.targetX = 144;
+                    playerRef.current.targetY = 224;
+                    playerRef.current.isMoving = false;
+                    setCurrentMapPath('/assets/maps/pokecenter/main.json');
+                    
+                    setTeam(afterTeam);
+                    saveLocalEconomy(afterTeam);
+                    setActiveWildBattle(null);
+                    setIsGymBattle(false);
+                    setGymLeaderName(null);
+                    setIsTrainerBattle(false);
+                    setIsBattleAnimating(false);
                 }, 500);
             }
         }, 1200);
@@ -5057,8 +5201,23 @@ export default function GameCanvas({
 
             if (newPokeHp <= 0 && !afterTeam.some((p: any) => p.hp > 0)) {
                 setTimeout(() => {
-                    setActiveWildBattle(null);
                     showNotification("Derrota", "¡Todos tus Pokémon se debilitaron! Fuiste llevado al Centro Pokémon.");
+                    returnMapRef.current = '/assets/maps/tutorial/main.json';
+                    returnCoordsRef.current = [600, 748];
+                    playerRef.current.x = 144;
+                    playerRef.current.y = 224;
+                    playerRef.current.targetX = 144;
+                    playerRef.current.targetY = 224;
+                    playerRef.current.isMoving = false;
+                    setCurrentMapPath('/assets/maps/pokecenter/main.json');
+                    
+                    setTeam(afterTeam);
+                    saveLocalEconomy(afterTeam);
+                    setActiveWildBattle(null);
+                    setIsGymBattle(false);
+                    setGymLeaderName(null);
+                    setIsTrainerBattle(false);
+                    setIsBattleAnimating(false);
                 }, 500);
             }
         }, 1200);
@@ -5067,15 +5226,26 @@ export default function GameCanvas({
     const handleBattleRun = () => {
         if (!activeWildBattle) return;
 
+        if (isGymBattle || isTrainerBattle) {
+            setBattleMessage("¡No puedes huir de una batalla contra un Entrenador!");
+            return;
+        }
+
         const success = Math.random() < 0.70;
 
         if (success) {
             showNotification("Huir", "Escapaste a salvo de la batalla.");
             setActiveWildBattle(null);
+            setIsGymBattle(false);
+            setGymLeaderName(null);
+            setIsTrainerBattle(false);
         } else {
             const activePokeIdx = team.findIndex((p: any) => p.hp > 0);
             if (activePokeIdx === -1) {
                 setActiveWildBattle(null);
+                setIsGymBattle(false);
+                setGymLeaderName(null);
+                setIsTrainerBattle(false);
                 return;
             }
 
@@ -5108,6 +5278,9 @@ export default function GameCanvas({
                     setTeam(updatedTeam);
                     saveLocalEconomy(updatedTeam);
                     setActiveWildBattle(null);
+                    setIsGymBattle(false);
+                    setGymLeaderName(null);
+                    setIsTrainerBattle(false);
                     return;
                 } else {
                     setBattleMessage(
@@ -7819,7 +7992,8 @@ export default function GameCanvas({
                             <button
                                 onClick={() => { setShowBallSelect(true); setShowSwitchSelect(false); setShowBagSelect(false); }}
                                 className="pokemon-button"
-                                style={{ background: '#e65100', color: '#fff', margin: 0, padding: '10px', fontSize: '10px' }}
+                                style={{ background: '#e65100', color: '#fff', margin: 0, padding: '10px', fontSize: '10px', opacity: (isGymBattle || isTrainerBattle) ? 0.5 : 1 }}
+                                disabled={isGymBattle || isTrainerBattle}
                             >
                                 🎯 Capturar
                             </button>
@@ -7833,9 +8007,10 @@ export default function GameCanvas({
                             <button
                                 onClick={handleBattleRun}
                                 className="pokemon-button danger"
-                                style={{ margin: 0, padding: '8px', fontSize: '10px', gridColumn: 'span 2' }}
+                                style={{ margin: 0, padding: '8px', fontSize: '10px', gridColumn: 'span 2', opacity: (isGymBattle || isTrainerBattle) ? 0.5 : 1 }}
+                                disabled={isGymBattle || isTrainerBattle}
                             >
-                                🏃 Huir
+                                {(isGymBattle || isTrainerBattle) ? "🏃 No puedes Huir" : "🏃 Huir"}
                             </button>
                         </div>
 
