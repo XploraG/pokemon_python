@@ -38,10 +38,62 @@ class AdManager {
     }
 
     /**
+     * Carga dinámicamente el SDK de Monetag para una zona específica.
+     */
+    private async loadMonetagSdk(zoneId: string): Promise<boolean> {
+        if (typeof window === 'undefined') return false;
+        if (typeof (window as any)[`show_${zoneId}`] === 'function') return true;
+
+        return new Promise((resolve) => {
+            console.log(`[AdManager] Loading Monetag SDK for zone ${zoneId}...`);
+            const script = document.createElement('script');
+            script.src = 'https://libtl.com/sdk.js';
+            script.async = true;
+            script.dataset.zone = zoneId;
+            script.dataset.sdk = `show_${zoneId}`;
+
+            script.onload = () => {
+                const checkInterval = setInterval(() => {
+                    if (typeof (window as any)[`show_${zoneId}`] === 'function') {
+                        clearInterval(checkInterval);
+                        console.log(`[AdManager] Monetag SDK for zone ${zoneId} loaded successfully.`);
+                        resolve(true);
+                    }
+                }, 100);
+
+                setTimeout(() => {
+                    clearInterval(checkInterval);
+                    if (typeof (window as any)[`show_${zoneId}`] === 'function') {
+                        resolve(true);
+                    } else {
+                        console.warn(`[AdManager] Monetag SDK for zone ${zoneId} load timeout.`);
+                        resolve(false);
+                    }
+                }, 5000);
+            };
+
+            script.onerror = (err) => {
+                console.error(`[AdManager] Failed to load Monetag SDK for zone ${zoneId}:`, err);
+                resolve(false);
+            };
+
+            document.body.appendChild(script);
+        });
+    }
+
+    /**
      * Muestra un Rewarded Interstitial de Monetag en Telegram Mini App.
      * El SDK de Monetag expone window.show_ZONE_ID() al cargarse.
      */
     private async showMontetagTelegramAd(zoneId: string): Promise<AdResult> {
+        const loaded = await this.loadMonetagSdk(zoneId);
+        if (!loaded) {
+            return { 
+                success: false, 
+                error: `Monetag SDK (show_${zoneId}) no se pudo cargar. Revisa tu conexión o desactiva tu AdBlock.` 
+            };
+        }
+
         return new Promise((resolve) => {
             const showFn = (window as any)[`show_${zoneId}`];
             if (typeof showFn !== 'function') {
