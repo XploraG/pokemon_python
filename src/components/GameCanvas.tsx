@@ -11,6 +11,7 @@ import { supabase } from '../lib/supabase';
 import AdManager from '../lib/AdManager';
 import AdsterraBanner from './AdsterraBanner';
 import PokemonCenterBanner from './PokemonCenterBanner';
+import MontetagBattleBanner from './MontetagBattleBanner';
 
 interface GameCanvasProps {
     saveName: string;
@@ -1480,7 +1481,7 @@ export default function GameCanvas({
 
         const adManager = AdManager.getInstance();
         const res = await adManager.showRewardedAd({
-            telegramBlockId: "34910",
+            monetagZoneId: "34910",
             adsterraUrl: process.env.NEXT_PUBLIC_ADSTERRA_DIRECT_LINK || "YOUR_ADSTERRA_DIRECT_LINK"
         });
 
@@ -1498,7 +1499,7 @@ export default function GameCanvas({
     const handleWatchHealAd = async () => {
         const adManager = AdManager.getInstance();
         const res = await adManager.showRewardedAd({
-            telegramBlockId: "34911",
+            monetagZoneId: "34911",
             adsterraUrl: process.env.NEXT_PUBLIC_ADSTERRA_DIRECT_LINK || "YOUR_ADSTERRA_DIRECT_LINK"
         });
 
@@ -1536,7 +1537,7 @@ export default function GameCanvas({
 
         const adManager = AdManager.getInstance();
         const res = await adManager.showRewardedAd({
-            telegramBlockId: "34912",
+            monetagZoneId: "34912",
             adsterraUrl: process.env.NEXT_PUBLIC_ADSTERRA_DIRECT_LINK || "YOUR_ADSTERRA_DIRECT_LINK"
         });
 
@@ -1558,7 +1559,7 @@ export default function GameCanvas({
 
         const adManager = AdManager.getInstance();
         const res = await adManager.showRewardedAd({
-            telegramBlockId: "34912",
+            monetagZoneId: "34912",
             adsterraUrl: process.env.NEXT_PUBLIC_ADSTERRA_DIRECT_LINK || "YOUR_ADSTERRA_DIRECT_LINK"
         });
 
@@ -2451,7 +2452,7 @@ export default function GameCanvas({
                             lowerName.includes('greenhouse')
                         ) {
                             const baseTop = y + h * 0.45;
-                            const baseBottom = y + h - 8;
+                            const baseBottom = y + h - 24;
                             colliders.push({
                                 x: x,
                                 y: baseTop,
@@ -3595,6 +3596,36 @@ export default function GameCanvas({
                 }
             }
 
+            // Paved paths for buildings in procedural settlements
+            // Pokemon Center path (cols 12-13, rows 10-14)
+            for (let r = 10; r < 15; r++) {
+                grid[r][12] = 'p5';
+                grid[r][13] = 'p5';
+            }
+            // Pokemon Market path (cols 27-28, rows 10-14)
+            for (let r = 10; r < 15; r++) {
+                grid[r][27] = 'p5';
+                grid[r][28] = 'p5';
+            }
+            // Gym path (cols 15-16, row gymRow + 5)
+            if (hasGym) {
+                const gymRow = Math.floor(rows * 0.35);
+                if (gymRow + 5 < rows) {
+                    grid[gymRow + 5][15] = 'p5';
+                    grid[gymRow + 5][16] = 'p5';
+                }
+            }
+            // Houses path (cols 13-14 and 27-28, from houseRow + 4 to houseRow + 6)
+            const houseRow = Math.floor(rows * 0.55);
+            for (let r = houseRow + 4; r <= houseRow + 6; r++) {
+                if (r < rows) {
+                    grid[r][13] = 'p5';
+                    grid[r][14] = 'p5';
+                    grid[r][27] = 'p5';
+                    grid[r][28] = 'p5';
+                }
+            }
+
             gridText = grid.map(line => line.join(' ')).join('\n');
             const entities: any[] = [
                 {
@@ -3636,7 +3667,7 @@ export default function GameCanvas({
             if (hasGym) {
                 entities.push({
                     location: "src/assets/entities/structures/gym/main.json",
-                    coordinates: { x: (roadC - 3) * 32, y: Math.floor(rows * 0.4) * 32 }
+                    coordinates: { x: (roadC - 8) * 32, y: Math.floor(rows * 0.35) * 32 }
                 });
             }
 
@@ -8826,6 +8857,8 @@ export default function GameCanvas({
                             </button>
                         </div>
                     )}
+                    {/* ── Battle Ad Banner (45 s ON / 5 s OFF) ── */}
+                    <MontetagBattleBanner active={!!activeWildBattle && !activeDialog} />
                 </div>
             )}
 
@@ -9433,6 +9466,8 @@ export default function GameCanvas({
                             )}
                         </div>
                     )}
+                    {/* ── PvP Battle Ad Banner (45 s ON / 5 s OFF) ── */}
+                    <MontetagBattleBanner active={!!activePvPBattle} />
                 </div>
             )}
             {activeEvolution && (

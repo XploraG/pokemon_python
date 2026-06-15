@@ -1,12 +1,12 @@
 /**
  * AdManager.ts
  * Helper unificado para monetización dinámica basada en la plataforma.
- * Carga Adsgram en Telegram y Adsterra (u otros) en World App de forma aislada.
+ * Usa Monetag en Telegram (rewarded interstitial) y Monetag/Adsterra en World App / web.
  */
 
 export interface AdManagerConfig {
-    telegramBlockId?: string; // Adsgram block ID
-    adsterraUrl?: string;     // Adsterra Direct Link o URL de redirección
+    monetagZoneId?: string;   // Monetag zone ID (expuesto como window.show_ZONE_ID)
+    adsterraUrl?: string;     // Adsterra/Monetag Direct Link o URL de redirección
 }
 
 export interface AdResult {
@@ -17,10 +17,9 @@ export interface AdResult {
 class AdManager {
     private static instance: AdManager;
     private config: AdManagerConfig = {
-        telegramBlockId: "YOUR_ADSGRAM_BLOCK_ID", // Reemplazar con ID real de Adsgram
-        adsterraUrl: "YOUR_ADSTERRA_DIRECT_LINK"   // Reemplazar con Direct Link real de Adsterra
+        monetagZoneId: '11150456',           // Zone ID de Monetag — reemplazar con el real
+        adsterraUrl: 'https://www.profitablecpmrate.com/watch?key=ef8451479fc47e5125adbeab41214bcf',
     };
-    private isAdsgramLoaded = false;
 
     private constructor() {}
 
@@ -39,137 +38,79 @@ class AdManager {
     }
 
     /**
-     * Carga dinámicamente el SDK de Adsgram en Telegram
+     * Muestra un Rewarded Interstitial de Monetag en Telegram Mini App.
+     * El SDK de Monetag expone window.show_ZONE_ID() al cargarse.
      */
-    private loadAdsgramSDK(): Promise<void> {
-        return new Promise((resolve, reject) => {
-            if (this.isAdsgramLoaded || (window as any).Adsgram) {
-                this.isAdsgramLoaded = true;
-                resolve();
+    private async showMontetagTelegramAd(zoneId: string): Promise<AdResult> {
+        return new Promise((resolve) => {
+            const showFn = (window as any)[`show_${zoneId}`];
+            if (typeof showFn !== 'function') {
+                console.warn(`[AdManager] Monetag show_${zoneId} not available (SDK not loaded or AdBlock active).`);
+                resolve({ success: false, error: `Monetag SDK (show_${zoneId}) no disponible` });
                 return;
             }
 
-            const script = document.createElement('script');
-            script.src = "https://sad.adsgram.ai/js/sad.min.js";
-            script.async = true;
-            script.onload = () => {
-                this.isAdsgramLoaded = true;
-                resolve();
-            };
-            script.onerror = () => reject(new Error("No se pudo cargar el SDK de Adsgram (puede estar bloqueado por AdBlock)"));
-            document.head.appendChild(script);
+            showFn()
+                .then(() => {
+                    resolve({ success: true });
+                })
+                .catch((err: any) => {
+                    console.warn('[AdManager] Monetag ad failed or was closed early:', err);
+                    resolve({
+                        success: false,
+                        error: err?.message || err?.description || JSON.stringify(err) || 'El anuncio fue cerrado o no se completó',
+                    });
+                });
         });
     }
 
     /**
-     * Muestra un anuncio de Adsgram (Telegram)
+     * Muestra un anuncio en World App / navegador convencional usando Monetag/Adsterra.
+     * Intenta abrir la Direct Link; si el popup está bloqueado, inyecta el popunder script.
      */
-    private async showTelegramAd(blockId: string): Promise<AdResult> {
+    private async showWebAd(directLink: string): Promise<boolean> {
+        if (typeof window === 'undefined') return false;
         try {
-            await this.loadAdsgramSDK();
-            const adsgram = (window as any).Adsgram;
-            if (!adsgram) {
-                console.warn("[AdManager] Adsgram not found on window.");
-                return { success: false, error: "El SDK de Adsgram no está disponible en window (AdBlock activo)" };
-            }
-
-            const isDev = typeof window !== 'undefined' && 
-                (window.location.hostname === 'localhost' || 
-                 window.location.hostname === '127.0.0.1' || 
-                 window.location.hostname.includes('ngrok') ||
-                 window.location.hostname.includes('localtonet') ||
-                 window.location.hostname.includes('locallink'));
-
-            if (isDev) {
-                console.log(`[AdManager] Modo desarrollo detectado. Inicializando Adsgram con debug: true para el blockId: ${blockId}`);
-            }
-
-            const AdController = adsgram.init({ 
-                blockId,
-                debug: isDev,
-                debugConsole: isDev
-            });
+            window.open(directLink, '_blank');
+        } catch (e) {
+            console.error('[AdManager] Popup blocked, trying popunder script injection fallback', e);
             try {
-                const result = await AdController.show();
-                console.log("[AdManager] Adsgram show result:", result);
-                if (result && result.done) {
-                    return { success: true };
-                } else {
-                    return { 
-                        success: false, 
-                        error: result?.description || result?.error || "El anuncio fue cerrado o no se completó" 
-                    };
-                }
-            } catch (adShowError: any) {
-                console.warn("[AdManager] Adsgram show failed.", adShowError);
-                return { 
-                    success: false, 
-                    error: adShowError?.description || adShowError?.message || JSON.stringify(adShowError) || "Error al reproducir el anuncio" 
-                };
-            }
-        } catch (err: any) {
-            console.error("Error al reproducir anuncio de Adsgram:", err);
-            return { success: false, error: err?.message || "Error al inicializar el SDK de Adsgram" };
-        }
-    }
-
-    /**
-     * Carga el script de Popunder de Adsterra en World App
-     */
-    private showWorldAppAd(): Promise<boolean> {
-        return new Promise((resolve) => {
-            if (typeof window === 'undefined') {
-                resolve(false);
-                return;
-            }
-
-            try {
-                const existing = document.getElementById('adsterra-popunder-script');
+                const existing = document.getElementById('monetag-popunder-script');
                 if (!existing) {
                     const script = document.createElement('script');
-                    script.id = 'adsterra-popunder-script';
-                    script.src = "https://pl29719998.effectivecpmnetwork.com/10/3d/8f/103d8f2ad1a9c74967779c81881ee899.js";
+                    script.id = 'monetag-popunder-script';
+                    // Popunder script de Monetag/Adsterra para World App
+                    script.src = 'https://pl29719998.effectivecpmnetwork.com/10/3d/8f/103d8f2ad1a9c74967779c81881ee899.js';
                     script.async = true;
                     document.body.appendChild(script);
                 }
-                resolve(true);
-            } catch (err) {
-                console.error("Error al inyectar script de Adsterra:", err);
-                resolve(false);
+            } catch (injectErr) {
+                console.error('[AdManager] Failed to inject popunder script:', injectErr);
+                return false;
             }
-        });
+        }
+        // Breve espera para que el usuario tenga tiempo de ver el anuncio antes de recibir la recompensa
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+        return true;
     }
 
     /**
-     * Método público para mostrar un Anuncio Recompensado (Rewarded Ad)
-     * @returns Promise<AdResult> resultado con success y error opcional.
+     * Método público para mostrar un Anuncio Recompensado (Rewarded Ad).
+     * Telegram  → Monetag Rewarded Interstitial (show_ZONE_ID())
+     * Web/World → Monetag/Adsterra Direct Link popup
      */
     public async showRewardedAd(customConfig?: AdManagerConfig): Promise<AdResult> {
         const activeConfig = { ...this.config, ...customConfig };
 
         if (this.isTelegram()) {
-            if (!activeConfig.telegramBlockId || activeConfig.telegramBlockId === "YOUR_ADSGRAM_BLOCK_ID") {
-                console.warn("Adsgram Block ID no configurado.");
-                return { success: false, error: "Block ID no configurado" };
-            }
-            return await this.showTelegramAd(activeConfig.telegramBlockId);
+            const zoneId = activeConfig.monetagZoneId || '11150456';
+            return await this.showMontetagTelegramAd(zoneId);
         } else {
-            // World App o navegador convencional
-            if (typeof window !== 'undefined') {
-                const directLink = activeConfig.adsterraUrl && activeConfig.adsterraUrl !== "YOUR_ADSTERRA_DIRECT_LINK"
-                    ? activeConfig.adsterraUrl
-                    : "https://www.profitablecpmrate.com/watch?key=ef8451479fc47e5125adbeab41214bcf";
-                try {
-                    window.open(directLink, '_blank');
-                } catch (e) {
-                    console.error("[AdManager] Popup blocked, trying script popunder injection fallback", e);
-                    await this.showWorldAppAd();
-                }
-                // Simula una breve espera de 2 segundos para otorgar la recompensa, garantizando que el cofre no falle
-                await new Promise((resolve) => setTimeout(resolve, 2000));
-                return { success: true };
-            }
-            return { success: false, error: "Entorno window no disponible" };
+            const directLink = activeConfig.adsterraUrl || this.config.adsterraUrl!;
+            const ok = await this.showWebAd(directLink);
+            return ok
+                ? { success: true }
+                : { success: false, error: 'Error al mostrar el anuncio en web' };
         }
     }
 }

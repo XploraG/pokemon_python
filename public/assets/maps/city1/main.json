@@ -71,7 +71,7 @@
         {
             "location": "src/assets/entities/structures/gym/main.json",
             "coordinates": {
-                "x": 600,
+                "x": 704,
                 "y": 400
             }
         },
@@ -85,7 +85,7 @@
         {
             "location": "src/assets/entities/structures/redhouse/main.json",
             "coordinates": {
-                "x": 850,
+                "x": 960,
                 "y": 400
             }
         },

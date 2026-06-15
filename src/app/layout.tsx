@@ -28,7 +28,8 @@ export default function RootLayout({
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`} suppressHydrationWarning>
       <body suppressHydrationWarning>
         <Script src="https://telegram.org/js/telegram-web-app.js" strategy="beforeInteractive" />
-        <Script src="https://sad.adsgram.ai/js/sad.min.js" strategy="afterInteractive" />
+        {/* Monetag SDK for Telegram Mini Apps — exposes show_11150456() globally */}
+        <Script src="https://libtl.com/sdk.js" strategy="afterInteractive" data-zone="11150456" data-sdk="show_11150456" />
         <MiniKitBootstrap>
           {children}
         </MiniKitBootstrap>
