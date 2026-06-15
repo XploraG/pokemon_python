@@ -1,0 +1,18 @@
+{
+    "name": "Líder Koga",
+    "img": "src/assets/entities/npcs/persons/gymleader/koga/sprites.png",
+    "scale": 2,
+    "type": "npc",
+    "dialog": "Fwahahaha! Soy Koga, el Líder de Gimnasio de Ciudad Fucsia. ¡Prueba el veneno mortal y las técnicas ninja de mis Pokémon!",
+    "valid_moves": [
+        "down"
+    ],
+    "down": [
+        {
+            "y": 0,
+            "x": 0,
+            "w": 16,
+            "h": 32
+        }
+    ]
+}

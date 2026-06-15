@@ -1,0 +1,57 @@
+{
+    "map": "src/assets/maps/gym/gym_3.txt",
+    "tile_size": 32,
+    "components": [
+        {
+            "type": "W1",
+            "size": [
+                32,
+                32
+            ],
+            "image": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'><rect width='32' height='32' fill='%23854d0e'/><rect x='2' y='2' width='28' height='28' fill='%23713f12'/></svg>",
+            "isSolid": true
+        },
+        {
+            "type": "F1",
+            "size": [
+                32,
+                32
+            ],
+            "image": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'><rect width='32' height='32' fill='%23eab308'/><rect x='2' y='2' width='28' height='28' fill='%23ca8a04'/></svg>"
+        },
+        {
+            "type": "TC",
+            "size": [
+                32,
+                32
+            ],
+            "image": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'><rect x='6' y='6' width='20' height='22' rx='3' fill='%239ca3af'/><line x1='6' y1='12' x2='26' y2='12' stroke='%234b5563' stroke-width='2'/></svg>",
+            "isSolid": true
+        },
+        {
+            "type": "S1",
+            "size": [
+                32,
+                32
+            ],
+            "image": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'><rect width='32' height='32' fill='%23ca8a04'/><rect x='4' y='8' width='24' height='20' fill='%23a16207'/></svg>"
+        },
+        {
+            "type": "CP",
+            "size": [
+                32,
+                32
+            ],
+            "image": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'><rect width='32' height='32' fill='%23dd6b20'/></svg>"
+        }
+    ],
+    "entities": [
+        {
+            "location": "src/assets/entities/npcs/persons/gymleader/surge/main.json",
+            "coordinates": {
+                "x": 160,
+                "y": 64
+            }
+        }
+    ]
+}

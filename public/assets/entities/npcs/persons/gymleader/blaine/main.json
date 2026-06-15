@@ -1,0 +1,18 @@
+{
+    "name": "Líder Blaine",
+    "img": "src/assets/entities/npcs/persons/gymleader/blaine/sprites.png",
+    "scale": 2,
+    "type": "npc",
+    "dialog": "¡Hah! ¡Soy Blaine, el Líder de Gimnasio caliente de Isla Canela! ¡Mis Pokémon de tipo FUEGO quemarán tus esperanzas!",
+    "valid_moves": [
+        "down"
+    ],
+    "down": [
+        {
+            "y": 0,
+            "x": 0,
+            "w": 16,
+            "h": 32
+        }
+    ]
+}

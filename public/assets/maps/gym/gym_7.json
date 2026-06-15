@@ -1,0 +1,57 @@
+{
+    "map": "src/assets/maps/gym/gym_7.txt",
+    "tile_size": 32,
+    "components": [
+        {
+            "type": "W1",
+            "size": [
+                32,
+                32
+            ],
+            "image": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'><rect width='32' height='32' fill='%239a3412'/><rect x='2' y='2' width='28' height='28' fill='%237c2d12'/></svg>",
+            "isSolid": true
+        },
+        {
+            "type": "F1",
+            "size": [
+                32,
+                32
+            ],
+            "image": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'><rect width='32' height='32' fill='%23f97316'/><rect x='2' y='2' width='28' height='28' fill='%23ea580c'/></svg>"
+        },
+        {
+            "type": "Q1",
+            "size": [
+                32,
+                32
+            ],
+            "image": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'><rect width='32' height='32' fill='%239a3412'/><rect x='4' y='4' width='24' height='24' fill='%23fbbf24'/><text x='11' y='22' font-family='monospace' font-weight='bold' fill='%237c2d12' font-size='18'>?</text></svg>",
+            "isSolid": true
+        },
+        {
+            "type": "S1",
+            "size": [
+                32,
+                32
+            ],
+            "image": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'><rect width='32' height='32' fill='%23ea580c'/><rect x='4' y='8' width='24' height='20' fill='%23c2410c'/></svg>"
+        },
+        {
+            "type": "CP",
+            "size": [
+                32,
+                32
+            ],
+            "image": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'><rect width='32' height='32' fill='%23dd6b20'/></svg>"
+        }
+    ],
+    "entities": [
+        {
+            "location": "src/assets/entities/npcs/persons/gymleader/blaine/main.json",
+            "coordinates": {
+                "x": 160,
+                "y": 64
+            }
+        }
+    ]
+}

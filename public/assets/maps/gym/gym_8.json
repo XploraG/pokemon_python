@@ -1,0 +1,56 @@
+{
+    "map": "src/assets/maps/gym/gym_8.txt",
+    "tile_size": 32,
+    "components": [
+        {
+            "type": "W1",
+            "size": [
+                32,
+                32
+            ],
+            "image": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'><rect width='32' height='32' fill='%231e293b'/><rect x='2' y='2' width='28' height='28' fill='%230f172a'/></svg>",
+            "isSolid": true
+        },
+        {
+            "type": "F1",
+            "size": [
+                32,
+                32
+            ],
+            "image": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'><rect width='32' height='32' fill='%2378716c'/><rect x='2' y='2' width='28' height='28' fill='%2357534e'/></svg>"
+        },
+        {
+            "type": "AR",
+            "size": [
+                32,
+                32
+            ],
+            "image": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'><rect width='32' height='32' fill='%2357534e'/><path d='M16 4 L28 16 L20 16 L20 28 L12 28 L12 16 L4 16 Z' fill='%23facc15'/></svg>"
+        },
+        {
+            "type": "S1",
+            "size": [
+                32,
+                32
+            ],
+            "image": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'><rect width='32' height='32' fill='%2357534e'/><rect x='4' y='8' width='24' height='20' fill='%2344403c'/></svg>"
+        },
+        {
+            "type": "CP",
+            "size": [
+                32,
+                32
+            ],
+            "image": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'><rect width='32' height='32' fill='%23dd6b20'/></svg>"
+        }
+    ],
+    "entities": [
+        {
+            "location": "src/assets/entities/npcs/persons/gymleader/giovanni/main.json",
+            "coordinates": {
+                "x": 160,
+                "y": 64
+            }
+        }
+    ]
+}

@@ -1,0 +1,57 @@
+{
+    "map": "src/assets/maps/gym/gym_2.txt",
+    "tile_size": 32,
+    "components": [
+        {
+            "type": "W1",
+            "size": [
+                32,
+                32
+            ],
+            "image": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'><rect width='32' height='32' fill='%231e3a8a'/><rect x='2' y='2' width='28' height='28' fill='%23172554'/></svg>",
+            "isSolid": true
+        },
+        {
+            "type": "F1",
+            "size": [
+                32,
+                32
+            ],
+            "image": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'><rect width='32' height='32' fill='%2360a5fa'/><rect x='2' y='2' width='28' height='28' fill='%233b82f6'/></svg>"
+        },
+        {
+            "type": "W2",
+            "size": [
+                32,
+                32
+            ],
+            "image": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'><rect width='32' height='32' fill='%2393c5fd'/><path d='M0 16 Q8 12 16 16 T32 16' stroke='%232563eb' fill='none'/></svg>",
+            "isSolid": true
+        },
+        {
+            "type": "S1",
+            "size": [
+                32,
+                32
+            ],
+            "image": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'><rect width='32' height='32' fill='%233b82f6'/><rect x='4' y='8' width='24' height='20' fill='%231d4ed8'/></svg>"
+        },
+        {
+            "type": "CP",
+            "size": [
+                32,
+                32
+            ],
+            "image": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'><rect width='32' height='32' fill='%23dd6b20'/></svg>"
+        }
+    ],
+    "entities": [
+        {
+            "location": "src/assets/entities/npcs/persons/gymleader/misty/main.json",
+            "coordinates": {
+                "x": 160,
+                "y": 64
+            }
+        }
+    ]
+}

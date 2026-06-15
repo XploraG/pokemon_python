@@ -1,0 +1,18 @@
+{
+    "name": "Líder Giovanni",
+    "img": "src/assets/entities/npcs/persons/gymleader/giovanni/sprites.png",
+    "scale": 2,
+    "type": "npc",
+    "dialog": "Así que has llegado hasta aquí... Soy Giovanni, el Líder de Gimnasio de Ciudad Verde. ¡La TIERRA temblará ante mi poder!",
+    "valid_moves": [
+        "down"
+    ],
+    "down": [
+        {
+            "y": 0,
+            "x": 0,
+            "w": 16,
+            "h": 32
+        }
+    ]
+}

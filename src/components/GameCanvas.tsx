@@ -3837,7 +3837,8 @@ export default function GameCanvas({
                             }
                         }
 
-                        destMap = '/assets/maps/gym/main.json';
+                        const finalGymIndex = Math.min(Math.max(gymIndex, 1), 8);
+                        destMap = `/assets/maps/gym/gym_${finalGymIndex}.json`;
                         dialogTitle = "Gimnasio";
                         dialogMsg = "Entering the Gym...";
                     } else {
@@ -4283,7 +4284,7 @@ export default function GameCanvas({
                     setActiveDialog("Welcome to the PokeMart! Talk to me to buy items.");
                     setShowShop(true);
                 }
-                else if (entity.name === "Gym Leader Brock") {
+                else if (entity.name === "Gym Leader Brock" || (entity.name && entity.name.startsWith("Líder "))) {
                     // Extract procedural town index from returnMapRef.current
                     let gymIndex = 1;
                     const returnMap = returnMapRef.current.toLowerCase();
