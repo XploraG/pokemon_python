@@ -840,6 +840,12 @@ const getMapDisplayName = (mapPath: string): string => {
     if (path.includes('tutorial')) {
         return 'Pueblo Tutorial';
     }
+    if (path.includes('city1')) {
+        return 'Ciudad Celeste';
+    }
+    if (path.includes('cave/main')) {
+        return 'Cueva Celeste';
+    }
     if (path.includes('pokecenter')) {
         return 'Centro Pokémon';
     }
@@ -881,8 +887,15 @@ const getMapDisplayName = (mapPath: string): string => {
     return 'Zona Desconocida';
 };
 
-const getClosestPokeCenter = (currentPath: string): { map: string; coords: [number, number] } => {
-    const path = currentPath.toLowerCase();
+const getClosestPokeCenter = (currentPath: string, returnMap?: string): { map: string; coords: [number, number] } => {
+    const path = (returnMap || currentPath).toLowerCase();
+
+    if (path.includes('city1') || path.includes('cave_1') || path.includes('cave/main')) {
+        return {
+            map: '/assets/maps/city1/main.json',
+            coords: [280, 916]
+        };
+    }
 
     if (path.startsWith('procedural://')) {
         const parts = path.replace('procedural://', '').split('_');
@@ -890,13 +903,6 @@ const getClosestPokeCenter = (currentPath: string): { map: string; coords: [numb
         return {
             map: `procedural://settlement_${index}`,
             coords: [400, 276]
-        };
-    }
-
-    if (path.includes('city1') || path.includes('/cave')) {
-        return {
-            map: '/assets/maps/city1/main.json',
-            coords: [280, 916]
         };
     }
 
@@ -1291,6 +1297,10 @@ export default function GameCanvas({
     } | null>(null);
     const activeEvolutionRef = useRef(activeEvolution);
     useEffect(() => { activeEvolutionRef.current = activeEvolution; }, [activeEvolution]);
+
+    const defeatedTrainersRef = useRef<Set<string>>(new Set());
+    const activeTrainerIdRef = useRef<string | null>(null);
+    const lastCheckedTileRef = useRef<{ x: number; y: number } | null>(null);
 
     // Battle stats modifier stages (Growl lowers attack, Tail Whip lowers defense)
     const [playerAtkStage, setPlayerAtkStage] = useState<number>(0);
@@ -2923,6 +2933,10 @@ export default function GameCanvas({
         // Set speed based on Bicycle mount state
         player.speed = isBicycleActive ? 8 : 4;
 
+        if (!player.isMoving) {
+            checkTrainerLineOfSight();
+        }
+
         if (player.isMoving) {
             let dx = player.targetX - player.x;
             let dy = player.targetY - player.y;
@@ -3111,23 +3125,28 @@ export default function GameCanvas({
                 return true;
             }
             if (nextY >= mapDataRef.current.height && dir === 'down') {
-                // Route 1 conecta directamente con la zona procedural infinita
+                // Route 1 conecta directamente con la zona de exploración
                 prepareProceduralMap('procedural://route_1');
                 transitionToMap('procedural://route_1', 480, 32);
                 return true;
             }
         }
 
-        // 3. Cave map transitions (static cave in route1)
-        if (path.includes('/cave')) {
+        // City 1 map transitions (Ciudad Celeste)
+        if (path.includes('city1')) {
             if (nextY < 0 && dir === 'up') {
-                // Salida norte de cueva → vuelve a Ciudad Nueva (city1)
-                transitionToMap('/assets/maps/city1/main.json', 1184, 1248);
+                // Salida norte de Ciudad Celeste lleva a Ruta 1 de Exploración (procedural://route_1)
+                const nextMap = 'procedural://route_1';
+                prepareProceduralMap(nextMap);
+                const spawnY = getDynamicSpawnY(nextMap);
+                transitionToMap(nextMap, 480, spawnY);
                 return true;
             }
             if (nextY >= mapDataRef.current.height && dir === 'down') {
-                // Salida sur de cueva → vuelve a Ruta 01 (entrada cueva)
-                transitionToMap('/assets/maps/route1/main.json', 1088, 384);
+                // Salida sur de Ciudad Celeste lleva a Cueva 1 de Exploración (procedural://cave_1)
+                const nextMap = 'procedural://cave_1';
+                prepareProceduralMap(nextMap);
+                transitionToMap(nextMap, 512, 32);
                 return true;
             }
         }
@@ -3152,9 +3171,14 @@ export default function GameCanvas({
                     return true;
                 }
                 if (dir === 'down') {
-                    const nextMap = `procedural://settlement_${index}`;
-                    prepareProceduralMap(nextMap);
-                    transitionToMap(nextMap, 640, 32); // Spawn at settlement top entry
+                    if (index === 1) {
+                        // Procedural Ruta 1 lleva a Ciudad Celeste (Misty's city)
+                        transitionToMap('/assets/maps/city1/main.json', 640, 32);
+                    } else {
+                        const nextMap = `procedural://settlement_${index}`;
+                        prepareProceduralMap(nextMap);
+                        transitionToMap(nextMap, 640, 32); // Spawn at settlement top entry
+                    }
                     return true;
                 }
             } else if (type === 'settlement') {
@@ -3173,10 +3197,15 @@ export default function GameCanvas({
                 }
             } else if (type === 'cave') {
                 if (dir === 'up') {
-                    const nextMap = `procedural://settlement_${index}`;
-                    prepareProceduralMap(nextMap);
-                    const spawnY = getDynamicSpawnY(nextMap);
-                    transitionToMap(nextMap, 640, spawnY); // Spawn at settlement bottom entry
+                    if (index === 1) {
+                        // Cueva 1 de exploración regresa a Ciudad Celeste
+                        transitionToMap('/assets/maps/city1/main.json', 1184, 1248);
+                    } else {
+                        const nextMap = `procedural://settlement_${index}`;
+                        prepareProceduralMap(nextMap);
+                        const spawnY = getDynamicSpawnY(nextMap);
+                        transitionToMap(nextMap, 640, spawnY); // Spawn at settlement bottom entry
+                    }
                     return true;
                 }
                 if (dir === 'down') {
@@ -3761,8 +3790,9 @@ export default function GameCanvas({
                         transitionToMap('/assets/maps/cave/main.json', 256, 1536);
                         return true;
                     } else if (currentPath.includes('city1')) {
-                        // Enter cave from the north (top) entrance
-                        transitionToMap('/assets/maps/cave/main.json', 992, 32);
+                        // Enter cave 1 of exploration from Ciudad Celeste
+                        prepareProceduralMap('procedural://cave_1');
+                        transitionToMap('procedural://cave_1', 512, 32);
                         return true;
                     }
                 }
@@ -3808,6 +3838,8 @@ export default function GameCanvas({
                         if (curMap.includes('procedural://settlement_')) {
                             const parts = curMap.replace('procedural://settlement_', '').split('_');
                             gymIndex = parseInt(parts[0] || '1', 10) + 1;
+                        } else if (curMap.includes('city1')) {
+                            gymIndex = 2;
                         }
 
                         if (gymIndex > 1) {
@@ -4174,6 +4206,102 @@ export default function GameCanvas({
         }
     };
 
+    // Check if player enters a trainer's line of sight
+    const checkTrainerLineOfSight = () => {
+        if (
+            activeDialogRef.current !== null ||
+            isGymBattle ||
+            isTrainerBattle ||
+            activeWildBattleRef.current !== null ||
+            showMenuModal ||
+            showNurseJoyModal ||
+            showShop ||
+            showDaily ||
+            showMissions ||
+            showInventoryModal ||
+            activePvPBattleRef.current !== null ||
+            pendingPvPInviteRef.current !== null ||
+            incomingPvPInviteRef.current !== null ||
+            activeEvolutionRef.current !== null
+        ) {
+            return;
+        }
+
+        const mapData = mapDataRef.current;
+        if (!mapData) return;
+
+        const px = Math.floor(playerRef.current.x / mapData.tileSize);
+        const py = Math.floor(playerRef.current.y / mapData.tileSize);
+
+        // Skip if we already checked this tile
+        if (lastCheckedTileRef.current?.x === px && lastCheckedTileRef.current?.y === py) {
+            return;
+        }
+        lastCheckedTileRef.current = { x: px, y: py };
+
+        for (const entity of mapData.entities) {
+            // Is it a trainer?
+            const isTrainer = entity.dialogs && entity.dialogs.some((d: string) => d.startsWith("TRAINER_BATTLE:"));
+            if (!isTrainer) continue;
+
+            // Has this trainer been defeated in this session?
+            const trainerId = `${currentMapPathRef.current}_${entity.x}_${entity.y}`;
+            if (defeatedTrainersRef.current.has(trainerId)) continue;
+
+            const tx = Math.floor(entity.x / mapData.tileSize);
+            const ty = Math.floor(entity.y / mapData.tileSize);
+
+            let spotted = false;
+
+            // Check if player is within 3 tiles in the same row or column
+            if (tx === px && Math.abs(ty - py) <= 3) {
+                // Check for walls between ty and py
+                const startY = Math.min(ty, py);
+                const endY = Math.max(ty, py);
+                let hasWall = false;
+                for (let y = startY + 1; y < endY; y++) {
+                    const tile = mapData.grid?.[y]?.[tx];
+                    if (tile === 'W1' || tile === 'CW' || tile === 'S1' || tile === 'R1' || tile === 'H1' || tile === 'IW') {
+                        hasWall = true;
+                        break;
+                    }
+                }
+                if (!hasWall) spotted = true;
+            } else if (ty === py && Math.abs(tx - px) <= 3) {
+                // Check for walls between tx and px
+                const startX = Math.min(tx, px);
+                const endX = Math.max(tx, px);
+                let hasWall = false;
+                for (let x = startX + 1; x < endX; x++) {
+                    const tile = mapData.grid?.[ty]?.[x];
+                    if (tile === 'W1' || tile === 'CW' || tile === 'S1' || tile === 'R1' || tile === 'H1' || tile === 'IW') {
+                        hasWall = true;
+                        break;
+                    }
+                }
+                if (!hasWall) spotted = true;
+            }
+
+            if (spotted) {
+                // Store the active trainer ID so we can mark it as defeated when won
+                activeTrainerIdRef.current = trainerId;
+
+                // Stop player movement
+                playerRef.current.isMoving = false;
+                playerRef.current.targetX = playerRef.current.x;
+                playerRef.current.targetY = playerRef.current.y;
+                keysPressed.current = {};
+
+                // Trigger dialogue
+                setDialogName(entity.name || "Entrenador");
+                setActiveDialog(entity.dialogs ? entity.dialogs[0] : "");
+                setCurrentDialogList(entity.dialogs || []);
+                setCurrentDialogIndex(0);
+                break;
+            }
+        }
+    };
+
     // Interaction checks (facing building door or characters)
     const handleInteraction = () => {
         if (activeDialogRef.current !== null) {
@@ -4298,6 +4426,8 @@ export default function GameCanvas({
                     if (returnMap.includes('procedural://settlement_')) {
                         const parts = returnMap.replace('procedural://settlement_', '').split('_');
                         gymIndex = parseInt(parts[0] || '1', 10) + 1;
+                    } else if (returnMap.includes('city1')) {
+                        gymIndex = 2;
                     }
 
                     if (gymIndex > 13) {
@@ -4906,7 +5036,16 @@ export default function GameCanvas({
                     if (isTrainerBattle) {
                         const baseCoins = Math.floor(Math.random() * (40 - 25 + 1)) + 25;
                         const levelScale = 1.0 + ((activeWildBattle.level ?? 1) - 1) * 0.12;
-                        const coinsEarned = Math.floor(baseCoins * levelScale * 1.5);
+                        let coinsEarned = Math.floor(baseCoins * levelScale * 1.5);
+                        
+                        // If we are in a gym, calculate 25% of the gym leader's first victory reward!
+                        const curMap = currentMapPathRef.current.toLowerCase();
+                        if (curMap.includes('gym_')) {
+                            const parts = curMap.replace('/assets/maps/gym/gym_', '').replace('.json', '');
+                            const gymIndex = parseInt(parts, 10) || 1;
+                            const avgLeaderReward = (gymIndex * 50 + 50) + (gymIndex * 50 + 50) + 10;
+                            coinsEarned = Math.floor(avgLeaderReward * 0.25);
+                        }
                         
                         economyRef.current.addCoins(coinsEarned);
                         economyRef.current.updateMissionProgress('battle');
@@ -4926,6 +5065,13 @@ export default function GameCanvas({
                             setIsGymBattle(false);
                             setGymLeaderName(null);
                             setActiveWildBattle(null);
+                            
+                            // Mark this trainer as defeated in the session
+                            if (activeTrainerIdRef.current) {
+                                defeatedTrainersRef.current.add(activeTrainerIdRef.current);
+                                activeTrainerIdRef.current = null;
+                            }
+                            
                             saveLocalEconomy(updatedTeam);
                             setEconomy(new Economy(economyRef.current.toSaveData()));
                             setIsBattleAnimating(false);
@@ -4958,6 +5104,8 @@ export default function GameCanvas({
                         if (returnMap.includes('procedural://settlement_')) {
                             const parts = returnMap.replace('procedural://settlement_', '').split('_');
                             gymIndex = parseInt(parts[0] || '1', 10) + 1;
+                        } else if (returnMap.includes('city1')) {
+                            gymIndex = 2;
                         }
 
                         const gymBosses = [
@@ -5193,7 +5341,7 @@ export default function GameCanvas({
                         );
                         
                         // Warp to nearest Pokemon Center
-                        const closestCenter = getClosestPokeCenter(currentMapPathRef.current);
+                        const closestCenter = getClosestPokeCenter(currentMapPathRef.current, returnMapRef.current);
                         returnMapRef.current = closestCenter.map;
                         returnCoordsRef.current = closestCenter.coords;
                         playerRef.current.x = 144;
@@ -5208,6 +5356,7 @@ export default function GameCanvas({
                         saveLocalEconomy(updatedTeam);
                         
                         setIsGymBattle(false);
+                        setIsTrainerBattle(false);
                         setGymLeaderName(null);
                         setActiveWildBattle(null);
                         setIsBattleAnimating(false);
