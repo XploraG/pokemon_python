@@ -24,7 +24,7 @@
                 32,
                 32
             ],
-            "image": "src/assets/entities/structures/tree/tree1.png",
+            "image": "src/assets/entities/structures/tree/tree.png",
             "isSolid": true
         },
         {
@@ -33,7 +33,7 @@
                 32,
                 32
             ],
-            "image": "src/assets/entities/structures/fence/main.png",
+            "image": "src/assets/entities/structures/bush/bush.png",
             "isSolid": true
         },
         {

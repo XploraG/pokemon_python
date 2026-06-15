@@ -2499,8 +2499,15 @@ export default function GameCanvas({
 
                     // Sanitize/align player coordinates to match the grid offset of the loaded map
                     const isOutdoor = currentMapPath.includes('tutorial') || currentMapPath.includes('route') || currentMapPath.includes('city');
-                    const pxCoord = playerRef.current.x;
-                    const pyCoord = playerRef.current.y;
+                    
+                    let pxCoord = playerRef.current.x;
+                    let pyCoord = playerRef.current.y;
+                    
+                    if (mapJson.spawn) {
+                        pxCoord = mapJson.spawn.x;
+                        pyCoord = mapJson.spawn.y;
+                    }
+                    
                     const cellX = Math.floor(pxCoord / tileSize);
                     const cellY = Math.floor(pyCoord / tileSize);
                     
@@ -3668,7 +3675,7 @@ export default function GameCanvas({
 
             // Vertical corridor connecting chambers
             const corridorC = 16; // Force vertical corridor at column 16 to match spawn coordinates
-            for (let r = 2; r < rows - 2; r++) {
+            for (let r = 0; r < rows; r++) {
                 grid[r][corridorC - 1] = 'CF';
                 grid[r][corridorC]     = 'CF';
                 grid[r][corridorC + 1] = 'CF';

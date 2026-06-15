@@ -1,6 +1,10 @@
 {
     "map": "src/assets/maps/gym/gym_1.txt",
     "tile_size": 32,
+    "spawn": {
+        "x": 192,
+        "y": 480
+    },
     "components": [
         {
             "type": "W1",
@@ -20,12 +24,22 @@
             "image": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'><rect width='32' height='32' fill='%23d1d5db'/><rect x='2' y='2' width='28' height='28' fill='%239ca3af'/></svg>"
         },
         {
+            "type": "R1",
+            "size": [
+                32,
+                32
+            ],
+            "image": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'><rect width='32' height='32' fill='%239ca3af'/><circle cx='16' cy='16' r='12' fill='%234b5563'/></svg>",
+            "isSolid": true
+        },
+        {
             "type": "S1",
             "size": [
                 32,
                 32
             ],
-            "image": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'><rect width='32' height='32' fill='%239ca3af'/><rect x='4' y='8' width='24' height='20' fill='%234b5563'/></svg>"
+            "image": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'><rect width='32' height='32' fill='%239ca3af'/><rect x='4' y='8' width='24' height='20' fill='%234b5563'/></svg>",
+            "isSolid": true
         },
         {
             "type": "CP",
@@ -40,9 +54,31 @@
         {
             "location": "src/assets/entities/npcs/persons/gymleader/brock/main.json",
             "coordinates": {
-                "x": 160,
+                "x": 192,
                 "y": 64
             }
+        },
+        {
+            "location": "src/assets/entities/npcs/persons/athletemike/main.json",
+            "coordinates": {
+                "x": 192,
+                "y": 224
+            },
+            "dialogs": [
+                "¡Detente! No puedes retar a Brock sin vencer a sus alumnos primero.",
+                "TRAINER_BATTLE:geodude:9"
+            ]
+        },
+        {
+            "location": "src/assets/entities/npcs/persons/athletemike/main.json",
+            "coordinates": {
+                "x": 96,
+                "y": 352
+            },
+            "dialogs": [
+                "¡El tipo ROCA es sumamente resistente! ¡Prueba mi fuerza!",
+                "TRAINER_BATTLE:sandshrew:10"
+            ]
         }
     ]
 }

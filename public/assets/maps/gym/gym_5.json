@@ -1,6 +1,10 @@
 {
     "map": "src/assets/maps/gym/gym_5.txt",
     "tile_size": 32,
+    "spawn": {
+        "x": 224,
+        "y": 544
+    },
     "components": [
         {
             "type": "W1",
@@ -34,7 +38,8 @@
                 32,
                 32
             ],
-            "image": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'><rect width='32' height='32' fill='%23a855f7'/><rect x='4' y='8' width='24' height='20' fill='%237e22ce'/></svg>"
+            "image": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'><rect width='32' height='32' fill='%23a855f7'/><rect x='4' y='8' width='24' height='20' fill='%237e22ce'/></svg>",
+            "isSolid": true
         },
         {
             "type": "CP",
@@ -49,9 +54,31 @@
         {
             "location": "src/assets/entities/npcs/persons/gymleader/koga/main.json",
             "coordinates": {
-                "x": 160,
-                "y": 64
+                "x": 224,
+                "y": 96
             }
+        },
+        {
+            "location": "src/assets/entities/npcs/persons/athletemike/main.json",
+            "coordinates": {
+                "x": 160,
+                "y": 224
+            },
+            "dialogs": [
+                "¡Ninja! El arte del veneno y el camuflaje es absoluto. ¿Puedes verme?",
+                "TRAINER_BATTLE:koffing:44"
+            ]
+        },
+        {
+            "location": "src/assets/entities/npcs/persons/athletemike/main.json",
+            "coordinates": {
+                "x": 288,
+                "y": 384
+            },
+            "dialogs": [
+                "¡Chocarás contra las paredes invisibles una y otra vez!",
+                "TRAINER_BATTLE:sandslash:45"
+            ]
         }
     ]
 }

@@ -1,6 +1,10 @@
 {
     "map": "src/assets/maps/gym/gym_6.txt",
     "tile_size": 32,
+    "spawn": {
+        "x": 224,
+        "y": 544
+    },
     "components": [
         {
             "type": "W1",
@@ -20,20 +24,13 @@
             "image": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'><rect width='32' height='32' fill='%23f472b6'/><rect x='2' y='2' width='28' height='28' fill='%23ec4899'/></svg>"
         },
         {
-            "type": "TP",
-            "size": [
-                32,
-                32
-            ],
-            "image": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'><rect width='32' height='32' fill='%23f472b6'/><rect x='2' y='2' width='28' height='28' fill='%23ec4899'/><circle cx='16' cy='16' r='8' fill='%2367e8f9'/></svg>"
-        },
-        {
             "type": "S1",
             "size": [
                 32,
                 32
             ],
-            "image": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'><rect width='32' height='32' fill='%23ec4899'/><rect x='4' y='8' width='24' height='20' fill='%23be185d'/></svg>"
+            "image": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'><rect width='32' height='32' fill='%23ec4899'/><rect x='4' y='8' width='24' height='20' fill='%23be185d'/></svg>",
+            "isSolid": true
         },
         {
             "type": "CP",
@@ -48,9 +45,31 @@
         {
             "location": "src/assets/entities/npcs/persons/gymleader/sabrina/main.json",
             "coordinates": {
-                "x": 160,
-                "y": 64
+                "x": 224,
+                "y": 96
             }
+        },
+        {
+            "location": "src/assets/entities/npcs/persons/childmary/main.json",
+            "coordinates": {
+                "x": 96,
+                "y": 256
+            },
+            "dialogs": [
+                "¡Tengo poderes mentales que doblarán tu voluntad como una cuchara!",
+                "TRAINER_BATTLE:kadabra:58"
+            ]
+        },
+        {
+            "location": "src/assets/entities/npcs/persons/childmary/main.json",
+            "coordinates": {
+                "x": 352,
+                "y": 384
+            },
+            "dialogs": [
+                "¡Sabrina predijo tu fracaso! ¡Yo lo haré realidad!",
+                "TRAINER_BATTLE:hypno:59"
+            ]
         }
     ]
 }

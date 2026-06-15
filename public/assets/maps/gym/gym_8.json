@@ -1,6 +1,10 @@
 {
     "map": "src/assets/maps/gym/gym_8.txt",
     "tile_size": 32,
+    "spawn": {
+        "x": 224,
+        "y": 608
+    },
     "components": [
         {
             "type": "W1",
@@ -33,7 +37,8 @@
                 32,
                 32
             ],
-            "image": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'><rect width='32' height='32' fill='%2357534e'/><rect x='4' y='8' width='24' height='20' fill='%2344403c'/></svg>"
+            "image": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'><rect width='32' height='32' fill='%2357534e'/><rect x='4' y='8' width='24' height='20' fill='%2344403c'/></svg>",
+            "isSolid": true
         },
         {
             "type": "CP",
@@ -48,9 +53,31 @@
         {
             "location": "src/assets/entities/npcs/persons/gymleader/giovanni/main.json",
             "coordinates": {
-                "x": 160,
-                "y": 64
+                "x": 224,
+                "y": 96
             }
+        },
+        {
+            "location": "src/assets/entities/npcs/persons/athletemike/main.json",
+            "coordinates": {
+                "x": 128,
+                "y": 256
+            },
+            "dialogs": [
+                "¡Este es el gimnasio final! ¡Giovanni es el líder indiscutible de la Tierra!",
+                "TRAINER_BATTLE:dugtrio:78"
+            ]
+        },
+        {
+            "location": "src/assets/entities/npcs/persons/athletemike/main.json",
+            "coordinates": {
+                "x": 320,
+                "y": 416
+            },
+            "dialogs": [
+                "¡Las flechas te empujarán de vuelta si no calculas bien tus pasos!",
+                "TRAINER_BATTLE:rhydon:79"
+            ]
         }
     ]
 }
