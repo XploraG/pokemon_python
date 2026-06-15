@@ -438,6 +438,8 @@ const EVOLUTION_DATABASE: Record<string, { method: 'level' | 'stone'; target: st
     pidgeotto: { method: 'level', target: 'pidgeot', level: 36 },
     rattata: { method: 'level', target: 'raticate', level: 20 },
     spearow: { method: 'level', target: 'fearow', level: 20 },
+    "nidoran-f": { method: 'level', target: 'nidorina', level: 16 },
+    "nidoran-m": { method: 'level', target: 'nidorino', level: 16 },
     ekans: { method: 'level', target: 'arbok', level: 22 },
     sandshrew: { method: 'level', target: 'sandslash', level: 22 },
     zubat: { method: 'level', target: 'golbat', level: 22 },
@@ -453,6 +455,7 @@ const EVOLUTION_DATABASE: Record<string, { method: 'level' | 'stone'; target: st
     machop: { method: 'level', target: 'machoke', level: 28 },
     machoke: { method: 'level', target: 'machamp', level: 40 },
     bellsprout: { method: 'level', target: 'weepinbell', level: 21 },
+    oddish: { method: 'level', target: 'gloom', level: 21 },
     tentacool: { method: 'level', target: 'tentacruel', level: 30 },
     geodude: { method: 'level', target: 'graveler', level: 25 },
     graveler: { method: 'level', target: 'golem', level: 40 },
@@ -483,6 +486,8 @@ const EVOLUTION_DATABASE: Record<string, { method: 'level' | 'stone'; target: st
     clefairy: { method: 'stone', target: 'clefable' },
     vulpix: { method: 'stone', target: 'ninetales' },
     jigglypuff: { method: 'stone', target: 'wigglytuff' },
+    nidorina: { method: 'stone', target: 'nidoqueen' },
+    nidorino: { method: 'stone', target: 'nidoking' },
     gloom: { method: 'stone', target: 'vileplume' },
     growlithe: { method: 'stone', target: 'arcanine' },
     poliwhirl: { method: 'stone', target: 'poliwrath' },
@@ -876,6 +881,267 @@ const getMapDisplayName = (mapPath: string): string => {
     return 'Zona Desconocida';
 };
 
+const getClosestPokeCenter = (currentPath: string): { map: string; coords: [number, number] } => {
+    const path = currentPath.toLowerCase();
+
+    if (path.startsWith('procedural://')) {
+        const parts = path.replace('procedural://', '').split('_');
+        const index = parseInt(parts[1] || '1', 10);
+        return {
+            map: `procedural://settlement_${index}`,
+            coords: [400, 276]
+        };
+    }
+
+    if (path.includes('city1') || path.includes('/cave')) {
+        return {
+            map: '/assets/maps/city1/main.json',
+            coords: [280, 916]
+        };
+    }
+
+    // Default to tutorial pokecenter
+    return {
+        map: '/assets/maps/tutorial/main.json',
+        coords: [600, 748]
+    };
+};
+
+const EvolutionScreen = ({ 
+    pokemonId, 
+    targetId, 
+    level, 
+    onComplete 
+}: { 
+    pokemonId: string; 
+    targetId: string; 
+    level: number; 
+    onComplete: () => void; 
+}) => {
+    const [stage, setStage] = useState<'intro' | 'morphing' | 'success'>('intro');
+    const [displayId, setDisplayId] = useState(pokemonId);
+    const [sparkles, setSparkles] = useState<{ id: number; x: number; y: number; size: number; delay: number }[]>([]);
+    
+    const prevSpecies = pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === pokemonId.toLowerCase());
+    const nextSpecies = pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === targetId.toLowerCase());
+    
+    const prevSprite = prevSpecies?.sprite || `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${prevSpecies?.id || 1}.png`;
+    const nextSprite = nextSpecies?.sprite || `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${nextSpecies?.id || 2}.png`;
+
+    useEffect(() => {
+        if (stage === 'intro') {
+            const timer = setTimeout(() => {
+                setStage('morphing');
+            }, 2500);
+            return () => clearTimeout(timer);
+        } else if (stage === 'morphing') {
+            let count = 0;
+            let currentDelay = 400; // ms
+            let timerId: any;
+            
+            const tick = () => {
+                setDisplayId(prev => (prev === pokemonId ? targetId : pokemonId));
+                count++;
+                
+                if (currentDelay > 60) {
+                    currentDelay = Math.max(60, currentDelay - 40);
+                }
+                
+                if (count < 22) {
+                    timerId = setTimeout(tick, currentDelay);
+                } else {
+                    setStage('success');
+                    setDisplayId(targetId);
+                }
+            };
+            
+            timerId = setTimeout(tick, currentDelay);
+            return () => clearTimeout(timerId);
+        } else if (stage === 'success') {
+            const newSparkles = Array.from({ length: 35 }).map((_, i) => ({
+                id: i,
+                x: Math.random() * 160 - 80,
+                y: Math.random() * 160 - 80,
+                size: Math.random() * 6 + 4,
+                delay: Math.random() * 1.5
+            }));
+            setSparkles(newSparkles);
+        }
+    }, [stage, pokemonId, targetId]);
+
+    return (
+        <div style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            background: '#0a051d',
+            backgroundImage: 'radial-gradient(circle at center, #1b1437 0%, #080314 100%)',
+            zIndex: 11000,
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            boxSizing: 'border-box',
+            padding: '24px 16px',
+            fontFamily: 'monospace',
+            overflow: 'hidden'
+        }}>
+            <style>{`
+                @keyframes sparkles-rise {
+                    0% { transform: translateY(20px) scale(0); opacity: 0; }
+                    50% { opacity: 1; }
+                    100% { transform: translateY(-80px) scale(1.2); opacity: 0; }
+                }
+                @keyframes circle-glow {
+                    0%, 100% { transform: scale(1); opacity: 0.4; filter: blur(8px); }
+                    50% { transform: scale(1.15); opacity: 0.7; filter: blur(12px); }
+                }
+                @keyframes screen-flash {
+                    0% { opacity: 0; }
+                    10% { opacity: 1; background: #ffffff; }
+                    100% { opacity: 0; background: #ffffff; }
+                }
+                @keyframes float-poke {
+                    0%, 100% { transform: translateY(0px); }
+                    50% { transform: translateY(-6px); }
+                }
+                .sparkle-particle {
+                    position: absolute;
+                    background: radial-gradient(circle, #fff 20%, #4fc3f7 70%, transparent 100%);
+                    border-radius: 50%;
+                    animation: sparkles-rise 1.5s ease-out infinite;
+                }
+                .silhouette-effect {
+                    filter: brightness(0) invert(1);
+                }
+                .morphing-glow {
+                    filter: drop-shadow(0 0 15px rgba(255,255,255,0.8));
+                }
+            `}</style>
+
+            <div style={{
+                position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
+                opacity: 0.15, pointerEvents: 'none',
+                backgroundImage: 'linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px)',
+                backgroundSize: '20px 20px'
+            }}></div>
+
+            <div style={{
+                color: '#e2e8f0', textTransform: 'uppercase', letterSpacing: '2px', fontSize: '13px',
+                fontWeight: 'bold', background: 'rgba(255,255,255,0.05)', padding: '6px 16px',
+                borderRadius: '20px', border: '1px solid rgba(255,255,255,0.1)', marginTop: '10px',
+                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.1)'
+            }}>
+                {stage === 'intro' && "✨ ¿Qué está pasando? ✨"}
+                {stage === 'morphing' && "⚡ Evolucionando... ⚡"}
+                {stage === 'success' && "🎉 ¡Evolución Completada! 🎉"}
+            </div>
+
+            <div style={{ position: 'relative', width: '220px', height: '220px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                <div style={{
+                    position: 'absolute', bottom: '15px', width: '140px', height: '40px',
+                    borderRadius: '50%', background: stage === 'success' ? '#00e5ff' : '#ffffff',
+                    opacity: 0.5, filter: 'blur(10px)',
+                    animation: 'circle-glow 2.5s ease-in-out infinite',
+                    boxShadow: stage === 'success' ? '0 0 30px #00e5ff' : '0 0 20px #ffffff'
+                }}></div>
+                <div style={{
+                    position: 'absolute', bottom: '22px', width: '120px', height: '26px',
+                    borderRadius: '50%', border: stage === 'success' ? '3px solid #00b0ff' : '3px solid #e0e0e0',
+                    background: 'transparent', opacity: 0.8
+                }}></div>
+
+                {stage === 'success' && sparkles.map((sp) => (
+                    <div
+                        key={sp.id}
+                        className="sparkle-particle"
+                        style={{
+                            width: `${sp.size}px`,
+                            height: `${sp.size}px`,
+                            left: `calc(50% + ${sp.x}px)`,
+                            bottom: `calc(50% + ${sp.y}px)`,
+                            animationDelay: `${sp.delay}s`
+                        }}
+                    />
+                ))}
+
+                <img
+                    src={displayId === pokemonId ? prevSprite : nextSprite}
+                    alt="evolving"
+                    className={`${stage === 'morphing' ? 'silhouette-effect morphing-glow' : ''}`}
+                    style={{
+                        width: '160px',
+                        height: '160px',
+                        objectFit: 'contain',
+                        zIndex: 10,
+                        animation: stage === 'morphing' ? 'none' : 'float-poke 3s ease-in-out infinite',
+                        transform: stage === 'morphing' ? 'scale(1.15)' : 'none',
+                        transition: stage === 'morphing' ? 'transform 0.1s ease-in-out' : 'transform 0.3s ease-in-out'
+                    }}
+                />
+            </div>
+
+            <div style={{
+                width: '100%',
+                background: 'linear-gradient(to bottom, #111827 0%, #1f2937 100%)',
+                border: '4px double rgba(255,255,255,0.4)',
+                borderRadius: '12px',
+                padding: '16px',
+                boxSizing: 'border-box',
+                minHeight: '100px',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                position: 'relative',
+                boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+                zIndex: 20
+            }}>
+                <div style={{
+                    color: '#fff', fontSize: '13px', lineHeight: '1.6', fontFamily: 'monospace',
+                    textShadow: '1px 1px 2px #000', whiteSpace: 'pre-line'
+                }}>
+                    {stage === 'intro' && `¿Uh? ¡Tu ${prevSpecies?.name?.toUpperCase() || pokemonId.toUpperCase()} está empezando a evolucionar!`}
+                    {stage === 'morphing' && `Evolucionando...`}
+                    {stage === 'success' && `¡Felicidades! ¡Tu ${prevSpecies?.name?.toUpperCase() || pokemonId.toUpperCase()} ha evolucionado en ${nextSpecies?.name?.toUpperCase() || targetId.toUpperCase()}!`}
+                </div>
+
+                {stage === 'success' && (
+                    <button
+                        onClick={onComplete}
+                        style={{
+                            alignSelf: 'flex-end',
+                            background: '#10b981',
+                            color: '#fff',
+                            border: 'none',
+                            borderRadius: '6px',
+                            padding: '6px 16px',
+                            fontSize: '12px',
+                            fontWeight: 'bold',
+                            cursor: 'pointer',
+                            boxShadow: '0 4px 6px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.2)',
+                            transition: 'all 0.1s',
+                            marginTop: '8px'
+                        }}
+                        onPointerDown={(e) => e.stopPropagation()}
+                    >
+                        Continuar
+                    </button>
+                )}
+            </div>
+
+            {stage === 'success' && (
+                <div style={{
+                    position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
+                    zIndex: 100, pointerEvents: 'none',
+                    animation: 'screen-flash 1.2s cubic-bezier(0.1, 0.8, 0.3, 1) forwards'
+                }} />
+            )}
+        </div>
+    );
+};
+
 export default function GameCanvas({
     saveName,
     playerCoordinates,
@@ -949,6 +1215,15 @@ export default function GameCanvas({
     const playerNameRef = useRef(playerName);
     playerNameRef.current = playerName;
 
+    // Helper to dynamically calculate remaining free heals per day at UTC 00
+    const getRemainingFreeHeals = () => {
+        const today = new Date().toISOString().split('T')[0];
+        if (economy.last_heal_date !== today) {
+            return 2;
+        }
+        return Math.max(0, 2 - economy.heals_today);
+    };
+
     // Ad-related states
     const [adHealsViewed, setAdHealsViewed] = useState(0);
     const [adHealSelectMode, setAdHealSelectMode] = useState(false);
@@ -1008,6 +1283,14 @@ export default function GameCanvas({
     const [catchBallState, setCatchBallState] = useState<'throw' | 'shake' | 'success' | 'fail' | null>(null);
     const [usingItem, setUsingItem] = useState<any | null>(null);
     const [selectedInfoPoke, setSelectedInfoPoke] = useState<any | null>(null);
+    const [activeEvolution, setActiveEvolution] = useState<{
+        pokemonId: string;
+        targetId: string;
+        level: number;
+        onComplete: () => void;
+    } | null>(null);
+    const activeEvolutionRef = useRef(activeEvolution);
+    useEffect(() => { activeEvolutionRef.current = activeEvolution; }, [activeEvolution]);
 
     // Battle stats modifier stages (Growl lowers attack, Tail Whip lowers defense)
     const [playerAtkStage, setPlayerAtkStage] = useState<number>(0);
@@ -1186,30 +1469,30 @@ export default function GameCanvas({
         }
 
         const adManager = AdManager.getInstance();
-        const success = await adManager.showRewardedAd({
+        const res = await adManager.showRewardedAd({
             telegramBlockId: "34910",
             adsterraUrl: process.env.NEXT_PUBLIC_ADSTERRA_DIRECT_LINK || "YOUR_ADSTERRA_DIRECT_LINK"
         });
 
-        if (success) {
+        if (res.success) {
             economyRef.current.addCoins(20);
             economyRef.current.ads_viewed_today = (economyRef.current.ads_viewed_today || 0) + 1;
             saveLocalEconomy();
             setEconomy(new Economy(economyRef.current.toSaveData()));
             showNotification("Recompensa", `¡Has recibido 20 Coins por ver el anuncio! (${economyRef.current.ads_viewed_today}/20 hoy)`);
         } else {
-            showNotification("Anuncio Cancelado", "No se pudo obtener la recompensa.");
+            showNotification("Anuncio Cancelado", `No se pudo obtener la recompensa. Detalle: ${res.error || 'Anuncio cancelado o no disponible'}`);
         }
     };
 
     const handleWatchHealAd = async () => {
         const adManager = AdManager.getInstance();
-        const success = await adManager.showRewardedAd({
+        const res = await adManager.showRewardedAd({
             telegramBlockId: "34911",
             adsterraUrl: process.env.NEXT_PUBLIC_ADSTERRA_DIRECT_LINK || "YOUR_ADSTERRA_DIRECT_LINK"
         });
 
-        if (success) {
+        if (res.success) {
             const nextCount = adHealsViewed + 1;
             if (nextCount >= 2) {
                 setAdHealsViewed(0);
@@ -1220,7 +1503,7 @@ export default function GameCanvas({
                 showNotification("Anuncio Visto", `Anuncios vistos: ${nextCount}/2. ¡Ve un anuncio más para curar un Pokémon!`);
             }
         } else {
-            showNotification("Anuncio Cancelado", "No se completó el anuncio.");
+            showNotification("Anuncio Cancelado", `No se completó el anuncio. Detalle: ${res.error || 'Anuncio cancelado o no disponible'}`);
         }
     };
 
@@ -1240,45 +1523,45 @@ export default function GameCanvas({
 
     const handleDoubleBattleReward = async () => {
         const coinsToDouble = doubleRewardCoins;
-        setDoubleRewardCoins(0);
-        setDoubleRewardType(null);
-        setNotification(null);
 
         const adManager = AdManager.getInstance();
-        const success = await adManager.showRewardedAd({
+        const res = await adManager.showRewardedAd({
             telegramBlockId: "34912",
             adsterraUrl: process.env.NEXT_PUBLIC_ADSTERRA_DIRECT_LINK || "YOUR_ADSTERRA_DIRECT_LINK"
         });
 
-        if (success) {
+        if (res.success) {
+            setDoubleRewardCoins(0);
+            setDoubleRewardType(null);
+            setNotification(null);
             economyRef.current.addCoins(coinsToDouble);
             saveLocalEconomy();
             setEconomy(new Economy(economyRef.current.toSaveData()));
             showNotification("¡Duplicado!", `¡Has recibido otras ${coinsToDouble} Coins por ver el anuncio!`);
         } else {
-            showNotification("Anuncio Cancelado", "No se pudo duplicar la recompensa.");
+            showNotification("Anuncio no disponible", `No se pudo reproducir el anuncio. Detalle: ${res.error || 'Anuncio cancelado o no disponible'}`);
         }
     };
 
     const handleDoubleBattleRewardFromDialog = async () => {
         const coinsToDouble = doubleRewardCoins;
-        setDoubleRewardCoins(0);
-        setDoubleRewardType(null);
-        setActiveDialog(null);
 
         const adManager = AdManager.getInstance();
-        const success = await adManager.showRewardedAd({
+        const res = await adManager.showRewardedAd({
             telegramBlockId: "34912",
             adsterraUrl: process.env.NEXT_PUBLIC_ADSTERRA_DIRECT_LINK || "YOUR_ADSTERRA_DIRECT_LINK"
         });
 
-        if (success) {
+        if (res.success) {
+            setDoubleRewardCoins(0);
+            setDoubleRewardType(null);
+            setActiveDialog(null);
             economyRef.current.addCoins(coinsToDouble);
             saveLocalEconomy();
             setEconomy(new Economy(economyRef.current.toSaveData()));
             showNotification("¡Duplicado!", `¡Has recibido otras ${coinsToDouble} Coins por ver el anuncio!`);
         } else {
-            showNotification("Anuncio Cancelado", "No se pudo duplicar la recompensa.");
+            showNotification("Anuncio no disponible", `No se pudo reproducir el anuncio. Detalle: ${res.error || 'Anuncio cancelado o no disponible'}`);
         }
     };
     
@@ -1924,6 +2207,10 @@ export default function GameCanvas({
         async function loadGameAssets() {
             try {
                 setLoadingMessage('Cargando configuración...');
+
+                if (currentMapPath.startsWith('procedural://')) {
+                    prepareProceduralMap(currentMapPath);
+                }
                 
                 const playerImg = new Image();
                 playerImg.crossOrigin = "anonymous";
@@ -2719,7 +3006,8 @@ export default function GameCanvas({
                 activeDialogRef.current !== null ||
                 activePvPBattleRef.current !== null ||
                 pendingPvPInviteRef.current !== null ||
-                incomingPvPInviteRef.current !== null
+                incomingPvPInviteRef.current !== null ||
+                activeEvolutionRef.current !== null
             ) {
                 return;
             }
@@ -2794,6 +3082,13 @@ export default function GameCanvas({
     const handleMapTransition = (currentPath: string, nextX: number, nextY: number, dir: string): boolean => {
         const path = currentPath.toLowerCase();
 
+        // Helper to get spawn Y coordinate from dynamic maps
+        const getDynamicSpawnY = (mapPath: string): number => {
+            const gridText = assetCache[`${mapPath.replace('.json', '')}.txt`] || '';
+            const rowsCount = gridText.trim().split('\n').length;
+            return Math.max(0, (rowsCount - 2) * 32);
+        };
+
         // 1. Tutorial map transitions (Pueblo Tutorial)
         if (path.includes('tutorial')) {
             if (nextY >= mapDataRef.current.height && dir === 'down') {
@@ -2819,13 +3114,13 @@ export default function GameCanvas({
         // 3. Cave map transitions (static cave in route1)
         if (path.includes('/cave')) {
             if (nextY < 0 && dir === 'up') {
-                // Salida norte de cueva → vuelve a Ruta 01
-                transitionToMap('/assets/maps/route1/main.json', 1120, 384);
+                // Salida norte de cueva → vuelve a Ciudad Nueva (city1)
+                transitionToMap('/assets/maps/city1/main.json', 1184, 1248);
                 return true;
             }
             if (nextY >= mapDataRef.current.height && dir === 'down') {
                 // Salida sur de cueva → vuelve a Ruta 01 (entrada cueva)
-                transitionToMap('/assets/maps/route1/main.json', 1120, 384);
+                transitionToMap('/assets/maps/route1/main.json', 1088, 384);
                 return true;
             }
         }
@@ -2840,11 +3135,12 @@ export default function GameCanvas({
                 if (dir === 'up') {
                     if (index === 1) {
                         // Procedural Ruta 1 regresa a Ruta 01 estática
-                        transitionToMap('/assets/maps/route1/main.json', 480, 1280);
+                        transitionToMap('/assets/maps/route1/main.json', 800, 1248);
                     } else {
                         const nextMap = `procedural://cave_${index - 1}`;
                         prepareProceduralMap(nextMap);
-                        transitionToMap(nextMap, 512, 1216);
+                        const spawnY = getDynamicSpawnY(nextMap);
+                        transitionToMap(nextMap, 512, spawnY);
                     }
                     return true;
                 }
@@ -2858,7 +3154,8 @@ export default function GameCanvas({
                 if (dir === 'up') {
                     const nextMap = `procedural://route_${index}`;
                     prepareProceduralMap(nextMap);
-                    transitionToMap(nextMap, 480, 1408); // Spawn at route bottom entry
+                    const spawnY = getDynamicSpawnY(nextMap);
+                    transitionToMap(nextMap, 480, spawnY); // Spawn at route bottom entry
                     return true;
                 }
                 if (dir === 'down') {
@@ -2871,7 +3168,8 @@ export default function GameCanvas({
                 if (dir === 'up') {
                     const nextMap = `procedural://settlement_${index}`;
                     prepareProceduralMap(nextMap);
-                    transitionToMap(nextMap, 640, 1216); // Spawn at settlement bottom entry
+                    const spawnY = getDynamicSpawnY(nextMap);
+                    transitionToMap(nextMap, 640, spawnY); // Spawn at settlement bottom entry
                     return true;
                 }
                 if (dir === 'down') {
@@ -3056,23 +3354,41 @@ export default function GameCanvas({
             const rows = 40 + Math.floor(rand() * 31); // 40 to 70
             const grid: string[][] = Array.from({ length: rows }, () => Array(cols).fill('G1'));
 
-            // ── Path generation (3 styles by seed) ──────────────────
+            // ── Path generation with smooth alignment (spawns on col 15) ──
+            const pathCenters = new Array(rows);
+            // Bottom 5 rows: pathCenter is 15
+            for (let r = rows - 1; r >= rows - 5; r--) {
+                pathCenters[r] = 15;
+            }
+            // Drift rows from rows - 6 down to 10
             const pathStyle = Math.floor(rand() * 3); // 0=sinuous, 1=zigzag, 2=straight
-            let pathCenter = Math.floor(cols / 2) + Math.floor((rand() - 0.5) * 4);
-
-            for (let r = rows - 1; r >= 0; r--) {
+            let currentCenter = 15;
+            for (let r = rows - 6; r >= 10; r--) {
                 if (pathStyle === 0) {
                     // Sinuous: slow drift
-                    if (rand() < 0.3) pathCenter += rand() < 0.5 ? -1 : 1;
+                    if (rand() < 0.3) currentCenter += rand() < 0.5 ? -1 : 1;
                 } else if (pathStyle === 1) {
                     // Zigzag: sharper turns every 8 rows
-                    if (r % 8 === 0) pathCenter += rand() < 0.5 ? -3 : 3;
+                    if (r % 8 === 0) currentCenter += rand() < 0.5 ? -3 : 3;
                 }
-                // Straight: pathCenter stays fixed
-                pathCenter = Math.max(5, Math.min(cols - 6, pathCenter));
-                grid[r][pathCenter - 1] = 'p4';
-                grid[r][pathCenter]     = 'p5';
-                grid[r][pathCenter + 1] = 'p6';
+                currentCenter = Math.max(5, Math.min(cols - 6, currentCenter));
+                pathCenters[r] = currentCenter;
+            }
+            // Interpolation rows 9 down to 5: smoothly transition back to 15
+            for (let r = 9; r >= 5; r--) {
+                const t = (r - 4) / 6; // 10 - 4 = 6. At r = 10, t = 1; at r = 4, t = 0
+                pathCenters[r] = Math.round(15 + t * (pathCenters[10] - 15));
+            }
+            // Top 5 rows: pathCenter is 15
+            for (let r = 4; r >= 0; r--) {
+                pathCenters[r] = 15;
+            }
+
+            for (let r = rows - 1; r >= 0; r--) {
+                const pc = pathCenters[r];
+                grid[r][pc - 1] = 'p4';
+                grid[r][pc]     = 'p5';
+                grid[r][pc + 1] = 'p6';
             }
 
             // ── Borders: cliff walls + tree rows ────────────────────
@@ -3125,19 +3441,22 @@ export default function GameCanvas({
 
                 // Bridge over lake (replace W tiles on path with bridge tiles)
                 for (let r = lakeRow; r < lakeRow + lakeRows && r < rows - 3; r++) {
-                    grid[r][pathCenter - 1] = 'BR';
-                    grid[r][pathCenter]     = 'BR';
-                    grid[r][pathCenter + 1] = 'BR';
+                    const pc = pathCenters[r];
+                    grid[r][pc - 1] = 'BR';
+                    grid[r][pc]     = 'BR';
+                    grid[r][pc + 1] = 'BR';
                 }
             }
 
             gridText = grid.map(line => line.join(' ')).join('\n');
 
             // ── Entities: sign + optional trainer NPCs ───────────────
+            const signRow = Math.floor(rows * 0.6);
+            const pcAtSign = pathCenters[signRow];
             const entities: any[] = [
                 {
                     location: "src/assets/entities/structures/sign/main.json",
-                    coordinates: { x: (pathCenter + 2) * 32, y: Math.floor(rows * 0.6) * 32 },
+                    coordinates: { x: (pcAtSign + 2) * 32, y: signRow * 32 },
                     dialogs: [
                         `${zoneName}\n^ Explorar al Norte\nv Regresar al Sur`
                     ]
@@ -3155,9 +3474,10 @@ export default function GameCanvas({
 
                 for (let t = 0; t < trainerCount; t++) {
                     const trainerRow = Math.floor(rows * (0.25 + t * 0.2));
+                    const pc = pathCenters[trainerRow];
                     const trainerCol = rand() < 0.5
-                        ? pathCenter - 4 - Math.floor(rand() * 3)
-                        : pathCenter + 4 + Math.floor(rand() * 3);
+                        ? pc - 4 - Math.floor(rand() * 3)
+                        : pc + 4 + Math.floor(rand() * 3);
                     const safeCol = Math.max(3, Math.min(cols - 4, trainerCol));
                     const trainerLvl = trainerLevels[t % trainerLevels.length];
                     const trainerPoke = ['pikachu', 'rattata', 'pidgey', 'mankey', 'geodude', 'abra'][Math.floor(rand() * 6)];
@@ -3201,11 +3521,12 @@ export default function GameCanvas({
             const cols = isLegendary ? 50 : 40;
             const rows = isLegendary ? 50 : 40;
             const grid: string[][] = Array.from({ length: rows }, () => Array(cols).fill('G1'));
+            const roadC = 20; // Force vertical road at column 20 to match spawn coordinates
 
             // Central plaza
             const plazaSize = isLegendary ? 14 : 10;
             const plazaStartR = Math.floor(rows / 2) - Math.floor(plazaSize / 2);
-            const plazaStartC = Math.floor(cols / 2) - Math.floor(plazaSize / 2);
+            const plazaStartC = roadC - Math.floor(plazaSize / 2);
             for (let r = plazaStartR; r < plazaStartR + plazaSize; r++) {
                 for (let c = plazaStartC; c < plazaStartC + plazaSize; c++) {
                     grid[r][c] = 'p5';
@@ -3214,7 +3535,6 @@ export default function GameCanvas({
 
             // Main road (vertical)
             for (let r = 0; r < rows; r++) {
-                const roadC = Math.floor(cols / 2);
                 grid[r][roadC - 1] = 'p5';
                 grid[r][roadC]     = 'p5';
                 grid[r][roadC + 1] = 'p5';
@@ -3223,7 +3543,7 @@ export default function GameCanvas({
             // Tree borders
             for (let r = 0; r < rows; r++) {
                 for (let c = 0; c < cols; c++) {
-                    const isRoad = c >= Math.floor(cols / 2) - 1 && c <= Math.floor(cols / 2) + 1;
+                    const isRoad = c >= roadC - 1 && c <= roadC + 1;
                     const isBorder = r < 3 || r > rows - 4 || c < 3 || c > cols - 4;
                     if (isBorder && !isRoad) grid[r][c] = 'T';
                 }
@@ -3233,15 +3553,13 @@ export default function GameCanvas({
             if (hasLake) {
                 for (let r = 8; r < 18; r++) {
                     for (let c = 5; c < 18; c++) {
-                        const isRoad = c >= Math.floor(cols / 2) - 1 && c <= Math.floor(cols / 2) + 1;
+                        const isRoad = c >= roadC - 1 && c <= roadC + 1;
                         if (!isRoad && grid[r][c] === 'G1') grid[r][c] = 'W';
                     }
                 }
             }
 
             gridText = grid.map(line => line.join(' ')).join('\n');
-
-            const roadC = Math.floor(cols / 2);
             const entities: any[] = [
                 {
                     location: "src/assets/entities/structures/pokemoncenter/main.json",
@@ -3296,7 +3614,7 @@ export default function GameCanvas({
             if (isLegendary) {
                 for (let r = 5; r < rows - 5; r += 5) {
                     for (let c = 5; c < cols - 5; c += 5) {
-                        const isRoad = c >= Math.floor(cols / 2) - 1 && c <= Math.floor(cols / 2) + 1;
+                        const isRoad = c >= roadC - 1 && c <= roadC + 1;
                         if (!isRoad && grid[r][c] === 'G1' && rand() < 0.4) {
                             for (let dr = 0; dr < 2; dr++) for (let dc = 0; dc < 2; dc++) {
                                 if (grid[r + dr]?.[c + dc] === 'G1') grid[r + dr][c + dc] = 'G2';
@@ -3349,7 +3667,7 @@ export default function GameCanvas({
             }
 
             // Vertical corridor connecting chambers
-            const corridorC = Math.floor(cols / 2);
+            const corridorC = 16; // Force vertical corridor at column 16 to match spawn coordinates
             for (let r = 2; r < rows - 2; r++) {
                 grid[r][corridorC - 1] = 'CF';
                 grid[r][corridorC]     = 'CF';
@@ -3428,7 +3746,8 @@ export default function GameCanvas({
                 const tileSize = mapData.tileSize || 32;
                 const col = Math.floor(x / tileSize);
                 const row = Math.floor((y - 1) / tileSize);
-                const tileType = mapData.grid?.[row]?.[col];
+                const directRow = Math.floor(y / tileSize);
+                const tileType = mapData.grid?.[row]?.[col] || mapData.grid?.[directRow]?.[col];
                 if (tileType === 'CE') {
                     if (currentPath.includes('route1')) {
                         // Enter cave from the south (bottom) entrance
@@ -3477,6 +3796,47 @@ export default function GameCanvas({
                         dialogTitle = "Comercio Pokemon";
                         dialogMsg = "Entering the PokeMart Store...";
                     } else if (isGym) {
+                        let gymIndex = 1;
+                        const curMap = currentPath.toLowerCase();
+                        if (curMap.includes('procedural://settlement_')) {
+                            const parts = curMap.replace('procedural://settlement_', '').split('_');
+                            gymIndex = parseInt(parts[0] || '1', 10) + 1;
+                        }
+
+                        if (gymIndex > 1) {
+                            const GYM_MEDALS = [
+                                "", // Gym 0 (unused)
+                                "Medalla Roca",
+                                "Medalla Cascada",
+                                "Medalla Trueno",
+                                "Medalla Arcoiris",
+                                "Medalla Alma",
+                                "Medalla Pantano",
+                                "Medalla Volcan",
+                                "Medalla Tierra"
+                            ];
+
+                            if (gymIndex <= 9) {
+                                const requiredMedal = GYM_MEDALS[gymIndex - 1];
+                                if (!economyRef.current.medals.includes(requiredMedal)) {
+                                    showNotification(
+                                        "Gimnasio Bloqueado",
+                                        `Necesitas la ${requiredMedal} del gimnasio anterior para entrar a desafiar a este líder.`
+                                    );
+                                    return false;
+                                }
+                            } else {
+                                const prevGymDefeated = (economyRef.current.defeated_gyms[String(gymIndex - 1)] || 0) > 0;
+                                if (!prevGymDefeated) {
+                                    showNotification(
+                                        "Gimnasio Bloqueado",
+                                        `Necesitas derrotar al líder del gimnasio anterior (Gimnasio ${gymIndex - 1}) para poder ingresar a este.`
+                                    );
+                                    return false;
+                                }
+                            }
+                        }
+
                         destMap = '/assets/maps/gym/main.json';
                         dialogTitle = "Gimnasio";
                         dialogMsg = "Entering the Gym...";
@@ -3956,8 +4316,45 @@ export default function GameCanvas({
                         leader: gymIndex === 9 ? "Master Mewtwo" : gymIndex === 10 ? "Master Mew" : gymIndex === 11 ? "Master Articuno" : gymIndex === 12 ? "Master Zapdos" : gymIndex === 13 ? "Master Moltres" : `Master ${gymIndex}`
                     };
 
-                    setDialogName(`Gym Leader ${boss.leader}`);
-                    setActiveDialog(`Especializo en Pokémon poderosos. ¿Estás listo para enfrentar a mi equipo?`);
+                    if (gymIndex > 1) {
+                        const GYM_MEDALS = [
+                            "", // Gym 0
+                            "Medalla Roca",
+                            "Medalla Cascada",
+                            "Medalla Trueno",
+                            "Medalla Arcoiris",
+                            "Medalla Alma",
+                            "Medalla Pantano",
+                            "Medalla Volcan",
+                            "Medalla Tierra"
+                        ];
+
+                        if (gymIndex <= 9) {
+                            const requiredMedal = GYM_MEDALS[gymIndex - 1];
+                            if (!economyRef.current.medals.includes(requiredMedal)) {
+                                setDialogName(`Gym Leader ${boss.leader}`);
+                                setActiveDialog(`No puedes desafiarme todavía. Necesitas la ${requiredMedal} del gimnasio anterior.`);
+                                return;
+                            }
+                        } else {
+                            const prevGymDefeated = (economyRef.current.defeated_gyms[String(gymIndex - 1)] || 0) > 0;
+                            if (!prevGymDefeated) {
+                                setDialogName(`Gym Leader ${boss.leader}`);
+                                setActiveDialog(`No puedes desafiarme todavía. Debes derrotar al líder del gimnasio anterior primero.`);
+                                return;
+                            }
+                        }
+                    }
+
+                    const cooldownRemaining = economyRef.current.getGymCooldownRemaining(gymIndex);
+                    if (cooldownRemaining > 0) {
+                        // Cooldown active: notify that they can fight for training (no rewards), but do not block the battle.
+                        setDialogName(`Gym Leader ${boss.leader}`);
+                        setActiveDialog(`¡Hola! Ya has recibido tus recompensas de hoy, pero podemos luchar para entrenar y acumular victorias. ¡Prepárate!`);
+                    } else {
+                        setDialogName(`Gym Leader ${boss.leader}`);
+                        setActiveDialog(`Especializo en Pokémon poderosos. ¿Estás listo para enfrentar a mi equipo?`);
+                    }
 
                     // Check if there is at least one active Pokemon
                     const activePokes = teamRef.current.filter(p => p.hp > 0);
@@ -4148,9 +4545,9 @@ export default function GameCanvas({
         }
     };
 
-    const saveLocalEconomy = async (updatedTeam?: any[], updatedPcPokemon?: any[], nameOverride?: string, forceCloud: boolean = true) => {
+    const saveLocalEconomy = async (updatedTeam?: any[], updatedPcPokemon?: any[], nameOverride?: string, forceCloud: boolean = true, updatedInventory?: any) => {
         const economyData = economyRef.current.toSaveData();
-        const inventoryData = inventoryRef.current.toSaveData();
+        const inventoryData = updatedInventory !== undefined ? updatedInventory.toSaveData() : inventoryRef.current.toSaveData();
         const teamToSave = updatedTeam !== undefined ? updatedTeam : teamRef.current;
         const pcPokemonToSave = updatedPcPokemon !== undefined ? updatedPcPokemon : pcPokemonRef.current;
         const activeName = nameOverride !== undefined ? nameOverride : playerNameRef.current;
@@ -4337,27 +4734,102 @@ export default function GameCanvas({
 
                 if (newWildHp <= 0) {
                     if (isGymBattle && gymLeaderTeamRef.current && gymLeaderCurrentPokeIndexRef.current < gymLeaderTeamRef.current.length - 1) {
+                        // --- MID-BATTLE XP PROCESS ---
+                        const xpGained = Math.floor(activeWildBattle.level * 25 * (Math.random() * 0.2 + 0.9));
+                        let currentLvl = activePoke.level ?? 1;
+                        let currentXp = (activePoke.xp ?? 0) + xpGained;
+                        let nextLvlXp = currentLvl * 100;
+                        let leveledUp = false;
+                        let msg = `¡Tu ${activePoke.id} ganó ${xpGained} XP!`;
+
+                        while (currentXp >= nextLvlXp) {
+                            currentXp -= nextLvlXp;
+                            currentLvl += 1;
+                            nextLvlXp = currentLvl * 100;
+                            leveledUp = true;
+                        }
+
+                        let evolved = false;
+                        let evolvedName = activePoke.id;
+                        const currentMoves = activePoke.moves || getPokemonMoves(activePoke.id, activePoke.level ?? 1);
+                        let finalMoves = [...currentMoves];
+
+                        if (leveledUp) {
+                            msg += ` ¡Subió al nivel ${currentLvl}!`;
+                            const evo = EVOLUTION_DATABASE[activePoke.id.toLowerCase()];
+                            if (evo && evo.method === 'level' && currentLvl >= (evo.level ?? 99)) {
+                                evolvedName = evo.target;
+                                evolved = true;
+                            }
+                            
+                            if (evolved) {
+                                msg += ` ¡Increíble! Ha evolucionado en ${evolvedName.toUpperCase()}!`;
+                            }
+
+                            const learnableMoves = getPokemonMoves(evolvedName, currentLvl);
+                            for (const mId of learnableMoves) {
+                                if (!finalMoves.includes(mId)) {
+                                    finalMoves.push(mId);
+                                    const moveName = MOVES_DATABASE[mId]?.name || mId;
+                                    msg += ` \n🎉 ¡Aprendió ${moveName.toUpperCase()}!`;
+                                }
+                            }
+                        }
+
+                        const updatedTeam = [...team];
+                        const stats = getPokemonStats(evolvedName, currentLvl);
+                        updatedTeam[activePokeIdx] = {
+                            ...activePoke,
+                            id: evolvedName,
+                            level: currentLvl,
+                            xp: currentXp,
+                            moves: finalMoves,
+                            is_evolved: evolved ? true : activePoke.is_evolved,
+                            maxHp: stats.maxHp,
+                            hp: leveledUp ? stats.maxHp : Math.min(activePoke.hp, stats.maxHp)
+                        };
+
+                        setTeam(updatedTeam);
+                        teamRef.current = updatedTeam;
+                        saveLocalEconomy(updatedTeam);
+
                         const nextIndex = gymLeaderCurrentPokeIndexRef.current + 1;
                         gymLeaderCurrentPokeIndexRef.current = nextIndex;
                         const nextPoke = gymLeaderTeamRef.current[nextIndex];
                         
-                        setBattleMessage(`¡Derrotaste al ${activeWildBattle.name.toUpperCase()} del Líder! Saca a su siguiente Pokémon: ${nextPoke.name.toUpperCase()} (Nvl. ${nextPoke.level}).`);
-                        
-                        // Reset opponent stages (buffs/debuffs) when they switch to a new Pokemon
-                        setOpponentAtkStage(0);
-                        setOpponentDefStage(0);
+                        const setupNextGymOpponent = async () => {
+                            setBattleMessage(`¡Derrotaste al ${activeWildBattle.name.toUpperCase()} del Líder! ${msg}\nSaca a su siguiente Pokémon: ${nextPoke.name.toUpperCase()} (Nvl. ${nextPoke.level}).`);
+                            
+                            // Reset opponent stages (buffs/debuffs) when they switch to a new Pokemon
+                            setOpponentAtkStage(0);
+                            setOpponentDefStage(0);
 
-                        setActiveWildBattle({
-                            name: nextPoke.name,
-                            level: nextPoke.level,
-                            hp: nextPoke.hp,
-                            maxHp: nextPoke.hp,
-                            captureRate: 0.0
-                        });
-                        
-                        await delay(2500);
-                        setIsBattleAnimating(false);
-                        setBattleMessage(`¿Qué debería hacer tu ${activePoke.id.toUpperCase()}?`);
+                            setActiveWildBattle({
+                                name: nextPoke.name,
+                                level: nextPoke.level,
+                                hp: nextPoke.hp,
+                                maxHp: nextPoke.hp,
+                                captureRate: 0.0
+                            });
+                            
+                            await delay(3500);
+                            setIsBattleAnimating(false);
+                            setBattleMessage(`¿Qué debería hacer tu ${evolvedName.toUpperCase()}?`);
+                        };
+
+                        if (evolved) {
+                            setActiveEvolution({
+                                pokemonId: activePoke.id,
+                                targetId: evolvedName,
+                                level: currentLvl,
+                                onComplete: () => {
+                                    setupNextGymOpponent();
+                                    setActiveEvolution(null);
+                                }
+                            });
+                        } else {
+                            await setupNextGymOpponent();
+                        }
                         return;
                     }
 
@@ -4441,18 +4913,33 @@ export default function GameCanvas({
                         setDoubleRewardCoins(coinsEarned);
                         setDoubleRewardType('trainer');
 
-                        showNotification(
-                            "¡Victoria contra Entrenador!", 
-                            `¡Tu ${oldName} derrotó al Pokémon del Entrenador! Ganaste ${coinsEarned} Coins. ${trainerMsg}\n${msg}`
-                        );
-                        
-                        setIsTrainerBattle(false);
-                        setIsGymBattle(false);
-                        setGymLeaderName(null);
-                        setActiveWildBattle(null);
-                        saveLocalEconomy(updatedTeam);
-                        setEconomy(new Economy(economyRef.current.toSaveData()));
-                        setIsBattleAnimating(false);
+                        const finishBattle = () => {
+                            setIsTrainerBattle(false);
+                            setIsGymBattle(false);
+                            setGymLeaderName(null);
+                            setActiveWildBattle(null);
+                            saveLocalEconomy(updatedTeam);
+                            setEconomy(new Economy(economyRef.current.toSaveData()));
+                            setIsBattleAnimating(false);
+                            showNotification(
+                                "¡Victoria contra Entrenador!", 
+                                `¡Tu ${oldName} derrotó al Pokémon del Entrenador! Ganaste ${coinsEarned} Coins. ${trainerMsg}\n${msg}`
+                            );
+                        };
+
+                        if (evolved) {
+                            setActiveEvolution({
+                                pokemonId: activePoke.id,
+                                targetId: evolvedName,
+                                level: currentLvl,
+                                onComplete: () => {
+                                    finishBattle();
+                                    setActiveEvolution(null);
+                                }
+                            });
+                        } else {
+                            finishBattle();
+                        }
                         return;
                     }
                     
@@ -4486,11 +4973,16 @@ export default function GameCanvas({
                         const maxTeamLevel = Math.max(...updatedTeam.map((p: any) => p.level), 1);
                         const result = economyRef.current.getGymReward(gymIndex, maxTeamLevel);
 
+                        let notificationTitle = "¡Victoria de Gimnasio!";
+                        let notificationMsg = "";
+
                         if (result.isOverleveled) {
-                            showNotification(
-                                "¡Victoria de Gimnasio!", 
-                                `¡Derrotaste al ${boss.name.toUpperCase()} de ${boss.leader}! Buen combate.\n⚠️ Tu nivel de Pokémon es superior al nivel del Líder por más de 5 niveles. No recibes monedas ni XP para evitar el multifarmeo.\n${msg}`
-                            );
+                            let overleveledMsg = `⚠️ Tu nivel de Pokémon es superior al nivel del Líder por más de 5 niveles. No recibes monedas ni XP para evitar el multifarmeo.`;
+                            if (result.medal) {
+                                overleveledMsg = `🎉 ¡Ganaste la ${result.medal}! \n` + overleveledMsg;
+                            }
+                            notificationTitle = "¡Victoria de Gimnasio!";
+                            notificationMsg = `¡Derrotaste al ${boss.name.toUpperCase()} de ${boss.leader}! Buen combate.\n${overleveledMsg}\n${msg}`;
                         } else if (result.coins > 0) {
                             economyRef.current.updateMissionProgress('battle');
                             setDoubleRewardCoins(result.coins);
@@ -4508,23 +5000,36 @@ export default function GameCanvas({
                                 rewardDetailMsg = `Ganaste ${result.coins} Coins y ${result.xpGained} XP.`;
                             }
 
-                            showNotification(
-                                "¡Victoria de Gimnasio!", 
-                                `¡Derrotaste al ${boss.name.toUpperCase()} de ${boss.leader}! ${rewardDetailMsg} ${gymTrainerMsg}\n${msg}`
-                            );
+                            notificationTitle = "¡Victoria de Gimnasio!";
+                            notificationMsg = `¡Derrotaste al ${boss.name.toUpperCase()} de ${boss.leader}! ${rewardDetailMsg} ${gymTrainerMsg}\n${msg}`;
                         } else {
-                            showNotification(
-                                "Victoria", 
-                                `¡Derrotaste al ${boss.name.toUpperCase()} de ${boss.leader}! Buen combate. \n${msg}`
-                            );
+                            notificationTitle = "Victoria";
+                            notificationMsg = `¡Derrotaste al ${boss.name.toUpperCase()} de ${boss.leader}! Buen combate. \n${msg}`;
                         }
-                        
-                        setIsGymBattle(false);
-                        setGymLeaderName(null);
-                        setActiveWildBattle(null);
-                        saveLocalEconomy(updatedTeam);
-                        setEconomy(new Economy(economyRef.current.toSaveData()));
-                        setIsBattleAnimating(false);
+
+                        const finishBattle = () => {
+                            setIsGymBattle(false);
+                            setGymLeaderName(null);
+                            setActiveWildBattle(null);
+                            saveLocalEconomy(updatedTeam);
+                            setEconomy(new Economy(economyRef.current.toSaveData()));
+                            setIsBattleAnimating(false);
+                            showNotification(notificationTitle, notificationMsg);
+                        };
+
+                        if (evolved) {
+                            setActiveEvolution({
+                                pokemonId: activePoke.id,
+                                targetId: evolvedName,
+                                level: currentLvl,
+                                onComplete: () => {
+                                    finishBattle();
+                                    setActiveEvolution(null);
+                                }
+                            });
+                        } else {
+                            finishBattle();
+                        }
                         return;
                     }
 
@@ -4556,14 +5061,30 @@ export default function GameCanvas({
                     setDoubleRewardCoins(coinsEarned);
                     setDoubleRewardType('wild');
 
-                    showNotification(
-                        "¡Victoria!", 
-                        `¡Tu ${oldName} derrotó al ${activeWildBattle.name} salvaje! Ganaste ${coinsEarned} Coins. ${trainerMsg}\n${msg}`
-                    );
-                    setActiveWildBattle(null);
-                    saveLocalEconomy(updatedTeam);
-                    setEconomy(new Economy(economyRef.current.toSaveData()));
-                    setIsBattleAnimating(false);
+                    const finishBattle = () => {
+                        setActiveWildBattle(null);
+                        saveLocalEconomy(updatedTeam);
+                        setEconomy(new Economy(economyRef.current.toSaveData()));
+                        setIsBattleAnimating(false);
+                        showNotification(
+                            "¡Victoria!", 
+                            `¡Tu ${oldName} derrotó al ${activeWildBattle.name} salvaje! Ganaste ${coinsEarned} Coins. ${trainerMsg}\n${msg}`
+                        );
+                    };
+
+                    if (evolved) {
+                        setActiveEvolution({
+                            pokemonId: activePoke.id,
+                            targetId: evolvedName,
+                            level: currentLvl,
+                            onComplete: () => {
+                                finishBattle();
+                                setActiveEvolution(null);
+                            }
+                        });
+                    } else {
+                        finishBattle();
+                    }
                     return;
                 }
             }
@@ -4663,9 +5184,10 @@ export default function GameCanvas({
                             `¡Tu ${activePoke.id} se debilitó! Todo tu equipo ha sido debilitado. Fuiste llevado de urgencia al Centro Pokémon.`
                         );
                         
-                        // Warp to Pokemon Center
-                        returnMapRef.current = '/assets/maps/tutorial/main.json';
-                        returnCoordsRef.current = [600, 748];
+                        // Warp to nearest Pokemon Center
+                        const closestCenter = getClosestPokeCenter(currentMapPathRef.current);
+                        returnMapRef.current = closestCenter.map;
+                        returnCoordsRef.current = closestCenter.coords;
                         playerRef.current.x = 144;
                         playerRef.current.y = 224;
                         playerRef.current.targetX = 144;
@@ -4752,7 +5274,7 @@ export default function GameCanvas({
                     if (stoneId === 'leaf_stone' || stoneId === 'evolution_stone') {
                         evolvedId = evo.target;
                     }
-                } else if (['clefairy', 'jigglypuff'].includes(idLower)) {
+                } else if (['clefairy', 'jigglypuff', 'nidorina', 'nidorino'].includes(idLower)) {
                     if (stoneId === 'moon_stone' || stoneId === 'evolution_stone') {
                         evolvedId = evo.target;
                     }
@@ -4778,8 +5300,17 @@ export default function GameCanvas({
                 setTeam(updatedTeam);
                 saveLocalEconomy(updatedTeam);
                 setUsingItem(null);
+                setShowInventoryModal(false);
                 
-                showNotification("¡Evolución exitosa!", `¡Tu ${target.id.toUpperCase()} ha evolucionado en ${evolvedId.toUpperCase()} usando la ${itemInfo.name || 'Piedra'}!`);
+                setActiveEvolution({
+                    pokemonId: target.id,
+                    targetId: evolvedId,
+                    level: target.level ?? 5,
+                    onComplete: () => {
+                        showNotification("¡Evolución exitosa!", `¡Tu ${target.id.toUpperCase()} ha evolucionado en ${evolvedId.toUpperCase()} usando la ${itemInfo.name || 'Piedra'}!`);
+                        setActiveEvolution(null);
+                    }
+                });
             } else {
                 showNotification("Error de Piedra", `¡La ${itemInfo.name || 'Piedra'} no tiene efecto en ${target.id.toUpperCase()}!`);
             }
@@ -5978,7 +6509,7 @@ export default function GameCanvas({
                                 onClick={handleNurseHeal}
                                 style={{ background: 'rgba(16,185,129,0.2)', border: '1px solid rgba(16,185,129,0.4)', borderRadius: '8px', color: '#6ee7b7', cursor: 'pointer', padding: '9px 14px', fontSize: '12px', fontWeight: 'bold', width: '100%', margin: 0 }}
                             >
-                                💚 Curar Equipo (Gratis, {2 - economy.heals_today}/2 Hoy)
+                                💚 Curar Equipo (Gratis, {getRemainingFreeHeals()}/2 Hoy)
                             </button>
 
                             {adHealSelectMode ? (
@@ -6033,8 +6564,60 @@ export default function GameCanvas({
 
             {showShop && (
                 <div className="modal-overlay" style={{ zIndex: 350 }}>
-                    <div className="modal-card pokemon-panel" style={{ width: '95%', maxWidth: '480px' }}>
-                        <div className="modal-header" style={{ borderBottom: 'none', paddingBottom: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    {/* Style override block to apply dark theme to PokéMart classes locally */}
+                    <style>{`
+                        .dark-shop-card {
+                            background: rgba(255, 255, 255, 0.03) !important;
+                            border: 1px solid rgba(255, 255, 255, 0.08) !important;
+                            box-shadow: inset 0 1px 0 rgba(255,255,255,0.05) !important;
+                            border-radius: 12px !important;
+                            color: #f1f5f9 !important;
+                            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.15) !important;
+                        }
+                        .dark-shop-card:hover {
+                            background: rgba(255, 255, 255, 0.06) !important;
+                            border-color: rgba(255, 255, 255, 0.15) !important;
+                            transform: translateY(-2px) !important;
+                        }
+                        .btn-dark-buy-coins {
+                            background: rgba(251, 191, 36, 0.1) !important;
+                            border: 1px solid rgba(251, 191, 36, 0.35) !important;
+                            color: #fbbf24 !important;
+                            box-shadow: none !important;
+                            transition: all 0.2s !important;
+                        }
+                        .btn-dark-buy-coins:hover {
+                            background: rgba(251, 191, 36, 0.2) !important;
+                            border-color: rgba(251, 191, 36, 0.5) !important;
+                        }
+                        .btn-dark-buy-pusdt {
+                            background: rgba(16, 185, 129, 0.1) !important;
+                            border: 1px solid rgba(16, 185, 129, 0.35) !important;
+                            color: #34d399 !important;
+                            box-shadow: none !important;
+                            transition: all 0.2s !important;
+                        }
+                        .btn-dark-buy-pusdt:hover {
+                            background: rgba(16, 185, 129, 0.2) !important;
+                            border-color: rgba(16, 185, 129, 0.5) !important;
+                        }
+                    `}</style>
+                    <div style={{
+                        background: 'linear-gradient(160deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)',
+                        border: '2px solid rgba(255,255,255,0.12)',
+                        borderRadius: '16px',
+                        width: '95%',
+                        maxWidth: '480px',
+                        maxHeight: '90vh',
+                        overflowY: 'auto',
+                        boxShadow: '0 24px 60px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.1)',
+                        fontFamily: "'Segoe UI', monospace",
+                    }}>
+                        <div style={{
+                            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                            padding: '16px 20px 12px',
+                            borderBottom: '1px solid rgba(255,255,255,0.08)'
+                        }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                 <button 
                                     onClick={() => {
@@ -6042,49 +6625,73 @@ export default function GameCanvas({
                                         setShowMenuModal(true);
                                     }} 
                                     style={{
-                                        background: '#efebe9',
-                                        border: '1px solid #d7ccc8',
-                                        borderRadius: '4px',
-                                        color: '#3e2723',
-                                        fontSize: '9px',
+                                        background: 'rgba(255,255,255,0.08)',
+                                        border: '1px solid rgba(255,255,255,0.15)',
+                                        borderRadius: '8px',
+                                        color: '#94a3b8',
+                                        fontSize: '11px',
                                         fontWeight: 'bold',
                                         cursor: 'pointer',
-                                        padding: '2px 6px',
+                                        padding: '4px 10px',
                                         display: 'flex',
                                         alignItems: 'center',
-                                        gap: '2px',
-                                        fontFamily: 'monospace'
+                                        gap: '4px',
+                                        fontFamily: "'Segoe UI', monospace"
                                     }}
                                 >
                                     ⬅️ Menú
                                 </button>
-                                <h3 className="modal-title" style={{ margin: 0 }}>🏪 PokéMart Store</h3>
+                                <span style={{ color: '#e2e8f0', fontWeight: 'bold', fontSize: '14px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>🏪 PokéMart Store</span>
                             </div>
-                            <button onClick={() => setShowShop(false)} className="modal-close-btn">&times;</button>
+                            <button onClick={() => setShowShop(false)} style={{
+                                background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)',
+                                borderRadius: '8px', color: '#94a3b8', cursor: 'pointer',
+                                width: '28px', height: '28px', display: 'flex', alignItems: 'center',
+                                justifyContent: 'center', fontSize: '16px', fontWeight: 'bold',
+                            }}>&times;</button>
                         </div>
-                        <div className="modal-body" style={{ maxHeight: '72vh', overflowY: 'auto', paddingRight: '4px', paddingTop: '8px' }}>
+                        <div style={{ padding: '16px 16px 20px', overflowY: 'auto' }}>
                             {/* Premium Balance Bar */}
-                            <div className="premium-shop-header">
-                                <div className="shop-balance-pill coins" title="Tus Coins">
+                            <div className="premium-shop-header" style={{
+                                background: 'rgba(255,255,255,0.04)',
+                                border: '1px solid rgba(255,255,255,0.08)',
+                                boxShadow: 'none',
+                                color: '#e2e8f0'
+                            }}>
+                                <div className="shop-balance-pill coins" title="Tus Coins" style={{
+                                    background: 'rgba(251,191,36,0.1)',
+                                    border: '1px solid rgba(251,191,36,0.3)',
+                                    color: '#fbbf24'
+                                }}>
                                     🪙 {economy.getFormattedCoins()}
                                 </div>
-                                <div className="shop-balance-pill pusdt" title="Tu saldo PUSDT">
+                                <div className="shop-balance-pill pusdt" title="Tu saldo PUSDT" style={{
+                                    background: 'rgba(16,185,129,0.1)',
+                                    border: '1px solid rgba(16,185,129,0.35)',
+                                    color: '#34d399'
+                                }}>
                                     💲 {economy.getFormattedPusdt()} PUSD
                                 </div>
                             </div>
 
                             {/* Cofre Diario Row */}
-                            <div className="free-coins-chest animate-hover" onClick={handleWatchFreeCoinsAd} style={{ cursor: 'pointer' }}>
+                            <div className="free-coins-chest animate-hover" onClick={handleWatchFreeCoinsAd} style={{
+                                cursor: 'pointer',
+                                background: 'linear-gradient(135deg, rgba(251,191,36,0.2) 0%, rgba(245,158,11,0.15) 100%)',
+                                border: '1px solid rgba(251,191,36,0.4)',
+                                boxShadow: 'none',
+                                color: '#fef08a'
+                            }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                     <span className="chest-icon-glowing">🎁</span>
                                     <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
-                                        <span style={{ fontWeight: 'bold', fontSize: '11px', color: '#5d4037' }}>Cofre Diario Gratis</span>
-                                        <span style={{ fontSize: '8px', color: '#5d4037', opacity: 0.9 }}>Consigue +20 Coins gratis viendo publicidad</span>
+                                        <span style={{ fontWeight: 'bold', fontSize: '11px', color: '#fef08a' }}>Cofre Diario Gratis</span>
+                                        <span style={{ fontSize: '8px', color: '#fef08a', opacity: 0.8 }}>Consigue +20 Coins gratis viendo publicidad</span>
                                     </div>
                                 </div>
                                 <button 
-                                    className="pokemon-button animate-hover" 
-                                    style={{ margin: 0, padding: '4px 10px', fontSize: '9px', width: 'auto', background: '#ffca28', border: '1px solid #ff8f00', color: '#3e2723' }}
+                                    className="animate-hover" 
+                                    style={{ margin: 0, padding: '4px 10px', fontSize: '9px', width: 'auto', background: 'rgba(251,191,36,0.25)', border: '1px solid rgba(251,191,36,0.5)', color: '#fbbf24', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}
                                 >
                                     Ver Anuncio
                                 </button>
@@ -6093,33 +6700,31 @@ export default function GameCanvas({
                             {/* Persistent Category Tabs */}
                             <div style={{
                                 display: 'flex',
-                                gap: '4px',
-                                padding: '10px 0 6px 0',
-                                borderBottom: '2px solid #d7ccc8',
-                                marginBottom: '10px'
+                                gap: '6px',
+                                padding: '10px 0 8px 0',
+                                borderBottom: '1px solid rgba(255,255,255,0.08)',
+                                marginBottom: '14px'
                             }}>
                                 {([
-                                    { key: 'balls', label: '🔴 Balls', bg: 'linear-gradient(135deg, #ff8a80 0%, #ff5252 100%)', border: '#c62828' },
-                                    { key: 'items', label: '🧪 Objetos', bg: 'linear-gradient(135deg, #81c784 0%, #4caf50 100%)', border: '#2e7d32' },
-                                    { key: 'tms',   label: '💿 TMs',    bg: 'linear-gradient(135deg, #64b5f6 0%, #2196f3 100%)', border: '#1565c0' },
+                                    { key: 'balls', label: '🔴 Balls', bg: 'linear-gradient(135deg, rgba(239,68,68,0.2) 0%, rgba(220,38,38,0.25) 100%)', border: 'rgba(239,68,68,0.4)' },
+                                    { key: 'items', label: '🧪 Objetos', bg: 'linear-gradient(135deg, rgba(16,185,129,0.2) 0%, rgba(5,150,105,0.25) 100%)', border: 'rgba(16,185,129,0.35)' },
+                                    { key: 'tms',   label: '💿 TMs',    bg: 'linear-gradient(135deg, rgba(59,130,246,0.2) 0%, rgba(37,99,235,0.25) 100%)', border: 'rgba(59,130,246,0.4)' },
                                 ] as const).map(tab => (
                                     <button
                                         key={tab.key}
                                         onClick={() => setShopTab(tab.key)}
                                         style={{
                                             flex: 1,
-                                            padding: '7px 4px',
-                                            fontSize: '9px',
+                                            padding: '8px 4px',
+                                            fontSize: '11px',
                                             fontWeight: 'bold',
-                                            fontFamily: 'monospace',
-                                            border: shopTab === tab.key ? `2px solid ${tab.border}` : '2px solid #d7ccc8',
-                                            borderRadius: '6px 6px 0 0',
-                                            background: shopTab === tab.key ? tab.bg : '#f5f5f5',
-                                            color: shopTab === tab.key ? '#fff' : '#757575',
+                                            fontFamily: "'Segoe UI', monospace",
+                                            border: '1px solid ' + (shopTab === tab.key ? tab.border : 'rgba(255,255,255,0.08)'),
+                                            borderRadius: '8px',
+                                            background: shopTab === tab.key ? tab.bg : 'rgba(255,255,255,0.03)',
+                                            color: shopTab === tab.key ? '#fff' : '#94a3b8',
                                             cursor: 'pointer',
                                             transition: 'all 0.15s ease',
-                                            boxShadow: shopTab === tab.key ? `0 2px 0 ${tab.border}` : 'none',
-                                            transform: shopTab === tab.key ? 'translateY(2px)' : 'none',
                                             margin: 0,
                                         }}
                                     >
@@ -6155,14 +6760,14 @@ export default function GameCanvas({
                                             }
 
                                             return (
-                                                <div key={item.id} className={`shop-card-premium ${rarityClass}`}>
+                                                <div key={item.id} className={`shop-card-premium dark-shop-card ${rarityClass}`}>
                                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                                                         <span style={{ fontSize: '24px' }}>{item.icon}</span>
                                                         <span className={`shop-card-badge ${badgeClass}`}>{badgeText}</span>
                                                     </div>
                                                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', textAlign: 'left', marginBottom: '8px' }}>
-                                                        <span style={{ fontWeight: 'bold', fontSize: '11px', color: '#3e2723' }}>{item.name}</span>
-                                                        <span style={{ fontSize: '8px', color: '#666', marginTop: '2px', lineHeight: '10px' }}>{item.desc}</span>
+                                                        <span style={{ fontWeight: 'bold', fontSize: '11px', color: '#f1f5f9' }}>{item.name}</span>
+                                                        <span style={{ fontSize: '8px', color: '#94a3b8', marginTop: '2px', lineHeight: '10px' }}>{item.desc}</span>
                                                     </div>
                                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                                         {isCoinsOnly && (
@@ -6170,17 +6775,18 @@ export default function GameCanvas({
                                                                 onClick={() => {
                                                                     const cost = item.coins!;
                                                                     if (economy.spendCoins(cost)) {
-                                                                        inventory.addItem(item.id);
-                                                                        setInventory(new Inventory(inventory.toSaveData()));
+                                                                        const newInv = new Inventory(inventoryRef.current.toSaveData());
+                                                                        newInv.addItem(item.id);
+                                                                        setInventory(newInv);
                                                                         economy.updateMissionProgress('spend', cost);
-                                                                        saveLocalEconomy();
+                                                                        saveLocalEconomy(undefined, undefined, undefined, true, newInv);
                                                                         setEconomy(new Economy(economy.toSaveData()));
                                                                         showNotification("Compra Exitosa", `¡Compraste 1 ${item.name} con éxito!`);
                                                                     } else {
                                                                         showNotification("Fondos Insuficientes", "¡No tienes suficientes Coins!");
                                                                     }
                                                                 }}
-                                                                className="btn-premium-buy coins"
+                                                                className="btn-premium-buy btn-dark-buy-coins"
                                                             >
                                                                 🪙 {item.coins}
                                                             </button>
@@ -6190,16 +6796,17 @@ export default function GameCanvas({
                                                                 onClick={() => {
                                                                     const cost = item.pusdt!;
                                                                     if (economy.spendPusdt(cost)) {
-                                                                        inventory.addItem(item.id);
-                                                                        setInventory(new Inventory(inventory.toSaveData()));
-                                                                        saveLocalEconomy();
+                                                                        const newInv = new Inventory(inventoryRef.current.toSaveData());
+                                                                        newInv.addItem(item.id);
+                                                                        setInventory(newInv);
+                                                                        saveLocalEconomy(undefined, undefined, undefined, true, newInv);
                                                                         setEconomy(new Economy(economy.toSaveData()));
                                                                         showNotification("Compra Exitosa", `¡Compraste 1 ${item.name} con éxito!`);
                                                                     } else {
                                                                         showNotification("Fondos Insuficientes", "¡No tienes suficientes PUSDT!");
                                                                     }
                                                                 }}
-                                                                className="btn-premium-buy pusdt"
+                                                                className="btn-premium-buy btn-dark-buy-pusdt"
                                                             >
                                                                 💲 {item.pusdt!.toFixed(2)} PUSD
                                                             </button>
@@ -6234,31 +6841,32 @@ export default function GameCanvas({
                                             }
 
                                             return (
-                                                <div key={item.id} className={`shop-card-premium ${rarityClass}`}>
+                                                <div key={item.id} className={`shop-card-premium dark-shop-card ${rarityClass}`}>
                                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                                                         <span style={{ fontSize: '24px' }}>{item.icon}</span>
                                                         <span className={`shop-card-badge ${badgeClass}`}>{badgeText}</span>
                                                     </div>
                                                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', textAlign: 'left', marginBottom: '8px' }}>
-                                                        <span style={{ fontWeight: 'bold', fontSize: '11px', color: '#3e2723' }}>{item.name}</span>
-                                                        <span style={{ fontSize: '8px', color: '#666', marginTop: '2px', lineHeight: '10px' }}>{item.desc}</span>
+                                                        <span style={{ fontWeight: 'bold', fontSize: '11px', color: '#f1f5f9' }}>{item.name}</span>
+                                                        <span style={{ fontSize: '8px', color: '#94a3b8', marginTop: '2px', lineHeight: '10px' }}>{item.desc}</span>
                                                     </div>
                                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                                         <button 
                                                             onClick={() => {
                                                                 const cost = item.coins;
                                                                 if (economy.spendCoins(cost)) {
-                                                                    inventory.addItem(item.id);
-                                                                    setInventory(new Inventory(inventory.toSaveData()));
+                                                                    const newInv = new Inventory(inventoryRef.current.toSaveData());
+                                                                    newInv.addItem(item.id);
+                                                                    setInventory(newInv);
                                                                     economy.updateMissionProgress('spend', cost);
-                                                                    saveLocalEconomy();
+                                                                    saveLocalEconomy(undefined, undefined, undefined, true, newInv);
                                                                     setEconomy(new Economy(economy.toSaveData()));
                                                                     showNotification("Compra Exitosa", `¡Compraste 1 ${item.name} con éxito!`);
                                                                 } else {
                                                                     showNotification("Fondos Insuficientes", "¡No tienes suficientes Coins!");
                                                                 }
                                                             }}
-                                                            className="btn-premium-buy coins"
+                                                            className="btn-premium-buy btn-dark-buy-coins"
                                                         >
                                                             🪙 {item.coins}
                                                         </button>
@@ -6266,16 +6874,17 @@ export default function GameCanvas({
                                                             onClick={() => {
                                                                 const cost = item.pusdt;
                                                                 if (economy.spendPusdt(cost)) {
-                                                                    inventory.addItem(item.id);
-                                                                    setInventory(new Inventory(inventory.toSaveData()));
-                                                                    saveLocalEconomy();
+                                                                    const newInv = new Inventory(inventoryRef.current.toSaveData());
+                                                                    newInv.addItem(item.id);
+                                                                    setInventory(newInv);
+                                                                    saveLocalEconomy(undefined, undefined, undefined, true, newInv);
                                                                     setEconomy(new Economy(economy.toSaveData()));
                                                                     showNotification("Compra Exitosa", `¡Compraste 1 ${item.name} con éxito!`);
                                                                 } else {
                                                                     showNotification("Fondos Insuficientes", "¡No tienes suficientes PUSDT!");
                                                                 }
                                                             }}
-                                                            className="btn-premium-buy pusdt"
+                                                            className="btn-premium-buy btn-dark-buy-pusdt"
                                                         >
                                                             💲 {item.pusdt.toFixed(2)} PUSD
                                                         </button>
@@ -6295,17 +6904,17 @@ export default function GameCanvas({
                                             const typeBg = tc[item.type] || '#a8a878';
                                             
                                             return (
-                                                <div key={item.id} className={`shop-card-premium ${rarityClass}`}>
+                                                <div key={item.id} className={`shop-card-premium dark-shop-card ${rarityClass}`}>
                                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                                                         <span style={{ fontSize: '24px' }}>💿</span>
                                                         <span className="shop-card-type-tag" style={{ background: typeBg }}>{item.type}</span>
                                                     </div>
                                                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', textAlign: 'left', marginBottom: '8px' }}>
                                                         <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap' }}>
-                                                            <span style={{ fontWeight: 'bold', fontSize: '9px', color: '#3e2723' }}>{item.name}</span>
+                                                            <span style={{ fontWeight: 'bold', fontSize: '9px', color: '#f1f5f9' }}>{item.name}</span>
                                                             <span className={`shop-card-badge ${badgeClass}`} style={{ fontSize: '6px', padding: '1px 3px' }}>{item.rarity}</span>
                                                         </div>
-                                                        <span style={{ fontSize: '8px', color: '#666', marginTop: '2px', lineHeight: '10px' }}>{item.desc}</span>
+                                                        <span style={{ fontSize: '8px', color: '#94a3b8', marginTop: '2px', lineHeight: '10px' }}>{item.desc}</span>
                                                     </div>
                                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                                         <button 
@@ -6322,7 +6931,7 @@ export default function GameCanvas({
                                                                     showNotification("Fondos Insuficientes", "¡No tienes suficientes PUSDT para comprar este movimiento!");
                                                                 }
                                                             }}
-                                                            className="btn-premium-buy pusdt"
+                                                            className="btn-premium-buy btn-dark-buy-pusdt"
                                                         >
                                                             💲 {item.pusdt.toFixed(2)} PUSD
                                                         </button>
@@ -8045,7 +8654,7 @@ export default function GameCanvas({
                                             style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 8px', opacity: qty > 0 ? 1 : 0.6, margin: 0, fontSize: '10px', alignItems: 'center' }}
                                             disabled={qty <= 0}
                                         >
-                                            <span>🔴 {label.split(' ')[0]}</span>
+                                            <span>🔴 {label}</span>
                                             <span style={{ fontWeight: 'bold' }}>x{qty}</span>
                                         </button>
                                     );
@@ -8668,6 +9277,14 @@ export default function GameCanvas({
                         </div>
                     )}
                 </div>
+            )}
+            {activeEvolution && (
+                <EvolutionScreen
+                    pokemonId={activeEvolution.pokemonId}
+                    targetId={activeEvolution.targetId}
+                    level={activeEvolution.level}
+                    onComplete={activeEvolution.onComplete}
+                />
             )}
         </div>
     );

@@ -9,6 +9,11 @@ export interface AdManagerConfig {
     adsterraUrl?: string;     // Adsterra Direct Link o URL de redirección
 }
 
+export interface AdResult {
+    success: boolean;
+    error?: string;
+}
+
 class AdManager {
     private static instance: AdManager;
     private config: AdManagerConfig = {
@@ -51,7 +56,7 @@ class AdManager {
                 this.isAdsgramLoaded = true;
                 resolve();
             };
-            script.onerror = () => reject(new Error("No se pudo cargar el SDK de Adsgram"));
+            script.onerror = () => reject(new Error("No se pudo cargar el SDK de Adsgram (puede estar bloqueado por AdBlock)"));
             document.head.appendChild(script);
         });
     }
@@ -59,36 +64,52 @@ class AdManager {
     /**
      * Muestra un anuncio de Adsgram (Telegram)
      */
-    private async showTelegramAd(blockId: string): Promise<boolean> {
-        const isDev = typeof window !== 'undefined' && (
-            window.location.hostname === 'localhost' || 
-            window.location.hostname === '127.0.0.1' ||
-            window.location.hostname.includes('ngrok') ||
-            window.location.hostname.includes('local') ||
-            window.location.hostname.includes('vercel') ||
-            window.location.hostname.includes('github')
-        );
-
+    private async showTelegramAd(blockId: string): Promise<AdResult> {
         try {
             await this.loadAdsgramSDK();
             const adsgram = (window as any).Adsgram;
             if (!adsgram) {
-                console.warn("[AdManager] Adsgram not found on window. Simulating ad success.");
-                return new Promise((resolve) => setTimeout(() => resolve(true), 1500));
+                console.warn("[AdManager] Adsgram not found on window.");
+                return { success: false, error: "El SDK de Adsgram no está disponible en window (AdBlock activo)" };
             }
 
-            const AdController = adsgram.init({ blockId });
+            const isDev = typeof window !== 'undefined' && 
+                (window.location.hostname === 'localhost' || 
+                 window.location.hostname === '127.0.0.1' || 
+                 window.location.hostname.includes('ngrok') ||
+                 window.location.hostname.includes('localtonet') ||
+                 window.location.hostname.includes('locallink'));
+
+            if (isDev) {
+                console.log(`[AdManager] Modo desarrollo detectado. Inicializando Adsgram con debug: true para el blockId: ${blockId}`);
+            }
+
+            const AdController = adsgram.init({ 
+                blockId,
+                debug: isDev,
+                debugConsole: isDev
+            });
             try {
                 const result = await AdController.show();
                 console.log("[AdManager] Adsgram show result:", result);
-                return !!(result && result.done);
-            } catch (adShowError) {
-                console.warn("[AdManager] Adsgram show failed. Falling back to simulated reward.", adShowError);
-                return new Promise((resolve) => setTimeout(() => resolve(true), 1500));
+                if (result && result.done) {
+                    return { success: true };
+                } else {
+                    return { 
+                        success: false, 
+                        error: result?.description || result?.error || "El anuncio fue cerrado o no se completó" 
+                    };
+                }
+            } catch (adShowError: any) {
+                console.warn("[AdManager] Adsgram show failed.", adShowError);
+                return { 
+                    success: false, 
+                    error: adShowError?.description || adShowError?.message || JSON.stringify(adShowError) || "Error al reproducir el anuncio" 
+                };
             }
-        } catch (err) {
-            console.error("Error al reproducir anuncio de Adsgram. Simulating success fallback:", err);
-            return new Promise((resolve) => setTimeout(() => resolve(true), 1500));
+        } catch (err: any) {
+            console.error("Error al reproducir anuncio de Adsgram:", err);
+            return { success: false, error: err?.message || "Error al inicializar el SDK de Adsgram" };
         }
     }
 
@@ -121,15 +142,15 @@ class AdManager {
 
     /**
      * Método público para mostrar un Anuncio Recompensado (Rewarded Ad)
-     * @returns Promise<boolean> true si el jugador debe recibir su recompensa, false si falló o canceló.
+     * @returns Promise<AdResult> resultado con success y error opcional.
      */
-    public async showRewardedAd(customConfig?: AdManagerConfig): Promise<boolean> {
+    public async showRewardedAd(customConfig?: AdManagerConfig): Promise<AdResult> {
         const activeConfig = { ...this.config, ...customConfig };
 
         if (this.isTelegram()) {
             if (!activeConfig.telegramBlockId || activeConfig.telegramBlockId === "YOUR_ADSGRAM_BLOCK_ID") {
-                console.warn("Adsgram Block ID no configurado. Simulando recompensa en desarrollo.");
-                return new Promise((resolve) => setTimeout(() => resolve(true), 2000));
+                console.warn("Adsgram Block ID no configurado.");
+                return { success: false, error: "Block ID no configurado" };
             }
             return await this.showTelegramAd(activeConfig.telegramBlockId);
         } else {
@@ -145,9 +166,10 @@ class AdManager {
                     await this.showWorldAppAd();
                 }
                 // Simula una breve espera de 2 segundos para otorgar la recompensa, garantizando que el cofre no falle
-                return new Promise((resolve) => setTimeout(() => resolve(true), 2000));
+                await new Promise((resolve) => setTimeout(resolve, 2000));
+                return { success: true };
             }
-            return false;
+            return { success: false, error: "Entorno window no disponible" };
         }
     }
 }

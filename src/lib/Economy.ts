@@ -269,6 +269,16 @@ export class Economy {
         };
     }
 
+    public getGymCooldownRemaining(gymId: number): number {
+        const gymIdStr = String(gymId);
+        if (!this.gym_cooldowns[gymIdStr]) return 0;
+        const cooldownHours = economyConfig.gym_rebattle_cooldown_hours ?? 24;
+        const lastTime = this.gym_cooldowns[gymIdStr];
+        const elapsed = Date.now() / 1000 - lastTime;
+        const remaining = cooldownHours * 3600 - elapsed;
+        return remaining > 0 ? remaining : 0;
+    }
+
     public getGymReward(gymId: number, maxPlayerPokemonLevel?: number): { coins: number; medal: string | null; isFirst: boolean; xpGained: number; leveledUp: boolean; newLevel: number; isOverleveled: boolean } {
         const gymIdStr = String(gymId);
 
@@ -277,13 +287,50 @@ export class Economy {
         const leaderLevel = gymId <= 8 ? gymLevels[gymId - 1] : gymId * 10;
         const isOverleveled = maxPlayerPokemonLevel !== undefined && (maxPlayerPokemonLevel - leaderLevel) >= 5;
 
-        if (isOverleveled) {
-            return { coins: 0, medal: null, isFirst: false, xpGained: 0, leveledUp: false, newLevel: this.level, isOverleveled: true };
-        }
-
         // Capped at 13 gyms total (8 standard + 5 legendary)
         if (gymId > 13) {
             return { coins: 0, medal: null, isFirst: false, xpGained: 0, leveledUp: false, newLevel: this.level, isOverleveled: false };
+        }
+
+        const timesDefeated = this.defeated_gyms[gymIdStr] ?? 0;
+        const isFirst = timesDefeated === 0;
+
+        if (isOverleveled) {
+            let medal: string | null = null;
+            if (isFirst) {
+                // Find gym config to award medal on first victory even if overleveled
+                let gymConfig: any = null;
+                for (const gym of gymRewards.gyms) {
+                    if (gym.id === gymId) {
+                        gymConfig = gym;
+                        break;
+                    }
+                }
+                if (gymConfig && gymConfig.medal) {
+                    const mName: string = gymConfig.medal;
+                    medal = mName;
+                    if (!this.medals.includes(mName)) {
+                        this.medals.push(mName);
+                        if (!this.medal_levels[mName]) {
+                            this.medal_levels[mName] = 1;
+                        }
+                    }
+                }
+            }
+            
+            // Still track the defeat and cooldown so the game progresses
+            this.defeated_gyms[gymIdStr] = timesDefeated + 1;
+            this.gym_cooldowns[gymIdStr] = Date.now() / 1000;
+
+            return {
+                coins: 0,
+                medal,
+                isFirst,
+                xpGained: 0,
+                leveledUp: false,
+                newLevel: this.level,
+                isOverleveled: true
+            };
         }
 
         // Check cooldown
@@ -291,6 +338,8 @@ export class Economy {
             const cooldownHours = economyConfig.gym_rebattle_cooldown_hours ?? 24;
             const lastTime = this.gym_cooldowns[gymIdStr];
             if (Date.now() / 1000 - lastTime < cooldownHours * 3600) {
+                // Rematch during cooldown: increment defeats but don't reset cooldown or give rewards
+                this.defeated_gyms[gymIdStr] = timesDefeated + 1;
                 return { coins: 0, medal: null, isFirst: false, xpGained: 0, leveledUp: false, newLevel: this.level, isOverleveled: false };
             }
         }
@@ -304,8 +353,7 @@ export class Economy {
             }
         }
 
-        const timesDefeated = this.defeated_gyms[gymIdStr] ?? 0;
-        const isFirst = timesDefeated === 0;
+
 
         let coins = 0;
         let medal: string | null = null;
