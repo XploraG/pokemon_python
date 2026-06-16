@@ -894,7 +894,7 @@ const getClosestPokeCenter = (currentPath: string, returnMap?: string): { map: s
     if (path.includes('city1') || path.includes('cave_1') || path.includes('cave/main')) {
         return {
             map: '/assets/maps/city1/main.json',
-            coords: [280, 916]
+            coords: [280, 940] // Aligned outside the Pokemon Center in City 1
         };
     }
 
@@ -903,14 +903,14 @@ const getClosestPokeCenter = (currentPath: string, returnMap?: string): { map: s
         const index = parseInt(parts[1] || '1', 10);
         return {
             map: `procedural://settlement_${index}`,
-            coords: [400, 276]
+            coords: [408, 300] // Aligned outside the Pokemon Center in procedural settlement
         };
     }
 
     // Default to tutorial pokecenter
     return {
         map: '/assets/maps/tutorial/main.json',
-        coords: [600, 748]
+        coords: [600, 748] // Aligned outside the Pokemon Center in Pueblo Tutorial
     };
 };
 
@@ -2159,6 +2159,12 @@ export default function GameCanvas({
     const returnCoordsRef = useRef<[number, number]>([playerCoordinates[0], playerCoordinates[1]]);
     const returnMapRef = useRef<string>('/assets/maps/tutorial/main.json');
 
+    // Refs to avoid stale closures in input and loops
+    const handleInteractionRef = useRef<() => void>(() => {});
+    const processMovementRef = useRef<() => void>(() => {});
+    const currentDialogListRef = useRef<string[]>([]);
+    const currentDialogIndexRef = useRef<number>(0);
+
     // Map grids & preloaded entities references
     const mapDataRef = useRef<{
         grid: string[][];
@@ -2569,7 +2575,7 @@ export default function GameCanvas({
             }
             if (e.key === ' ' || e.key === 'Enter') {
                 e.preventDefault();
-                handleInteraction();
+                handleInteractionRef.current();
             }
             if (key === 'q') {
                 e.preventDefault();
@@ -2609,7 +2615,7 @@ export default function GameCanvas({
             const mapData = mapDataRef.current;
 
             // 1. Process movement animation & inputs
-            processMovement();
+            processMovementRef.current();
 
             // Broadcast movement changes if connected
             const currentAura = getMedalSynergy(economyRef.current.equipped_medals)?.name || null;
@@ -3837,8 +3843,8 @@ export default function GameCanvas({
         const isNearDoor = (px: number, py: number, ent: any) => {
             const doorX = ent.x + ent.w / 2;
             const doorY = ent.y + ent.h;
-            const xTolerance = ent.w >= 180 ? 24 : 20;
-            return Math.abs(px - doorX) <= xTolerance && py >= doorY - 20 && py <= doorY + 8;
+            const xTolerance = ent.w >= 180 ? 32 : 28;
+            return Math.abs(px - doorX) <= xTolerance && py >= doorY - 20 && py <= doorY + 28;
         };
 
         for (const ent of mapData.entities) {
@@ -3921,7 +3927,11 @@ export default function GameCanvas({
                     returnMapRef.current = currentPath;
                     const doorX = ent.x + ent.w / 2;
                     const doorY = ent.y + ent.h;
-                    returnCoordsRef.current = [Math.round(doorX), Math.round(doorY + 16)];
+                    
+                    // Align to outdoor grid immediately to avoid any misalignment issues!
+                    const cellX = Math.floor(doorX / 32);
+                    const cellY = Math.floor((doorY + 16) / 32);
+                    returnCoordsRef.current = [cellX * 32 + 24, cellY * 32 + 12];
 
                     setDialogName(dialogTitle);
                     setActiveDialog(dialogMsg);
@@ -4326,8 +4336,11 @@ export default function GameCanvas({
                 // Trigger dialogue
                 setDialogName(entity.name || "Entrenador");
                 setActiveDialog(entity.dialogs ? entity.dialogs[0] : "");
+                activeDialogRef.current = entity.dialogs ? entity.dialogs[0] : "";
                 setCurrentDialogList(entity.dialogs || []);
+                currentDialogListRef.current = entity.dialogs || [];
                 setCurrentDialogIndex(0);
+                currentDialogIndexRef.current = 0;
                 break;
             }
         }
@@ -4340,11 +4353,15 @@ export default function GameCanvas({
                 return; // Don't close text bubble with Space while Joy's menu is open
             }
             
+            const dialogList = currentDialogListRef.current;
+            const dialogIdx = currentDialogIndexRef.current;
+
             // Advance through dialogs queue
-            if (currentDialogList && currentDialogList.length > 0 && currentDialogIndex < currentDialogList.length - 1) {
-                const nextIdx = currentDialogIndex + 1;
-                const nextText = currentDialogList[nextIdx];
+            if (dialogList && dialogList.length > 0 && dialogIdx < dialogList.length - 1) {
+                const nextIdx = dialogIdx + 1;
+                const nextText = dialogList[nextIdx];
                 setCurrentDialogIndex(nextIdx);
+                currentDialogIndexRef.current = nextIdx;
                 
                 if (nextText.startsWith('TRAINER_BATTLE:')) {
                     const parts = nextText.split(':');
@@ -4353,8 +4370,11 @@ export default function GameCanvas({
                     
                     // Close dialogue
                     setActiveDialog(null);
+                    activeDialogRef.current = null;
                     setCurrentDialogList([]);
+                    currentDialogListRef.current = [];
                     setCurrentDialogIndex(0);
+                    currentDialogIndexRef.current = 0;
 
                     // Reset battle stages and animations
                     setPlayerAtkStage(0);
@@ -4383,11 +4403,15 @@ export default function GameCanvas({
                     });
                 } else {
                     setActiveDialog(nextText);
+                    activeDialogRef.current = nextText;
                 }
             } else {
                 setActiveDialog(null);
+                activeDialogRef.current = null;
                 setCurrentDialogList([]);
+                currentDialogListRef.current = [];
                 setCurrentDialogIndex(0);
+                currentDialogIndexRef.current = 0;
             }
             return;
         }
@@ -4512,6 +4536,24 @@ export default function GameCanvas({
                                 setActiveDialog(`No puedes desafiarme todavía. Debes derrotar al líder del gimnasio anterior primero.`);
                                 return;
                             }
+                        }
+                    }
+
+                    // Task 3: Check if the player has defeated previous trainers in the current gym (only the first time)
+                    const hasDefeatedGymLeaderBefore = (economyRef.current.defeated_gyms[String(gymIndex)] || 0) > 0;
+                    if (!hasDefeatedGymLeaderBefore) {
+                        const isTrainer = (ent: any) => ent.dialogs && ent.dialogs.some((d: string) => d.startsWith("TRAINER_BATTLE:"));
+                        const gymTrainers = mapData.entities.filter(isTrainer);
+                        
+                        const undefeatedTrainers = gymTrainers.filter(ent => {
+                            const trainerId = `${currentMapPathRef.current}_${ent.x}_${ent.y}`;
+                            return !defeatedTrainersRef.current.has(trainerId);
+                        });
+                        
+                        if (undefeatedTrainers.length > 0) {
+                            setDialogName(`Gym Leader ${boss.leader}`);
+                            setActiveDialog("No puedes desafiarme todavía. Primero debes derrotar a todos los entrenadores de este gimnasio.");
+                            return;
                         }
                     }
 
@@ -4697,10 +4739,32 @@ export default function GameCanvas({
                 }
                 // Trainer / Multi-dialog NPCs
                 else if (entity.dialogs && entity.dialogs.length > 0) {
+                    const isTrainer = entity.dialogs.some((d: string) => d.startsWith("TRAINER_BATTLE:"));
+                    const trainerId = `${currentMapPathRef.current}_${entity.x}_${entity.y}`;
+                    
+                    if (isTrainer) {
+                        if (defeatedTrainersRef.current.has(trainerId)) {
+                            // Trainer already defeated! Show a friendly post-battle text.
+                            setDialogName(entity.name || "Entrenador");
+                            setActiveDialog("¡Fuiste un gran oponente! Sigue así en tu camino.");
+                            setCurrentDialogList([]);
+                            currentDialogListRef.current = [];
+                            setCurrentDialogIndex(0);
+                            currentDialogIndexRef.current = 0;
+                            return;
+                        } else {
+                            // Store the active trainer ID so we can mark it as defeated when won
+                            activeTrainerIdRef.current = trainerId;
+                        }
+                    }
+
                     setDialogName(entity.name);
                     setCurrentDialogList(entity.dialogs);
+                    currentDialogListRef.current = entity.dialogs;
                     setCurrentDialogIndex(0);
+                    currentDialogIndexRef.current = 0;
                     setActiveDialog(entity.dialogs[0]);
+                    activeDialogRef.current = entity.dialogs[0];
                 }
                 // Other general dialog NPCs
                 else if (entity.dialog) {
@@ -5783,8 +5847,9 @@ export default function GameCanvas({
                             const nextActiveIdx = updatedTeam.findIndex((p: any) => p.hp > 0);
                             if (nextActiveIdx === -1) {
                                 showNotification("Derrota", `El ${activeWildBattle.name} salvaje contraatacó con ${wildDmg} de daño. ¡Tu equipo se debilitó por completo!`);
-                                returnMapRef.current = '/assets/maps/tutorial/main.json';
-                                returnCoordsRef.current = [600, 748];
+                                const closestCenter = getClosestPokeCenter(currentMapPathRef.current, returnMapRef.current);
+                                returnMapRef.current = closestCenter.map;
+                                returnCoordsRef.current = closestCenter.coords;
                                 playerRef.current.x = 144;
                                 playerRef.current.y = 224;
                                 playerRef.current.targetX = 144;
@@ -5869,8 +5934,9 @@ export default function GameCanvas({
             if (newPokeHp <= 0 && !afterTeam.some((p: any) => p.hp > 0)) {
                 setTimeout(() => {
                     showNotification("Derrota", "¡Todos tus Pokémon se debilitaron! Fuiste llevado al Centro Pokémon.");
-                    returnMapRef.current = '/assets/maps/tutorial/main.json';
-                    returnCoordsRef.current = [600, 748];
+                    const closestCenter = getClosestPokeCenter(currentMapPathRef.current, returnMapRef.current);
+                    returnMapRef.current = closestCenter.map;
+                    returnCoordsRef.current = closestCenter.coords;
                     playerRef.current.x = 144;
                     playerRef.current.y = 224;
                     playerRef.current.targetX = 144;
@@ -5933,8 +5999,9 @@ export default function GameCanvas({
             if (newPokeHp <= 0 && !afterTeam.some((p: any) => p.hp > 0)) {
                 setTimeout(() => {
                     showNotification("Derrota", "¡Todos tus Pokémon se debilitaron! Fuiste llevado al Centro Pokémon.");
-                    returnMapRef.current = '/assets/maps/tutorial/main.json';
-                    returnCoordsRef.current = [600, 748];
+                    const closestCenter = getClosestPokeCenter(currentMapPathRef.current, returnMapRef.current);
+                    returnMapRef.current = closestCenter.map;
+                    returnCoordsRef.current = closestCenter.coords;
                     playerRef.current.x = 144;
                     playerRef.current.y = 224;
                     playerRef.current.targetX = 144;
@@ -5996,8 +6063,9 @@ export default function GameCanvas({
                         `¡No pudiste escapar! El ${activeWildBattle.name} salvaje te atacó e infligió ${wildDmg} de daño, debilitando a todo tu equipo. Fuiste llevado al Centro Pokémon.`
                     );
                     
-                    returnMapRef.current = '/assets/maps/tutorial/main.json';
-                    returnCoordsRef.current = [600, 748];
+                    const closestCenter = getClosestPokeCenter(currentMapPathRef.current, returnMapRef.current);
+                    returnMapRef.current = closestCenter.map;
+                    returnCoordsRef.current = closestCenter.coords;
                     playerRef.current.x = 144;
                     playerRef.current.y = 224;
                     playerRef.current.targetX = 144;
@@ -6263,6 +6331,13 @@ export default function GameCanvas({
             }
         }
     };
+
+    // Sync refs on every render to resolve stale closures
+    handleInteractionRef.current = handleInteraction;
+    processMovementRef.current = processMovement;
+
+    useEffect(() => { currentDialogListRef.current = currentDialogList; }, [currentDialogList]);
+    useEffect(() => { currentDialogIndexRef.current = currentDialogIndex; }, [currentDialogIndex]);
 
     return (
         <div className="game-container">
