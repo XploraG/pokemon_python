@@ -40,7 +40,6 @@ export interface EconomySaveData {
     claimed_weekly_missions?: Record<string, boolean>;
     last_weekly_reset_date?: string;
     gold_incense_expires?: number;
-    lucky_egg_expires?: number;
     repel_expires?: number;
 }
 
@@ -85,7 +84,6 @@ export class Economy {
     public claimed_weekly_missions: Record<string, boolean> = {};
     public last_weekly_reset_date: string = '';
     public gold_incense_expires: number = 0;
-    public lucky_egg_expires: number = 0;
     public repel_expires: number = 0;
 
     constructor(saveData?: EconomySaveData) {
@@ -127,7 +125,6 @@ export class Economy {
         this.claimed_weekly_missions = {};
         this.last_weekly_reset_date = '';
         this.gold_incense_expires = 0;
-        this.lucky_egg_expires = 0;
         this.repel_expires = 0;
     }
 
@@ -164,7 +161,6 @@ export class Economy {
         this.claimed_weekly_missions = data.claimed_weekly_missions ?? {};
         this.last_weekly_reset_date = data.last_weekly_reset_date ?? '';
         this.gold_incense_expires = data.gold_incense_expires ?? 0;
-        this.lucky_egg_expires = data.lucky_egg_expires ?? 0;
         this.repel_expires = data.repel_expires ?? 0;
         for (const medal of this.medals) {
             if (!this.medal_levels[medal]) {
@@ -207,7 +203,6 @@ export class Economy {
             claimed_weekly_missions: this.claimed_weekly_missions,
             last_weekly_reset_date: this.last_weekly_reset_date,
             gold_incense_expires: this.gold_incense_expires,
-            lucky_egg_expires: this.lucky_egg_expires,
             repel_expires: this.repel_expires
         };
     }
@@ -283,11 +278,7 @@ export class Economy {
 
     public addTrainerXp(amount: number): { leveledUp: boolean; oldLevel: number; newLevel: number; xpGained: number } {
         const oldLevel = this.level;
-        let xpGained = amount;
-        if (this.lucky_egg_expires && Date.now() < this.lucky_egg_expires) {
-            xpGained = amount * 2;
-        }
-        this.xp += xpGained;
+        this.xp += amount;
         
         let leveledUp = false;
         let nextLevelXp = this.level * 1000;
@@ -303,7 +294,7 @@ export class Economy {
             leveledUp,
             oldLevel,
             newLevel: this.level,
-            xpGained
+            xpGained: amount
         };
     }
 
@@ -775,11 +766,6 @@ export class Economy {
         if (itemId === 'gold_incense') {
             const currentExpiry = this.gold_incense_expires && this.gold_incense_expires > now ? this.gold_incense_expires : now;
             this.gold_incense_expires = currentExpiry + durationMs;
-            return true;
-        }
-        if (itemId === 'lucky_egg') {
-            const currentExpiry = this.lucky_egg_expires && this.lucky_egg_expires > now ? this.lucky_egg_expires : now;
-            this.lucky_egg_expires = currentExpiry + durationMs;
             return true;
         }
         if (itemId === 'repel') {

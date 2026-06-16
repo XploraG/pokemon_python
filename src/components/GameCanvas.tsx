@@ -4988,7 +4988,10 @@ export default function GameCanvas({
                 if (newWildHp <= 0) {
                     if (isGymBattle && gymLeaderTeamRef.current && gymLeaderCurrentPokeIndexRef.current < gymLeaderTeamRef.current.length - 1) {
                         // --- MID-BATTLE XP PROCESS ---
-                        const xpGained = Math.floor(activeWildBattle.level * 25 * (Math.random() * 0.2 + 0.9));
+                        let xpGained = Math.floor(activeWildBattle.level * 25 * (Math.random() * 0.2 + 0.9));
+                        if (activePoke.held_item === 'lucky_egg') {
+                            xpGained = xpGained * 2;
+                        }
                         let currentLvl = activePoke.level ?? 1;
                         let currentXp = (activePoke.xp ?? 0) + xpGained;
                         let nextLvlXp = currentLvl * 100;
@@ -5088,7 +5091,10 @@ export default function GameCanvas({
 
                     // --- VICTORY PROCESS ---
                     // Compute XP earned
-                    const xpGained = Math.floor(activeWildBattle.level * 25 * (Math.random() * 0.2 + 0.9));
+                    let xpGained = Math.floor(activeWildBattle.level * 25 * (Math.random() * 0.2 + 0.9));
+                    if (activePoke.held_item === 'lucky_egg') {
+                        xpGained = xpGained * 2;
+                    }
                     
                     let currentLvl = activePoke.level ?? 1;
                     let currentXp = (activePoke.xp ?? 0) + xpGained;
@@ -5522,12 +5528,63 @@ export default function GameCanvas({
         }
     };
 
+    const handleUnequipItem = (targetPoke: any) => {
+        const itemId = targetPoke.held_item;
+        if (!itemId) return;
+
+        const updatedTeam = [...team];
+        const idx = updatedTeam.findIndex(x => x.id === targetPoke.id && x.level === targetPoke.level && x.xp === targetPoke.xp && x.hp === targetPoke.hp);
+        if (idx === -1) return;
+
+        delete updatedTeam[idx].held_item;
+
+        const newInv = new Inventory(inventoryRef.current.toSaveData());
+        newInv.addItem(itemId, 1);
+        inventoryRef.current = newInv;
+        setInventory(newInv);
+
+        setTeam(updatedTeam);
+        saveLocalEconomy(updatedTeam, undefined, undefined, true, newInv);
+        setEconomy(new Economy(economyRef.current.toSaveData()));
+        
+        setSelectedInfoPoke({ ...updatedTeam[idx] });
+
+        showNotification(
+            "Objeto Desequipado", 
+            `¡Has devuelto el objeto ${inventoryRef.current.getItemInfo(itemId)?.name || itemId} a tu mochila!`
+        );
+    };
+
     const handleApplyItemToPokemon = (p: any, idx: number) => {
         if (!usingItem) return;
 
         const updatedTeam = [...team];
         const target = updatedTeam[idx];
         const itemInfo = inventoryRef.current.getItemInfo(usingItem.id);
+
+        if (usingItem.id === 'lucky_egg') {
+            const oldHeld = target.held_item;
+            target.held_item = 'lucky_egg';
+
+            inventoryRef.current.removeItem('lucky_egg', 1);
+            if (oldHeld) {
+                inventoryRef.current.addItem(oldHeld, 1);
+            }
+
+            const newInv = new Inventory(inventoryRef.current.toSaveData());
+            setInventory(newInv);
+            setTeam(updatedTeam);
+            saveLocalEconomy(updatedTeam, undefined, undefined, true, newInv);
+            setEconomy(new Economy(economyRef.current.toSaveData()));
+            setUsingItem(null);
+            setShowInventoryModal(false);
+            
+            showNotification(
+                "Objeto Equipado", 
+                `¡Has equipado ${itemInfo.name || 'Lucky Egg'} en tu ${target.id.toUpperCase()}! Ahora ganará x2 XP en batalla.`
+            );
+            return;
+        }
         
         if (usingItem.id.includes('stone')) {
             const idLower = target.id.toLowerCase();
@@ -8123,7 +8180,6 @@ export default function GameCanvas({
                         <div style={{ padding: '16px 16px 20px', color: '#e2e8f0', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                             {/* Active Boosters */}
                             {((economy.gold_incense_expires && economy.gold_incense_expires > Date.now()) || 
-                              (economy.lucky_egg_expires && economy.lucky_egg_expires > Date.now()) || 
                               (economy.repel_expires && economy.repel_expires > Date.now())) && (
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', background: 'rgba(251,191,36,0.1)', border: '1px solid rgba(251,191,36,0.25)', borderRadius: '10px', padding: '10px 12px', marginBottom: '8px' }}>
                                     <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#fbbf24', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -8133,11 +8189,6 @@ export default function GameCanvas({
                                         {economy.gold_incense_expires && economy.gold_incense_expires > Date.now() && (
                                             <div style={{ fontSize: '10px', color: '#fef08a', background: 'rgba(254,240,138,0.15)', border: '1px solid rgba(254,240,138,0.3)', borderRadius: '6px', padding: '3px 8px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                                                 ⚱️ x2 Coins ({Math.ceil((economy.gold_incense_expires - Date.now()) / 60000)} min)
-                                            </div>
-                                        )}
-                                        {economy.lucky_egg_expires && economy.lucky_egg_expires > Date.now() && (
-                                            <div style={{ fontSize: '10px', color: '#bfdbfe', background: 'rgba(191,219,254,0.15)', border: '1px solid rgba(191,219,254,0.3)', borderRadius: '6px', padding: '3px 8px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                🥚 x2 XP ({Math.ceil((economy.lucky_egg_expires - Date.now()) / 60000)} min)
                                             </div>
                                         )}
                                         {economy.repel_expires && economy.repel_expires > Date.now() && (
@@ -8194,8 +8245,8 @@ export default function GameCanvas({
                                 <div style={{ textAlign: 'center', padding: '20px', color: '#64748b', fontStyle: 'italic', fontSize: '12px' }}>Tu mochila está vacía.</div>
                             ) : (
                                 inventory.getAllItems().map((item: any) => {
-                                    const isBooster = ['gold_incense', 'lucky_egg', 'repel'].includes(item.id);
-                                    const isUsable = item.id.includes('potion') || item.id.includes('revive') || item.id.includes('stone') || isBooster;
+                                    const isBooster = ['gold_incense', 'repel'].includes(item.id);
+                                    const isUsable = item.id.includes('potion') || item.id.includes('revive') || item.id.includes('stone') || item.id === 'lucky_egg' || isBooster;
                                     return (
                                         <div key={item.id} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '10px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                             <div style={{ flex: 1 }}>
@@ -8403,6 +8454,26 @@ export default function GameCanvas({
                                         </div>
                                     </div>
                                 </div>
+                                
+                                {p.held_item && (
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(56,189,248,0.08)', border: '1px solid rgba(56,189,248,0.25)', borderRadius: '10px', padding: '10px 12px', marginBottom: '4px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                            <span style={{ fontSize: '14px' }}>📦</span>
+                                            <div style={{ textAlign: 'left' }}>
+                                                <div style={{ fontSize: '10px', color: '#94a3b8' }}>Objeto Equipado:</div>
+                                                <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#38bdf8' }}>
+                                                    {inventoryRef.current.getItemInfo(p.held_item)?.name || p.held_item}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <button
+                                            onClick={() => handleUnequipItem(p)}
+                                            style={{ margin: 0, padding: '4px 10px', fontSize: '9px', fontWeight: 'bold', background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.35)', borderRadius: '6px', color: '#f87171', cursor: 'pointer' }}
+                                        >
+                                            Desequipar
+                                        </button>
+                                    </div>
+                                )}
 
                                 <div style={{ borderBottom: '1px solid #efebe9', paddingBottom: '12px' }}>
                                     <div style={{ fontWeight: 'bold', fontSize: '12px', color: '#5d4037', marginBottom: '6px' }}>Estadísticas Actuales:</div>
