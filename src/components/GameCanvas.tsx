@@ -4268,6 +4268,12 @@ export default function GameCanvas({
             return;
         }
 
+        // Check if there is at least one active Pokemon
+        const activePokes = teamRef.current.filter((p: any) => p.hp > 0);
+        if (activePokes.length === 0) {
+            return;
+        }
+
         const mapData = mapDataRef.current;
         if (!mapData) return;
 
@@ -4753,6 +4759,17 @@ export default function GameCanvas({
                             currentDialogIndexRef.current = 0;
                             return;
                         } else {
+                            // Check if player has at least one active Pokemon
+                            const activePokes = teamRef.current.filter((p: any) => p.hp > 0);
+                            if (activePokes.length === 0) {
+                                setDialogName(entity.name || "Entrenador");
+                                setActiveDialog("¡Tus Pokémon están debilitados! Ve al Centro Pokémon para curarlos antes de hablar conmigo.");
+                                setCurrentDialogList([]);
+                                currentDialogListRef.current = [];
+                                setCurrentDialogIndex(0);
+                                currentDialogIndexRef.current = 0;
+                                return;
+                            }
                             // Store the active trainer ID so we can mark it as defeated when won
                             activeTrainerIdRef.current = trainerId;
                         }
@@ -5444,6 +5461,7 @@ export default function GameCanvas({
                         playerRef.current.targetX = 144;
                         playerRef.current.targetY = 224;
                         playerRef.current.isMoving = false;
+                        currentMapPathRef.current = '/assets/maps/pokecenter/main.json';
                         setCurrentMapPath('/assets/maps/pokecenter/main.json');
                         
                         // Do not heal automatically, just save their 0 HP state
@@ -5855,6 +5873,7 @@ export default function GameCanvas({
                                 playerRef.current.targetX = 144;
                                 playerRef.current.targetY = 224;
                                 playerRef.current.isMoving = false;
+                                currentMapPathRef.current = '/assets/maps/pokecenter/main.json';
                                 setCurrentMapPath('/assets/maps/pokecenter/main.json');
                                 // Save their 0 HP state without healing
                                 setTeam(updatedTeam);
@@ -5942,6 +5961,7 @@ export default function GameCanvas({
                     playerRef.current.targetX = 144;
                     playerRef.current.targetY = 224;
                     playerRef.current.isMoving = false;
+                    currentMapPathRef.current = '/assets/maps/pokecenter/main.json';
                     setCurrentMapPath('/assets/maps/pokecenter/main.json');
                     
                     setTeam(afterTeam);
@@ -6007,6 +6027,7 @@ export default function GameCanvas({
                     playerRef.current.targetX = 144;
                     playerRef.current.targetY = 224;
                     playerRef.current.isMoving = false;
+                    currentMapPathRef.current = '/assets/maps/pokecenter/main.json';
                     setCurrentMapPath('/assets/maps/pokecenter/main.json');
                     
                     setTeam(afterTeam);
@@ -6071,6 +6092,7 @@ export default function GameCanvas({
                     playerRef.current.targetX = 144;
                     playerRef.current.targetY = 224;
                     playerRef.current.isMoving = false;
+                    currentMapPathRef.current = '/assets/maps/pokecenter/main.json';
                     setCurrentMapPath('/assets/maps/pokecenter/main.json');
                     
                     // Save their 0 HP state without healing
