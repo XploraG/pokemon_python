@@ -4,6 +4,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import { Economy, EconomySaveData } from '../lib/Economy';
 import { Inventory, InventorySaveData } from '../lib/Inventory';
 import dailyMissions from '../../public/assets/economy/daily_missions.json';
+import weeklyMissions from '../../public/assets/economy/weekly_missions.json';
 import passiveRates from '../../public/assets/economy/passive_rates.json';
 import pokemonSpeciesList from '../../public/assets/economy/pokemon_species.json';
 import economyConfig from '../../public/assets/economy/config.json';
@@ -1271,6 +1272,7 @@ export default function GameCanvas({
     const [selectedTutorPokeIdx, setSelectedTutorPokeIdx] = useState<number | null>(null);
     const [showDaily, setShowDaily] = useState(false);
     const [showMissions, setShowMissions] = useState(false);
+    const [missionTab, setMissionTab] = useState<'daily' | 'weekly'>('daily');
     const [showInventoryModal, setShowInventoryModal] = useState(false);
     const [showMenuModal, setShowMenuModal] = useState(false);
     const [showPcModal, setShowPcModal] = useState(false);
@@ -6177,13 +6179,27 @@ export default function GameCanvas({
         }
     };
 
-    const handleClaimMission = (missionId: string) => {
-        const success = economyRef.current.claimMissionReward(missionId);
+    const handleClaimMission = (missionId: string, isWeekly: boolean = false) => {
+        const success = economyRef.current.claimMissionReward(missionId, isWeekly);
         if (success) {
-            saveLocalEconomy();
+            const mission = (isWeekly ? weeklyMissions : dailyMissions).missions.find((m: any) => m.id === missionId);
+            
+            // If the mission rewards an item, add it to inventory
+            if (mission?.reward_item) {
+                const newInv = new Inventory(inventoryRef.current.toSaveData());
+                newInv.addItem(mission.reward_item, mission.reward_item_quantity ?? 1);
+                inventoryRef.current = newInv;
+                setInventory(newInv);
+                saveLocalEconomy(undefined, undefined, undefined, true, newInv);
+            } else {
+                saveLocalEconomy();
+            }
+
             setEconomy(new Economy(economyRef.current.toSaveData()));
-            const mission = dailyMissions.missions.find((m: any) => m.id === missionId);
-            showNotification("Misión Reclamada", `¡Reclamaste con éxito la recompensa de ${mission?.reward_coins} Coins!`);
+            
+            const coinsRewardText = mission?.reward_coins && mission.reward_coins > 0 ? ` de ${mission.reward_coins} Coins` : '';
+            const itemRewardText = mission?.reward_item ? ` y ${mission.reward_item_quantity ?? 1}x ${inventoryRef.current.getItemInfo(mission.reward_item)?.name || mission.reward_item}` : '';
+            showNotification("Misión Reclamada", `¡Reclamaste con éxito la recompensa${coinsRewardText}${itemRewardText}!`);
         }
     };
 
@@ -7856,16 +7872,61 @@ export default function GameCanvas({
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px 12px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                 <span style={{ fontSize: '18px' }}>🏆</span>
-                                <span style={{ color: '#e2e8f0', fontWeight: 'bold', fontSize: '14px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Misiones Diarias</span>
+                                <span style={{ color: '#e2e8f0', fontWeight: 'bold', fontSize: '14px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Misiones de Entrenador</span>
                             </div>
                             <button onClick={() => setShowMissions(false)} style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: '#94a3b8', cursor: 'pointer', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', fontWeight: 'bold' }}>&times;</button>
                         </div>
+                        
+                        {/* Tab Selector */}
+                        <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.08)', background: 'rgba(0,0,0,0.2)' }}>
+                            <button
+                                onClick={() => setMissionTab('daily')}
+                                style={{
+                                    flex: 1,
+                                    padding: '10px 0',
+                                    background: missionTab === 'daily' ? 'rgba(99,102,241,0.15)' : 'transparent',
+                                    border: 'none',
+                                    borderBottom: missionTab === 'daily' ? '2px solid #6366f1' : '2px solid transparent',
+                                    color: missionTab === 'daily' ? '#818cf8' : '#94a3b8',
+                                    fontSize: '11px',
+                                    fontWeight: 'bold',
+                                    cursor: 'pointer',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.05em',
+                                    transition: 'all 0.2s',
+                                    margin: 0
+                                }}
+                            >
+                                📅 Diarias
+                            </button>
+                            <button
+                                onClick={() => setMissionTab('weekly')}
+                                style={{
+                                    flex: 1,
+                                    padding: '10px 0',
+                                    background: missionTab === 'weekly' ? 'rgba(99,102,241,0.15)' : 'transparent',
+                                    border: 'none',
+                                    borderBottom: missionTab === 'weekly' ? '2px solid #6366f1' : '2px solid transparent',
+                                    color: missionTab === 'weekly' ? '#818cf8' : '#94a3b8',
+                                    fontSize: '11px',
+                                    fontWeight: 'bold',
+                                    cursor: 'pointer',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.05em',
+                                    transition: 'all 0.2s',
+                                    margin: 0
+                                }}
+                            >
+                                ⚔️ Semanales
+                            </button>
+                        </div>
+
                         <div style={{ padding: '16px 16px 20px', color: '#e2e8f0', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                            {dailyMissions.missions.map((m: any) => {
-                                const prog = economy.daily_missions_progress[m.id] ?? 0;
+                            {(missionTab === 'daily' ? dailyMissions.missions : weeklyMissions.missions).map((m: any) => {
+                                const prog = (missionTab === 'daily' ? economy.daily_missions_progress : (economy.weekly_missions_progress || {}))[m.id] ?? 0;
                                 const pct = Math.min(100, (prog / m.target) * 100);
                                 const isCompleted = prog >= m.target;
-                                const isClaimed = economy.claimed_missions?.[m.id] === true;
+                                const isClaimed = (missionTab === 'daily' ? economy.claimed_missions : (economy.claimed_weekly_missions || {}))[m.id] === true;
                                 return (
                                     <div key={m.id} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -7876,10 +7937,21 @@ export default function GameCanvas({
                                             <div style={{ width: `${pct}%`, height: '100%', background: 'linear-gradient(90deg,#6366f1,#8b5cf6)', borderRadius: '4px', transition: 'width 0.3s ease' }}></div>
                                         </div>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '2px' }}>
-                                            <div style={{ fontSize: '10px', color: '#fbbf24', fontWeight: 'bold' }}>Recompensa: 🪙 {m.reward_coins} Coins</div>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                                {m.reward_coins > 0 && (
+                                                    <div style={{ fontSize: '10px', color: '#fbbf24', fontWeight: 'bold' }}>
+                                                        Recompensa: 🪙 {m.reward_coins} Coins
+                                                    </div>
+                                                )}
+                                                {m.reward_item && (
+                                                    <div style={{ fontSize: '10px', color: '#38bdf8', fontWeight: 'bold' }}>
+                                                        Objeto: {m.reward_item_quantity ?? 1}x {inventoryRef.current.getItemInfo(m.reward_item)?.name || m.reward_item}
+                                                    </div>
+                                                )}
+                                            </div>
                                             {isCompleted && !isClaimed && (
                                                 <button
-                                                    onClick={() => handleClaimMission(m.id)}
+                                                    onClick={() => handleClaimMission(m.id, missionTab === 'weekly')}
                                                     style={{
                                                         background: 'rgba(16,185,129,0.25)',
                                                         border: '1px solid rgba(16,185,129,0.5)',

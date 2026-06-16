@@ -4,6 +4,7 @@ import gymRewards from '../../public/assets/economy/gym_rewards.json';
 import passiveRates from '../../public/assets/economy/passive_rates.json';
 import loginRewards from '../../public/assets/economy/login_rewards.json';
 import dailyMissions from '../../public/assets/economy/daily_missions.json';
+import weeklyMissions from '../../public/assets/economy/weekly_missions.json';
 import pokemonSpeciesList from '../../public/assets/economy/pokemon_species.json';
 
 export interface EconomySaveData {
@@ -35,6 +36,9 @@ export interface EconomySaveData {
     in_pvp_battle?: boolean;
     transaction_history?: CoinTransaction[];
     claimed_missions?: Record<string, boolean>;
+    weekly_missions_progress?: Record<string, number>;
+    claimed_weekly_missions?: Record<string, boolean>;
+    last_weekly_reset_date?: string;
 }
 
 export interface CoinTransaction {
@@ -74,6 +78,9 @@ export class Economy {
     public in_pvp_battle: boolean = false;
     public transaction_history: CoinTransaction[] = [];
     public claimed_missions: Record<string, boolean> = {};
+    public weekly_missions_progress: Record<string, number> = {};
+    public claimed_weekly_missions: Record<string, boolean> = {};
+    public last_weekly_reset_date: string = '';
 
     constructor(saveData?: EconomySaveData) {
         if (saveData) {
@@ -110,6 +117,9 @@ export class Economy {
         this.medal_levels = {};
         this.tournament_medals = [];
         this.in_pvp_battle = false;
+        this.weekly_missions_progress = {};
+        this.claimed_weekly_missions = {};
+        this.last_weekly_reset_date = '';
     }
 
     private loadFromSave(data: EconomySaveData): void {
@@ -141,6 +151,9 @@ export class Economy {
         this.in_pvp_battle = data.in_pvp_battle ?? false;
         this.transaction_history = data.transaction_history ?? [];
         this.claimed_missions = data.claimed_missions ?? {};
+        this.weekly_missions_progress = data.weekly_missions_progress ?? {};
+        this.claimed_weekly_missions = data.claimed_weekly_missions ?? {};
+        this.last_weekly_reset_date = data.last_weekly_reset_date ?? '';
         for (const medal of this.medals) {
             if (!this.medal_levels[medal]) {
                 this.medal_levels[medal] = 1;
@@ -177,7 +190,10 @@ export class Economy {
             tournament_medals: this.tournament_medals,
             in_pvp_battle: this.in_pvp_battle,
             transaction_history: this.transaction_history,
-            claimed_missions: this.claimed_missions
+            claimed_missions: this.claimed_missions,
+            weekly_missions_progress: this.weekly_missions_progress,
+            claimed_weekly_missions: this.claimed_weekly_missions,
+            last_weekly_reset_date: this.last_weekly_reset_date
         };
     }
 
@@ -612,6 +628,18 @@ export class Economy {
         this.daily_missions_progress = {};
         this.claimed_missions = {};
 
+        // Weekly Reset check
+        const todayDate = new Date();
+        const dayOfWeek = todayDate.getDay(); // 0 is Sunday, 1 is Monday...
+        const diff = todayDate.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
+        const currentMonday = new Date(todayDate.setDate(diff)).toISOString().split('T')[0];
+
+        if (currentMonday !== this.last_weekly_reset_date) {
+            this.weekly_missions_progress = {};
+            this.claimed_weekly_missions = {};
+            this.last_weekly_reset_date = currentMonday;
+        }
+
         const yesterdayObj = new Date();
         yesterdayObj.setDate(yesterdayObj.getDate() - 1);
         const yesterday = yesterdayObj.toISOString().split('T')[0];
@@ -648,43 +676,72 @@ export class Economy {
 
     // ---- DAILY MISSIONS ----
 
-    public updateMissionProgress(missionType: string, amount: number = 1): string[] {
-        const completed: string[] = [];
+    public updateMissionProgress(missionType: string, amount: number = 1): void {
+        // Daily
         for (const mission of dailyMissions.missions) {
             if (mission.type === missionType) {
                 const mid = mission.id;
                 const current = this.daily_missions_progress[mid] ?? 0;
                 if (current < mission.target) {
-                    const newProgress = current + amount;
-                    this.daily_missions_progress[mid] = newProgress;
-                    if (newProgress >= mission.target) {
-                        completed.push(mid);
-                    }
+                    this.daily_missions_progress[mid] = current + amount;
                 }
             }
         }
-        return completed;
+        // Weekly
+        for (const mission of weeklyMissions.missions) {
+            if (mission.type === missionType) {
+                const mid = mission.id;
+                if (!this.weekly_missions_progress) {
+                    this.weekly_missions_progress = {};
+                }
+                const current = this.weekly_missions_progress[mid] ?? 0;
+                if (current < mission.target) {
+                    this.weekly_missions_progress[mid] = current + amount;
+                }
+            }
+        }
     }
 
-    public claimMissionReward(missionId: string): boolean {
-        // Initialize if null/undefined
-        if (!this.claimed_missions) {
-            this.claimed_missions = {};
+    public claimMissionReward(missionId: string, isWeekly: boolean = false): boolean {
+        if (isWeekly) {
+            if (!this.claimed_weekly_missions) {
+                this.claimed_weekly_missions = {};
+            }
+            const mission = weeklyMissions.missions.find((m: any) => m.id === missionId);
+            if (!mission) return false;
+
+            const prog = this.weekly_missions_progress[missionId] ?? 0;
+            if (prog < mission.target) return false;
+
+            if (this.claimed_weekly_missions[missionId]) return false;
+
+            if (mission.reward_coins && mission.reward_coins > 0) {
+                this.addCoins(mission.reward_coins, 'mission_reward', `Completed weekly: ${missionId}`);
+            }
+            this.addTrainerXp(500);
+            this.claimed_weekly_missions[missionId] = true;
+
+            return true;
+        } else {
+            if (!this.claimed_missions) {
+                this.claimed_missions = {};
+            }
+            const mission = dailyMissions.missions.find((m: any) => m.id === missionId);
+            if (!mission) return false;
+
+            const prog = this.daily_missions_progress[missionId] ?? 0;
+            if (prog < mission.target) return false;
+
+            if (this.claimed_missions[missionId]) return false;
+
+            if (mission.reward_coins && mission.reward_coins > 0) {
+                this.addCoins(mission.reward_coins, 'mission_reward', `Completed daily: ${missionId}`);
+            }
+            this.addTrainerXp(200);
+            this.claimed_missions[missionId] = true;
+
+            return true;
         }
-
-        const mission = dailyMissions.missions.find((m: any) => m.id === missionId);
-        if (!mission) return false;
-
-        const prog = this.daily_missions_progress[missionId] ?? 0;
-        if (prog < mission.target) return false;
-
-        if (this.claimed_missions[missionId]) return false;
-
-        this.addCoins(mission.reward_coins, 'mission_reward', `Completed: ${missionId}`);
-        this.addTrainerXp(200);
-        this.claimed_missions[missionId] = true;
-
-        return true;
     }
 
     // ---- HEALING AND REVIVING ----

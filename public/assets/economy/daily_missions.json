@@ -1,9 +1,14 @@
 {
     "missions": [
-        {"id": "defeat_trainers", "description": "Derrota 3 entrenadores", "target": 3, "reward_coins": 200, "type": "battle"},
-        {"id": "capture_pokemon", "description": "Captura 1 Pokemon", "target": 1, "reward_coins": 300, "type": "capture"},
-        {"id": "visit_pokecenter", "description": "Visita el Pokemon Center", "target": 1, "reward_coins": 100, "type": "visit"},
-        {"id": "claim_passive", "description": "Reclama tu generacion pasiva", "target": 1, "reward_coins": 150, "type": "claim"},
-        {"id": "spend_coins", "description": "Gasta 1000 coins en tiendas", "target": 1000, "reward_coins": 200, "type": "spend"}
+        {"id": "defeat_trainers_daily", "description": "Derrota a 2 entrenadores o líderes hoy", "target": 2, "reward_coins": 100, "type": "battle"},
+        {"id": "capture_pokemon_daily", "description": "Captura 1 Pokémon hoy", "target": 1, "reward_coins": 100, "type": "capture"},
+        {"id": "visit_pokecenter_daily", "description": "Visita el Centro Pokémon hoy", "target": 1, "reward_coins": 50, "type": "visit"},
+        {"id": "spend_coins_1000", "description": "Gasta 1,000 monedas en la tienda", "target": 1000, "reward_coins": 0, "reward_item": "potion", "reward_item_quantity": 1, "type": "spend"},
+        {"id": "defeat_trainers_daily_hard", "description": "Derrota a 5 entrenadores o líderes hoy", "target": 5, "reward_coins": 180, "type": "battle"},
+        {"id": "capture_pokemon_daily_hard", "description": "Captura 3 Pokémon hoy", "target": 3, "reward_coins": 150, "type": "capture"},
+        {"id": "visit_pokecenter_daily_hard", "description": "Visita el Centro Pokémon 3 veces hoy", "target": 3, "reward_coins": 80, "type": "visit"},
+        {"id": "spend_coins_2500", "description": "Gasta 2,500 monedas en la tienda", "target": 2500, "reward_coins": 0, "reward_item": "super_potion", "reward_item_quantity": 1, "type": "spend"},
+        {"id": "battle_enthusiast_daily", "description": "Derrota a 8 entrenadores o líderes hoy", "target": 8, "reward_coins": 250, "type": "battle"},
+        {"id": "elite_collector_daily", "description": "Captura 5 Pokémon hoy", "target": 5, "reward_coins": 200, "type": "capture"}
     ]
 }
