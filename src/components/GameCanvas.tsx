@@ -1613,6 +1613,13 @@ export default function GameCanvas({
         const displayName = getMapDisplayName(currentMapPath);
         setMapNamePopup(displayName);
 
+        // Clean expired held items
+        const cleaned = checkAndCleanExpiredHeldItems(teamRef.current);
+        if (cleaned.changed) {
+            setTeam(cleaned.updated);
+            saveLocalEconomy(cleaned.updated);
+        }
+
         const timer = setTimeout(() => {
             setMapNamePopup(null);
         }, 15000);
@@ -4989,7 +4996,7 @@ export default function GameCanvas({
                     if (isGymBattle && gymLeaderTeamRef.current && gymLeaderCurrentPokeIndexRef.current < gymLeaderTeamRef.current.length - 1) {
                         // --- MID-BATTLE XP PROCESS ---
                         let xpGained = Math.floor(activeWildBattle.level * 25 * (Math.random() * 0.2 + 0.9));
-                        if (activePoke.held_item === 'lucky_egg') {
+                        if (activePoke.held_item === 'lucky_egg' && (!activePoke.held_item_expires || Date.now() < activePoke.held_item_expires)) {
                             xpGained = xpGained * 2;
                         }
                         let currentLvl = activePoke.level ?? 1;
@@ -5092,7 +5099,7 @@ export default function GameCanvas({
                     // --- VICTORY PROCESS ---
                     // Compute XP earned
                     let xpGained = Math.floor(activeWildBattle.level * 25 * (Math.random() * 0.2 + 0.9));
-                    if (activePoke.held_item === 'lucky_egg') {
+                    if (activePoke.held_item === 'lucky_egg' && (!activePoke.held_item_expires || Date.now() < activePoke.held_item_expires)) {
                         xpGained = xpGained * 2;
                     }
                     
@@ -5528,6 +5535,34 @@ export default function GameCanvas({
         }
     };
 
+    const checkAndCleanExpiredHeldItems = (teamList: any[]) => {
+        let changed = false;
+        const now = Date.now();
+        const updated = teamList.map(p => {
+            if (p.held_item_expires && now >= p.held_item_expires) {
+                const copy = { ...p };
+                delete copy.held_item;
+                delete copy.held_item_expires;
+                changed = true;
+                return copy;
+            }
+            return p;
+        });
+        return { updated, changed };
+    };
+
+    const getHeldItemRemainingTimeStr = (expires: number | undefined) => {
+        if (!expires) return '';
+        const diff = expires - Date.now();
+        if (diff <= 0) return 'Expirado';
+        const hours = Math.floor(diff / 3600000);
+        const mins = Math.ceil((diff % 3600000) / 60000);
+        if (hours > 0) {
+            return `${hours}h ${mins}m`;
+        }
+        return `${mins} min`;
+    };
+
     const handleUnequipItem = (targetPoke: any) => {
         const itemId = targetPoke.held_item;
         if (!itemId) return;
@@ -5537,6 +5572,7 @@ export default function GameCanvas({
         if (idx === -1) return;
 
         delete updatedTeam[idx].held_item;
+        delete updatedTeam[idx].held_item_expires;
 
         const newInv = new Inventory(inventoryRef.current.toSaveData());
         newInv.addItem(itemId, 1);
@@ -5565,6 +5601,7 @@ export default function GameCanvas({
         if (usingItem.id === 'lucky_egg') {
             const oldHeld = target.held_item;
             target.held_item = 'lucky_egg';
+            target.held_item_expires = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
 
             inventoryRef.current.removeItem('lucky_egg', 1);
             if (oldHeld) {
@@ -5581,7 +5618,7 @@ export default function GameCanvas({
             
             showNotification(
                 "Objeto Equipado", 
-                `¡Has equipado ${itemInfo.name || 'Lucky Egg'} en tu ${target.id.toUpperCase()}! Ahora ganará x2 XP en batalla.`
+                `¡Has equipado ${itemInfo.name || 'Lucky Egg'} en tu ${target.id.toUpperCase()}! Ahora ganará x2 XP en batalla durante las próximas 24 horas.`
             );
             return;
         }
@@ -8456,22 +8493,29 @@ export default function GameCanvas({
                                 </div>
                                 
                                 {p.held_item && (
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(56,189,248,0.08)', border: '1px solid rgba(56,189,248,0.25)', borderRadius: '10px', padding: '10px 12px', marginBottom: '4px' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                            <span style={{ fontSize: '14px' }}>📦</span>
-                                            <div style={{ textAlign: 'left' }}>
-                                                <div style={{ fontSize: '10px', color: '#94a3b8' }}>Objeto Equipado:</div>
-                                                <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#38bdf8' }}>
-                                                    {inventoryRef.current.getItemInfo(p.held_item)?.name || p.held_item}
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', background: 'rgba(56,189,248,0.08)', border: '1px solid rgba(56,189,248,0.25)', borderRadius: '10px', padding: '10px 12px', marginBottom: '4px' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                <span style={{ fontSize: '14px' }}>📦</span>
+                                                <div style={{ textAlign: 'left' }}>
+                                                    <div style={{ fontSize: '10px', color: '#94a3b8' }}>Objeto Equipado:</div>
+                                                    <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#38bdf8' }}>
+                                                        {inventoryRef.current.getItemInfo(p.held_item)?.name || p.held_item}
+                                                    </div>
                                                 </div>
                                             </div>
+                                            <button
+                                                onClick={() => handleUnequipItem(p)}
+                                                style={{ margin: 0, padding: '4px 10px', fontSize: '9px', fontWeight: 'bold', background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.35)', borderRadius: '6px', color: '#f87171', cursor: 'pointer' }}
+                                            >
+                                                Desequipar
+                                            </button>
                                         </div>
-                                        <button
-                                            onClick={() => handleUnequipItem(p)}
-                                            style={{ margin: 0, padding: '4px 10px', fontSize: '9px', fontWeight: 'bold', background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.35)', borderRadius: '6px', color: '#f87171', cursor: 'pointer' }}
-                                        >
-                                            Desequipar
-                                        </button>
+                                        {p.held_item_expires && p.held_item_expires > Date.now() && (
+                                            <div style={{ fontSize: '9px', color: '#94a3b8', textAlign: 'left', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                ⏳ Tiempo restante: <span style={{ color: '#38bdf8', fontWeight: 'bold' }}>{getHeldItemRemainingTimeStr(p.held_item_expires)}</span> (Límite 24h)
+                                            </div>
+                                        )}
                                     </div>
                                 )}
 
