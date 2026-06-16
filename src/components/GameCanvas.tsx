@@ -2972,9 +2972,10 @@ export default function GameCanvas({
 
                     if (isWildArea && isEncounterTile) {
                         const hasActivePoke = teamRef.current.some((p: any) => p.hp > 0);
+                        const repelActive = economyRef.current.repel_expires && Date.now() < economyRef.current.repel_expires;
                         // Lower encounter rate in caves since players walk on floor CF constantly
                         const encounterRate = currentMapPathStr.includes('cave') ? 0.08 : 0.15;
-                        if (hasActivePoke && Math.random() < encounterRate) {
+                        if (hasActivePoke && !repelActive && Math.random() < encounterRate) {
                             // Stop player movement
                             keysPressed.current = {};
                             player.isMoving = false;
@@ -5496,6 +5497,29 @@ export default function GameCanvas({
         }
         saveLocalEconomy(team);
         setIsBattleAnimating(false);
+    };
+
+    const handleUseBooster = (item: any) => {
+        const itemInfo = inventoryRef.current.getItemInfo(item.id);
+        const durationMs = (itemInfo.duration_minutes ?? 60) * 60 * 1000;
+        const success = economyRef.current.activateBooster(item.id, durationMs);
+        
+        if (success) {
+            const newInv = new Inventory(inventoryRef.current.toSaveData());
+            newInv.removeItem(item.id, 1);
+            inventoryRef.current = newInv;
+            setInventory(newInv);
+
+            saveLocalEconomy(undefined, undefined, undefined, true, newInv);
+            setEconomy(new Economy(economyRef.current.toSaveData()));
+            
+            showNotification(
+                "Objeto Usado", 
+                `¡Has usado ${itemInfo.name || item.id}! Efecto activo: ${itemInfo.description || ''}`
+            );
+        } else {
+            showNotification("Error", "No se pudo activar el objeto.");
+        }
     };
 
     const handleApplyItemToPokemon = (p: any, idx: number) => {
@@ -8097,6 +8121,34 @@ export default function GameCanvas({
                             }} style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: '#94a3b8', cursor: 'pointer', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', fontWeight: 'bold' }}>&times;</button>
                         </div>
                         <div style={{ padding: '16px 16px 20px', color: '#e2e8f0', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            {/* Active Boosters */}
+                            {((economy.gold_incense_expires && economy.gold_incense_expires > Date.now()) || 
+                              (economy.lucky_egg_expires && economy.lucky_egg_expires > Date.now()) || 
+                              (economy.repel_expires && economy.repel_expires > Date.now())) && (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', background: 'rgba(251,191,36,0.1)', border: '1px solid rgba(251,191,36,0.25)', borderRadius: '10px', padding: '10px 12px', marginBottom: '8px' }}>
+                                    <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#fbbf24', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                        ⚡ Efectos Activos:
+                                    </div>
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '4px' }}>
+                                        {economy.gold_incense_expires && economy.gold_incense_expires > Date.now() && (
+                                            <div style={{ fontSize: '10px', color: '#fef08a', background: 'rgba(254,240,138,0.15)', border: '1px solid rgba(254,240,138,0.3)', borderRadius: '6px', padding: '3px 8px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                ⚱️ x2 Coins ({Math.ceil((economy.gold_incense_expires - Date.now()) / 60000)} min)
+                                            </div>
+                                        )}
+                                        {economy.lucky_egg_expires && economy.lucky_egg_expires > Date.now() && (
+                                            <div style={{ fontSize: '10px', color: '#bfdbfe', background: 'rgba(191,219,254,0.15)', border: '1px solid rgba(191,219,254,0.3)', borderRadius: '6px', padding: '3px 8px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                🥚 x2 XP ({Math.ceil((economy.lucky_egg_expires - Date.now()) / 60000)} min)
+                                            </div>
+                                        )}
+                                        {economy.repel_expires && economy.repel_expires > Date.now() && (
+                                            <div style={{ fontSize: '10px', color: '#fca5a5', background: 'rgba(252,165,165,0.15)', border: '1px solid rgba(252,165,165,0.3)', borderRadius: '6px', padding: '3px 8px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                🌫️ Repelente ({Math.ceil((economy.repel_expires - Date.now()) / 60000)} min)
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
                             {usingItem ? (
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                                     <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#94a3b8', marginBottom: '4px', textAlign: 'center' }}>
@@ -8142,7 +8194,8 @@ export default function GameCanvas({
                                 <div style={{ textAlign: 'center', padding: '20px', color: '#64748b', fontStyle: 'italic', fontSize: '12px' }}>Tu mochila está vacía.</div>
                             ) : (
                                 inventory.getAllItems().map((item: any) => {
-                                    const isUsable = item.id.includes('potion') || item.id.includes('revive') || item.id.includes('stone');
+                                    const isBooster = ['gold_incense', 'lucky_egg', 'repel'].includes(item.id);
+                                    const isUsable = item.id.includes('potion') || item.id.includes('revive') || item.id.includes('stone') || isBooster;
                                     return (
                                         <div key={item.id} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '10px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                             <div style={{ flex: 1 }}>
@@ -8154,7 +8207,13 @@ export default function GameCanvas({
                                             </div>
                                             {isUsable && (
                                                 <button
-                                                    onClick={() => setUsingItem(item)}
+                                                    onClick={() => {
+                                                        if (isBooster) {
+                                                            handleUseBooster(item);
+                                                        } else {
+                                                            setUsingItem(item);
+                                                        }
+                                                    }}
                                                     style={{ margin: 0, marginLeft: '12px', padding: '5px 12px', fontSize: '10px', fontWeight: 'bold', background: 'rgba(16,185,129,0.2)', border: '1px solid rgba(16,185,129,0.4)', borderRadius: '8px', color: '#6ee7b7', cursor: 'pointer', whiteSpace: 'nowrap' }}
                                                 >
                                                     Usar

@@ -14,7 +14,7 @@
         {
             "name": "Mejoras",
             "source": "src/assets/items/boosts.json",
-            "items": ["gold_incense", "lucky_egg", "repel"]
+            "items": ["lucky_egg", "repel"]
         }
     ],
     "medals_required": {

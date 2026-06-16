@@ -39,6 +39,9 @@ export interface EconomySaveData {
     weekly_missions_progress?: Record<string, number>;
     claimed_weekly_missions?: Record<string, boolean>;
     last_weekly_reset_date?: string;
+    gold_incense_expires?: number;
+    lucky_egg_expires?: number;
+    repel_expires?: number;
 }
 
 export interface CoinTransaction {
@@ -81,6 +84,9 @@ export class Economy {
     public weekly_missions_progress: Record<string, number> = {};
     public claimed_weekly_missions: Record<string, boolean> = {};
     public last_weekly_reset_date: string = '';
+    public gold_incense_expires: number = 0;
+    public lucky_egg_expires: number = 0;
+    public repel_expires: number = 0;
 
     constructor(saveData?: EconomySaveData) {
         if (saveData) {
@@ -120,6 +126,9 @@ export class Economy {
         this.weekly_missions_progress = {};
         this.claimed_weekly_missions = {};
         this.last_weekly_reset_date = '';
+        this.gold_incense_expires = 0;
+        this.lucky_egg_expires = 0;
+        this.repel_expires = 0;
     }
 
     private loadFromSave(data: EconomySaveData): void {
@@ -154,6 +163,9 @@ export class Economy {
         this.weekly_missions_progress = data.weekly_missions_progress ?? {};
         this.claimed_weekly_missions = data.claimed_weekly_missions ?? {};
         this.last_weekly_reset_date = data.last_weekly_reset_date ?? '';
+        this.gold_incense_expires = data.gold_incense_expires ?? 0;
+        this.lucky_egg_expires = data.lucky_egg_expires ?? 0;
+        this.repel_expires = data.repel_expires ?? 0;
         for (const medal of this.medals) {
             if (!this.medal_levels[medal]) {
                 this.medal_levels[medal] = 1;
@@ -193,16 +205,26 @@ export class Economy {
             claimed_missions: this.claimed_missions,
             weekly_missions_progress: this.weekly_missions_progress,
             claimed_weekly_missions: this.claimed_weekly_missions,
-            last_weekly_reset_date: this.last_weekly_reset_date
+            last_weekly_reset_date: this.last_weekly_reset_date,
+            gold_incense_expires: this.gold_incense_expires,
+            lucky_egg_expires: this.lucky_egg_expires,
+            repel_expires: this.repel_expires
         };
     }
 
     // ---- COIN OPERATIONS ----
 
     public addCoins(amount: number, source: string = 'unknown', details?: string): number {
-        this.coins += amount;
-        this.total_coins_earned += amount;
-        this.logTransaction('income', amount, source, details);
+        let finalAmount = amount;
+        if (['trainer_victory', 'wild_victory', 'pvp_victory'].includes(source)) {
+            if (this.gold_incense_expires && Date.now() < this.gold_incense_expires) {
+                finalAmount = amount * 2;
+                details = details ? `${details} (x2 Incienso de Oro)` : ' (x2 Incienso de Oro)';
+            }
+        }
+        this.coins += finalAmount;
+        this.total_coins_earned += finalAmount;
+        this.logTransaction('income', finalAmount, source, details);
         return this.coins;
     }
 
@@ -261,7 +283,11 @@ export class Economy {
 
     public addTrainerXp(amount: number): { leveledUp: boolean; oldLevel: number; newLevel: number; xpGained: number } {
         const oldLevel = this.level;
-        this.xp += amount;
+        let xpGained = amount;
+        if (this.lucky_egg_expires && Date.now() < this.lucky_egg_expires) {
+            xpGained = amount * 2;
+        }
+        this.xp += xpGained;
         
         let leveledUp = false;
         let nextLevelXp = this.level * 1000;
@@ -277,7 +303,7 @@ export class Economy {
             leveledUp,
             oldLevel,
             newLevel: this.level,
-            xpGained: amount
+            xpGained
         };
     }
 
@@ -742,6 +768,26 @@ export class Economy {
 
             return true;
         }
+    }
+
+    public activateBooster(itemId: string, durationMs: number): boolean {
+        const now = Date.now();
+        if (itemId === 'gold_incense') {
+            const currentExpiry = this.gold_incense_expires && this.gold_incense_expires > now ? this.gold_incense_expires : now;
+            this.gold_incense_expires = currentExpiry + durationMs;
+            return true;
+        }
+        if (itemId === 'lucky_egg') {
+            const currentExpiry = this.lucky_egg_expires && this.lucky_egg_expires > now ? this.lucky_egg_expires : now;
+            this.lucky_egg_expires = currentExpiry + durationMs;
+            return true;
+        }
+        if (itemId === 'repel') {
+            const currentExpiry = this.repel_expires && this.repel_expires > now ? this.repel_expires : now;
+            this.repel_expires = currentExpiry + durationMs;
+            return true;
+        }
+        return false;
     }
 
     // ---- HEALING AND REVIVING ----
