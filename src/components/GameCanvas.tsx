@@ -6177,6 +6177,16 @@ export default function GameCanvas({
         }
     };
 
+    const handleClaimMission = (missionId: string) => {
+        const success = economyRef.current.claimMissionReward(missionId);
+        if (success) {
+            saveLocalEconomy();
+            setEconomy(new Economy(economyRef.current.toSaveData()));
+            const mission = dailyMissions.missions.find((m: any) => m.id === missionId);
+            showNotification("Misión Reclamada", `¡Reclamaste con éxito la recompensa de ${mission?.reward_coins} Coins!`);
+        }
+    };
+
     const renderTeamHpList = () => {
         return (
             <div className="pokemon-team-list" style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '4px 0' }}>
@@ -7854,6 +7864,8 @@ export default function GameCanvas({
                             {dailyMissions.missions.map((m: any) => {
                                 const prog = economy.daily_missions_progress[m.id] ?? 0;
                                 const pct = Math.min(100, (prog / m.target) * 100);
+                                const isCompleted = prog >= m.target;
+                                const isClaimed = economy.claimed_missions?.[m.id] === true;
                                 return (
                                     <div key={m.id} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -7863,7 +7875,39 @@ export default function GameCanvas({
                                         <div style={{ background: 'rgba(255,255,255,0.1)', borderRadius: '4px', height: '6px', overflow: 'hidden' }}>
                                             <div style={{ width: `${pct}%`, height: '100%', background: 'linear-gradient(90deg,#6366f1,#8b5cf6)', borderRadius: '4px', transition: 'width 0.3s ease' }}></div>
                                         </div>
-                                        <div style={{ fontSize: '10px', color: '#fbbf24' }}>Reward: {m.reward_coins} Coins</div>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '2px' }}>
+                                            <div style={{ fontSize: '10px', color: '#fbbf24', fontWeight: 'bold' }}>Recompensa: 🪙 {m.reward_coins} Coins</div>
+                                            {isCompleted && !isClaimed && (
+                                                <button
+                                                    onClick={() => handleClaimMission(m.id)}
+                                                    style={{
+                                                        background: 'rgba(16,185,129,0.25)',
+                                                        border: '1px solid rgba(16,185,129,0.5)',
+                                                        borderRadius: '6px',
+                                                        color: '#34d399',
+                                                        fontSize: '10px',
+                                                        fontWeight: 'bold',
+                                                        cursor: 'pointer',
+                                                        padding: '4px 10px',
+                                                        margin: 0,
+                                                        transition: 'all 0.2s'
+                                                    }}
+                                                    onMouseEnter={e => {
+                                                        e.currentTarget.style.background = 'rgba(16,185,129,0.4)';
+                                                    }}
+                                                    onMouseLeave={e => {
+                                                        e.currentTarget.style.background = 'rgba(16,185,129,0.25)';
+                                                    }}
+                                                >
+                                                    🎁 Reclamar
+                                                </button>
+                                            )}
+                                            {isCompleted && isClaimed && (
+                                                <span style={{ fontSize: '10px', color: '#6ee7b7', fontWeight: 'bold' }}>
+                                                    ✅ Reclamada
+                                                </span>
+                                            )}
+                                        </div>
                                     </div>
                                 );
                             })}
