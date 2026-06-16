@@ -3490,6 +3490,20 @@ export default function GameCanvas({
             }
         }
 
+        // 5. Static Cave map transitions (Cueva Celeste/Oscura)
+        if (path.includes('cave/main')) {
+            if (nextY >= mapDataRef.current.height && dir === 'down') {
+                // Return to Route 1 static
+                transitionToMap('/assets/maps/route1/main.json', 1024, 352);
+                return true;
+            }
+            if (nextY < 0 && dir === 'up') {
+                // Exit north to Ciudad Celeste
+                transitionToMap('/assets/maps/city1/main.json', 1184, 1248);
+                return true;
+            }
+        }
+
         return false;
     };
 
@@ -4118,9 +4132,8 @@ export default function GameCanvas({
                         transitionToMap('/assets/maps/cave/main.json', 256, 1536);
                         return true;
                     } else if (currentPath.includes('city1')) {
-                        // Enter cave 1 of exploration from Ciudad Celeste
-                        prepareProceduralMap('procedural://cave_1');
-                        transitionToMap('procedural://cave_1', 512, 32);
+                        // Enter static cave from Ciudad Celeste (north entrance)
+                        transitionToMap('/assets/maps/cave/main.json', 992, 160);
                         return true;
                     }
                 }
