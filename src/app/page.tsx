@@ -265,7 +265,7 @@ export default function Home() {
                     console.error("Error loading captured monsters:", dbMonstersError);
                 }
 
-                if (dbMonsters && dbMonsters.length > 0) {
+                if (dbMonsters && dbMonsters.length > 0 && (!saveState.team_data || saveState.team_data.length === 0)) {
                     // Split into team and PC
                     const teamMonsters = dbMonsters
                         .filter((m: any) => m.is_team)
