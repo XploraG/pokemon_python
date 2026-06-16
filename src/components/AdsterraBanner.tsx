@@ -44,6 +44,7 @@ export const AdsterraBanner: React.FC<AdsterraBannerProps> = ({
     return (
         <div 
             ref={containerRef} 
+            className="adsterra-banner-container"
             style={{ 
                 width: `${width}px`, 
                 height: `${height}px`, 

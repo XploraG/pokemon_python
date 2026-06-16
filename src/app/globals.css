@@ -1490,4 +1490,87 @@ body::before {
   }
 }
 
+/* Responsividad para celulares con pantalla de baja altura (max-height: 640px) */
+@media (max-height: 640px) {
+  /* Ocultar todos los banners de publicidad para recuperar espacio vertical */
+  .battle-ad-container,
+  .adsterra-banner-container {
+    display: none !important;
+  }
+
+  /* Reducir el relleno y espaciado del contenedor principal del juego */
+  .game-container {
+    padding: 6px !important;
+    gap: 8px !important;
+  }
+
+  /* Optimizar el contenedor del canvas del mapa */
+  .canvas-wrapper {
+    border-width: 2px !important;
+    border-radius: 10px !important;
+  }
+
+  /* Reducir padding de la pantalla de batalla */
+  .battle-modal-overlay {
+    padding: 6px !important;
+  }
+
+  /* Ajustar tamaño de contenedores de sprites */
+  .battle-sprite-wrapper {
+    height: 70px !important;
+  }
+
+  /* Reducir tamaño de las imágenes de los sprites */
+  .battle-sprite-wrapper img,
+  .battle-sprite-img {
+    width: 60px !important;
+    height: 60px !important;
+  }
+
+  /* Ajustar la caja de historial de batalla */
+  .battle-dialog-log {
+    min-height: 48px !important;
+    max-height: 48px !important;
+    margin: 3px 6px !important;
+    padding: 3px 6px !important;
+    font-size: 8.5px !important;
+  }
+
+  /* Reducir padding en paneles de información del Pokémon */
+  .battle-modal-overlay .pokemon-panel {
+    padding: 4px 6px !important;
+    gap: 2px !important;
+  }
+
+  /* Hacer que los botones de acción del combate sean más compactos */
+  .battle-modal-overlay button.pokemon-button {
+    padding: 8px !important;
+    font-size: 9px !important;
+  }
+
+  /* Aumentar la altura de modales para aprovechar al máximo la pantalla corta */
+  .modal-overlay > div,
+  .modal-card {
+    max-height: 95vh !important;
+    padding: 12px 14px !important;
+    border-radius: 10px !important;
+  }
+
+  /* Ajustar las cabeceras de los modales */
+  .modal-overlay > div > div:first-child,
+  .modal-card > .modal-header {
+    padding: 8px 12px 6px !important;
+    margin-bottom: 8px !important;
+  }
+
+  /* Reducir altura máxima de listas con scroll anidado en PC, Bolsa y Tienda */
+  .modal-overlay > div div[style*="maxHeight: '180px'"],
+  .modal-overlay > div div[style*="maxHeight: '120px'"],
+  .modal-overlay > div div[style*="max-height: 180px"],
+  .modal-overlay > div div[style*="max-height: 120px"] {
+    max-height: 110px !important;
+  }
+}
+
+
 

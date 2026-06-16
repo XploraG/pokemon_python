@@ -8833,7 +8833,9 @@ export default function GameCanvas({
 
             {/* Wild Battle Modal */}
             {activeWildBattle && !activeDialog && (
-                <div style={{
+                <div 
+                    className="battle-modal-overlay"
+                    style={{
                     position: 'absolute',
                     top: 0,
                     left: 0,
@@ -9002,11 +9004,11 @@ export default function GameCanvas({
                                     </div>
 
                                     {/* Opponent Sprite (Right) */}
-                                    <div style={{ width: '45%', display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'relative', height: '100px' }}>
+                                    <div className="battle-sprite-wrapper opponent-sprite-wrapper" style={{ width: '45%', display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'relative', height: '100px' }}>
                                         <img 
                                             src={opponentSpecies?.sprite || `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${opponentSpecies?.id || 25}.png`} 
                                             alt={activeWildBattle.name} 
-                                            className={opponentClass}
+                                            className={`${opponentClass} battle-sprite-img`}
                                             style={{ width: '80px', height: '80px', objectFit: 'contain', opacity: catchBallState === 'shake' || catchBallState === 'success' ? 0 : 1, transition: 'opacity 0.2s' }}
                                         />
                                         {catchBallState && (
@@ -9038,6 +9040,7 @@ export default function GameCanvas({
                         {/* Battle Dialog Log (Historial de Batalla) */}
                         <div 
                             ref={wildBattleLogRef}
+                            className="battle-dialog-log"
                             style={{
                                 background: '#f5f0e1',
                                 border: '2px solid #3e2723',
@@ -9090,11 +9093,11 @@ export default function GameCanvas({
                             return (
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '0 8px', marginTop: '4px' }}>
                                     {/* Player Sprite (Left) */}
-                                    <div style={{ width: '45%', display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'relative', height: '100px' }}>
+                                    <div className="battle-sprite-wrapper player-sprite-wrapper" style={{ width: '45%', display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'relative', height: '100px' }}>
                                         <img 
                                             src={activePokeSpecies?.sprite || `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${activePokeSpecies?.id || 1}.png`} 
                                             alt={activePoke.id} 
-                                            className={playerClass}
+                                            className={`${playerClass} battle-sprite-img`}
                                             style={{ width: '80px', height: '80px', objectFit: 'contain', transform: 'scaleX(-1)' /* Face right! */ }}
                                         />
                                         {floatingDamage && floatingDamage.target === 'player' && (
@@ -9630,7 +9633,9 @@ export default function GameCanvas({
 
 
             {activePvPBattle && (
-                <div style={{
+                <div 
+                    className="battle-modal-overlay pvp-battle-modal-overlay"
+                    style={{
                     position: 'absolute',
                     top: 0,
                     left: 0,
@@ -9728,11 +9733,11 @@ export default function GameCanvas({
                                 </div>
 
                                 {/* Opponent Sprite (Right) */}
-                                <div style={{ width: '45%', display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'relative', height: '130px' }}>
+                                <div className="battle-sprite-wrapper opponent-sprite-wrapper" style={{ width: '45%', display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'relative', height: '130px' }}>
                                     <img 
                                         src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemonSpeciesList.find((s:any)=>s.name.toLowerCase() === activePvPBattle.opponentPokemon?.id?.toLowerCase())?.id || 25}.png`} 
                                         alt="Opponent" 
-                                        className={opponentSpriteEffect === 'shake' ? 'battle-shake' : opponentSpriteEffect === 'flash' ? 'battle-flash' : ''}
+                                        className={`${opponentSpriteEffect === 'shake' ? 'battle-shake' : opponentSpriteEffect === 'flash' ? 'battle-flash' : ''} battle-sprite-img`}
                                         style={{ width: '110px', height: '110px', objectFit: 'contain' }}
                                     />
                                     {floatingDamage && floatingDamage.target === 'opponent' && (
@@ -9743,7 +9748,9 @@ export default function GameCanvas({
 
                             {/* Combat Log History (Middle space) */}
                             {activePvPBattle.status !== 'syncing' && (
-                                <div style={{
+                                <div 
+                                    className="battle-dialog-log pvp-battle-log"
+                                    style={{
                                     background: '#faf6eb',
                                     border: '1px solid #795548',
                                     borderRadius: '6px',
@@ -9789,11 +9796,11 @@ export default function GameCanvas({
                                 return (
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '0 8px', marginTop: '4px' }}>
                                         {/* Player Sprite (Left) */}
-                                        <div style={{ width: '45%', display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'relative', height: '130px' }}>
+                                        <div className="battle-sprite-wrapper player-sprite-wrapper" style={{ width: '45%', display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'relative', height: '130px' }}>
                                             <img 
                                                 src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/back/${pokemonSpeciesList.find((s:any)=>s.name.toLowerCase() === activePoke.id.toLowerCase())?.id || 25}.png`} 
                                                 alt={activePoke.id} 
-                                                className={playerSpriteEffect === 'bounce' ? 'battle-bounce' : playerSpriteEffect === 'shake' ? 'battle-shake' : ''}
+                                                className={`${playerSpriteEffect === 'bounce' ? 'battle-bounce' : playerSpriteEffect === 'shake' ? 'battle-shake' : ''} battle-sprite-img`}
                                                 style={{ width: '110px', height: '110px', objectFit: 'contain' }}
                                             />
                                             {floatingDamage && floatingDamage.target === 'player' && (

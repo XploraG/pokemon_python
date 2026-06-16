@@ -101,6 +101,7 @@ export const MontetagBattleBanner: React.FC<MontetagBattleBannerProps> = ({
 
     return (
         <div
+            className="battle-ad-container"
             style={{
                 width: '100%',
                 display: 'flex',
