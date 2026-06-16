@@ -242,6 +242,47 @@ const MOVES_DATABASE: Record<string, { name: string; type: string; power: number
     reflect: { name: "Reflejo", type: "psychic", power: 0, accuracy: 100 }
 };
 
+const getMoveCooldown = (moveId: string): number => {
+    const move = MOVES_DATABASE[moveId];
+    if (!move) return 0;
+    
+    // Status moves (power = 0)
+    if (move.power === 0) {
+        if (moveId === 'growl' || moveId === 'tail_whip') {
+            return 1;
+        }
+        return 3; // recover, barriers, status effects
+    }
+    
+    // Basic moves (power <= 40 and type is normal) -> always usable
+    if (move.power <= 40 && move.type === 'normal') {
+        return 0;
+    }
+    
+    // Fallback basic elemental fillers with extremely low power (e.g. mud_slap, poison_sting)
+    if (move.power <= 20) {
+        return 0;
+    }
+    
+    // Low-power/Mid-power (power <= 80)
+    if (move.power <= 80) {
+        return 1;
+    }
+    
+    // High-power (80 < power <= 100)
+    if (move.power <= 100) {
+        return 2;
+    }
+    
+    // Ultimate moves (100 < power <= 120)
+    if (move.power <= 120) {
+        return 3;
+    }
+    
+    // hyper_beam or higher
+    return 4;
+};
+
 // Lore compatibility dictionary for the 8 TMs
 const TM_COMPATIBILITY: Record<string, string[]> = {
     thunder_wave: ['pikachu', 'raichu', 'magnemite', 'magneton', 'electabuzz', 'jolteon', 'zapdos', 'mew', 'mewtwo', 'abra', 'kadabra', 'alakazam'],
@@ -1362,6 +1403,9 @@ export default function GameCanvas({
     const [showNurseJoyModal, setShowNurseJoyModal] = useState(false);
     const [isHudMinimized, setIsHudMinimized] = useState(false);
     const [cloudSaveStatus, setCloudSaveStatus] = useState<'synced' | 'saving' | 'error'>('synced');
+    const [playerMoveCooldowns, setPlayerMoveCooldowns] = useState<Record<string, number>>({});
+    // Level-up move replacement modal: fires when Pokemon has 4 moves and learns a new one on level-up
+    const [levelUpMoveLearn, setLevelUpMoveLearn] = useState<{ pokeIdx: number; newMoveId: string; pokeName: string } | null>(null);
     const [showPassiveModal, setShowPassiveModal] = useState(false);
     const [notification, setNotification] = useState<{ title: string; message: string; onShare?: () => void; shareText?: string; shareUrl?: string } | null>(null);
     const [activeWildBattle, setActiveWildBattle] = useState<WildBattle | null>(null);
@@ -1714,6 +1758,40 @@ export default function GameCanvas({
     useEffect(() => { inventoryRef.current = inventory; }, [inventory]);
     useEffect(() => { teamRef.current = team; }, [team]);
     useEffect(() => { pcPokemonRef.current = pcPokemon; }, [pcPokemon]);
+
+    // Track previous value of isBattleAnimating to detect transition from true -> false
+    const prevIsAnimatingRef = useRef(isBattleAnimating);
+
+    useEffect(() => {
+        const inBattle = !!activeWildBattle || !!activePvPBattle || isGymBattle || isTrainerBattle;
+        
+        if (inBattle && prevIsAnimatingRef.current === true && isBattleAnimating === false) {
+            // A battle turn animation just finished, decrement player move cooldowns!
+            setPlayerMoveCooldowns((prev: Record<string, number>) => {
+                const next = { ...prev };
+                let updated = false;
+                Object.keys(next).forEach((key) => {
+                    if (next[key] > 0) {
+                        next[key] -= 1;
+                        if (next[key] === 0) {
+                            delete next[key];
+                        }
+                        updated = true;
+                    }
+                });
+                return updated ? next : prev;
+            });
+        }
+        
+        prevIsAnimatingRef.current = isBattleAnimating;
+    }, [isBattleAnimating, activeWildBattle, activePvPBattle, isGymBattle, isTrainerBattle]);
+
+    useEffect(() => {
+        const inBattle = !!activeWildBattle || !!activePvPBattle || isGymBattle || isTrainerBattle;
+        if (!inBattle) {
+            setPlayerMoveCooldowns({});
+        }
+    }, [activeWildBattle, activePvPBattle, isGymBattle, isTrainerBattle]);
 
     useEffect(() => {
         if (!channelRef.current || !walletAddress) return;
@@ -4387,6 +4465,17 @@ export default function GameCanvas({
         const activePokeIdx = team.findIndex((p: any) => p.hp > 0);
         if (activePokeIdx === -1) return;
         const activePoke = team[activePokeIdx];
+        
+        // Put the move on cooldown if it has one
+        const cooldown = getMoveCooldown(moveId);
+        if (cooldown > 0) {
+            const cooldownKey = `${activePoke.id_captura || activePoke.id}_${moveId}`;
+            setPlayerMoveCooldowns((prev: Record<string, number>) => ({
+                ...prev,
+                [cooldownKey]: cooldown
+            }));
+        }
+
         const move = MOVES_DATABASE[moveId] || MOVES_DATABASE.tackle;
 
         setIsBattleAnimating(true);
@@ -5112,6 +5201,26 @@ export default function GameCanvas({
         const teamToSave = updatedTeam !== undefined ? updatedTeam : teamRef.current;
         const pcPokemonToSave = updatedPcPokemon !== undefined ? updatedPcPokemon : pcPokemonRef.current;
         const activeName = nameOverride !== undefined ? nameOverride : playerNameRef.current;
+
+        // Sanitize moves: remove any move ID that doesn't exist in MOVES_DATABASE
+        const sanitizeMoves = (pokeList: any[]): any[] =>
+            (pokeList || []).map(p => {
+                if (!p || !p.moves) return p;
+                const cleanMoves = (p.moves as string[]).filter((m: string) => !!MOVES_DATABASE[m]);
+                if (cleanMoves.length === p.moves.length) return p; // nothing changed
+                // Fill missing slots with species-appropriate fallback
+                const fallbackList = getPokemonMoves(p.id || 'normal', p.level ?? 1);
+                for (const fb of fallbackList) {
+                    if (!cleanMoves.includes(fb) && cleanMoves.length < 4) cleanMoves.push(fb);
+                }
+                if (cleanMoves.length === 0) cleanMoves.push('tackle');
+                console.warn(`[MoveGuard] Fixed invalid moves for ${p.id}: removed [${(p.moves as string[]).filter((m: string) => !MOVES_DATABASE[m]).join(', ')}]`);
+                return { ...p, moves: cleanMoves };
+            });
+
+        const sanitizedTeam = sanitizeMoves(teamToSave);
+        const sanitizedPc = sanitizeMoves(pcPokemonToSave);
+
         
         const saveState = {
             name: activeName,
@@ -5120,8 +5229,8 @@ export default function GameCanvas({
             map: currentMapPathRef.current,
             economy_data: economyData,
             inventory_data: inventoryData,
-            team_data: teamToSave,
-            pc_pokemon: pcPokemonToSave,
+            team_data: sanitizedTeam,
+            pc_pokemon: sanitizedPc,
             updated_at: new Date().toISOString()
         };
 
@@ -5281,6 +5390,17 @@ export default function GameCanvas({
         setShowMoveSelect(false); // Hide move selection during animation
 
         const activePoke = team[activePokeIdx];
+        
+        // Put the move on cooldown if it has one
+        const cooldown = getMoveCooldown(moveId);
+        if (cooldown > 0) {
+            const cooldownKey = `${activePoke.id_captura || activePoke.id}_${moveId}`;
+            setPlayerMoveCooldowns((prev: Record<string, number>) => ({
+                ...prev,
+                [cooldownKey]: cooldown
+            }));
+        }
+
         const move = MOVES_DATABASE[moveId] || MOVES_DATABASE.tackle;
         const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
         
@@ -5421,9 +5541,15 @@ export default function GameCanvas({
                             const learnableMoves = getPokemonMoves(evolvedName, currentLvl);
                             for (const mId of learnableMoves) {
                                 if (!finalMoves.includes(mId)) {
-                                    finalMoves.push(mId);
-                                    const moveName = MOVES_DATABASE[mId]?.name || mId;
-                                    msg += ` \n🎉 ¡Aprendió ${moveName.toUpperCase()}!`;
+                                    if (finalMoves.length < 4) {
+                                        finalMoves.push(mId);
+                                        const moveName = MOVES_DATABASE[mId]?.name || mId;
+                                        msg += ` \n🎉 ¡Aprendió ${moveName.toUpperCase()}!`;
+                                    } else {
+                                        const moveName = MOVES_DATABASE[mId]?.name || mId;
+                                        msg += ` \n⚠️ Quiere aprender ${moveName.toUpperCase()}, pero ya conoce 4 movimientos.`;
+                                        setTimeout(() => setLevelUpMoveLearn({ pokeIdx: activePokeIdx, newMoveId: mId, pokeName: evolvedName }), 1500);
+                                    }
                                 }
                             }
                         }
@@ -5537,9 +5663,16 @@ export default function GameCanvas({
                         const learnableMoves = getPokemonMoves(evolvedName, currentLvl);
                         for (const mId of learnableMoves) {
                             if (!finalMoves.includes(mId)) {
-                                finalMoves.push(mId);
-                                const moveName = MOVES_DATABASE[mId]?.name || mId;
-                                msg += ` \n🎉 ¡Aprendió ${moveName.toUpperCase()}!`;
+                                if (finalMoves.length < 4) {
+                                    finalMoves.push(mId);
+                                    const moveName = MOVES_DATABASE[mId]?.name || mId;
+                                    msg += ` \n🎉 ¡Aprendió ${moveName.toUpperCase()}!`;
+                                } else {
+                                    // Pokemon already has 4 moves — queue the replacement modal
+                                    const moveName = MOVES_DATABASE[mId]?.name || mId;
+                                    msg += ` \n⚠️ Quiere aprender ${moveName.toUpperCase()}, pero ya conoce 4 movimientos.`;
+                                    setTimeout(() => setLevelUpMoveLearn({ pokeIdx: activePokeIdx, newMoveId: mId, pokeName: evolvedName }), 1500);
+                                }
                             }
                         }
                     }
@@ -10003,7 +10136,20 @@ export default function GameCanvas({
                                     }}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '10px', textTransform: 'capitalize', color: '#3e2723' }}>
                                             <span>{activeWildBattle.isShiny && '✨ '}{activeWildBattle.name}</span>
-                                            <span>L:{activeWildBattle.level}</span>
+                                            {(() => {
+                                                const ivSum = activeWildBattle.ivs ? 
+                                                    ((activeWildBattle.ivs.hp ?? 0) + 
+                                                     (activeWildBattle.ivs.attack ?? 0) + 
+                                                     (activeWildBattle.ivs.defense ?? 0) + 
+                                                     (activeWildBattle.ivs.speed ?? 0)) : 60;
+                                                const ivPercentage = Math.round((ivSum / 124) * 100);
+                                                return (
+                                                    <span style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                                                        <span style={{ fontSize: '9px', color: '#795548', fontWeight: 'normal' }}>IV: {ivPercentage}%</span>
+                                                        <span>L:{activeWildBattle.level}</span>
+                                                    </span>
+                                                );
+                                            })()}
                                         </div>
                                         <div className="pokemon-hp-bar" style={{ height: '6px', background: '#e0e0e0', borderRadius: '3px', overflow: 'hidden', border: '1px solid #795548', margin: 0, width: '100%' }}>
                                             <div style={{
@@ -10224,26 +10370,41 @@ export default function GameCanvas({
                                     const activePokeMoves = activePoke.moves || getPokemonMoves(activePoke.id, activePoke.level ?? 1);
                                     return (activePokeMoves as string[]).map((moveId: string) => {
                                         const m = MOVES_DATABASE[moveId] || { name: moveId, type: 'normal', power: 40 };
+                                        const cooldownKey = `${activePoke.id_captura || activePoke.id}_${moveId}`;
+                                        const turnsLeft = playerMoveCooldowns[cooldownKey] || 0;
+                                        const isOnCooldown = turnsLeft > 0;
                                         return (
                                             <button
                                                 key={moveId}
-                                                onClick={() => handleExecuteMove(moveId)}
+                                                onClick={() => !isOnCooldown && handleExecuteMove(moveId)}
+                                                disabled={isOnCooldown}
                                                 className="pokemon-button"
                                                 style={{ 
-                                                    background: getTypeColor(m.type), 
-                                                    color: m.type === 'electric' ? '#3e2723' : '#fff', 
+                                                    background: isOnCooldown ? '#616161' : getTypeColor(m.type), 
+                                                    color: isOnCooldown ? '#9e9e9e' : (m.type === 'electric' ? '#3e2723' : '#fff'), 
                                                     textTransform: 'capitalize',
                                                     display: 'flex',
                                                     flexDirection: 'column',
                                                     alignItems: 'center',
                                                     padding: '4px',
                                                     margin: 0,
-                                                    height: '38px',
-                                                    justifyContent: 'center'
+                                                    height: '42px',
+                                                    justifyContent: 'center',
+                                                    opacity: isOnCooldown ? 0.65 : 1,
+                                                    cursor: isOnCooldown ? 'not-allowed' : 'pointer',
+                                                    border: isOnCooldown ? '2px solid #424242' : undefined,
+                                                    position: 'relative'
                                                 }}
                                             >
-                                                <span style={{ fontWeight: 'bold', fontSize: '11px' }}>{m.name}</span>
-                                                <span style={{ fontSize: '8px', opacity: 0.8 }}>Poder: {m.power} | {m.type}</span>
+                                                <span style={{ fontWeight: 'bold', fontSize: '11px' }}>
+                                                    {isOnCooldown ? '⏳ ' : ''}{m.name}
+                                                </span>
+                                                <span style={{ fontSize: '8px', opacity: 0.8 }}>
+                                                    {isOnCooldown 
+                                                        ? `${turnsLeft} turno${turnsLeft > 1 ? 's' : ''} restante${turnsLeft > 1 ? 's' : ''}`
+                                                        : `Poder: ${m.power} | ${m.type}`
+                                                    }
+                                                </span>
                                             </button>
                                         );
                                     });
@@ -10423,6 +10584,89 @@ export default function GameCanvas({
                     <MontetagBattleBanner active={!!activeWildBattle && !activeDialog} />
                 </div>
             )}
+
+            {/* Level-Up Move Replacement Modal */}
+            {levelUpMoveLearn && (() => {
+                const poke = team[levelUpMoveLearn.pokeIdx];
+                if (!poke) return null;
+                const newMove = MOVES_DATABASE[levelUpMoveLearn.newMoveId] || { name: levelUpMoveLearn.newMoveId, type: 'normal', power: 40 };
+                const currentMoves: string[] = poke.moves || [];
+
+                const doReplaceMove = async (idx: number | null) => {
+                    const updatedTeam = [...team];
+                    const pokeCopy = { ...updatedTeam[levelUpMoveLearn.pokeIdx] };
+                    if (idx !== null) {
+                        const newMoves = [...currentMoves];
+                        newMoves[idx] = levelUpMoveLearn.newMoveId;
+                        pokeCopy.moves = newMoves;
+                        showNotification('¡Movimiento Aprendido!', `¡${pokeCopy.id.toUpperCase()} olvidó ${MOVES_DATABASE[currentMoves[idx]]?.name || currentMoves[idx]} y aprendió ${newMove.name.toUpperCase()}!`);
+                    } else {
+                        showNotification('Movimiento no aprendido', `${pokeCopy.id.toUpperCase()} decidió no aprender ${newMove.name.toUpperCase()}.`);
+                    }
+                    updatedTeam[levelUpMoveLearn.pokeIdx] = pokeCopy;
+                    setTeam(updatedTeam);
+                    await saveLocalEconomy(updatedTeam);
+                    setLevelUpMoveLearn(null);
+                };
+
+                return (
+                    <div className="modal-overlay" style={{ zIndex: 10500 }}>
+                        <div className="modal-card pokemon-panel" style={{ maxWidth: '340px' }}>
+                            <div className="modal-header" style={{ background: 'linear-gradient(135deg,#e53935,#b71c1c)', color: '#fff', borderRadius: '8px 8px 0 0', padding: '12px' }}>
+                                <h3 className="modal-title" style={{ margin: 0, fontSize: '14px' }}>⚡ ¡Nuevo Movimiento!</h3>
+                            </div>
+                            <div style={{ padding: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                <p style={{ fontSize: '11px', color: '#4e342e', margin: 0, textAlign: 'center', fontWeight: 'bold' }}>
+                                    <span style={{ textTransform: 'uppercase' }}>{poke.id}</span> quiere aprender{' '}
+                                    <span style={{ color: getTypeColor(newMove.type), fontWeight: 'bold', textTransform: 'uppercase' }}>{newMove.name}</span>
+                                    <br />
+                                    <span style={{ fontSize: '9px', color: '#888' }}>Poder: {newMove.power} | Tipo: {newMove.type}</span>
+                                </p>
+                                <p style={{ fontSize: '10px', color: '#c62828', margin: 0, textAlign: 'center', fontWeight: 'bold' }}>
+                                    ¿Qué movimiento deseas olvidar?
+                                </p>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                    {currentMoves.map((mId: string, mIdx: number) => {
+                                        const mInfo = MOVES_DATABASE[mId] || { name: mId, type: 'normal', power: 40 };
+                                        return (
+                                            <button
+                                                key={mIdx}
+                                                onClick={() => doReplaceMove(mIdx)}
+                                                className="pokemon-button animate-hover"
+                                                style={{
+                                                    margin: 0,
+                                                    padding: '8px 12px',
+                                                    background: '#ffebee',
+                                                    border: '2px solid #c62828',
+                                                    color: '#c62828',
+                                                    fontWeight: 'bold',
+                                                    fontSize: '11px',
+                                                    textTransform: 'capitalize',
+                                                    display: 'flex',
+                                                    justifyContent: 'space-between',
+                                                    alignItems: 'center'
+                                                }}
+                                            >
+                                                <span>❌ Olvidar: {mInfo.name}</span>
+                                                <span style={{ fontSize: '8px', background: getTypeColor(mInfo.type), color: mInfo.type === 'electric' ? '#3e2723' : '#fff', padding: '2px 5px', borderRadius: '3px' }}>
+                                                    {mInfo.type} | Pow {mInfo.power}
+                                                </span>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                                <button
+                                    onClick={() => doReplaceMove(null)}
+                                    className="pokemon-button"
+                                    style={{ margin: 0, background: '#607d8b', color: '#fff', fontSize: '11px', padding: '8px' }}
+                                >
+                                    🚫 No aprender {newMove.name}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            })()}
 
             {/* Custom Modal Notification Dialog */}
             {notification && (
@@ -10990,28 +11234,41 @@ export default function GameCanvas({
                                             const activePokeMoves = activePoke.moves || getPokemonMoves(activePoke.id, activePoke.level ?? 1);
                                             return (activePokeMoves as string[]).map((moveId: string) => {
                                                 const m = MOVES_DATABASE[moveId] || { name: moveId, type: 'normal', power: 40 };
+                                                const cooldownKey = `${activePoke.id_captura || activePoke.id}_${moveId}`;
+                                                const turnsLeft = playerMoveCooldowns[cooldownKey] || 0;
+                                                const isOnCooldown = turnsLeft > 0;
+                                                const isMyTurn = activePvPBattle.turn === walletAddress;
+                                                const isDisabled = !isMyTurn || isOnCooldown || isBattleAnimating;
                                                 return (
                                                     <button 
                                                         key={moveId}
                                                         className="pokemon-button animate-hover"
-                                                        onClick={() => handleExecutePvPMove(moveId)}
-                                                        disabled={activePvPBattle.turn !== walletAddress}
+                                                        onClick={() => !isDisabled && handleExecutePvPMove(moveId)}
+                                                        disabled={isDisabled}
                                                         style={{ 
-                                                            background: getTypeColor(m.type),
-                                                            color: m.type === 'electric' ? '#3e2723' : '#fff',
-                                                            height: '38px', padding: '4px', margin: 0, fontSize: '10px', fontWeight: 'bold',
-                                                            opacity: activePvPBattle.turn !== walletAddress ? 0.5 : 1,
-                                                            border: '1px solid #333',
+                                                            background: isOnCooldown ? '#616161' : getTypeColor(m.type),
+                                                            color: isOnCooldown ? '#9e9e9e' : (m.type === 'electric' ? '#3e2723' : '#fff'),
+                                                            height: '42px', padding: '4px', margin: 0, fontSize: '10px', fontWeight: 'bold',
+                                                            opacity: isDisabled ? (isOnCooldown ? 0.65 : 0.5) : 1,
+                                                            border: isOnCooldown ? '2px solid #424242' : '1px solid #333',
                                                             borderRadius: '4px',
                                                             display: 'flex',
                                                             flexDirection: 'column',
                                                             alignItems: 'center',
                                                             justifyContent: 'center',
-                                                            textTransform: 'capitalize'
+                                                            textTransform: 'capitalize',
+                                                            cursor: isDisabled ? 'not-allowed' : 'pointer'
                                                         }}
                                                     >
-                                                        <span style={{ fontWeight: 'bold', fontSize: '11px' }}>{m.name}</span>
-                                                        <span style={{ fontSize: '8px', opacity: 0.8 }}>Poder: {m.power} | {m.type}</span>
+                                                        <span style={{ fontWeight: 'bold', fontSize: '11px' }}>
+                                                            {isOnCooldown ? '⏳ ' : ''}{m.name}
+                                                        </span>
+                                                        <span style={{ fontSize: '8px', opacity: 0.8 }}>
+                                                            {isOnCooldown 
+                                                                ? `${turnsLeft} turno${turnsLeft > 1 ? 's' : ''} restante${turnsLeft > 1 ? 's' : ''}`
+                                                                : `Poder: ${m.power} | ${m.type}`
+                                                            }
+                                                        </span>
                                                     </button>
                                                 );
                                             });
