@@ -5000,7 +5000,8 @@ export default function GameCanvas({
                 if (newWildHp <= 0) {
                     if (isGymBattle && gymLeaderTeamRef.current && gymLeaderCurrentPokeIndexRef.current < gymLeaderTeamRef.current.length - 1) {
                         // --- MID-BATTLE XP PROCESS ---
-                        let xpGained = Math.floor(activeWildBattle.level * 25 * (Math.random() * 0.2 + 0.9));
+                        let baseXP = Math.floor(activeWildBattle.level * 25 * (Math.random() * 0.2 + 0.9));
+                        let xpGained = baseXP;
                         const activeLuckyEggsCount = (
                             (activePoke.held_item === 'lucky_egg' && (!activePoke.held_item_expires || Date.now() < activePoke.held_item_expires)) ? 1 : 0
                         ) + (
@@ -5013,7 +5014,9 @@ export default function GameCanvas({
                         let currentXp = (activePoke.xp ?? 0) + xpGained;
                         let nextLvlXp = currentLvl * 100;
                         let leveledUp = false;
-                        let msg = `¡Tu ${activePoke.id} ganó ${xpGained} XP!`;
+                        let msg = activeLuckyEggsCount > 0
+                            ? `¡Tu ${activePoke.id} ganó ${xpGained} XP! (${baseXP} base + ${xpGained - baseXP} Huevo Suerte 🥚)`
+                            : `¡Tu ${activePoke.id} ganó ${xpGained} XP!`;
 
                         while (currentXp >= nextLvlXp) {
                             currentXp -= nextLvlXp;
@@ -5108,7 +5111,8 @@ export default function GameCanvas({
 
                     // --- VICTORY PROCESS ---
                     // Compute XP earned
-                    let xpGained = Math.floor(activeWildBattle.level * 25 * (Math.random() * 0.2 + 0.9));
+                    let baseXP = Math.floor(activeWildBattle.level * 25 * (Math.random() * 0.2 + 0.9));
+                    let xpGained = baseXP;
                     const activeLuckyEggsCount = (
                         (activePoke.held_item === 'lucky_egg' && (!activePoke.held_item_expires || Date.now() < activePoke.held_item_expires)) ? 1 : 0
                     ) + (
@@ -5122,7 +5126,9 @@ export default function GameCanvas({
                     let currentXp = (activePoke.xp ?? 0) + xpGained;
                     let nextLvlXp = currentLvl * 100;
                     let leveledUp = false;
-                    let msg = `¡Tu ${activePoke.id} ganó ${xpGained} XP!`;
+                    let msg = activeLuckyEggsCount > 0
+                        ? `¡Tu ${activePoke.id} ganó ${xpGained} XP! (${baseXP} base + ${xpGained - baseXP} Huevo Suerte 🥚)`
+                        : `¡Tu ${activePoke.id} ganó ${xpGained} XP!`;
                     
                     while (currentXp >= nextLvlXp) {
                         currentXp -= nextLvlXp;
