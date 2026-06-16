@@ -1220,6 +1220,7 @@ export default function GameCanvas({
     const [playerName, setPlayerName] = useState(saveName);
     const [nicknameInput, setNicknameInput] = useState(saveName);
     const [showEditNicknameModal, setShowEditNicknameModal] = useState(false);
+    const [activeInventoryTab, setActiveInventoryTab] = useState<'balls' | 'potions' | 'boosters'>('balls');
     const playerNameRef = useRef(playerName);
     playerNameRef.current = playerName;
 
@@ -1464,6 +1465,10 @@ export default function GameCanvas({
                     aura: getMedalSynergy(economyRef.current.equipped_medals)?.name || null
                 }
             });
+        }
+
+        if (viewingProfile && viewingProfile.isLocal) {
+            setViewingProfile((prev: any) => prev ? { ...prev, name: trimmed } : null);
         }
         
         showNotification("Nickname Actualizado", `Tu alias ahora es "${trimmed}".`);
@@ -7710,8 +7715,19 @@ export default function GameCanvas({
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                                 {/* Stats Card */}
                                 <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '12px' }}>
-                                    <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#e040fb', marginBottom: '8px', borderBottom: '1px dashed rgba(255,255,255,0.1)', paddingBottom: '4px' }}>
-                                        📊 Estadísticas
+                                    <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#e040fb', marginBottom: '8px', borderBottom: '1px dashed rgba(255,255,255,0.1)', paddingBottom: '4px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <span>📊 Estadísticas ({viewingProfile.name})</span>
+                                        {viewingProfile.isLocal && (
+                                            <button
+                                                onClick={() => {
+                                                    setNicknameInput(playerName);
+                                                    setShowEditNicknameModal(true);
+                                                }}
+                                                style={{ margin: 0, padding: '3px 8px', fontSize: '9px', fontWeight: 'bold', background: 'rgba(139,92,246,0.2)', border: '1px solid rgba(139,92,246,0.4)', borderRadius: '6px', color: '#c084fc', cursor: 'pointer' }}
+                                            >
+                                                Editar Alias ✏️
+                                            </button>
+                                        )}
                                     </div>
                                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '12px' }}>
                                         <div><strong>Nivel:</strong> {viewingProfile.level}</div>
@@ -8325,6 +8341,44 @@ export default function GameCanvas({
                                 </div>
                             )}
 
+                            {!usingItem && (
+                                <div style={{ display: 'flex', gap: '6px', marginBottom: '8px', background: 'rgba(255,255,255,0.03)', padding: '4px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.06)' }}>
+                                    <button
+                                        onClick={() => setActiveInventoryTab('balls')}
+                                        style={{
+                                            flex: 1, padding: '8px 4px', borderRadius: '8px', fontSize: '10px', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s', margin: 0,
+                                            background: activeInventoryTab === 'balls' ? 'rgba(239,68,68,0.18)' : 'transparent',
+                                            border: activeInventoryTab === 'balls' ? '1px solid rgba(239,68,68,0.4)' : '1px solid transparent',
+                                            color: activeInventoryTab === 'balls' ? '#f87171' : '#94a3b8'
+                                        }}
+                                    >
+                                        🔴 Esferas
+                                    </button>
+                                    <button
+                                        onClick={() => setActiveInventoryTab('potions')}
+                                        style={{
+                                            flex: 1, padding: '8px 4px', borderRadius: '8px', fontSize: '10px', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s', margin: 0,
+                                            background: activeInventoryTab === 'potions' ? 'rgba(16,185,129,0.18)' : 'transparent',
+                                            border: activeInventoryTab === 'potions' ? '1px solid rgba(16,185,129,0.4)' : '1px solid transparent',
+                                            color: activeInventoryTab === 'potions' ? '#34d399' : '#94a3b8'
+                                        }}
+                                    >
+                                        🧪 Pociones
+                                    </button>
+                                    <button
+                                        onClick={() => setActiveInventoryTab('boosters')}
+                                        style={{
+                                            flex: 1, padding: '8px 4px', borderRadius: '8px', fontSize: '10px', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s', margin: 0,
+                                            background: activeInventoryTab === 'boosters' ? 'rgba(251,191,36,0.18)' : 'transparent',
+                                            border: activeInventoryTab === 'boosters' ? '1px solid rgba(251,191,36,0.4)' : '1px solid transparent',
+                                            color: activeInventoryTab === 'boosters' ? '#fbbf24' : '#94a3b8'
+                                        }}
+                                    >
+                                        ⚡ Especiales
+                                    </button>
+                                </div>
+                            )}
+
                             {usingItem ? (
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                                     <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#94a3b8', marginBottom: '4px', textAlign: 'center' }}>
@@ -8369,35 +8423,55 @@ export default function GameCanvas({
                             ) : inventory.getAllItems().length === 0 ? (
                                 <div style={{ textAlign: 'center', padding: '20px', color: '#64748b', fontStyle: 'italic', fontSize: '12px' }}>Tu mochila está vacía.</div>
                             ) : (
-                                inventory.getAllItems().map((item: any) => {
-                                    const isBooster = ['gold_incense', 'repel'].includes(item.id);
-                                    const isUsable = item.id.includes('potion') || item.id.includes('revive') || item.id.includes('stone') || item.id === 'lucky_egg' || isBooster;
-                                    return (
-                                        <div key={item.id} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '10px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                            <div style={{ flex: 1 }}>
-                                                <div style={{ fontWeight: 'bold', fontSize: '12px', color: '#e2e8f0', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                    {item.name || item.id}
-                                                    <span style={{ fontSize: '10px', color: '#fbbf24', background: 'rgba(251,191,36,0.15)', border: '1px solid rgba(251,191,36,0.3)', borderRadius: '4px', padding: '1px 5px' }}>x{item.quantity}</span>
-                                                </div>
-                                                <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '2px' }}>{item.description}</div>
+                                (() => {
+                                    const getItemCategory = (itemId: string): 'balls' | 'potions' | 'boosters' => {
+                                        if (itemId.includes('ball')) return 'balls';
+                                        if (itemId.includes('potion') || itemId.includes('revive') || itemId.includes('heal')) return 'potions';
+                                        return 'boosters';
+                                    };
+                                    const filteredItems = inventory.getAllItems().filter((item: any) => {
+                                        return getItemCategory(item.id) === activeInventoryTab;
+                                    });
+
+                                    if (filteredItems.length === 0) {
+                                        const labels = { balls: 'esferas', potions: 'pociones', boosters: 'objetos especiales' };
+                                        return (
+                                            <div style={{ textAlign: 'center', padding: '30px 20px', color: '#64748b', fontStyle: 'italic', fontSize: '12px' }}>
+                                                No tienes {labels[activeInventoryTab]} en tu mochila.
                                             </div>
-                                            {isUsable && (
-                                                <button
-                                                    onClick={() => {
-                                                        if (isBooster) {
-                                                            handleUseBooster(item);
-                                                        } else {
-                                                            setUsingItem(item);
-                                                        }
-                                                    }}
-                                                    style={{ margin: 0, marginLeft: '12px', padding: '5px 12px', fontSize: '10px', fontWeight: 'bold', background: 'rgba(16,185,129,0.2)', border: '1px solid rgba(16,185,129,0.4)', borderRadius: '8px', color: '#6ee7b7', cursor: 'pointer', whiteSpace: 'nowrap' }}
-                                                >
-                                                    Usar
-                                                </button>
-                                            )}
-                                        </div>
-                                    );
-                                })
+                                        );
+                                    }
+
+                                    return filteredItems.map((item: any) => {
+                                        const isBooster = ['gold_incense', 'repel'].includes(item.id);
+                                        const isUsable = item.id.includes('potion') || item.id.includes('revive') || item.id.includes('stone') || item.id === 'lucky_egg' || isBooster;
+                                        return (
+                                            <div key={item.id} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '10px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                <div style={{ flex: 1 }}>
+                                                    <div style={{ fontWeight: 'bold', fontSize: '12px', color: '#e2e8f0', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                        {item.name || item.id}
+                                                        <span style={{ fontSize: '10px', color: '#fbbf24', background: 'rgba(251,191,36,0.15)', border: '1px solid rgba(251,191,36,0.3)', borderRadius: '4px', padding: '1px 5px' }}>x{item.quantity}</span>
+                                                    </div>
+                                                    <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '2px' }}>{item.description}</div>
+                                                </div>
+                                                {isUsable && (
+                                                    <button
+                                                        onClick={() => {
+                                                            if (isBooster) {
+                                                                handleUseBooster(item);
+                                                            } else {
+                                                                setUsingItem(item);
+                                                            }
+                                                        }}
+                                                        style={{ margin: 0, marginLeft: '12px', padding: '5px 12px', fontSize: '10px', fontWeight: 'bold', background: 'rgba(16,185,129,0.2)', border: '1px solid rgba(16,185,129,0.4)', borderRadius: '8px', color: '#6ee7b7', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                                                    >
+                                                        Usar
+                                                    </button>
+                                                )}
+                                            </div>
+                                        );
+                                    });
+                                })()
                             )}
                             <AdsterraBanner />
                         </div>
