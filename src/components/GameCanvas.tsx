@@ -193,7 +193,11 @@ interface WildBattle {
     hp: number;
     maxHp: number;
     captureRate: number;
+    isShiny?: boolean;
+    ivs?: { hp?: number; attack?: number; defense?: number; speed?: number };
 }
+
+const SHINY_CHANCE = 0.001; // 1 in 1000 chance
 
 const MOVES_DATABASE: Record<string, { name: string; type: string; power: number; accuracy: number }> = {
     tackle: { name: "Placaje", type: "normal", power: 40, accuracy: 100 },
@@ -608,15 +612,33 @@ const getPokemonMoves = (speciesName: string, level: number): string[] => {
     return fallback;
 };
 
-const getPokemonStats = (speciesName: string, level: number) => {
+const generateUUID = () => {
+    if (typeof window !== 'undefined' && window.crypto && window.crypto.randomUUID) {
+        return window.crypto.randomUUID();
+    }
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+    });
+};
+
+const getPokemonStats = (speciesName: string, level: number, ivs?: { hp?: number; attack?: number; defense?: number; speed?: number }) => {
     const nameLower = speciesName.toLowerCase();
     const species = pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === nameLower) || {
         hp: 40, attack: 45, defense: 40, speed: 50
     };
-    const maxHp = (species.hp ?? 40) + (level * 3);
-    const attack = (species.attack ?? 45) + (level * 2);
-    const defense = (species.defense ?? 40) + (level * 2);
-    const speed = (species.speed ?? 50) + (level * 2);
+
+    // Default IVs to 15 (average of 0 to 31) if not provided
+    const ivHp = ivs?.hp !== undefined ? ivs.hp : 15;
+    const ivAttack = ivs?.attack !== undefined ? ivs.attack : 15;
+    const ivDefense = ivs?.defense !== undefined ? ivs.defense : 15;
+    const ivSpeed = ivs?.speed !== undefined ? ivs.speed : 15;
+
+    const maxHp = Math.floor(((2 * (species.hp ?? 40) + ivHp) * level) / 100) + level + 10;
+    const attack = Math.floor(((2 * (species.attack ?? 45) + ivAttack) * level) / 100) + 5;
+    const defense = Math.floor(((2 * (species.defense ?? 40) + ivDefense) * level) / 100) + 5;
+    const speed = Math.floor(((2 * (species.speed ?? 50) + ivSpeed) * level) / 100) + 5;
+
     return { maxHp, attack, defense, speed };
 };
 
@@ -919,22 +941,28 @@ const EvolutionScreen = ({
     pokemonId, 
     targetId, 
     level, 
+    isShiny,
     onComplete 
 }: { 
     pokemonId: string; 
     targetId: string; 
     level: number; 
+    isShiny?: boolean;
     onComplete: () => void; 
 }) => {
     const [stage, setStage] = useState<'intro' | 'morphing' | 'success'>('intro');
     const [displayId, setDisplayId] = useState(pokemonId);
     const [sparkles, setSparkles] = useState<{ id: number; x: number; y: number; size: number; delay: number }[]>([]);
-    
+
     const prevSpecies = pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === pokemonId.toLowerCase());
     const nextSpecies = pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === targetId.toLowerCase());
-    
-    const prevSprite = prevSpecies?.sprite || `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${prevSpecies?.id || 1}.png`;
-    const nextSprite = nextSpecies?.sprite || `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${nextSpecies?.id || 2}.png`;
+
+    const prevSprite = prevSpecies
+        ? (isShiny ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/shiny/${prevSpecies.id}.png` : prevSpecies.sprite)
+        : `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${isShiny ? 'shiny/' : ''}1.png`;
+    const nextSprite = nextSpecies
+        ? (isShiny ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/shiny/${nextSpecies.id}.png` : nextSpecies.sprite)
+        : `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${isShiny ? 'shiny/' : ''}2.png`;
 
     useEffect(() => {
         if (stage === 'intro') {
@@ -1187,7 +1215,7 @@ export default function GameCanvas({
         return teamData.map((p: any) => {
             const lvl = p.level !== undefined ? p.level : 1;
             const xp = p.xp !== undefined ? p.xp : 0;
-            const stats = getPokemonStats(p.id, lvl);
+            const stats = getPokemonStats(p.id, lvl, p.ivs);
             return {
                 ...p,
                 level: lvl,
@@ -1202,7 +1230,7 @@ export default function GameCanvas({
         return pcPokemonData.map((p: any) => {
             const lvl = p.level !== undefined ? p.level : 1;
             const xp = p.xp !== undefined ? p.xp : 0;
-            const stats = getPokemonStats(p.id, lvl);
+            const stats = getPokemonStats(p.id, lvl, p.ivs);
             return {
                 ...p,
                 level: lvl,
@@ -1297,6 +1325,7 @@ export default function GameCanvas({
         pokemonId: string;
         targetId: string;
         level: number;
+        isShiny?: boolean;
         onComplete: () => void;
     } | null>(null);
     const activeEvolutionRef = useRef(activeEvolution);
@@ -3008,8 +3037,8 @@ export default function GameCanvas({
                             setFloatingDamage(null);
 
                             setDialogName("Hierba Alta");
-                            setActiveDialog(`¡Un ${wild.name} salvaje de Nvl. ${wild.level} apareció!`);
-                            
+                            setActiveDialog(`¡Un ${wild.isShiny ? '✨ ' : ''}${wild.name} salvaje de Nvl. ${wild.level} apareció!`);
+
                             setBattleMessage("¿Qué hará tu Pokémon?");
                             setShowBallSelect(false);
                             setShowBagSelect(false);
@@ -3019,7 +3048,9 @@ export default function GameCanvas({
                                 level: wild.level,
                                 hp: wild.hp,
                                 maxHp: wild.maxHp,
-                                captureRate: 0.35
+                                captureRate: 0.35,
+                                isShiny: wild.isShiny,
+                                ivs: wild.ivs
                             });
                         }
                     }
@@ -3269,15 +3300,38 @@ export default function GameCanvas({
     // Generate themed wild pokemon based on location
     const generateWildPokemon = (mapPath: string, playerLevel: number, isWater?: boolean) => {
         const path = mapPath.toLowerCase();
+        const isShiny = Math.random() < SHINY_CHANCE;
+
+        // Generate random IVs (0 to 31)
+        const ivs = {
+            hp: Math.floor(Math.random() * 32),
+            attack: Math.floor(Math.random() * 32),
+            defense: Math.floor(Math.random() * 32),
+            speed: Math.floor(Math.random() * 32)
+        };
+
         // Water Pokémon pool for lake encounters
         if (isWater) {
             const waterPool = ['poliwag', 'psyduck', 'slowpoke', 'magikarp', 'tentacool', 'shellder', 'horsea'];
             const waterName = waterPool[Math.floor(Math.random() * waterPool.length)];
             const waterSpecies = pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === waterName) || { name: waterName, hp: 30, types: ['water'] };
             const wildLvl = Math.max(1, playerLevel * 2 + Math.floor(Math.random() * 3) - 1);
-            const wildHp = (waterSpecies.hp || 30) + wildLvl * 5;
+
+            // Calculate stats using generated IVs
+            const stats = getPokemonStats(waterSpecies.name, wildLvl, ivs);
+            const wildHp = stats.maxHp;
+
             const displayName = waterSpecies.name.charAt(0).toUpperCase() + waterSpecies.name.slice(1);
-            return { id: `wild_${waterSpecies.name}`, name: displayName, level: wildLvl, hp: wildHp, maxHp: wildHp, type: 'Water' };
+            return { 
+                id: `wild_${waterSpecies.name}`, 
+                name: displayName, 
+                level: wildLvl, 
+                hp: wildHp, 
+                maxHp: wildHp, 
+                type: 'Water', 
+                isShiny: isShiny,
+                ivs: ivs
+            };
         }
         let pool = ['rattata', 'pidgey', 'caterpie', 'weedle', 'pikachu']; // default route1 pool
 
@@ -3301,7 +3355,11 @@ export default function GameCanvas({
         };
 
         const wildLvl = Math.max(1, playerLevel * 2 + Math.floor(Math.random() * 3) - 1);
-        const wildHp = (species.hp || 35) + wildLvl * 5;
+
+        // Calculate stats using generated IVs
+        const stats = getPokemonStats(species.name, wildLvl, ivs);
+        const wildHp = stats.maxHp;
+
         const displayName = species.name.charAt(0).toUpperCase() + species.name.slice(1);
         const displayType = species.types && species.types[0] ? (species.types[0].charAt(0).toUpperCase() + species.types[0].slice(1)) : 'Normal';
 
@@ -3311,7 +3369,9 @@ export default function GameCanvas({
             level: wildLvl,
             hp: wildHp,
             maxHp: wildHp,
-            type: displayType
+            type: displayType,
+            isShiny: isShiny,
+            ivs: ivs
         };
     };
 
@@ -4960,12 +5020,12 @@ export default function GameCanvas({
                 const playerAtkMult = getStageMultiplier(playerAtkStage);
                 const opponentDefMult = getStageMultiplier(opponentDefStage);
 
-                const playerSpecies = pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === activePoke.id.toLowerCase());
-                const opponentSpecies = pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === activeWildBattle.name.toLowerCase());
-
-                const playerAtk = (playerSpecies?.attack || 50) * playerAtkMult;
-                const opponentDef = (opponentSpecies?.defense || 50) * opponentDefMult;
                 const playerLevel = activePoke.level ?? 1;
+                const playerStats = getPokemonStats(activePoke.id, playerLevel, activePoke.ivs);
+                const opponentStats = getPokemonStats(activeWildBattle.name, activeWildBattle.level, activeWildBattle.ivs);
+
+                const playerAtk = playerStats.attack * playerAtkMult;
+                const opponentDef = opponentStats.defense * opponentDefMult;
 
                 // Classic Damage Formula
                 let baseDmg = (((2 * playerLevel / 5 + 2) * move.power * (playerAtk / opponentDef)) / 50) + 2;
@@ -5053,7 +5113,7 @@ export default function GameCanvas({
                         }
 
                         const updatedTeam = [...team];
-                        const stats = getPokemonStats(evolvedName, currentLvl);
+                        const stats = getPokemonStats(evolvedName, currentLvl, activePoke.ivs);
                         updatedTeam[activePokeIdx] = {
                             ...activePoke,
                             id: evolvedName,
@@ -5098,6 +5158,7 @@ export default function GameCanvas({
                                 pokemonId: activePoke.id,
                                 targetId: evolvedName,
                                 level: currentLvl,
+                                isShiny: activePoke.is_shiny,
                                 onComplete: () => {
                                     setupNextGymOpponent();
                                     setActiveEvolution(null);
@@ -5168,7 +5229,7 @@ export default function GameCanvas({
                     }
                     
                     const updatedTeam = [...team];
-                    const stats = getPokemonStats(evolvedName, currentLvl);
+                    const stats = getPokemonStats(evolvedName, currentLvl, activePoke.ivs);
                     updatedTeam[activePokeIdx] = {
                         ...activePoke,
                         id: evolvedName,
@@ -5235,6 +5296,7 @@ export default function GameCanvas({
                                 pokemonId: activePoke.id,
                                 targetId: evolvedName,
                                 level: currentLvl,
+                                isShiny: activePoke.is_shiny,
                                 onComplete: () => {
                                     finishBattle();
                                     setActiveEvolution(null);
@@ -5327,6 +5389,7 @@ export default function GameCanvas({
                                 pokemonId: activePoke.id,
                                 targetId: evolvedName,
                                 level: currentLvl,
+                                isShiny: activePoke.is_shiny,
                                 onComplete: () => {
                                     finishBattle();
                                     setActiveEvolution(null);
@@ -5382,6 +5445,7 @@ export default function GameCanvas({
                             pokemonId: activePoke.id,
                             targetId: evolvedName,
                             level: currentLvl,
+                            isShiny: activePoke.is_shiny,
                             onComplete: () => {
                                 finishBattle();
                                 setActiveEvolution(null);
@@ -5442,11 +5506,12 @@ export default function GameCanvas({
                 const playerDefMult = getStageMultiplier(playerDefStage);
 
                 const activePokeSpecies = pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === activePoke.id.toLowerCase());
-                const wildSpecies = pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === activeWildBattle.name.toLowerCase());
-
-                const wildAtk = (wildSpecies?.attack || 50) * opponentAtkMult;
-                const playerDef = (activePokeSpecies?.defense || 50) * playerDefMult;
                 const wildLevel = activeWildBattle.level;
+                const playerStats = getPokemonStats(activePoke.id, activePoke.level ?? 1, activePoke.ivs);
+                const opponentStats = getPokemonStats(activeWildBattle.name, wildLevel, activeWildBattle.ivs);
+
+                const wildAtk = opponentStats.attack * opponentAtkMult;
+                const playerDef = playerStats.defense * playerDefMult;
 
                 let baseDmg = (((2 * wildLevel / 5 + 2) * wildMove.power * (wildAtk / playerDef)) / 50) + 2;
                 baseDmg = baseDmg * (Math.random() * 0.15 + 0.85);
@@ -5775,7 +5840,7 @@ export default function GameCanvas({
             }
             
             if (evolvedId) {
-                const stats = getPokemonStats(evolvedId, target.level ?? 5);
+                const stats = getPokemonStats(evolvedId, target.level ?? 5, target.ivs);
                 updatedTeam[idx] = {
                     ...target,
                     id: evolvedId,
@@ -5795,6 +5860,7 @@ export default function GameCanvas({
                     pokemonId: target.id,
                     targetId: evolvedId,
                     level: target.level ?? 5,
+                    isShiny: target.is_shiny,
                     onComplete: () => {
                         showNotification("¡Evolución exitosa!", `¡Tu ${target.id.toUpperCase()} ha evolucionado en ${evolvedId.toUpperCase()} usando la ${itemInfo.name || 'Piedra'}!`);
                         setActiveEvolution(null);
@@ -6016,18 +6082,27 @@ export default function GameCanvas({
                         const rarity = species ? species.rarity.toLowerCase() : "uncommon";
 
                         const wildLvl = activeWildBattle.level ?? 5;
-                        const stats = getPokemonStats(activeWildBattle.name.toLowerCase(), wildLvl);
+                        const caughtIvs = activeWildBattle.ivs || {
+                            hp: Math.floor(Math.random() * 32),
+                            attack: Math.floor(Math.random() * 32),
+                            defense: Math.floor(Math.random() * 32),
+                            speed: Math.floor(Math.random() * 32)
+                        };
+                        const stats = getPokemonStats(activeWildBattle.name.toLowerCase(), wildLvl, caughtIvs);
                         const caughtMoves = getPokemonMoves(activeWildBattle.name.toLowerCase(), wildLvl);
 
                         const newPoke = {
                             id: activeWildBattle.name.toLowerCase(),
+                            id_captura: generateUUID(),
                             rarity: rarity,
                             is_evolved: false,
                             level: wildLvl,
                             xp: 0,
                             hp: stats.maxHp,
                             maxHp: stats.maxHp,
-                            moves: caughtMoves
+                            moves: caughtMoves,
+                            is_shiny: activeWildBattle.isShiny || false,
+                            ivs: caughtIvs
                         };
 
                         economyRef.current.updateMissionProgress('capture');
@@ -6425,7 +6500,9 @@ export default function GameCanvas({
             <div className="pokemon-team-list" style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '4px 0' }}>
                 {team.map((p, idx) => {
                     const species = pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === p.id.toLowerCase());
-                    const spriteUrl = species?.sprite || `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/1.png`;
+                    const spriteUrl = (p.is_shiny && species)
+                        ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/shiny/${species.id}.png`
+                        : (species?.sprite || `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/1.png`);
                     const pct = Math.round((p.hp / p.maxHp) * 100);
                     let hpColor = "#4caf50";
                     if (pct < 20) hpColor = "#f44336";
@@ -6467,7 +6544,7 @@ export default function GameCanvas({
                             <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0 }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
                                     <div style={{ fontWeight: 'bold', textTransform: 'capitalize', fontSize: '11px', color: '#3e2723', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                        {p.id}
+                                        {p.is_shiny && '✨ '}{p.id}
                                     </div>
                                     <div style={{ fontSize: '9px', fontWeight: 'bold', color: '#795548' }}>
                                         Nvl. {p.level ?? 1}
@@ -7521,7 +7598,7 @@ export default function GameCanvas({
                                                     {team.map((poke, index) => {
                                                         const isComp = isTmCompatible(poke.id, tutorMoveToLearn);
                                                         const species = pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === poke.id.toLowerCase());
-                                                        const sprite = species ? species.sprite : '';
+                                                        const sprite = species ? (poke.is_shiny ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/shiny/${species.id}.png` : species.sprite) : '';
                                                         
                                                         return (
                                                             <div 
@@ -7549,7 +7626,7 @@ export default function GameCanvas({
                                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                                                     {sprite && <img src={sprite} alt={poke.id} style={{ width: '36px', height: '36px', imageRendering: 'pixelated' }} />}
                                                                     <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
-                                                                        <span style={{ fontWeight: 'bold', fontSize: '11px', textTransform: 'capitalize', color: '#3e2723' }}>{poke.id}</span>
+                                                                        <span style={{ fontWeight: 'bold', fontSize: '11px', textTransform: 'capitalize', color: '#3e2723' }}>{poke.is_shiny && '✨ '}{poke.id}</span>
                                                                         <span style={{ fontSize: '8px', color: '#757575' }}>Nivel {poke.level} • HP {poke.hp}/{poke.maxHp}</span>
                                                                     </div>
                                                                 </div>
@@ -7756,18 +7833,18 @@ export default function GameCanvas({
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '180px', overflowY: 'auto' }}>
                                         {viewingProfile.team && viewingProfile.team.length > 0 ? (
                                             viewingProfile.team.map((poke: any, idx: number) => {
-                                                const nameLower = (poke.id || '').toLowerCase();
-                                                const species = pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === nameLower);
-                                                const spriteUrl = species ? species.sprite : '';
-                                                return (
-                                                    <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,0.05)', padding: '6px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                                                        {spriteUrl ? (
-                                                            <img src={spriteUrl} alt={poke.id} style={{ width: '32px', height: '32px', objectFit: 'contain' }} />
-                                                        ) : (
-                                                            <div style={{ width: '32px', height: '32px', background: '#333', borderRadius: '4px' }} />
-                                                        )}
-                                                        <div>
-                                                            <div style={{ textTransform: 'capitalize', fontSize: '11px', fontWeight: 'bold' }}>{poke.id}</div>
+                                                 const nameLower = (poke.id || '').toLowerCase();
+                                                 const species = pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === nameLower);
+                                                 const spriteUrl = species ? (poke.is_shiny ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/shiny/${species.id}.png` : species.sprite) : '';
+                                                 return (
+                                                     <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,0.05)', padding: '6px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                                                         {spriteUrl ? (
+                                                             <img src={spriteUrl} alt={poke.id} style={{ width: '32px', height: '32px', objectFit: 'contain' }} />
+                                                         ) : (
+                                                             <div style={{ width: '32px', height: '32px', background: '#333', borderRadius: '4px' }} />
+                                                         )}
+                                                         <div>
+                                                             <div style={{ textTransform: 'capitalize', fontSize: '11px', fontWeight: 'bold' }}>{poke.is_shiny && '✨ '}{poke.id}</div>
                                                             <div style={{ fontSize: '9px', color: '#ccc' }}>Nvl: {poke.level} | HP: {poke.hp}/{poke.maxHp}</div>
                                                         </div>
                                                     </div>
@@ -8504,16 +8581,16 @@ export default function GameCanvas({
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '180px', overflowY: 'auto', paddingRight: '4px' }}>
                                     {team.map((p: any, idx: number) => {
                                         const species = pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === p.id.toLowerCase());
-                                        const sprite = species ? species.sprite : '';
+                                        const sprite = species ? (p.is_shiny ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/shiny/${species.id}.png` : species.sprite) : '';
                                         const hourlyRate = species ? species.gold_per_hour : 5;
                                         const dailyIncome = p.is_evolved ? Math.floor(hourlyRate * 24 * 1.25) : (hourlyRate * 24);
 
                                         return (
-                                            <div key={idx} style={{ display: 'flex', alignItems: 'center', padding: '6px 8px', gap: '8px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px' }}>
+                                            <div key={idx} style={{ display: 'flex', alignItems: 'center', padding: '6px 8px', gap: '8px', background: p.is_shiny ? 'rgba(251, 191, 36, 0.04)' : 'rgba(255,255,255,0.04)', border: p.is_shiny ? '1px solid rgba(251, 191, 36, 0.4)' : '1px solid rgba(255,255,255,0.08)', borderRadius: '8px' }}>
                                                 {sprite && <img src={sprite} alt={p.id} style={{ width: '36px', height: '36px', imageRendering: 'pixelated' }} />}
                                                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                                                     <span style={{ textTransform: 'capitalize', fontWeight: 'bold', fontSize: '12px', color: '#e2e8f0' }}>
-                                                        {p.id} <span style={{ fontSize: '9px', color: '#c084fc', fontWeight: 'normal' }}>(Nvl. {p.level ?? 5})</span>
+                                                        {p.is_shiny && '✨ '}{p.id} <span style={{ fontSize: '9px', color: '#c084fc', fontWeight: 'normal' }}>(Nvl. {p.level ?? 5})</span>
                                                     </span>
                                                     <span style={{ fontSize: '10px', color: '#34d399' }}>
                                                         +{dailyIncome} Coins/Día
@@ -8553,16 +8630,16 @@ export default function GameCanvas({
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '180px', overflowY: 'auto', paddingRight: '4px' }}>
                                         {pcPokemon.map((p: any, idx: number) => {
                                             const species = pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === p.id.toLowerCase());
-                                            const sprite = species ? species.sprite : '';
+                                            const sprite = species ? (p.is_shiny ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/shiny/${species.id}.png` : species.sprite) : '';
                                             const hourlyRate = species ? species.gold_per_hour : 5;
                                             const dailyIncome = p.is_evolved ? Math.floor(hourlyRate * 24 * 1.25) : (hourlyRate * 24);
 
                                             return (
-                                                <div key={idx} style={{ display: 'flex', alignItems: 'center', padding: '6px 8px', gap: '8px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px' }}>
+                                                <div key={idx} style={{ display: 'flex', alignItems: 'center', padding: '6px 8px', gap: '8px', background: p.is_shiny ? 'rgba(251, 191, 36, 0.04)' : 'rgba(255,255,255,0.04)', border: p.is_shiny ? '1px solid rgba(251, 191, 36, 0.4)' : '1px solid rgba(255,255,255,0.08)', borderRadius: '8px' }}>
                                                     {sprite && <img src={sprite} alt={p.id} style={{ width: '36px', height: '36px', imageRendering: 'pixelated' }} />}
                                                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                                                         <span style={{ textTransform: 'capitalize', fontWeight: 'bold', fontSize: '12px', color: '#e2e8f0' }}>
-                                                            {p.id} <span style={{ fontSize: '9px', color: '#c084fc', fontWeight: 'normal' }}>(Nvl. {p.level ?? 5})</span>
+                                                            {p.is_shiny && '✨ '}{p.id} <span style={{ fontSize: '9px', color: '#c084fc', fontWeight: 'normal' }}>(Nvl. {p.level ?? 5})</span>
                                                         </span>
                                                         <span style={{ fontSize: '10px', color: '#34d399' }}>
                                                             +{dailyIncome} Coins/Día
@@ -8605,11 +8682,11 @@ export default function GameCanvas({
             {selectedInfoPoke && (() => {
                 const p = selectedInfoPoke;
                 const species = pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === p.id.toLowerCase());
-                const sprite = species ? species.sprite : '';
+                const sprite = species ? (p.is_shiny ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/shiny/${species.id}.png` : species.sprite) : '';
                 const baseStats = species ? { hp: species.hp, attack: species.attack, defense: species.defense, speed: species.speed } : { hp: 40, attack: 45, defense: 40, speed: 50 };
-                
+
                 // Calculate current stats using the same formulas as getPokemonStats
-                const currentStats = getPokemonStats(p.id, p.level ?? 5);
+                const currentStats = getPokemonStats(p.id, p.level ?? 5, p.ivs);
                 const allMoves = getPokemonAllMovesInfo(p.id);
                 const currentMoves = p.moves || getPokemonMoves(p.id, p.level ?? 5);
                 const evolutionMsg = getPokemonEvolutionInfo(p.id);
@@ -8617,9 +8694,9 @@ export default function GameCanvas({
 
                 return (
                     <div className="modal-overlay" style={{ zIndex: 9999 }}>
-                        <div className="modal-card pokemon-panel" style={{ maxWidth: '420px', width: '90%' }}>
+                        <div className="modal-card pokemon-panel" style={{ maxWidth: '420px', width: '90%', border: p.is_shiny ? '3px solid #fbbf24' : '3px solid #3e2723', boxShadow: p.is_shiny ? '0 0 20px rgba(251, 191, 36, 0.4)' : 'none' }}>
                             <div className="modal-header">
-                                <h3 className="modal-title" style={{ textTransform: 'capitalize' }}>ℹ️ Info: {p.id}</h3>
+                                <h3 className="modal-title" style={{ textTransform: 'capitalize' }}>ℹ️ Info: {p.is_shiny && '✨ '}{p.id}</h3>
                                 <button onClick={() => setSelectedInfoPoke(null)} className="modal-close-btn">&times;</button>
                             </div>
                             <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -8743,22 +8820,76 @@ export default function GameCanvas({
                                 <div style={{ borderBottom: '1px solid #efebe9', paddingBottom: '12px' }}>
                                     <div style={{ fontWeight: 'bold', fontSize: '12px', color: '#5d4037', marginBottom: '6px' }}>Estadísticas Actuales:</div>
                                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', fontSize: '11px' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 8px', background: '#efe5fd', borderRadius: '4px' }}>
-                                            <span style={{ color: '#5e35b1', fontWeight: 'bold' }}>PS Máx:</span>
-                                            <span style={{ fontWeight: 'bold' }}>{currentStats.maxHp}</span>
-                                        </div>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 8px', background: '#ffebee', borderRadius: '4px' }}>
-                                            <span style={{ color: '#c62828', fontWeight: 'bold' }}>Ataque:</span>
-                                            <span style={{ fontWeight: 'bold' }}>{currentStats.attack}</span>
-                                        </div>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 8px', background: '#e8f5e9', borderRadius: '4px' }}>
-                                            <span style={{ color: '#2e7d32', fontWeight: 'bold' }}>Defensa:</span>
-                                            <span style={{ fontWeight: 'bold' }}>{currentStats.defense}</span>
-                                        </div>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 8px', background: '#fff9c4', borderRadius: '4px' }}>
-                                            <span style={{ color: '#f57f17', fontWeight: 'bold' }}>Velocidad:</span>
-                                            <span style={{ fontWeight: 'bold' }}>{currentStats.speed}</span>
-                                        </div>
+                                        {(() => {
+                                            const statsConfig = [
+                                                {
+                                                    name: "PS Máx",
+                                                    val: currentStats.maxHp,
+                                                    iv: p.ivs?.hp !== undefined ? p.ivs.hp : 15,
+                                                    bg: "#efe5fd",
+                                                    fg: "#5e35b1"
+                                                },
+                                                {
+                                                    name: "Ataque",
+                                                    val: currentStats.attack,
+                                                    iv: p.ivs?.attack !== undefined ? p.ivs.attack : 15,
+                                                    bg: "#ffebee",
+                                                    fg: "#c62828"
+                                                },
+                                                {
+                                                    name: "Defensa",
+                                                    val: currentStats.defense,
+                                                    iv: p.ivs?.defense !== undefined ? p.ivs.defense : 15,
+                                                    bg: "#e8f5e9",
+                                                    fg: "#2e7d32"
+                                                },
+                                                {
+                                                    name: "Velocidad",
+                                                    val: currentStats.speed,
+                                                    iv: p.ivs?.speed !== undefined ? p.ivs.speed : 15,
+                                                    bg: "#fff9c4",
+                                                    fg: "#f57f17"
+                                                }
+                                            ];
+
+                                            return statsConfig.map((stat, sIdx) => {
+                                                const isPerfect = stat.iv === 31;
+                                                const ivText = isPerfect ? "31/31 🔥" : `${stat.iv}/31`;
+                                                const borderStyle = isPerfect ? "1px solid #fbbf24" : "1px solid rgba(0,0,0,0.05)";
+                                                const glowStyle = isPerfect ? "0 0 6px rgba(251, 191, 36, 0.35)" : "none";
+
+                                                return (
+                                                    <div 
+                                                        key={sIdx} 
+                                                        style={{ 
+                                                            display: 'flex', 
+                                                            flexDirection: 'column', 
+                                                            padding: '5px 8px', 
+                                                            background: stat.bg, 
+                                                            borderRadius: '6px',
+                                                            border: borderStyle,
+                                                            boxShadow: glowStyle,
+                                                            gap: '1px'
+                                                        }}
+                                                    >
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                            <span style={{ color: stat.fg, fontWeight: 'bold' }}>{stat.name}:</span>
+                                                            <span style={{ fontWeight: 'bold', fontSize: '12px' }}>{stat.val}</span>
+                                                        </div>
+                                                        <div style={{ 
+                                                            display: 'flex', 
+                                                            justifyContent: 'space-between', 
+                                                            fontSize: '8px', 
+                                                            color: isPerfect ? '#b45309' : '#6b7280', 
+                                                            fontWeight: isPerfect ? 'bold' : 'normal' 
+                                                        }}>
+                                                            <span>Genética (IV):</span>
+                                                            <span>{ivText}</span>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            });
+                                        })()}
                                     </div>
                                 </div>
 
@@ -8855,9 +8986,14 @@ export default function GameCanvas({
                                     const rarityColor = rarityColors[rarity] || '#94a3b8';
 
                                     return (
-                                        <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', padding: '8px 12px' }}>
+                                        <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: p.is_shiny ? 'rgba(251, 191, 36, 0.04)' : 'rgba(255,255,255,0.04)', border: p.is_shiny ? '1px solid rgba(251, 191, 36, 0.4)' : '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', padding: '8px 12px' }}>
                                             <div>
-                                                <div style={{ fontWeight: 'bold', color: '#e2e8f0', fontSize: '12px', textTransform: 'capitalize' }}>{p.id} {p.is_evolved && <span style={{ color: '#34d399', fontSize: '9px' }}>★ Evol.</span>}</div>
+                                                <div style={{ fontWeight: 'bold', color: '#e2e8f0', fontSize: '12px', textTransform: 'capitalize' }}>
+                                                    {p.is_shiny && <span style={{ color: '#fbbf24', marginRight: '4px' }}>✨</span>}
+                                                    {p.id} 
+                                                    {p.is_shiny && <span style={{ color: '#fbbf24', fontSize: '9px', marginLeft: '4px' }}>Shiny</span>}
+                                                    {p.is_evolved && <span style={{ color: '#34d399', fontSize: '9px', marginLeft: '4px' }}>★ Evol.</span>}
+                                                </div>
                                                 <div style={{ fontSize: '8px', color: rarityColor, textTransform: 'uppercase', fontWeight: 'bold', letterSpacing: '0.05em' }}>{rarity}</div>
                                             </div>
                                             <div style={{ textAlign: 'right' }}>
@@ -9055,7 +9191,7 @@ export default function GameCanvas({
                                         boxShadow: '2px 2px 0 rgba(0,0,0,0.1)'
                                     }}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '10px', textTransform: 'capitalize', color: '#3e2723' }}>
-                                            <span>{activeWildBattle.name}</span>
+                                            <span>{activeWildBattle.isShiny && '✨ '}{activeWildBattle.name}</span>
                                             <span>L:{activeWildBattle.level}</span>
                                         </div>
                                         <div className="pokemon-hp-bar" style={{ height: '6px', background: '#e0e0e0', borderRadius: '3px', overflow: 'hidden', border: '1px solid #795548', margin: 0, width: '100%' }}>
@@ -9086,7 +9222,9 @@ export default function GameCanvas({
                                     {/* Opponent Sprite (Right) */}
                                     <div className="battle-sprite-wrapper opponent-sprite-wrapper" style={{ width: '45%', display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'relative', height: '100px' }}>
                                         <img 
-                                            src={opponentSpecies?.sprite || `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${opponentSpecies?.id || 25}.png`} 
+                                            src={(activeWildBattle.isShiny && opponentSpecies) 
+                                                ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/shiny/${opponentSpecies.id}.png` 
+                                                : (opponentSpecies?.sprite || `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${opponentSpecies?.id || 25}.png`)} 
                                             alt={activeWildBattle.name} 
                                             className={`${opponentClass} battle-sprite-img`}
                                             style={{ width: '80px', height: '80px', objectFit: 'contain', opacity: catchBallState === 'shake' || catchBallState === 'success' ? 0 : 1, transition: 'opacity 0.2s' }}
@@ -9175,7 +9313,9 @@ export default function GameCanvas({
                                     {/* Player Sprite (Left) */}
                                     <div className="battle-sprite-wrapper player-sprite-wrapper" style={{ width: '45%', display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'relative', height: '100px' }}>
                                         <img 
-                                            src={activePokeSpecies?.sprite || `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${activePokeSpecies?.id || 1}.png`} 
+                                            src={(activePoke.is_shiny && activePokeSpecies) 
+                                                ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/shiny/${activePokeSpecies.id}.png` 
+                                                : (activePokeSpecies?.sprite || `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${activePokeSpecies?.id || 1}.png`)} 
                                             alt={activePoke.id} 
                                             className={`${playerClass} battle-sprite-img`}
                                             style={{ width: '80px', height: '80px', objectFit: 'contain', transform: 'scaleX(-1)' /* Face right! */ }}
@@ -9200,7 +9340,7 @@ export default function GameCanvas({
                                         boxShadow: '2px 2px 0 rgba(0,0,0,0.1)'
                                     }}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '10px', textTransform: 'capitalize', color: '#3e2723' }}>
-                                            <span>{activePoke.id}</span>
+                                            <span>{activePoke.is_shiny && '✨ '}{activePoke.id}</span>
                                             <span>L:{activePoke.level ?? 1}</span>
                                         </div>
                                         <div className="pokemon-hp-bar" style={{ height: '6px', background: '#e0e0e0', borderRadius: '3px', overflow: 'hidden', border: '1px solid #795548', margin: 0, width: '100%' }}>
@@ -10090,6 +10230,7 @@ export default function GameCanvas({
                     pokemonId={activeEvolution.pokemonId}
                     targetId={activeEvolution.targetId}
                     level={activeEvolution.level}
+                    isShiny={activeEvolution.isShiny}
                     onComplete={activeEvolution.onComplete}
                 />
             )}

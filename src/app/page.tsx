@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import GameCanvas from '../components/GameCanvas';
 import { supabase } from '../lib/supabase';
+import pokemonSpeciesList from '../../public/assets/economy/pokemon_species.json';
 
 interface SaveData {
     name: string;
@@ -104,6 +105,44 @@ export default function Home() {
         return () => clearTimeout(timer);
     }, []);
 
+    const generateUUID = () => {
+        if (typeof window !== 'undefined' && window.crypto && window.crypto.randomUUID) {
+            return window.crypto.randomUUID();
+        }
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+            var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+        });
+    };
+
+    const mapDbToPoke = (m: any) => {
+        const species = pokemonSpeciesList.find((s: any) => s.id === m.especie_id);
+        const speciesName = species ? species.name.toLowerCase() : 'pikachu';
+        
+        // Bulbapedia HP formula: Math.floor(((2 * base + iv) * level) / 100) + level + 10
+        const baseHp = species ? species.hp : 40;
+        const maxHp = Math.floor(((2 * baseHp + m.iv_hp) * m.nivel) / 100) + m.nivel + 10;
+        
+        return {
+            id: speciesName,
+            id_captura: m.id_captura,
+            rarity: species ? species.rarity.toLowerCase() : 'common',
+            is_evolved: species ? (species as any).is_evolved || false : false,
+            level: m.nivel,
+            xp: m.xp,
+            hp: m.hp_actual,
+            maxHp: maxHp,
+            moves: m.moves || [],
+            is_shiny: m.es_shiny,
+            ivs: {
+                hp: m.iv_hp,
+                attack: m.iv_ataque,
+                defense: m.iv_defensa,
+                speed: m.iv_velocidad
+            }
+        };
+    };
+
     const handleLoginWithWallet = async (address: string, customName?: string) => {
         setIsConnecting(true);
         setError(null);
@@ -123,10 +162,128 @@ export default function Home() {
             }
 
             if (data && data.save_data) {
+                const saveState = { ...data.save_data };
+                
+                // Fetch captured monsters from Supabase
+                const { data: dbMonsters, error: dbMonstersError } = await supabase
+                    .from('captured_monsters')
+                    .select('*')
+                    .eq('id_jugador', address);
+
+                if (dbMonstersError) {
+                    console.error("Error loading captured monsters:", dbMonstersError);
+                }
+
+                if (dbMonsters && dbMonsters.length > 0) {
+                    // Split into team and PC
+                    const teamMonsters = dbMonsters
+                        .filter((m: any) => m.is_team)
+                        .sort((a: any, b: any) => a.team_order - b.team_order)
+                        .map(mapDbToPoke);
+                    const pcMonsters = dbMonsters
+                        .filter((m: any) => !m.is_team)
+                        .sort((a: any, b: any) => a.team_order - b.team_order)
+                        .map(mapDbToPoke);
+
+                    saveState.team_data = teamMonsters;
+                    saveState.pc_pokemon = pcMonsters;
+                } else if (saveState.team_data && saveState.team_data.length > 0) {
+                    // Perform Lazy Migration for legacy save
+                    console.log("Lazy migration triggered for wallet:", address);
+                    const migratedTeam: any[] = [];
+                    const migratedPc: any[] = [];
+                    const dbRowsToInsert: any[] = [];
+
+                    (saveState.team_data || []).forEach((p: any, idx: number) => {
+                        const species = pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === p.id.toLowerCase());
+                        const specId = species ? species.id : 25;
+                        const ivs = {
+                            hp: Math.floor(Math.random() * 32),
+                            attack: Math.floor(Math.random() * 32),
+                            defense: Math.floor(Math.random() * 32),
+                            speed: Math.floor(Math.random() * 32)
+                        };
+                        const uuid = generateUUID();
+                        
+                        migratedTeam.push({
+                            ...p,
+                            id_captura: uuid,
+                            ivs: ivs
+                        });
+
+                        dbRowsToInsert.push({
+                            id_captura: uuid,
+                            id_jugador: address,
+                            especie_id: specId,
+                            nivel: p.level ?? 5,
+                            xp: p.xp ?? 0,
+                            hp_actual: p.hp ?? 10,
+                            iv_hp: ivs.hp,
+                            iv_ataque: ivs.attack,
+                            iv_defensa: ivs.defense,
+                            iv_velocidad: ivs.speed,
+                            es_shiny: p.is_shiny || false,
+                            moves: p.moves || [],
+                            is_team: true,
+                            team_order: idx
+                        });
+                    });
+
+                    (saveState.pc_pokemon || []).forEach((p: any, idx: number) => {
+                        const species = pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === p.id.toLowerCase());
+                        const specId = species ? species.id : 25;
+                        const ivs = {
+                            hp: Math.floor(Math.random() * 32),
+                            attack: Math.floor(Math.random() * 32),
+                            defense: Math.floor(Math.random() * 32),
+                            speed: Math.floor(Math.random() * 32)
+                        };
+                        const uuid = generateUUID();
+                        
+                        migratedPc.push({
+                            ...p,
+                            id_captura: uuid,
+                            ivs: ivs
+                        });
+
+                        dbRowsToInsert.push({
+                            id_captura: uuid,
+                            id_jugador: address,
+                            especie_id: specId,
+                            nivel: p.level ?? 5,
+                            xp: p.xp ?? 0,
+                            hp_actual: p.hp ?? 10,
+                            iv_hp: ivs.hp,
+                            iv_ataque: ivs.attack,
+                            iv_defensa: ivs.defense,
+                            iv_velocidad: ivs.speed,
+                            es_shiny: p.is_shiny || false,
+                            moves: p.moves || [],
+                            is_team: false,
+                            team_order: idx
+                        });
+                    });
+
+                    if (dbRowsToInsert.length > 0) {
+                        const { error: migrationError } = await supabase
+                            .from('captured_monsters')
+                            .insert(dbRowsToInsert);
+                        
+                        if (migrationError) {
+                            console.error("Migration insert error:", migrationError);
+                        } else {
+                            console.log("Successfully migrated pokemon to captured_monsters for address:", address);
+                        }
+                    }
+
+                    saveState.team_data = migratedTeam;
+                    saveState.pc_pokemon = migratedPc;
+                }
+
                 // Save session credentials
                 localStorage.setItem('pixel_tamer_active_wallet', address);
                 setWalletAddress(address);
-                setActiveSave(data.save_data);
+                setActiveSave(saveState);
             } else {
                 // Trigger starter selection onboarding for new user
                 setPendingNewAddress(address);
@@ -146,6 +303,33 @@ export default function Home() {
         setIsConnecting(true);
         setError(null);
         try {
+            const uuid = generateUUID();
+            const ivs = {
+                hp: Math.floor(Math.random() * 32),
+                attack: Math.floor(Math.random() * 32),
+                defense: Math.floor(Math.random() * 32),
+                speed: Math.floor(Math.random() * 32)
+            };
+            const isShiny = Math.random() < 0.001;
+            const starterSpecies = pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === selectedStarter.toLowerCase());
+            const specId = starterSpecies ? starterSpecies.id : 25;
+            const baseHp = starterSpecies ? starterSpecies.hp : 40;
+            const maxHp = Math.floor(((2 * baseHp + ivs.hp) * 1) / 100) + 1 + 10;
+
+            const starterPoke = {
+                id: selectedStarter,
+                id_captura: uuid,
+                rarity: "common",
+                is_evolved: false,
+                level: 1,
+                xp: 0,
+                hp: maxHp,
+                maxHp: maxHp,
+                moves: [],
+                is_shiny: isShiny,
+                ivs: ivs
+            };
+
             const saveState: SaveData = {
                 name: pendingCustomName || `Tamer-${pendingNewAddress.slice(0, 6)}`,
                 time: 0,
@@ -173,11 +357,36 @@ export default function Home() {
                         "potion": 3
                     }
                 },
-                team_data: [
-                    { id: selectedStarter, rarity: "common", is_evolved: false, level: 1, xp: 0 }
-                ],
+                team_data: [starterPoke],
                 pc_pokemon: []
             };
+
+            // First insert to captured_monsters
+            const { error: monsterError } = await supabase
+                .from('captured_monsters')
+                .insert({
+                    id_captura: uuid,
+                    id_jugador: pendingNewAddress,
+                    especie_id: specId,
+                    nivel: 1,
+                    xp: 0,
+                    hp_actual: maxHp,
+                    iv_hp: ivs.hp,
+                    iv_ataque: ivs.attack,
+                    iv_defensa: ivs.defense,
+                    iv_velocidad: ivs.speed,
+                    es_shiny: isShiny,
+                    moves: [],
+                    is_team: true,
+                    team_order: 0
+                });
+
+            if (monsterError) {
+                console.error("Failed to save starter in captured_monsters:", monsterError);
+                setError("No se pudo registrar tu Pokémon inicial.");
+                setIsConnecting(false);
+                return;
+            }
 
             // Upsert to Supabase
             const { error: insertError } = await supabase
