@@ -1361,6 +1361,7 @@ export default function GameCanvas({
     const [isBicycleActive, setIsBicycleActive] = useState(false);
     const [showNurseJoyModal, setShowNurseJoyModal] = useState(false);
     const [isHudMinimized, setIsHudMinimized] = useState(false);
+    const [cloudSaveStatus, setCloudSaveStatus] = useState<'synced' | 'saving' | 'error'>('synced');
     const [showPassiveModal, setShowPassiveModal] = useState(false);
     const [notification, setNotification] = useState<{ title: string; message: string; onShare?: () => void; shareText?: string; shareUrl?: string } | null>(null);
     const [activeWildBattle, setActiveWildBattle] = useState<WildBattle | null>(null);
@@ -1819,6 +1820,7 @@ export default function GameCanvas({
             
             // Cloud save
             if (walletAddress) {
+                setCloudSaveStatus('saving');
                 supabase
                     .from('player_saves')
                     .upsert({
@@ -1827,7 +1829,12 @@ export default function GameCanvas({
                         updated_at: new Date().toISOString()
                     })
                     .then(({ error }) => {
-                        if (error) console.error("Anti-cheat sync error:", error);
+                        if (error) {
+                            console.error("Anti-cheat sync error:", error);
+                            setCloudSaveStatus('error');
+                        } else {
+                            setCloudSaveStatus('synced');
+                        }
                     });
             }
             
@@ -5128,6 +5135,7 @@ export default function GameCanvas({
             const now = Date.now();
             if (forceCloud || now - lastCloudSaveTimeRef.current >= 10000) {
                 lastCloudSaveTimeRef.current = now;
+                setCloudSaveStatus('saving');
                 try {
                     const { error: syncError } = await supabase
                         .from('player_saves')
@@ -5138,9 +5146,12 @@ export default function GameCanvas({
                         });
                     if (syncError) {
                         console.error("Failed to sync progress to cloud:", syncError);
+                        setCloudSaveStatus('error');
+                        return;
                     }
 
                     // 3. Sync captured_monsters
+                    let hasMonstersError = false;
                     const monsterRows = [
                         ...teamToSave.map((p, idx) => ({ ...p, is_team: true, team_order: idx })),
                         ...pcPokemonToSave.map((p, idx) => ({ ...p, is_team: false, team_order: idx }))
@@ -5183,6 +5194,7 @@ export default function GameCanvas({
 
                         if (monstersUpsertErr) {
                             console.error("Failed to sync captured monsters:", monstersUpsertErr);
+                            hasMonstersError = true;
                         } else {
                             // Delete released monsters
                             const activeIds = monsterRows.map(r => r.id_captura);
@@ -5203,10 +5215,18 @@ export default function GameCanvas({
                             .eq('id_jugador', walletAddress);
                         if (deleteError) {
                             console.error("Failed to delete all monsters:", deleteError);
+                            hasMonstersError = true;
                         }
+                    }
+
+                    if (hasMonstersError) {
+                        setCloudSaveStatus('error');
+                    } else {
+                        setCloudSaveStatus('synced');
                     }
                 } catch (err) {
                     console.error("Cloud sync error:", err);
+                    setCloudSaveStatus('error');
                 }
             }
         }
@@ -7255,8 +7275,34 @@ export default function GameCanvas({
                         }}
                     >
                         <div className="hud-header">
-                            <span className="hud-title">
+                            <span className="hud-title" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                                 {isHudMinimized ? `💰 ${economy.getFormattedCoins()} | Lvl ${economy.level}` : '🏆 Trainer Stats'}
+                                {walletAddress && (
+                                    <span 
+                                        className={`cloud-status-indicator ${cloudSaveStatus}`}
+                                        title={
+                                            cloudSaveStatus === 'synced' ? "Guardado en la nube Supabase" :
+                                            cloudSaveStatus === 'saving' ? "Guardando en la nube..." :
+                                            "Error al conectar con la nube Supabase"
+                                        }
+                                        style={{
+                                            display: 'inline-block',
+                                            width: '8px',
+                                            height: '8px',
+                                            borderRadius: '50%',
+                                            background: 
+                                                cloudSaveStatus === 'synced' ? '#10b981' : 
+                                                cloudSaveStatus === 'saving' ? '#fbbf24' : 
+                                                '#ef4444',
+                                            boxShadow: 
+                                                cloudSaveStatus === 'synced' ? '0 0 8px #10b981' :
+                                                cloudSaveStatus === 'saving' ? '0 0 8px #fbbf24' :
+                                                '0 0 8px #ef4444',
+                                            marginLeft: '6px',
+                                            cursor: 'help'
+                                        }}
+                                    />
+                                )}
                             </span>
                             <button 
                                 onClick={(e) => {
@@ -7298,6 +7344,25 @@ export default function GameCanvas({
                                         {isBicycleActive ? 'ON' : 'OFF'}
                                     </span>
                                 </div>
+                                {walletAddress && (
+                                    <div className="hud-row cloud-sync" style={{ fontSize: '11px' }}>
+                                        <span>Cloud Sync:</span>
+                                        <span style={{ 
+                                            color: 
+                                                cloudSaveStatus === 'synced' ? '#a8e6cf' : 
+                                                cloudSaveStatus === 'saving' ? '#ffd3b6' : 
+                                                '#ff8888',
+                                            fontWeight: 'bold',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '4px'
+                                        }}>
+                                            {cloudSaveStatus === 'synced' && '☁️ Conectado'}
+                                            {cloudSaveStatus === 'saving' && '⏳ Guardando...'}
+                                            {cloudSaveStatus === 'error' && '⚠️ Error de Conexión'}
+                                        </span>
+                                    </div>
+                                )}
                                 <button 
                                     onClick={(e) => {
                                         e.stopPropagation();
