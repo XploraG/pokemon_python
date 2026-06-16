@@ -123,6 +123,11 @@ export default function Home() {
         const baseHp = species ? species.hp : 40;
         const maxHp = Math.floor(((2 * baseHp + m.iv_hp) * m.nivel) / 100) + m.nivel + 10;
         
+        let heldItems = m.held_items !== undefined && m.held_items !== null ? m.held_items : [null, null, null, null];
+        while (heldItems.length < 4) {
+            heldItems.push(null);
+        }
+        
         return {
             id: speciesName,
             id_captura: m.id_captura,
@@ -139,7 +144,9 @@ export default function Home() {
                 attack: m.iv_ataque,
                 defense: m.iv_defensa,
                 speed: m.iv_velocidad
-            }
+            },
+            unlocked_slots: m.unlocked_slots !== undefined && m.unlocked_slots !== null ? m.unlocked_slots : 2,
+            held_items: heldItems
         };
     };
 
@@ -225,7 +232,9 @@ export default function Home() {
                             es_shiny: p.is_shiny || false,
                             moves: p.moves || [],
                             is_team: true,
-                            team_order: idx
+                            team_order: idx,
+                            unlocked_slots: p.unlocked_slots ?? 2,
+                            held_items: p.held_items || [null, null, null, null]
                         });
                     });
 
@@ -260,17 +269,24 @@ export default function Home() {
                             es_shiny: p.is_shiny || false,
                             moves: p.moves || [],
                             is_team: false,
-                            team_order: idx
+                            team_order: idx,
+                            unlocked_slots: p.unlocked_slots ?? 2,
+                            held_items: p.held_items || [null, null, null, null]
                         });
                     });
 
                     if (dbRowsToInsert.length > 0) {
-                        const { error: migrationError } = await supabase
+                        let { error: migrationError } = await supabase
                             .from('captured_monsters')
                             .insert(dbRowsToInsert);
                         
                         if (migrationError) {
-                            console.error("Migration insert error:", migrationError);
+                            console.warn("Migration insert error with new columns, retrying fallback:", migrationError);
+                            const fallbackRows = dbRowsToInsert.map(({ unlocked_slots, held_items, ...rest }) => rest);
+                            const { error: fallbackError } = await supabase
+                                .from('captured_monsters')
+                                .insert(fallbackRows);
+                            migrationError = fallbackError;
                         } else {
                             console.log("Successfully migrated pokemon to captured_monsters for address:", address);
                         }
@@ -362,24 +378,37 @@ export default function Home() {
             };
 
             // First insert to captured_monsters
-            const { error: monsterError } = await supabase
+            const insertPayload: any = {
+                id_captura: uuid,
+                id_jugador: pendingNewAddress,
+                especie_id: specId,
+                nivel: 1,
+                xp: 0,
+                hp_actual: maxHp,
+                iv_hp: ivs.hp,
+                iv_ataque: ivs.attack,
+                iv_defensa: ivs.defense,
+                iv_velocidad: ivs.speed,
+                es_shiny: isShiny,
+                moves: [],
+                is_team: true,
+                team_order: 0,
+                unlocked_slots: 2,
+                held_items: [null, null, null, null]
+            };
+
+            let { error: monsterError } = await supabase
                 .from('captured_monsters')
-                .insert({
-                    id_captura: uuid,
-                    id_jugador: pendingNewAddress,
-                    especie_id: specId,
-                    nivel: 1,
-                    xp: 0,
-                    hp_actual: maxHp,
-                    iv_hp: ivs.hp,
-                    iv_ataque: ivs.attack,
-                    iv_defensa: ivs.defense,
-                    iv_velocidad: ivs.speed,
-                    es_shiny: isShiny,
-                    moves: [],
-                    is_team: true,
-                    team_order: 0
-                });
+                .insert(insertPayload);
+
+            if (monsterError) {
+                console.warn("Failed to save starter with unlocked_slots/held_items in captured_monsters, retrying fallback:", monsterError);
+                const { unlocked_slots, held_items, ...fallbackPayload } = insertPayload;
+                const { error: fallbackError } = await supabase
+                    .from('captured_monsters')
+                    .insert(fallbackPayload);
+                monsterError = fallbackError;
+            }
 
             if (monsterError) {
                 console.error("Failed to save starter in captured_monsters:", monsterError);

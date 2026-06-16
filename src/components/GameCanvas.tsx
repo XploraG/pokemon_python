@@ -4909,6 +4909,72 @@ export default function GameCanvas({
                     if (syncError) {
                         console.error("Failed to sync progress to cloud:", syncError);
                     }
+
+                    // 3. Sync captured_monsters
+                    const monsterRows = [
+                        ...teamToSave.map((p, idx) => ({ ...p, is_team: true, team_order: idx })),
+                        ...pcPokemonToSave.map((p, idx) => ({ ...p, is_team: false, team_order: idx }))
+                    ].map(p => {
+                        const species = pokemonSpeciesList.find(s => s.name.toLowerCase() === p.id.toLowerCase());
+                        const specId = species ? species.id : 25;
+                        return {
+                            id_captura: p.id_captura || generateUUID(),
+                            id_jugador: walletAddress,
+                            especie_id: specId,
+                            nivel: p.level ?? 5,
+                            xp: p.xp ?? 0,
+                            hp_actual: p.hp ?? 10,
+                            iv_hp: p.ivs?.hp ?? 15,
+                            iv_ataque: p.ivs?.attack ?? 15,
+                            iv_defensa: p.ivs?.defense ?? 15,
+                            iv_velocidad: p.ivs?.speed ?? 15,
+                            es_shiny: p.is_shiny || false,
+                            moves: p.moves || [],
+                            is_team: p.is_team,
+                            team_order: p.team_order,
+                            unlocked_slots: p.unlocked_slots ?? 2,
+                            held_items: p.held_items || [null, null, null, null]
+                        };
+                    });
+
+                    if (monsterRows.length > 0) {
+                        let { error: monstersUpsertErr } = await supabase
+                            .from('captured_monsters')
+                            .upsert(monsterRows);
+                        
+                        if (monstersUpsertErr) {
+                            console.warn("Failed to upsert to captured_monsters with slots/items, retrying fallback:", monstersUpsertErr);
+                            const fallbackRows = monsterRows.map(({ unlocked_slots, held_items, ...rest }) => rest);
+                            const { error: fallbackErr } = await supabase
+                                .from('captured_monsters')
+                                .upsert(fallbackRows);
+                            monstersUpsertErr = fallbackErr;
+                        }
+
+                        if (monstersUpsertErr) {
+                            console.error("Failed to sync captured monsters:", monstersUpsertErr);
+                        } else {
+                            // Delete released monsters
+                            const activeIds = monsterRows.map(r => r.id_captura);
+                            const { error: deleteError } = await supabase
+                                .from('captured_monsters')
+                                .delete()
+                                .eq('id_jugador', walletAddress)
+                                .not('id_captura', 'in', `(${activeIds.join(',')})`);
+                            if (deleteError) {
+                                console.error("Failed to delete released monsters:", deleteError);
+                            }
+                        }
+                    } else {
+                        // Delete all captured monsters for this player if they have none
+                        const { error: deleteError } = await supabase
+                            .from('captured_monsters')
+                            .delete()
+                            .eq('id_jugador', walletAddress);
+                        if (deleteError) {
+                            console.error("Failed to delete all monsters:", deleteError);
+                        }
+                    }
                 } catch (err) {
                     console.error("Cloud sync error:", err);
                 }
