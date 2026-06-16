@@ -4996,7 +4996,12 @@ export default function GameCanvas({
                     if (isGymBattle && gymLeaderTeamRef.current && gymLeaderCurrentPokeIndexRef.current < gymLeaderTeamRef.current.length - 1) {
                         // --- MID-BATTLE XP PROCESS ---
                         let xpGained = Math.floor(activeWildBattle.level * 25 * (Math.random() * 0.2 + 0.9));
-                        if (activePoke.held_item === 'lucky_egg' && (!activePoke.held_item_expires || Date.now() < activePoke.held_item_expires)) {
+                        const activeLuckyEggsCount = (
+                            (activePoke.held_item === 'lucky_egg' && (!activePoke.held_item_expires || Date.now() < activePoke.held_item_expires)) ? 1 : 0
+                        ) + (
+                            (activePoke.held_items || []).filter((item: any) => item && item.id === 'lucky_egg' && (!item.expires || Date.now() < item.expires)).length
+                        );
+                        if (activeLuckyEggsCount > 0) {
                             xpGained = xpGained * 2;
                         }
                         let currentLvl = activePoke.level ?? 1;
@@ -5099,7 +5104,12 @@ export default function GameCanvas({
                     // --- VICTORY PROCESS ---
                     // Compute XP earned
                     let xpGained = Math.floor(activeWildBattle.level * 25 * (Math.random() * 0.2 + 0.9));
-                    if (activePoke.held_item === 'lucky_egg' && (!activePoke.held_item_expires || Date.now() < activePoke.held_item_expires)) {
+                    const activeLuckyEggsCount = (
+                        (activePoke.held_item === 'lucky_egg' && (!activePoke.held_item_expires || Date.now() < activePoke.held_item_expires)) ? 1 : 0
+                    ) + (
+                        (activePoke.held_items || []).filter((item: any) => item && item.id === 'lucky_egg' && (!item.expires || Date.now() < item.expires)).length
+                    );
+                    if (activeLuckyEggsCount > 0) {
                         xpGained = xpGained * 2;
                     }
                     
@@ -5539,11 +5549,28 @@ export default function GameCanvas({
         let changed = false;
         const now = Date.now();
         const updated = teamList.map(p => {
-            if (p.held_item_expires && now >= p.held_item_expires) {
-                const copy = { ...p };
+            let pChanged = false;
+            let items = p.held_items ? [...p.held_items] : [null, null, null, null];
+
+            // Migrate legacy single held item
+            if (p.held_item) {
+                items[0] = { id: p.held_item, expires: p.held_item_expires };
+                pChanged = true;
+            }
+
+            const cleanedItems = items.map(item => {
+                if (item && item.expires && now >= item.expires) {
+                    pChanged = true;
+                    return null;
+                }
+                return item;
+            });
+
+            if (pChanged) {
+                changed = true;
+                const copy = { ...p, held_items: cleanedItems };
                 delete copy.held_item;
                 delete copy.held_item_expires;
-                changed = true;
                 return copy;
             }
             return p;
@@ -5563,31 +5590,64 @@ export default function GameCanvas({
         return `${mins} min`;
     };
 
-    const handleUnequipItem = (targetPoke: any) => {
-        const itemId = targetPoke.held_item;
-        if (!itemId) return;
+    const handleUnlockHeldItemSlot = (targetPoke: any) => {
+        const currentUnlocked = targetPoke.unlocked_slots || 2;
+        if (currentUnlocked >= 4) {
+            showNotification("Límite Alcanzado", "¡Este Pokémon ya tiene todos los slots desbloqueados!");
+            return;
+        }
 
-        const updatedTeam = [...team];
-        const idx = updatedTeam.findIndex(x => x.id === targetPoke.id && x.level === targetPoke.level && x.xp === targetPoke.xp && x.hp === targetPoke.hp);
-        if (idx === -1) return;
+        const cost = 5.0;
+        if (!economyRef.current.spendPusdt(cost)) {
+            showNotification("Fondos Insuficientes", "¡No tienes suficientes PUSDT! Necesitas 5.00 PUSDT para desbloquear un slot.");
+            return;
+        }
 
-        delete updatedTeam[idx].held_item;
-        delete updatedTeam[idx].held_item_expires;
+        let idx = team.findIndex(t => t === targetPoke);
+        let isTeam = true;
+        if (idx === -1) {
+            idx = pcPokemon.findIndex(t => t === targetPoke);
+            isTeam = false;
+        }
+        if (idx === -1) {
+            idx = team.findIndex(t => t.id === targetPoke.id && t.level === targetPoke.level && t.xp === targetPoke.xp && t.hp === targetPoke.hp);
+            isTeam = true;
+        }
+        if (idx === -1) {
+            idx = pcPokemon.findIndex(t => t.id === targetPoke.id && t.level === targetPoke.level && t.xp === targetPoke.xp && t.hp === targetPoke.hp);
+            isTeam = false;
+        }
 
-        const newInv = new Inventory(inventoryRef.current.toSaveData());
-        newInv.addItem(itemId, 1);
-        inventoryRef.current = newInv;
-        setInventory(newInv);
+        if (idx === -1) {
+            showNotification("Error", "No se encontró el Pokémon seleccionado.");
+            return;
+        }
 
-        setTeam(updatedTeam);
-        saveLocalEconomy(updatedTeam, undefined, undefined, true, newInv);
+        if (isTeam) {
+            const updatedTeam = [...team];
+            updatedTeam[idx] = {
+                ...updatedTeam[idx],
+                unlocked_slots: currentUnlocked + 1
+            };
+            setTeam(updatedTeam);
+            saveLocalEconomy(updatedTeam, undefined, undefined, true);
+            setSelectedInfoPoke(updatedTeam[idx]);
+        } else {
+            const updatedPc = [...pcPokemon];
+            updatedPc[idx] = {
+                ...updatedPc[idx],
+                unlocked_slots: currentUnlocked + 1
+            };
+            setPcPokemon(updatedPc);
+            saveLocalEconomy(team, updatedPc, undefined, true);
+            setSelectedInfoPoke(updatedPc[idx]);
+        }
+
         setEconomy(new Economy(economyRef.current.toSaveData()));
-        
-        setSelectedInfoPoke({ ...updatedTeam[idx] });
 
         showNotification(
-            "Objeto Desequipado", 
-            `¡Has devuelto el objeto ${inventoryRef.current.getItemInfo(itemId)?.name || itemId} a tu mochila!`
+            "Slot Desbloqueado", 
+            `¡Has desbloqueado el Slot ${currentUnlocked + 1} de tu ${targetPoke.id.toUpperCase()} por 5 PUSDT!`
         );
     };
 
@@ -5599,14 +5659,42 @@ export default function GameCanvas({
         const itemInfo = inventoryRef.current.getItemInfo(usingItem.id);
 
         if (usingItem.id === 'lucky_egg') {
-            const oldHeld = target.held_item;
-            target.held_item = 'lucky_egg';
-            target.held_item_expires = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
+            const unlockedCount = target.unlocked_slots || 2;
+            const items = target.held_items ? [...target.held_items] : [null, null, null, null];
+            
+            // Migrate legacy
+            if (target.held_item) {
+                items[0] = { id: target.held_item, expires: target.held_item_expires };
+                delete target.held_item;
+                delete target.held_item_expires;
+            }
+
+            // Find first free slot among unlocked slots
+            let freeSlotIdx = -1;
+            const now = Date.now();
+            for (let i = 0; i < unlockedCount; i++) {
+                if (!items[i] || (items[i].expires && now >= items[i].expires)) {
+                    freeSlotIdx = i;
+                    break;
+                }
+            }
+
+            if (freeSlotIdx === -1) {
+                showNotification(
+                    "Slots Ocupados",
+                    `¡Todos los ${unlockedCount} slots desbloqueados de ${target.id.toUpperCase()} están ocupados! Desbloquea un slot adicional por 5 PUSDT en la info del Pokémon o espera a que expire un objeto.`
+                );
+                return;
+            }
+
+            // Equip item
+            items[freeSlotIdx] = {
+                id: 'lucky_egg',
+                expires: Date.now() + 24 * 60 * 60 * 1000 // 24 hours
+            };
+            target.held_items = items;
 
             inventoryRef.current.removeItem('lucky_egg', 1);
-            if (oldHeld) {
-                inventoryRef.current.addItem(oldHeld, 1);
-            }
 
             const newInv = new Inventory(inventoryRef.current.toSaveData());
             setInventory(newInv);
@@ -5618,7 +5706,7 @@ export default function GameCanvas({
             
             showNotification(
                 "Objeto Equipado", 
-                `¡Has equipado ${itemInfo.name || 'Lucky Egg'} en tu ${target.id.toUpperCase()}! Ahora ganará x2 XP en batalla durante las próximas 24 horas.`
+                `¡Has equipado ${itemInfo.name || 'Lucky Egg'} en el Slot ${freeSlotIdx + 1} de tu ${target.id.toUpperCase()}! Ahora ganará x2 XP en batalla durante las próximas 24 horas.`
             );
             return;
         }
@@ -8492,32 +8580,85 @@ export default function GameCanvas({
                                     </div>
                                 </div>
                                 
-                                {p.held_item && (
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', background: 'rgba(56,189,248,0.08)', border: '1px solid rgba(56,189,248,0.25)', borderRadius: '10px', padding: '10px 12px', marginBottom: '4px' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                <span style={{ fontSize: '14px' }}>📦</span>
-                                                <div style={{ textAlign: 'left' }}>
-                                                    <div style={{ fontSize: '10px', color: '#94a3b8' }}>Objeto Equipado:</div>
-                                                    <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#38bdf8' }}>
-                                                        {inventoryRef.current.getItemInfo(p.held_item)?.name || p.held_item}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <button
-                                                onClick={() => handleUnequipItem(p)}
-                                                style={{ margin: 0, padding: '4px 10px', fontSize: '9px', fontWeight: 'bold', background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.35)', borderRadius: '6px', color: '#f87171', cursor: 'pointer' }}
-                                            >
-                                                Desequipar
-                                            </button>
-                                        </div>
-                                        {p.held_item_expires && p.held_item_expires > Date.now() && (
-                                            <div style={{ fontSize: '9px', color: '#94a3b8', textAlign: 'left', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                ⏳ Tiempo restante: <span style={{ color: '#38bdf8', fontWeight: 'bold' }}>{getHeldItemRemainingTimeStr(p.held_item_expires)}</span> (Límite 24h)
-                                            </div>
-                                        )}
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '4px', background: 'rgba(0,0,0,0.02)', padding: '8px 10px', borderRadius: '10px', border: '1px solid rgba(0,0,0,0.05)' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <div style={{ fontWeight: 'bold', fontSize: '11px', color: '#5d4037' }}>Objetos Equipados (Slots):</div>
+                                        <div style={{ fontSize: '9px', color: '#94a3b8' }}>Desbloqueados: {p.unlocked_slots || 2}/4</div>
                                     </div>
-                                )}
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                        {(() => {
+                                            const items = p.held_items ? [...p.held_items] : [null, null, null, null];
+                                            if (p.held_item) {
+                                                items[0] = { id: p.held_item, expires: p.held_item_expires };
+                                            }
+                                            const unlockedCount = p.unlocked_slots || 2;
+                                            return items.map((item: any, idx: number) => {
+                                                const isUnlocked = idx < unlockedCount;
+                                                const isNextToUnlock = idx === unlockedCount;
+
+                                                if (isUnlocked) {
+                                                    if (item && item.id) {
+                                                        const remaining = item.expires ? item.expires - Date.now() : 0;
+                                                        const isExpired = remaining <= 0;
+                                                        if (isExpired) {
+                                                            return (
+                                                                <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 8px', background: 'rgba(0,0,0,0.03)', border: '1px dashed #cbd5e1', borderRadius: '8px', fontSize: '10px', color: '#64748b', textAlign: 'left' }}>
+                                                                    <span>Slot {idx + 1} 📦</span>
+                                                                    <div style={{ flex: 1 }}>Slot libre</div>
+                                                                </div>
+                                                            );
+                                                        }
+                                                        const itemInfo = inventoryRef.current.getItemInfo(item.id);
+                                                        return (
+                                                            <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '2px', padding: '6px 8px', background: 'rgba(56,189,248,0.06)', border: '1px solid rgba(56,189,248,0.25)', borderRadius: '8px', textAlign: 'left' }}>
+                                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                                        <span style={{ fontSize: '11px' }}>Slot {idx + 1} 📦</span>
+                                                                        <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#0284c7' }}>
+                                                                            {itemInfo?.name || item.id}
+                                                                        </span>
+                                                                    </div>
+                                                                </div>
+                                                                {item.expires && (
+                                                                    <div style={{ fontSize: '9px', color: '#64748b', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
+                                                                        ⏳ Tiempo restante: <span style={{ color: '#0284c7', fontWeight: 'bold' }}>{getHeldItemRemainingTimeStr(item.expires)}</span>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        );
+                                                    } else {
+                                                        return (
+                                                            <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 8px', background: 'rgba(0,0,0,0.02)', border: '1px dashed #cbd5e1', borderRadius: '8px', fontSize: '10px', color: '#64748b', textAlign: 'left' }}>
+                                                                <span>Slot {idx + 1} 📦</span>
+                                                                <div style={{ flex: 1 }}>Slot libre</div>
+                                                            </div>
+                                                        );
+                                                    }
+                                                } else {
+                                                    // Locked slot
+                                                    return (
+                                                        <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 8px', background: 'rgba(241,245,249,0.5)', border: '1px dashed #e2e8f0', borderRadius: '8px', fontSize: '10px', color: '#94a3b8', textAlign: 'left' }}>
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                                <span>Slot {idx + 1} 🔒</span>
+                                                                <span>Slot Bloqueado</span>
+                                                            </div>
+                                                            {isNextToUnlock ? (
+                                                                <button
+                                                                    onClick={() => handleUnlockHeldItemSlot(p)}
+                                                                    style={{ margin: 0, padding: '3px 8px', fontSize: '9px', fontWeight: 'bold', background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', border: 'none', borderRadius: '5px', color: 'white', cursor: 'pointer', boxShadow: '0 2px 4px rgba(16,185,129,0.2)' }}
+                                                                >
+                                                                    Desbloquear (5 PUSDT)
+                                                                </button>
+                                                            ) : (
+                                                                <span style={{ fontSize: '9px', color: '#cbd5e1' }}>(Desbloquea el anterior)</span>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                }
+                                            });
+                                        })()}
+                                    </div>
+                                </div>
 
                                 <div style={{ borderBottom: '1px solid #efebe9', paddingBottom: '12px' }}>
                                     <div style={{ fontWeight: 'bold', fontSize: '12px', color: '#5d4037', marginBottom: '6px' }}>Estadísticas Actuales:</div>
