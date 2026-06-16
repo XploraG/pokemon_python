@@ -41,6 +41,9 @@ export interface EconomySaveData {
     last_weekly_reset_date?: string;
     gold_incense_expires?: number;
     repel_expires?: number;
+    elixir_attack_expires?: number;
+    elixir_defense_expires?: number;
+    elixir_hp_expires?: number;
 }
 
 export interface CoinTransaction {
@@ -85,6 +88,9 @@ export class Economy {
     public last_weekly_reset_date: string = '';
     public gold_incense_expires: number = 0;
     public repel_expires: number = 0;
+    public elixir_attack_expires: number = 0;
+    public elixir_defense_expires: number = 0;
+    public elixir_hp_expires: number = 0;
 
     constructor(saveData?: EconomySaveData) {
         if (saveData) {
@@ -126,6 +132,9 @@ export class Economy {
         this.last_weekly_reset_date = '';
         this.gold_incense_expires = 0;
         this.repel_expires = 0;
+        this.elixir_attack_expires = 0;
+        this.elixir_defense_expires = 0;
+        this.elixir_hp_expires = 0;
     }
 
     private loadFromSave(data: EconomySaveData): void {
@@ -162,6 +171,9 @@ export class Economy {
         this.last_weekly_reset_date = data.last_weekly_reset_date ?? '';
         this.gold_incense_expires = data.gold_incense_expires ?? 0;
         this.repel_expires = data.repel_expires ?? 0;
+        this.elixir_attack_expires = data.elixir_attack_expires ?? 0;
+        this.elixir_defense_expires = data.elixir_defense_expires ?? 0;
+        this.elixir_hp_expires = data.elixir_hp_expires ?? 0;
         for (const medal of this.medals) {
             if (!this.medal_levels[medal]) {
                 this.medal_levels[medal] = 1;
@@ -203,7 +215,10 @@ export class Economy {
             claimed_weekly_missions: this.claimed_weekly_missions,
             last_weekly_reset_date: this.last_weekly_reset_date,
             gold_incense_expires: this.gold_incense_expires,
-            repel_expires: this.repel_expires
+            repel_expires: this.repel_expires,
+            elixir_attack_expires: this.elixir_attack_expires,
+            elixir_defense_expires: this.elixir_defense_expires,
+            elixir_hp_expires: this.elixir_hp_expires
         };
     }
 
@@ -771,6 +786,21 @@ export class Economy {
         if (itemId === 'repel') {
             const currentExpiry = this.repel_expires && this.repel_expires > now ? this.repel_expires : now;
             this.repel_expires = currentExpiry + durationMs;
+            return true;
+        }
+        if (itemId === 'elixir_attack') {
+            const currentExpiry = this.elixir_attack_expires && this.elixir_attack_expires > now ? this.elixir_attack_expires : now;
+            this.elixir_attack_expires = currentExpiry + durationMs;
+            return true;
+        }
+        if (itemId === 'elixir_defense') {
+            const currentExpiry = this.elixir_defense_expires && this.elixir_defense_expires > now ? this.elixir_defense_expires : now;
+            this.elixir_defense_expires = currentExpiry + durationMs;
+            return true;
+        }
+        if (itemId === 'elixir_hp') {
+            const currentExpiry = this.elixir_hp_expires && this.elixir_hp_expires > now ? this.elixir_hp_expires : now;
+            this.elixir_hp_expires = currentExpiry + durationMs;
             return true;
         }
         return false;

@@ -1,6 +1,7 @@
 import pokeballs from '../../public/assets/items/pokeballs.json';
 import potions from '../../public/assets/items/potions.json';
 import boosts from '../../public/assets/items/boosts.json';
+import materials from '../../public/assets/items/materials.json';
 
 export interface InventorySaveData {
     items?: Record<string, number>;
@@ -24,6 +25,7 @@ export class Inventory {
             ...(pokeballs as Record<string, any>),
             ...(potions as Record<string, any>),
             ...(boosts as Record<string, any>),
+            ...(materials as Record<string, any>),
         };
     }
 

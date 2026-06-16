@@ -1,0 +1,164 @@
+{
+    "magic_dust": {
+        "name": "Polvo Mágico",
+        "price": 100,
+        "description": "Polvo brillante de estrellas. Usado para alquimia y pociones.",
+        "sprite": "src/assets/items/sprites/magic_dust.png"
+    },
+    "iron_ore": {
+        "name": "Mineral de Hierro",
+        "price": 150,
+        "description": "Metal crudo recolectado de combates. Usado para fabricar esferas.",
+        "sprite": "src/assets/items/sprites/iron_ore.png"
+    },
+    "stardust": {
+        "name": "Polvo Estelar",
+        "price": 300,
+        "description": "Arena brillante con reflejos cósmicos. Muy valiosa para alquimia.",
+        "sprite": "src/assets/items/sprites/stardust.png"
+    },
+    "apricorn_red": {
+        "name": "Bonguri Rojo",
+        "price": 50,
+        "description": "Bonguri silvestre de tacto cálido. Usado en esferas de fuego.",
+        "sprite": "src/assets/items/sprites/apricorn_red.png"
+    },
+    "apricorn_blue": {
+        "name": "Bonguri Azul",
+        "price": 50,
+        "description": "Bonguri silvestre húmedo. Usado en esferas de agua.",
+        "sprite": "src/assets/items/sprites/apricorn_blue.png"
+    },
+    "apricorn_black": {
+        "name": "Bonguri Negro",
+        "price": 50,
+        "description": "Bonguri silvestre pesado y denso. Usado en esferas pesadas.",
+        "sprite": "src/assets/items/sprites/apricorn_black.png"
+    },
+    "fossil_helix": {
+        "name": "Fósil Hélix",
+        "price": 1000,
+        "description": "Fósil ancestral con forma espiral. Alberga un ADN misterioso.",
+        "sprite": "src/assets/items/sprites/fossil_helix.png"
+    },
+    "fossil_dome": {
+        "name": "Fósil Domo",
+        "price": 1000,
+        "description": "Fósil ancestral con forma de caparazón. Alberga un ADN misterioso.",
+        "sprite": "src/assets/items/sprites/fossil_dome.png"
+    },
+    "tamer_seal": {
+        "name": "Sello de Domador",
+        "price": 500,
+        "description": "Sello que otorga el derecho a fabricar esferas avanzadas.",
+        "sprite": "src/assets/items/sprites/tamer_seal.png"
+    },
+    "ancient_amber": {
+        "name": "Ámbar Ancestral",
+        "price": 1000,
+        "description": "Fósil extraño otorgado por Líderes de Gimnasio. Muy codiciado.",
+        "sprite": "src/assets/items/sprites/ancient_amber.png"
+    },
+    "golden_shard": {
+        "name": "Fragmento Dorado",
+        "price": 1000,
+        "description": "Metal misterioso con brillo solar. Clave para el crafteo RMT.",
+        "sprite": "src/assets/items/sprites/golden_shard.png"
+    },
+    "apricorn_paste": {
+        "name": "Pasta de Bonguri",
+        "price": 200,
+        "description": "Pasta refinada de Bonguris. Aglutinante para Pokéballs avanzadas.",
+        "sprite": "src/assets/items/sprites/apricorn_paste.png"
+    },
+    "fossil_dna": {
+        "name": "ADN de Fósil",
+        "price": 2500,
+        "description": "Material genético extraído de fósiles antiguos.",
+        "sprite": "src/assets/items/sprites/fossil_dna.png"
+    },
+    "stardust_potion": {
+        "name": "Poción Estelar",
+        "price": 1200,
+        "description": "Medicina infundida con Polvo Estelar. Restaura 80 HP.",
+        "heal_amount": 80,
+        "sprite": "src/assets/items/sprites/stardust_potion.png"
+    },
+    "heavy_ball": {
+        "name": "Peso Ball",
+        "price": 800,
+        "description": "Esfera pesada con 60% de captura para criaturas densas.",
+        "capture_rate": 0.60,
+        "sprite": "src/assets/items/sprites/heavy_ball.png"
+    },
+    "lure_ball": {
+        "name": "Cebo Ball",
+        "price": 800,
+        "description": "Esfera cebo con 60% de captura para criaturas de agua/húmedas.",
+        "capture_rate": 0.60,
+        "sprite": "src/assets/items/sprites/lure_ball.png"
+    },
+    "gold_ticket": {
+        "name": "Tique de Oro",
+        "price": 10000,
+        "description": "Vale de Intercambio RMT. ¡Canjéalo en el Taller por 1 pUSDT!",
+        "sprite": "src/assets/items/sprites/gold_ticket.png"
+    },
+    "fire_essence": {
+        "name": "Esencia de Fuego",
+        "price": 200,
+        "description": "Esencia ardiente de Pokémon de Fuego. Para Piedras Fuego.",
+        "sprite": "src/assets/items/sprites/fire_essence.png"
+    },
+    "water_essence": {
+        "name": "Esencia de Agua",
+        "price": 200,
+        "description": "Gotas condensadas de Pokémon de Agua. Para Piedras Agua.",
+        "sprite": "src/assets/items/sprites/water_essence.png"
+    },
+    "thunder_essence": {
+        "name": "Esencia de Trueno",
+        "price": 200,
+        "description": "Voltaje residual de Pokémon Eléctricos. Para Piedras Trueno.",
+        "sprite": "src/assets/items/sprites/thunder_essence.png"
+    },
+    "leaf_essence": {
+        "name": "Esencia de Planta",
+        "price": 200,
+        "description": "Sabia curativa de Pokémon Planta. Para Piedras Hoja.",
+        "sprite": "src/assets/items/sprites/leaf_essence.png"
+    },
+    "moon_essence": {
+        "name": "Esencia Lunar",
+        "price": 250,
+        "description": "Fragmento de luz nocturna. Para Piedras Lunar.",
+        "sprite": "src/assets/items/sprites/moon_essence.png"
+    },
+    "elixir_attack": {
+        "name": "Elíxir de Furia",
+        "price": 2500,
+        "description": "+30% de Ataque para tus Pokémon durante 1 hora.",
+        "duration_minutes": 60,
+        "sprite": "src/assets/items/sprites/elixir_attack.png"
+    },
+    "elixir_defense": {
+        "name": "Elíxir de Coraza",
+        "price": 2500,
+        "description": "+30% de Defensa para tus Pokémon durante 1 hora.",
+        "duration_minutes": 60,
+        "sprite": "src/assets/items/sprites/elixir_defense.png"
+    },
+    "elixir_hp": {
+        "name": "Elíxir de Vitalidad",
+        "price": 2500,
+        "description": "+30% de PS Máximos para tus Pokémon durante 1 hora.",
+        "duration_minutes": 60,
+        "sprite": "src/assets/items/sprites/elixir_hp.png"
+    },
+    "random_material_pack": {
+        "name": "Pack Materiales Random",
+        "price": 3000,
+        "description": "Contiene 5 materiales Tier 1 aleatorios al azar.",
+        "sprite": "src/assets/items/sprites/random_material_pack.png"
+    }
+}
