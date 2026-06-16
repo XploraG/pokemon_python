@@ -1486,7 +1486,7 @@ export default function GameCanvas({
         });
 
         if (res.success) {
-            economyRef.current.addCoins(20);
+            economyRef.current.addCoins(20, 'ad_reward');
             economyRef.current.ads_viewed_today = (economyRef.current.ads_viewed_today || 0) + 1;
             saveLocalEconomy();
             setEconomy(new Economy(economyRef.current.toSaveData()));
@@ -1545,7 +1545,7 @@ export default function GameCanvas({
             setDoubleRewardCoins(0);
             setDoubleRewardType(null);
             setNotification(null);
-            economyRef.current.addCoins(coinsToDouble);
+            economyRef.current.addCoins(coinsToDouble, 'ad_double_reward', doubleRewardType || 'battle');
             saveLocalEconomy();
             setEconomy(new Economy(economyRef.current.toSaveData()));
             showNotification("¡Duplicado!", `¡Has recibido otras ${coinsToDouble} Coins por ver el anuncio!`);
@@ -1567,7 +1567,7 @@ export default function GameCanvas({
             setDoubleRewardCoins(0);
             setDoubleRewardType(null);
             setActiveDialog(null);
-            economyRef.current.addCoins(coinsToDouble);
+            economyRef.current.addCoins(coinsToDouble, 'ad_double_reward', doubleRewardType || 'battle');
             saveLocalEconomy();
             setEconomy(new Economy(economyRef.current.toSaveData()));
             showNotification("¡Duplicado!", `¡Has recibido otras ${coinsToDouble} Coins por ver el anuncio!`);
@@ -1821,7 +1821,7 @@ export default function GameCanvas({
                     pendingPvPInviteRef.current = null;
                     
                     // Deduct the 100 coin bet
-                    economyRef.current.spendCoins(100);
+                    economyRef.current.spendCoins(100, 'pvp_wager', `vs ${payload.fromName || payload.from}`);
                     economyRef.current.in_pvp_battle = true;
                     setEconomy(new Economy(economyRef.current.toSaveData()));
                     saveLocalEconomy();
@@ -3980,7 +3980,7 @@ export default function GameCanvas({
         
         // Penalty of 5 coins
         let msg = "Rechazaste el duelo.";
-        const success = economyRef.current.spendCoins(5);
+        const success = economyRef.current.spendCoins(5, 'pvp_reject_penalty', `vs ${incomingPvPInvite.fromName || incomingPvPInvite.from}`);
         if (success) {
             setEconomy(new Economy(economyRef.current.toSaveData()));
             saveLocalEconomy();
@@ -4012,7 +4012,7 @@ export default function GameCanvas({
         }
 
         // Pay the bet
-        economyRef.current.spendCoins(100);
+        economyRef.current.spendCoins(100, 'pvp_wager', `vs ${incomingPvPInvite.fromName || incomingPvPInvite.from}`);
         economyRef.current.in_pvp_battle = true;
         setEconomy(new Economy(economyRef.current.toSaveData()));
         saveLocalEconomy();
@@ -5159,7 +5159,7 @@ export default function GameCanvas({
                             coinsEarned = Math.floor(avgLeaderReward * 0.25);
                         }
                         
-                        economyRef.current.addCoins(coinsEarned);
+                        economyRef.current.addCoins(coinsEarned, 'trainer_victory', activeTrainerIdRef.current || 'unknown');
                         economyRef.current.updateMissionProgress('battle');
                         
                         const trainerXpEarned = (activeWildBattle.level ?? 1) * 15;
@@ -5316,7 +5316,7 @@ export default function GameCanvas({
                     const levelScale = 1.0 + ((activeWildBattle.level ?? 1) - 1) * 0.10;
                     const coinsEarned = Math.floor((baseCoins * rarityMult) * levelScale);
 
-                    economyRef.current.addCoins(coinsEarned);
+                    economyRef.current.addCoins(coinsEarned, 'wild_victory', activeWildBattle.name);
                     economyRef.current.updateMissionProgress('battle');
                     
                     const wildTrainerXp = (activeWildBattle.level ?? 1) * 10;
@@ -5726,8 +5726,8 @@ export default function GameCanvas({
         if (!activePvPBattle || isBattleAnimating) return;
 
         // Refund 100 coins bet, deduct 10 coins penalty (net cost = 10 coins)
-        economyRef.current.addCoins(100);
-        economyRef.current.spendCoins(10);
+        economyRef.current.addCoins(100, 'pvp_flee_refund');
+        economyRef.current.spendCoins(10, 'pvp_flee_penalty');
         
         economyRef.current.last_pvp_loss_time = Date.now();
         economyRef.current.pvp_cooldown_duration = 120; // 2 minutes cooldown
@@ -7059,7 +7059,7 @@ export default function GameCanvas({
                                                             <button 
                                                                 onClick={() => {
                                                                     const cost = item.coins!;
-                                                                    if (economy.spendCoins(cost)) {
+                                                                    if (economy.spendCoins(cost, 'shop_purchase', `Bought ${item.name} (${item.id})`)) {
                                                                         const newInv = new Inventory(inventoryRef.current.toSaveData());
                                                                         newInv.addItem(item.id);
                                                                         setInventory(newInv);
@@ -7139,7 +7139,7 @@ export default function GameCanvas({
                                                         <button 
                                                             onClick={() => {
                                                                 const cost = item.coins;
-                                                                if (economy.spendCoins(cost)) {
+                                                                if (economy.spendCoins(cost, 'shop_purchase', `Bought ${item.name} (${item.id})`)) {
                                                                     const newInv = new Inventory(inventoryRef.current.toSaveData());
                                                                     newInv.addItem(item.id);
                                                                     setInventory(newInv);
@@ -9540,7 +9540,7 @@ export default function GameCanvas({
                                     onClick={() => {
                                         if (activePvPBattle.status === 'win') {
                                             economyRef.current.pvp_wins = (economyRef.current.pvp_wins || 0) + 1;
-                                            economyRef.current.addCoins(180);
+                                            economyRef.current.addCoins(180, 'pvp_victory', `vs ${activePvPBattle.opponentName || activePvPBattle.opponentAddress}`);
                                             showNotification("¡Ganaste!", "GANASTE EL DUELO TE LLEVAS 180 COINS.");
                                         } else if (activePvPBattle.status === 'loss') {
                                             economyRef.current.pvp_losses = (economyRef.current.pvp_losses || 0) + 1;
@@ -9548,7 +9548,7 @@ export default function GameCanvas({
                                         } else if (activePvPBattle.status === 'flee') {
                                             showNotification("Combate Finalizado", "Huyiste del combate. Perdiste 10 Coins.");
                                         } else if (activePvPBattle.status === 'opponent_flee') {
-                                            economyRef.current.addCoins(100);
+                                            economyRef.current.addCoins(100, 'pvp_opponent_flee_refund', `vs ${activePvPBattle.opponentName || activePvPBattle.opponentAddress}`);
                                             showNotification("Combate Cancelado", "El oponente huyó de la batalla. Se te han devuelto tus 100 Coins.");
                                         }
                                         economyRef.current.in_pvp_battle = false;

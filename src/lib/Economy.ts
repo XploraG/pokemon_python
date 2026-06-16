@@ -33,6 +33,15 @@ export interface EconomySaveData {
     medal_levels?: Record<string, number>;
     tournament_medals?: string[];
     in_pvp_battle?: boolean;
+    transaction_history?: CoinTransaction[];
+}
+
+export interface CoinTransaction {
+    type: 'income' | 'expense';
+    amount: number;
+    source: string;
+    details?: string;
+    timestamp: number;
 }
 
 export class Economy {
@@ -62,6 +71,7 @@ export class Economy {
     public medal_levels: Record<string, number> = {};
     public tournament_medals: string[] = [];
     public in_pvp_battle: boolean = false;
+    public transaction_history: CoinTransaction[] = [];
 
     constructor(saveData?: EconomySaveData) {
         if (saveData) {
@@ -127,6 +137,7 @@ export class Economy {
         this.medal_levels = data.medal_levels ?? {};
         this.tournament_medals = data.tournament_medals ?? [];
         this.in_pvp_battle = data.in_pvp_battle ?? false;
+        this.transaction_history = data.transaction_history ?? [];
         for (const medal of this.medals) {
             if (!this.medal_levels[medal]) {
                 this.medal_levels[medal] = 1;
@@ -161,24 +172,45 @@ export class Economy {
             equipped_medals: this.equipped_medals,
             medal_levels: this.medal_levels,
             tournament_medals: this.tournament_medals,
-            in_pvp_battle: this.in_pvp_battle
+            in_pvp_battle: this.in_pvp_battle,
+            transaction_history: this.transaction_history
         };
     }
 
     // ---- COIN OPERATIONS ----
 
-    public addCoins(amount: number): number {
+    public addCoins(amount: number, source: string = 'unknown', details?: string): number {
         this.coins += amount;
         this.total_coins_earned += amount;
+        this.logTransaction('income', amount, source, details);
         return this.coins;
     }
 
-    public spendCoins(amount: number): boolean {
+    public spendCoins(amount: number, source: string = 'unknown', details?: string): boolean {
         if (this.coins >= amount) {
             this.coins -= amount;
+            this.logTransaction('expense', amount, source, details);
             return true;
         }
         return false;
+    }
+
+    private logTransaction(type: 'income' | 'expense', amount: number, source: string, details?: string): void {
+        if (!this.transaction_history) {
+            this.transaction_history = [];
+        }
+        this.transaction_history.push({
+            type,
+            amount,
+            source,
+            details,
+            timestamp: Date.now()
+        });
+
+        // Limit transaction log history length to avoid bloated files
+        if (this.transaction_history.length > 200) {
+            this.transaction_history.shift();
+        }
     }
 
     public spendPusdt(amount: number): boolean {
@@ -197,7 +229,7 @@ export class Economy {
         // Only convert full units
         const units = Math.floor(coinAmount / rate);
         const actualCost = units * rate;
-        if (this.spendCoins(actualCost)) {
+        if (this.spendCoins(actualCost, 'convertToPusdt', `Converted to ${units} pUSDT`)) {
             const pusdtEarned = units;
             this.pusdt += pusdtEarned;
             return pusdtEarned;
@@ -248,7 +280,7 @@ export class Economy {
         const coins = Math.floor(Math.random() * (maxCoins - minCoins + 1)) + minCoins;
 
         // Award coins and update cooldown
-        this.addCoins(coins);
+        this.addCoins(coins, 'trainer_victory', `Defeated trainer: ${trainerId}`);
         if (trainerId) {
             this.trainer_cooldowns[trainerId] = Date.now() / 1000;
         }
@@ -399,7 +431,7 @@ export class Economy {
         }
 
         // Award and track
-        this.addCoins(coins);
+        this.addCoins(coins, 'gym_victory', `Defeated gym: ${gymIdStr}`);
         this.defeated_gyms[gymIdStr] = timesDefeated + 1;
         this.gym_cooldowns[gymIdStr] = Date.now() / 1000;
 
@@ -544,7 +576,7 @@ export class Economy {
 
         const coins = this.calculatePassiveIncome(team);
         if (coins > 0) {
-            this.addCoins(coins);
+            this.addCoins(coins, 'passive_claim');
             this.last_passive_claim = String(Date.now() / 1000);
             
             // Award 50 Trainer XP for claiming passive income
@@ -593,7 +625,7 @@ export class Economy {
         const rewardItems: any = {};
 
         if (rewardCoins > 0) {
-            this.addCoins(rewardCoins);
+            this.addCoins(rewardCoins, 'login_bonus', `Streak day: ${this.login_streak}`);
             // Award 100 Trainer XP for new daily login reward
             this.addTrainerXp(100);
         }
@@ -618,7 +650,7 @@ export class Economy {
                     const newProgress = current + amount;
                     this.daily_missions_progress[mid] = newProgress;
                     if (newProgress >= mission.target) {
-                        this.addCoins(mission.reward_coins);
+                        this.addCoins(mission.reward_coins, 'mission_reward', `Completed: ${mid}`);
                         // Award 200 Trainer XP for completing a daily mission!
                         this.addTrainerXp(200);
                         completed.push(mid);
@@ -657,7 +689,7 @@ export class Economy {
 
     public executePaidRevive(): boolean {
         const cost = this.getReviveCost();
-        return this.spendCoins(cost);
+        return this.spendCoins(cost, 'revive_heal');
     }
 
     public getFormattedCoins(): string {
