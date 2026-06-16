@@ -9509,7 +9509,7 @@ export default function GameCanvas({
 
             {/* Edit Nickname Modal */}
             {showEditNicknameModal && (
-                <div className="modal-overlay" style={{ zIndex: 310 }}>
+                <div className="modal-overlay" style={{ zIndex: 11000 }}>
                     <div className="modal-card pokemon-panel" style={{ maxWidth: '360px' }}>
                         <div className="modal-header">
                             <h3 className="modal-title">Editar Nickname</h3>
