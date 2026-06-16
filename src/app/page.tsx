@@ -181,80 +181,6 @@ export default function Home() {
                 const databaseAddress = data.wallet_address || address;
                 let saveState = { ...data.save_data };
                 
-                // Compare with local storage save to prevent data loss from network issues/unsaved states
-                try {
-                    const localSaves = JSON.parse(localStorage.getItem('pixel_tamer_saves') || '{}');
-                    const localSave = localSaves[databaseAddress];
-                    if (localSave && localSave.updated_at) {
-                        const localTime = new Date(localSave.updated_at).getTime();
-                        const dbTime = data.updated_at ? new Date(data.updated_at).getTime() : 0;
-                        
-                        if (localTime > dbTime + 1000) {
-                            console.log("Local save is newer. Auto-syncing from local cache to cloud...", localSave);
-                            saveState = { ...localSave };
-                            
-                            // Immediately sync the newer local save back to Supabase
-                            await supabase
-                                .from('player_saves')
-                                .upsert({
-                                    wallet_address: databaseAddress,
-                                    save_data: saveState,
-                                    updated_at: localSave.updated_at
-                                });
-                                
-                            // Sync captured_monsters back to Supabase
-                            const teamToSave = saveState.team_data || [];
-                            const pcPokemonToSave = saveState.pc_pokemon || [];
-                            const monsterRows = [
-                                ...teamToSave.map((p: any, idx: number) => ({ ...p, is_team: true, team_order: idx })),
-                                ...pcPokemonToSave.map((p: any, idx: number) => ({ ...p, is_team: false, team_order: idx }))
-                            ].map((p: any) => {
-                                const species = pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === p.id.toLowerCase());
-                                const specId = species ? species.id : 25;
-                                return {
-                                    id_captura: p.id_captura || generateUUID(),
-                                    id_jugador: databaseAddress,
-                                    especie_id: specId,
-                                    nivel: p.level ?? 5,
-                                    xp: p.xp ?? 0,
-                                    hp_actual: p.hp ?? 10,
-                                    iv_hp: p.ivs?.hp ?? 15,
-                                    iv_ataque: p.ivs?.attack ?? 15,
-                                    iv_defensa: p.ivs?.defense ?? 15,
-                                    iv_velocidad: p.ivs?.speed ?? 15,
-                                    es_shiny: p.is_shiny || false,
-                                    moves: p.moves || [],
-                                    is_team: p.is_team,
-                                    team_order: p.team_order,
-                                    unlocked_slots: p.unlocked_slots ?? 2,
-                                    held_items: p.held_items || [null, null, null, null]
-                                };
-                            });
-                            
-                            if (monsterRows.length > 0) {
-                                let { error: monstersUpsertErr } = await supabase
-                                    .from('captured_monsters')
-                                    .upsert(monsterRows);
-                                if (monstersUpsertErr) {
-                                    const fallbackRows = monsterRows.map(({ unlocked_slots, held_items, ...rest }) => rest);
-                                    await supabase
-                                        .from('captured_monsters')
-                                        .upsert(fallbackRows);
-                                }
-                                
-                                const activeIds = monsterRows.map(r => r.id_captura);
-                                await supabase
-                                    .from('captured_monsters')
-                                    .delete()
-                                    .eq('id_jugador', databaseAddress)
-                                    .not('id_captura', 'in', `(${activeIds.join(',')})`);
-                            }
-                        }
-                    }
-                } catch (e) {
-                    console.warn("Failed local save auto-sync:", e);
-                }
-                
                 // Fetch captured monsters from Supabase
                 const { data: dbMonsters, error: dbMonstersError } = await supabase
                     .from('captured_monsters')
@@ -265,7 +191,7 @@ export default function Home() {
                     console.error("Error loading captured monsters:", dbMonstersError);
                 }
 
-                if (dbMonsters && dbMonsters.length > 0 && (!saveState.team_data || saveState.team_data.length === 0)) {
+                if (dbMonsters && dbMonsters.length > 0) {
                     // Split into team and PC
                     const teamMonsters = dbMonsters
                         .filter((m: any) => m.is_team)

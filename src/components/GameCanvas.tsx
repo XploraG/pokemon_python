@@ -5202,19 +5202,19 @@ export default function GameCanvas({
         const pcPokemonToSave = updatedPcPokemon !== undefined ? updatedPcPokemon : pcPokemonRef.current;
         const activeName = nameOverride !== undefined ? nameOverride : playerNameRef.current;
 
-        // Sanitize moves: remove any move ID that doesn't exist in MOVES_DATABASE
+        // Sanitize moves: remove any move ID that doesn't exist in MOVES_DATABASE, cap at 4
         const sanitizeMoves = (pokeList: any[]): any[] =>
             (pokeList || []).map(p => {
                 if (!p || !p.moves) return p;
-                const cleanMoves = (p.moves as string[]).filter((m: string) => !!MOVES_DATABASE[m]);
-                if (cleanMoves.length === p.moves.length) return p; // nothing changed
+                const cleanMoves = (p.moves as string[]).filter((m: string) => !!MOVES_DATABASE[m]).slice(0, 4);
+                if (cleanMoves.length === Math.min(p.moves.length, 4) && cleanMoves.length === p.moves.filter((m: string) => !!MOVES_DATABASE[m]).length) return p;
                 // Fill missing slots with species-appropriate fallback
                 const fallbackList = getPokemonMoves(p.id || 'normal', p.level ?? 1);
                 for (const fb of fallbackList) {
                     if (!cleanMoves.includes(fb) && cleanMoves.length < 4) cleanMoves.push(fb);
                 }
                 if (cleanMoves.length === 0) cleanMoves.push('tackle');
-                console.warn(`[MoveGuard] Fixed invalid moves for ${p.id}: removed [${(p.moves as string[]).filter((m: string) => !MOVES_DATABASE[m]).join(', ')}]`);
+                console.warn(`[MoveGuard] Fixed moves for ${p.id}: [${(p.moves as string[]).join(', ')}] → [${cleanMoves.join(', ')}]`);
                 return { ...p, moves: cleanMoves };
             });
 
@@ -5262,8 +5262,8 @@ export default function GameCanvas({
                     // 3. Sync captured_monsters
                     let hasMonstersError = false;
                     const monsterRows = [
-                        ...teamToSave.map((p, idx) => ({ ...p, is_team: true, team_order: idx })),
-                        ...pcPokemonToSave.map((p, idx) => ({ ...p, is_team: false, team_order: idx }))
+                        ...sanitizedTeam.map((p, idx) => ({ ...p, is_team: true, team_order: idx })),
+                        ...sanitizedPc.map((p, idx) => ({ ...p, is_team: false, team_order: idx }))
                     ].map(p => {
                         const species = pokemonSpeciesList.find(s => s.name.toLowerCase() === p.id.toLowerCase());
                         const specId = species ? species.id : 25;
@@ -5528,10 +5528,18 @@ export default function GameCanvas({
 
                         if (leveledUp) {
                             msg += ` ¡Subió al nivel ${currentLvl}!`;
-                            const evo = EVOLUTION_DATABASE[activePoke.id.toLowerCase()];
-                            if (evo && evo.method === 'level' && currentLvl >= (evo.level ?? 99)) {
-                                evolvedName = evo.target;
-                                evolved = true;
+                            let tempName = activePoke.id.toLowerCase();
+                            let loopLimit = 0;
+                            while (loopLimit < 5) {
+                                const evo = EVOLUTION_DATABASE[tempName];
+                                if (evo && evo.method === 'level' && currentLvl >= (evo.level ?? 99)) {
+                                    evolvedName = evo.target;
+                                    tempName = evo.target.toLowerCase();
+                                    evolved = true;
+                                    loopLimit++;
+                                } else {
+                                    break;
+                                }
                             }
                             
                             if (evolved) {
@@ -5649,10 +5657,18 @@ export default function GameCanvas({
 
                     if (leveledUp) {
                         msg += ` ¡Subió al nivel ${currentLvl}!`;
-                        const evo = EVOLUTION_DATABASE[activePoke.id.toLowerCase()];
-                        if (evo && evo.method === 'level' && currentLvl >= (evo.level ?? 99)) {
-                            evolvedName = evo.target;
-                            evolved = true;
+                        let tempName = activePoke.id.toLowerCase();
+                        let loopLimit = 0;
+                        while (loopLimit < 5) {
+                            const evo = EVOLUTION_DATABASE[tempName];
+                            if (evo && evo.method === 'level' && currentLvl >= (evo.level ?? 99)) {
+                                evolvedName = evo.target;
+                                tempName = evo.target.toLowerCase();
+                                evolved = true;
+                                loopLimit++;
+                            } else {
+                                break;
+                            }
                         }
                         
                         if (evolved) {
@@ -6645,7 +6661,7 @@ export default function GameCanvas({
                             speed: Math.floor(Math.random() * 32)
                         };
                         const stats = getPokemonStats(activeWildBattle.name.toLowerCase(), wildLvl, caughtIvs);
-                        const caughtMoves = getPokemonMoves(activeWildBattle.name.toLowerCase(), wildLvl);
+                        const caughtMoves = getPokemonMoves(activeWildBattle.name.toLowerCase(), wildLvl).slice(0, 4);
 
                         const newPoke = {
                             id: activeWildBattle.name.toLowerCase(),
@@ -6658,7 +6674,9 @@ export default function GameCanvas({
                             maxHp: stats.maxHp,
                             moves: caughtMoves,
                             is_shiny: activeWildBattle.isShiny || false,
-                            ivs: caughtIvs
+                            ivs: caughtIvs,
+                            unlocked_slots: 2,
+                            held_items: [null, null, null, null]
                         };
 
                         economyRef.current.updateMissionProgress('capture');

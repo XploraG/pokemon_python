@@ -1,0 +1,69 @@
+{
+    "map": "src/assets/maps/gym/gym_4.txt",
+    "tile_size": 32,
+    "spawn": {
+        "x": 224,
+        "y": 544
+    },
+    "components": [
+        {
+            "type": "W1",
+            "size": [32, 32],
+            "image": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'><rect width='32' height='32' fill='%231a4731'/><rect x='2' y='2' width='28' height='28' fill='%23145a32'/></svg>",
+            "isSolid": true
+        },
+        {
+            "type": "F1",
+            "size": [32, 32],
+            "image": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'><rect width='32' height='32' fill='%2352b788'/><rect x='2' y='2' width='28' height='28' fill='%2340916c'/></svg>"
+        },
+        {
+            "type": "H1",
+            "size": [32, 32],
+            "image": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'><rect width='32' height='32' fill='%2327ae60'/><rect x='2' y='2' width='28' height='28' fill='%231e8449'/><circle cx='16' cy='16' r='8' fill='%2317202a' opacity='0.3'/></svg>",
+            "isSolid": true
+        },
+        {
+            "type": "S1",
+            "size": [32, 32],
+            "image": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'><rect width='32' height='32' fill='%2340916c'/><rect x='4' y='8' width='24' height='20' fill='%23285f4a'/></svg>",
+            "isSolid": true
+        },
+        {
+            "type": "CP",
+            "size": [32, 32],
+            "image": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'><rect width='32' height='32' fill='%23dd6b20'/></svg>"
+        }
+    ],
+    "entities": [
+        {
+            "location": "src/assets/entities/npcs/persons/gymleader/erika/main.json",
+            "coordinates": {
+                "x": 224,
+                "y": 64
+            }
+        },
+        {
+            "location": "src/assets/entities/npcs/persons/athletemike/main.json",
+            "coordinates": {
+                "x": 96,
+                "y": 128
+            },
+            "dialogs": [
+                "¡Las flores de Erika crecen con la luz del sol... y con la derrota de sus rivales!",
+                "TRAINER_BATTLE:gloom:32"
+            ]
+        },
+        {
+            "location": "src/assets/entities/npcs/persons/athletemike/main.json",
+            "coordinates": {
+                "x": 352,
+                "y": 480
+            },
+            "dialogs": [
+                "¡El Jardín Celadón te aplastará con sus lianas! ¡Prepárate para el perfume del perdón!",
+                "TRAINER_BATTLE:tangela:30"
+            ]
+        }
+    ]
+}
