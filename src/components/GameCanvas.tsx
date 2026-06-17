@@ -5546,7 +5546,10 @@ export default function GameCanvas({
                                 msg += ` ¡Increíble! Ha evolucionado en ${evolvedName.toUpperCase()}!`;
                             }
 
-                            const learnableMoves = getPokemonMoves(evolvedName, currentLvl);
+                            const oldLvl = activePoke.level ?? 1;
+                            const learnableMoves = getPokemonMoves(evolvedName, currentLvl).filter(
+                                (mId: string) => !getPokemonMoves(activePoke.id, oldLvl).includes(mId)
+                            );
                             for (const mId of learnableMoves) {
                                 if (!finalMoves.includes(mId)) {
                                     if (finalMoves.length < 4) {
@@ -5676,7 +5679,10 @@ export default function GameCanvas({
                         }
 
                         // Check for new learnable moves based on the evolved (or original) species at the new level
-                        const learnableMoves = getPokemonMoves(evolvedName, currentLvl);
+                        const oldLvl = activePoke.level ?? 1;
+                        const learnableMoves = getPokemonMoves(evolvedName, currentLvl).filter(
+                            (mId: string) => !getPokemonMoves(activePoke.id, oldLvl).includes(mId)
+                        );
                         for (const mId of learnableMoves) {
                             if (!finalMoves.includes(mId)) {
                                 if (finalMoves.length < 4) {
