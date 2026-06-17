@@ -1563,6 +1563,12 @@ export default function GameCanvas({
     const activeTrainerIdRef = useRef<string | null>(null);
     const lastCheckedTileRef = useRef<{ x: number; y: number } | null>(null);
 
+    useEffect(() => {
+        if (economy && economy.defeated_trainers) {
+            defeatedTrainersRef.current = new Set(Object.keys(economy.defeated_trainers));
+        }
+    }, [economy]);
+
     // Battle stats modifier stages (Growl lowers attack, Tail Whip lowers defense)
     const [playerAtkStage, setPlayerAtkStage] = useState<number>(0);
     const [playerDefStage, setPlayerDefStage] = useState<number>(0);
@@ -3993,13 +3999,13 @@ export default function GameCanvas({
         { type: 'city',      name: 'Ciudad Aurora',    hasGym: true,  hasLake: false, hasTrainers: false },
         { type: 'route',     name: 'Ruta Esmeralda',   hasGym: false, hasLake: false, hasTrainers: true  },
         { type: 'city',      name: 'Ciudad Bruma',      hasGym: true,  hasLake: false, hasTrainers: false },
-        { type: 'route',     name: 'Ruta del Lago',    hasGym: false, hasLake: true,  hasTrainers: false },
+        { type: 'route',     name: 'Ruta del Lago',    hasGym: false, hasLake: true,  hasTrainers: true  },
         { type: 'city',      name: 'Ciudad Coral',     hasGym: true,  hasLake: false, hasTrainers: false },
         { type: 'cave',      name: 'Cueva Sombría',    hasGym: false, hasLake: false, hasTrainers: false, caveIndex: 1 },
         { type: 'city',      name: 'Ciudad Volcán',    hasGym: true,  hasLake: false, hasTrainers: false },
         { type: 'route',     name: 'Ruta Tormenta',    hasGym: false, hasLake: false, hasTrainers: true  },
         { type: 'city',      name: 'Ciudad Pétalo',    hasGym: true,  hasLake: false, hasTrainers: false },
-        { type: 'route',     name: 'Ruta del Mar',     hasGym: false, hasLake: true,  hasTrainers: false },
+        { type: 'route',     name: 'Ruta del Mar',     hasGym: false, hasLake: true,  hasTrainers: true  },
         { type: 'city',      name: 'Ciudad Glaciar',   hasGym: true,  hasLake: false, hasTrainers: false },
         { type: 'cave',      name: 'Cueva Cristal',    hasGym: false, hasLake: false, hasTrainers: false, caveIndex: 2 },
         { type: 'city',      name: 'Ciudad Prisma',    hasGym: true,  hasLake: false, hasTrainers: false },
@@ -4204,8 +4210,8 @@ export default function GameCanvas({
                         location: trainerSprites[t % trainerSprites.length],
                         coordinates: { x: safeCol * 32, y: trainerRow * 32 },
                         dialogs: [
-                            `ENTRENADOR: ¡Alto! ¡Tú, Tamer!`,
-                            `¡Voy a retarte con mi ${trainerPoke.charAt(0).toUpperCase() + trainerPoke.slice(1)} de Nvl. ${trainerLvl}!`,
+                            `ENTRENADOR: ¡Alto! ¡Crucemos miradas, iniciemos el combate!`,
+                            `¡Te desafío a un combate de 3 contra 3! ¡Demuestra tu fuerza!`,
                             `TRAINER_BATTLE:${trainerPoke}:${trainerLvl}`
                         ]
                     });
@@ -4431,6 +4437,44 @@ export default function GameCanvas({
 
             gridText = grid.map(line => line.join(' ')).join('\n');
 
+            const entities: any[] = [
+                {
+                    location: "src/assets/entities/structures/sign/main.json",
+                    coordinates: { x: (corridorC + 2) * 32, y: Math.floor(rows * 0.5) * 32 },
+                    dialogs: [
+                        `${zoneName}\n^ Norte: Siguiente Zona\nv Sur: Regresar`
+                    ]
+                }
+            ];
+
+            const caveTrainerCount = 1 + Math.floor(rand() * 2); // 1-2 trainers
+            const trainerSprites = [
+                "src/assets/entities/npcs/persons/grandmarose/main.json"
+            ];
+            for (let t = 0; t < caveTrainerCount; t++) {
+                const trainerRow = Math.floor(rows * (0.3 + t * 0.3));
+                let foundSpot = false;
+                let col = corridorC;
+                for (let attempt = 0; attempt < 10; attempt++) {
+                    const testCol = Math.floor(rand() * (cols - 6)) + 3;
+                    if (grid[trainerRow]?.[testCol] === 'CF') {
+                        col = testCol;
+                        foundSpot = true;
+                        break;
+                    }
+                }
+                const safeCol = foundSpot ? col : corridorC - 2;
+                entities.push({
+                    location: trainerSprites[0],
+                    coordinates: { x: safeCol * 32, y: trainerRow * 32 },
+                    dialogs: [
+                        `ENTRENADOR: ¡La oscuridad de esta cueva no me detiene!`,
+                        `¡Veamos qué tan fuerte es tu equipo en un combate de 3 contra 3!`,
+                        `TRAINER_BATTLE:geodude:5`
+                    ]
+                });
+            }
+
             mapJson = {
                 map: `${mapId.replace('.json', '')}.txt`,
                 tile_size: 32,
@@ -4439,15 +4483,7 @@ export default function GameCanvas({
                     { type: "CW", size: [32, 32], image: "src/assets/maps/tutorial/imgs/cave_wall.png", isSolid: true },
                     { type: "CO", size: [32, 32], image: "src/assets/maps/tutorial/imgs/cave_wall.png", isSolid: true }
                 ],
-                entities: [
-                    {
-                        location: "src/assets/entities/structures/sign/main.json",
-                        coordinates: { x: (corridorC + 2) * 32, y: Math.floor(rows * 0.5) * 32 },
-                        dialogs: [
-                            `${zoneName}\n^ Norte: Siguiente Zona\nv Sur: Regresar`
-                        ]
-                    }
-                ]
+                entities
             };
         }
 
@@ -5056,10 +5092,70 @@ export default function GameCanvas({
                 currentDialogIndexRef.current = nextIdx;
                 
                 if (nextText.startsWith('TRAINER_BATTLE:')) {
-                    const parts = nextText.split(':');
-                    const wildName = parts[1] || 'pikachu';
-                    const wildLvl = parseInt(parts[2] || '5', 10);
+                    // Extract map path and determine zone index & type
+                    const mapPath = currentMapPathRef.current || '';
+                    const lowerPath = mapPath.toLowerCase();
+                    let isEarlyArea = false;
+                    let zoneIndex = 1;
+                    if (lowerPath.includes('tutorial')) {
+                        isEarlyArea = true;
+                    } else if (lowerPath.includes('procedural://')) {
+                        const cleanPath = lowerPath.replace('procedural://', '');
+                        const parts = cleanPath.split('_');
+                        const type = parts[0];
+                        zoneIndex = parseInt(parts[1] || '1', 10);
+                        if ((type === 'route' || type === 'settlement') && zoneIndex <= 2) {
+                            isEarlyArea = true;
+                        }
+                    } else {
+                        if (lowerPath.includes('route1') || lowerPath.includes('route2') || lowerPath.includes('route_1') || lowerPath.includes('route_2') ||
+                            lowerPath.includes('city1') || lowerPath.includes('city2') || lowerPath.includes('settlement_1') || lowerPath.includes('settlement_2')) {
+                            isEarlyArea = true;
+                        }
+                    }
+
+                    // Level calculation matching wild Pokémon
+                    let trainerLvl = 1;
+                    if (isEarlyArea) {
+                        trainerLvl = Math.floor(Math.random() * 8) + 1; // 1 to 8
+                    } else {
+                        const teamCount = teamRef.current.length;
+                        const avgLvl = teamCount > 0 
+                            ? Math.floor(teamRef.current.reduce((sum: number, p: any) => sum + p.level, 0) / teamCount) 
+                            : 1;
+                        trainerLvl = Math.max(1, avgLvl + 5);
+                    }
+
+                    // Species pool: apartir de la ciudad 5 los npcs usa pokemos de mas raros
+                    const isRarer = zoneIndex >= 5;
+                    let speciesPool = pokemonSpeciesList && pokemonSpeciesList.length > 0
+                        ? pokemonSpeciesList.filter((s: any) => isRarer 
+                            ? (s.rarity === 'RARE' || s.rarity === 'ULTRA_RARE' || s.rarity === 'LEGENDARY')
+                            : (s.rarity === 'COMMON' || s.rarity === 'RARE' || !s.rarity)
+                        )
+                        : [];
                     
+                    if (speciesPool.length === 0) {
+                        speciesPool = pokemonSpeciesList || [{ name: 'pikachu', rarity: 'COMMON' }];
+                    }
+
+                    // Generate a 3-Pokémon team
+                    const teamPokes = [];
+                    for (let i = 0; i < 3; i++) {
+                        const spec = speciesPool[Math.floor(Math.random() * speciesPool.length)] || { name: 'pikachu' };
+                        const lvl = trainerLvl;
+                        const stats = getPokemonStats(spec.name.toLowerCase(), lvl);
+                        teamPokes.push({
+                            name: spec.name.toLowerCase(),
+                            level: lvl,
+                            hp: stats.maxHp,
+                            maxHp: stats.maxHp
+                        });
+                    }
+
+                    gymLeaderTeamRef.current = teamPokes;
+                    gymLeaderCurrentPokeIndexRef.current = 0;
+
                     // Close dialogue
                     setActiveDialog(null);
                     activeDialogRef.current = null;
@@ -5080,17 +5176,17 @@ export default function GameCanvas({
 
                     // Start Trainer Battle
                     setIsTrainerBattle(true);
-                    setBattleMessage(`¡El Entrenador te desafía con su ${wildName.toUpperCase()}!`);
+                    const firstPoke = teamPokes[0];
+                    setBattleMessage(`¡El Entrenador te desafía! Saca a su primer Pokémon: ${firstPoke.name.toUpperCase()} (Nvl. ${firstPoke.level})`);
                     setShowBallSelect(false);
                     setShowBagSelect(false);
                     setShowSwitchSelect(false);
 
-                    const stats = getPokemonStats(wildName, wildLvl);
                     setActiveWildBattle({
-                        name: wildName,
-                        level: wildLvl,
-                        hp: stats.maxHp,
-                        maxHp: stats.maxHp,
+                        name: firstPoke.name,
+                        level: firstPoke.level,
+                        hp: firstPoke.maxHp,
+                        maxHp: firstPoke.maxHp,
                         captureRate: 0.0 // Can't capture Trainer's Pokémon!
                     });
                 } else {
@@ -5790,21 +5886,23 @@ export default function GameCanvas({
                 await delay(1500);
 
                 if (newWildHp <= 0) {
-                    if (isGymBattle && gymLeaderTeamRef.current && gymLeaderCurrentPokeIndexRef.current < gymLeaderTeamRef.current.length - 1) {
+                    if ((isGymBattle || isTrainerBattle) && gymLeaderTeamRef.current && gymLeaderCurrentPokeIndexRef.current < gymLeaderTeamRef.current.length - 1) {
                         // --- MID-BATTLE XP PROCESS ---
                         let gymIsOverleveled = false;
-                        let gymIndex = 1;
-                        const returnMap = returnMapRef.current.toLowerCase();
-                        if (returnMap.includes('procedural://settlement_')) {
-                            const parts = returnMap.replace('procedural://settlement_', '').split('_');
-                            gymIndex = parseInt(parts[0] || '1', 10) + 1;
-                        } else if (returnMap.includes('city1')) {
-                            gymIndex = 2;
+                        if (isGymBattle) {
+                            let gymIndex = 1;
+                            const returnMap = returnMapRef.current.toLowerCase();
+                            if (returnMap.includes('procedural://settlement_')) {
+                                const parts = returnMap.replace('procedural://settlement_', '').split('_');
+                                gymIndex = parseInt(parts[0] || '1', 10) + 1;
+                            } else if (returnMap.includes('city1')) {
+                                gymIndex = 2;
+                            }
+                            const gymLevels = [12, 22, 32, 42, 52, 62, 72, 82];
+                            const leaderLevel = gymIndex <= 8 ? gymLevels[gymIndex - 1] : gymIndex * 10;
+                            const maxTeamLevel = Math.max(...team.map((p: any) => p.level), 1);
+                            gymIsOverleveled = (maxTeamLevel - leaderLevel) >= 5;
                         }
-                        const gymLevels = [12, 22, 32, 42, 52, 62, 72, 82];
-                        const leaderLevel = gymIndex <= 8 ? gymLevels[gymIndex - 1] : gymIndex * 10;
-                        const maxTeamLevel = Math.max(...team.map((p: any) => p.level), 1);
-                        gymIsOverleveled = (maxTeamLevel - leaderLevel) >= 5;
 
                         let baseXP = gymIsOverleveled ? 0 : Math.floor(activeWildBattle.level * 25 * (Math.random() * 0.2 + 0.9));
                         let xpGained = baseXP;
@@ -5899,7 +5997,8 @@ export default function GameCanvas({
                         const nextPoke = gymLeaderTeamRef.current[nextIndex];
                         
                         const setupNextGymOpponent = async () => {
-                            setBattleMessage(`¡Derrotaste al ${activeWildBattle.name.toUpperCase()} del Líder! ${msg}\nSaca a su siguiente Pokémon: ${nextPoke.name.toUpperCase()} (Nvl. ${nextPoke.level}).`);
+                            const opponentType = isGymBattle ? "del Líder" : "del Entrenador";
+                            setBattleMessage(`¡Derrotaste al ${activeWildBattle.name.toUpperCase()} ${opponentType}! ${msg}\nSaca a su siguiente Pokémon: ${nextPoke.name.toUpperCase()} (Nvl. ${nextPoke.level}).`);
                             
                             // Reset opponent stages (buffs/debuffs) when they switch to a new Pokemon
                             setOpponentAtkStage(0);
@@ -6091,9 +6190,10 @@ export default function GameCanvas({
                             setGymLeaderName(null);
                             setActiveWildBattle(null);
                             
-                            // Mark this trainer as defeated in the session
+                            // Mark this trainer as defeated in the session and persistent economy
                             if (activeTrainerIdRef.current) {
                                 defeatedTrainersRef.current.add(activeTrainerIdRef.current);
+                                economyRef.current.defeated_trainers[activeTrainerIdRef.current] = true;
                                 activeTrainerIdRef.current = null;
                             }
                             
@@ -6622,7 +6722,7 @@ export default function GameCanvas({
             // Equip item
             items[freeSlotIdx] = {
                 id: 'lucky_egg',
-                expires: Date.now() + 24 * 60 * 60 * 1000 // 24 hours
+                expires: Date.now() + 2 * 60 * 60 * 1000 // 2 hours
             };
             target.held_items = items;
 
@@ -6638,7 +6738,7 @@ export default function GameCanvas({
             
             showNotification(
                 "Objeto Equipado", 
-                `¡Has equipado ${itemInfo.name || 'Lucky Egg'} en el Slot ${freeSlotIdx + 1} de tu ${target.id.toUpperCase()}! Ahora ganará x2 XP en batalla durante las próximas 24 horas.`
+                `¡Has equipado ${itemInfo.name || 'Lucky Egg'} en el Slot ${freeSlotIdx + 1} de tu ${target.id.toUpperCase()}! Ahora ganará x2 XP en batalla durante las próximas 2 horas.`
             );
             return;
         }

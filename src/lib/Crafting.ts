@@ -292,7 +292,7 @@ export const CRAFTING_RECIPES: Record<string, CraftingRecipe> = {
             { "id": "golden_shard", "quantity": 2 },
             { "id": "magic_dust", "quantity": 10 }
         ],
-        "description": "x2 XP de Entrenador durante 1 hora."
+        "description": "x2 XP del Pokémon equipado durante 2 horas."
     },
     "shiny_charm": {
         "id": "shiny_charm",

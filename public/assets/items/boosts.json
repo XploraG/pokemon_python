@@ -13,8 +13,8 @@
         "price": 5000,
         "effect": "xp_multiplier",
         "multiplier": 2.0,
-        "duration_minutes": 60,
-        "description": "x2 XP por 1 hora",
+        "duration_minutes": 120,
+        "description": "x2 XP por 2 horas",
         "sprite": "src/assets/items/sprites/lucky_egg.png"
     },
     "evolution_stone": {

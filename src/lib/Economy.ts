@@ -45,6 +45,7 @@ export interface EconomySaveData {
     elixir_defense_expires?: number;
     elixir_hp_expires?: number;
     visited_settlements?: string[];
+    defeated_trainers?: Record<string, boolean>;
 }
 
 export interface CoinTransaction {
@@ -93,6 +94,7 @@ export class Economy {
     public elixir_defense_expires: number = 0;
     public elixir_hp_expires: number = 0;
     public visited_settlements: string[] = ['/assets/maps/tutorial/main.json'];
+    public defeated_trainers: Record<string, boolean> = {};
 
     constructor(saveData?: EconomySaveData) {
         if (saveData) {
@@ -138,6 +140,7 @@ export class Economy {
         this.elixir_defense_expires = 0;
         this.elixir_hp_expires = 0;
         this.visited_settlements = ['/assets/maps/tutorial/main.json'];
+        this.defeated_trainers = {};
     }
 
     private loadFromSave(data: EconomySaveData): void {
@@ -178,6 +181,7 @@ export class Economy {
         this.elixir_defense_expires = data.elixir_defense_expires ?? 0;
         this.elixir_hp_expires = data.elixir_hp_expires ?? 0;
         this.visited_settlements = data.visited_settlements || ['/assets/maps/tutorial/main.json'];
+        this.defeated_trainers = data.defeated_trainers ?? {};
         for (const medal of this.medals) {
             if (!this.medal_levels[medal]) {
                 this.medal_levels[medal] = 1;
@@ -223,7 +227,8 @@ export class Economy {
             elixir_attack_expires: this.elixir_attack_expires,
             elixir_defense_expires: this.elixir_defense_expires,
             elixir_hp_expires: this.elixir_hp_expires,
-            visited_settlements: this.visited_settlements
+            visited_settlements: this.visited_settlements,
+            defeated_trainers: this.defeated_trainers
         };
     }
 
