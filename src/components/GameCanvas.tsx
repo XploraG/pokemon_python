@@ -1866,7 +1866,7 @@ export default function GameCanvas({
         setIsTravelling(true);
         const adManager = AdManager.getInstance();
         const res = await adManager.showRewardedAd({
-            monetagZoneId: "34913",
+            monetagZoneId: "34912",
             adsterraUrl: process.env.NEXT_PUBLIC_ADSTERRA_DIRECT_LINK || "YOUR_ADSTERRA_DIRECT_LINK"
         });
         setIsTravelling(false);
@@ -7428,7 +7428,7 @@ export default function GameCanvas({
     const handleNurseHeal = async () => {
         let trueDate = null;
         try {
-            const res = await fetch('http://worldtimeapi.org/api/timezone/Etc/UTC');
+            const res = await fetch('https://worldtimeapi.org/api/timezone/Etc/UTC');
             const data = await res.json();
             trueDate = data.datetime.split('T')[0];
         } catch (e) {
