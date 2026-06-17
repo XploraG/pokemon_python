@@ -46,6 +46,19 @@ const STARTERS = [
     }
 ];
 
+const BASE_STAGE_POKEMON = new Set([
+    'bulbasaur', 'charmander', 'squirtle', 'caterpie', 'weedle', 'pidgey', 'rattata', 'spearow',
+    'ekans', 'pikachu', 'sandshrew', 'nidoran-f', 'nidoran-m', 'vulpix', 'jigglypuff', 'zubat',
+    'oddish', 'paras', 'venonat', 'diglett', 'meowth', 'psyduck', 'mankey', 'growlithe',
+    'poliwag', 'abra', 'machop', 'bellsprout', 'tentacool', 'geodude', 'ponyta', 'slowpoke',
+    'magnemite', 'doduo', 'seel', 'grimer', 'shellder', 'gastly', 'onix', 'drowzee',
+    'krabby', 'voltorb', 'exeggcute', 'cubone', 'hitmonlee', 'hitmonchan', 'lickitung', 'koffing',
+    'rhyhorn', 'chansey', 'tangela', 'kangaskhan', 'horsea', 'goldeen', 'staryu', 'mr-mime',
+    'scyther', 'jynx', 'electabuzz', 'magmar', 'pinsir', 'tauros', 'magikarp', 'lapras',
+    'ditto', 'eevee', 'porygon', 'omanyte', 'kabuto', 'aerodactyl', 'snorlax', 'articuno',
+    'zapdos', 'moltres', 'dratini', 'mewtwo', 'mew'
+]);
+
 export default function Home() {
     const [walletAddress, setWalletAddress] = useState<string | null>(null);
     const [activeSave, setActiveSave] = useState<SaveData | null>(null);
@@ -141,7 +154,7 @@ export default function Home() {
             id: speciesName,
             id_captura: m.id_captura,
             rarity: species ? species.rarity.toLowerCase() : 'common',
-            is_evolved: species ? (species as any).is_evolved || false : false,
+            is_evolved: !BASE_STAGE_POKEMON.has(speciesName),
             level: m.nivel,
             xp: m.xp,
             hp: m.hp_actual,
