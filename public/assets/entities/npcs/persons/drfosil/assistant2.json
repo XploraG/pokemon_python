@@ -1,0 +1,17 @@
+{
+    "name": "Asistente 2",
+    "img": "src/assets/entities/npcs/persons/buisnessman/sprites.png",
+    "scale": 2,
+    "type": "npc",
+    "color_to_be_erased": "#559262",
+    "dialog": "¡Hola! Para activar la simulación necesitas: 10,000 monedas de oro, 10 fósiles (pueden ser de cualquier tipo) y 10 Ámbar Viejo. ¡Solo hay un intento de combate!",
+    "valid_moves": ["down"],
+    "down": [
+        {
+            "y": 36,
+            "x": 71,
+            "w": 17,
+            "h": 27
+        }
+    ]
+}

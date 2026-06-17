@@ -960,14 +960,63 @@ const getMapDisplayName = (mapPath: string): string => {
         const parts = path.replace('procedural://', '').split('_');
         const type = parts[0];
         const index = parts[1] || '1';
+        const idx = parseInt(index, 10);
+
         if (type === 'route') {
-            return `Ruta de Exploración ${index}`;
+            const routeNames = [
+                "Ruta Esmeralda",
+                "Ruta del Lago",
+                "Ruta Tormenta",
+                "Ruta del Mar",
+                "Ruta Celestial",
+                "Ruta del Viento",
+                "Ruta Hondonada",
+                "Ruta del Alba",
+                "Ruta Crepúsculo",
+                "Ruta del Silencio"
+            ];
+            const name = routeNames[(idx - 1) % routeNames.length] || `Ruta ${index}`;
+            return `${name} (R-${index})`;
         }
         if (type === 'settlement') {
-            return `Pueblo Semilla ${index}`;
+            const cityNames = [
+                "Ciudad Aurora",
+                "Ciudad Bruma",
+                "Ciudad Coral",
+                "Ciudad Volcán",
+                "Ciudad Pétalo",
+                "Ciudad Glaciar",
+                "Ciudad Prisma",
+                "Ciudad Cumbre",
+                "Pueblo Nébula",
+                "Pueblo Ópalo",
+                "Ciudad Meteoro",
+                "Ciudad Zafiro",
+                "Pueblo Amatista",
+                "Pueblo Esmeralda",
+                "Ciudad Cuarzo",
+                "Santuario Articulado",
+                "Santuario Eléctrico",
+                "Santuario Fuego",
+                "Santuario Psíquico",
+                "Santuario Divino"
+            ];
+            const name = cityNames[(idx - 1) % cityNames.length] || `Ciudad ${index}`;
+            return name;
         }
         if (type === 'cave') {
-            return `Cueva Misteriosa ${index}`;
+            const caveNames = [
+                "Cueva Sombría",
+                "Cueva Cristal",
+                "Cueva Infinita",
+                "Cueva Ancestral",
+                "Túnel de Lava",
+                "Gruta Helada",
+                "Mina de Carbón",
+                "Cueva del Eco"
+            ];
+            const name = caveNames[(idx - 1) % caveNames.length] || `Cueva ${index}`;
+            return `${name} (C-${index})`;
         }
     }
     return 'Zona Desconocida';
@@ -1239,6 +1288,67 @@ const EvolutionScreen = ({
         </div>
     );
 };
+const getItemIconUrl = (itemId: string): string => {
+    const apiBase = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/";
+    const mapping: Record<string, string> = {
+        // Pokeballs
+        tamer_ball: "poke-ball.png",
+        super_ball: "great-ball.png",
+        ultra_ball: "ultra-ball.png",
+        master_ball: "master-ball.png",
+        heavy_ball: "heavy-ball.png",
+        lure_ball: "lure-ball.png",
+
+        // Potions / Healing
+        potion: "potion.png",
+        super_potion: "super-potion.png",
+        hyper_potion: "hyper-potion.png",
+        revive: "revive.png",
+        max_revive: "max-revive.png",
+        full_heal: "full-heal.png",
+
+        // Boosts / Stones / Repels
+        lucky_egg: "lucky-egg.png",
+        repel: "repel.png",
+        evolution_stone: "oval-stone.png",
+        water_stone: "water-stone.png",
+        thunder_stone: "thunder-stone.png",
+        fire_stone: "fire-stone.png",
+        leaf_stone: "leaf-stone.png",
+        moon_stone: "moon-stone.png",
+
+        // Materials
+        stardust: "stardust.png",
+        fossil_helix: "helix-fossil.png",
+        fossil_dome: "dome-fossil.png",
+        ancient_amber: "old-amber.png",
+        apricorn_red: "red-apricorn.png",
+        apricorn_blue: "blue-apricorn.png",
+        apricorn_black: "black-apricorn.png",
+
+        // Custom items mapped to official sprites
+        gold_incense: "luck-incense.png",
+        magic_dust: "bright-powder.png",
+        iron_ore: "hard-stone.png",
+        tamer_seal: "secret-key.png",
+        golden_shard: "yellow-shard.png",
+        apricorn_paste: "honey.png",
+        fossil_dna: "dna-splicers.png",
+        stardust_potion: "max-potion.png",
+        gold_ticket: "pass.png",
+        fire_essence: "flame-orb.png",
+        water_essence: "wave-incense.png",
+        thunder_essence: "magnet.png",
+        leaf_essence: "miracle-seed.png",
+        moon_essence: "lunar-wing.png",
+        elixir_attack: "x-attack.png",
+        elixir_defense: "x-defense.png",
+        elixir_hp: "hp-up.png",
+        random_material_pack: "mystery-gift.png"
+    };
+
+    return mapping[itemId] ? `${apiBase}${mapping[itemId]}` : `${apiBase}poke-ball.png`;
+};
 
 export default function GameCanvas({
     saveName,
@@ -1399,8 +1509,26 @@ export default function GameCanvas({
     const [showInventoryModal, setShowInventoryModal] = useState(false);
     const [showMenuModal, setShowMenuModal] = useState(false);
     const [showPcModal, setShowPcModal] = useState(false);
+    const [showPokedexModal, setShowPokedexModal] = useState(false);
+    const [pokedexFilter, setPokedexFilter] = useState<'all' | 'captured' | 'seen' | 'missing'>('all');
+    const [pokedexSearch, setPokedexSearch] = useState('');
+    const [selectedPokedexSpecies, setSelectedPokedexSpecies] = useState<any | null>(null);
+    const [seenPokemon, setSeenPokemon] = useState<string[]>(() => {
+        try {
+            const saved = localStorage.getItem(`pixel_tamer_seen_pokemon_${saveName}`);
+            return saved ? JSON.parse(saved) : [];
+        } catch (e) {
+            return [];
+        }
+    });
     const [isBicycleActive, setIsBicycleActive] = useState(false);
     const [showNurseJoyModal, setShowNurseJoyModal] = useState(false);
+    const [showDrFosilModal, setShowDrFosilModal] = useState(false);
+    const [drFosilAttempts, setDrFosilAttempts] = useState(3);
+    const [drFosilPokemon, setDrFosilPokemon] = useState<any | null>(null);
+    const [drFosilStatus, setDrFosilStatus] = useState<'idle' | 'scanning' | 'ready' | 'caught' | 'failed' | 'throwing'>('idle');
+    const [drFosilBallEffect, setDrFosilBallEffect] = useState<string | null>(null);
+    const [drFosilMessage, setDrFosilMessage] = useState<string>('');
     const [isHudMinimized, setIsHudMinimized] = useState(false);
     const [cloudSaveStatus, setCloudSaveStatus] = useState<'synced' | 'saving' | 'error'>('synced');
     const [playerMoveCooldowns, setPlayerMoveCooldowns] = useState<Record<string, number>>({});
@@ -1758,6 +1886,48 @@ export default function GameCanvas({
     useEffect(() => { inventoryRef.current = inventory; }, [inventory]);
     useEffect(() => { teamRef.current = team; }, [team]);
     useEffect(() => { pcPokemonRef.current = pcPokemon; }, [pcPokemon]);
+
+    // Sync captured Pokémon into seen list automatically
+    useEffect(() => {
+        const initialSeen = new Set<string>(seenPokemon);
+        let changed = false;
+        team.forEach(p => {
+            if (p && p.id) {
+                const lowerId = p.id.toLowerCase();
+                if (!initialSeen.has(lowerId)) {
+                    initialSeen.add(lowerId);
+                    changed = true;
+                }
+            }
+        });
+        pcPokemon.forEach(p => {
+            if (p && p.id) {
+                const lowerId = p.id.toLowerCase();
+                if (!initialSeen.has(lowerId)) {
+                    initialSeen.add(lowerId);
+                    changed = true;
+                }
+            }
+        });
+        if (changed) {
+            const updated = Array.from(initialSeen);
+            setSeenPokemon(updated);
+            localStorage.setItem(`pixel_tamer_seen_pokemon_${saveName}`, JSON.stringify(updated));
+        }
+    }, [team, pcPokemon, saveName]);
+
+    // Record seen Pokémon from any battles
+    useEffect(() => {
+        if (activeWildBattle && activeWildBattle.name) {
+            const lowerName = activeWildBattle.name.toLowerCase();
+            setSeenPokemon(prev => {
+                if (prev.includes(lowerName)) return prev;
+                const updated = [...prev, lowerName];
+                localStorage.setItem(`pixel_tamer_seen_pokemon_${saveName}`, JSON.stringify(updated));
+                return updated;
+            });
+        }
+    }, [activeWildBattle, saveName]);
 
     // Track previous value of isBattleAnimating to detect transition from true -> false
     const prevIsAnimatingRef = useRef(isBattleAnimating);
@@ -2573,11 +2743,32 @@ export default function GameCanvas({
                 });
 
                 // Load player config, player sprites, and map JSON in parallel
-                const [playerConfig, _, mapJson] = await Promise.all([
+                const [playerConfig, _, rawMapJson] = await Promise.all([
                     cachedFetchJson('/assets/entities/player/main.json'),
                     playerImgPromise,
                     cachedFetchJson(currentMapPath)
                 ]);
+
+                const mapJson = JSON.parse(JSON.stringify(rawMapJson));
+                if (currentMapPath.includes('pokecenter')) {
+                    if (returnMapRef.current.includes('settlement_5')) {
+                        mapJson.entities = [
+                            ...(mapJson.entities || []),
+                            {
+                                "location": "src/assets/entities/npcs/persons/drfosil/main.json",
+                                "coordinates": { "x": 192, "y": 160 }
+                            },
+                            {
+                                "location": "src/assets/entities/npcs/persons/drfosil/assistant1.json",
+                                "coordinates": { "x": 192, "y": 128 }
+                            },
+                            {
+                                "location": "src/assets/entities/npcs/persons/drfosil/assistant2.json",
+                                "coordinates": { "x": 224, "y": 160 }
+                            }
+                        ];
+                    }
+                }
 
                 const playerColorKey = playerConfig.color_to_be_erased ?? '#C8BFE7';
                 playerSpriteRef.current = makeColorTransparent(playerImg, playerColorKey);
@@ -3373,6 +3564,7 @@ export default function GameCanvas({
             if (
                 showMenuModal || 
                 showNurseJoyModal || 
+                showDrFosilModal || 
                 showShop || 
                 showDaily || 
                 showMissions || 
@@ -3625,12 +3817,42 @@ export default function GameCanvas({
             speed: Math.floor(Math.random() * 32)
         };
 
+        // Calculate wild level based on location and team average
+        let wildLvl = 1;
+        const lowerPath = mapPath.toLowerCase();
+        let isEarlyArea = false;
+        if (lowerPath.includes('tutorial')) {
+            isEarlyArea = true;
+        } else if (lowerPath.includes('procedural://')) {
+            const cleanPath = lowerPath.replace('procedural://', '');
+            const parts = cleanPath.split('_');
+            const type = parts[0];
+            const idx = parseInt(parts[1] || '1', 10);
+            if ((type === 'route' || type === 'settlement') && idx <= 2) {
+                isEarlyArea = true;
+            }
+        } else {
+            if (lowerPath.includes('route1') || lowerPath.includes('route2') || lowerPath.includes('route_1') || lowerPath.includes('route_2') ||
+                lowerPath.includes('city1') || lowerPath.includes('city2') || lowerPath.includes('settlement_1') || lowerPath.includes('settlement_2')) {
+                isEarlyArea = true;
+            }
+        }
+
+        if (isEarlyArea) {
+            wildLvl = Math.floor(Math.random() * 8) + 1; // 1 to 8
+        } else {
+            const teamCount = teamRef.current.length;
+            const avgLvl = teamCount > 0 
+                ? Math.floor(teamRef.current.reduce((sum: number, p: any) => sum + p.level, 0) / teamCount) 
+                : 1;
+            wildLvl = Math.max(1, avgLvl + 5);
+        }
+
         // Water Pokémon pool for lake encounters
         if (isWater) {
             const waterPool = ['poliwag', 'psyduck', 'slowpoke', 'magikarp', 'tentacool', 'shellder', 'horsea'];
             const waterName = waterPool[Math.floor(Math.random() * waterPool.length)];
             const waterSpecies = pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === waterName) || { name: waterName, hp: 30, types: ['water'] };
-            const wildLvl = Math.max(1, playerLevel * 2 + Math.floor(Math.random() * 3) - 1);
 
             // Calculate stats using generated IVs
             const stats = getPokemonStats(waterSpecies.name, wildLvl, ivs);
@@ -3648,18 +3870,41 @@ export default function GameCanvas({
                 ivs: ivs
             };
         }
+
         let pool = ['rattata', 'pidgey', 'caterpie', 'weedle', 'pikachu']; // default route1 pool
 
         if (path.includes('cave')) {
-            pool = ['zubat', 'geodude', 'onix', 'gastly', 'sandshrew', 'diglett', 'machop'];
-        } else if (path.includes('route2')) {
-            pool = ['spearow', 'ekans', 'sandshrew', 'jigglypuff', 'rattata', 'spearow'];
-        } else if (path.includes('route3')) {
-            pool = ['mankey', 'growlithe', 'abra', 'machop', 'bellsprout', 'oddish'];
-        } else if (path.includes('route4')) {
-            pool = ['meowth', 'psyduck', 'poliwag', 'slowpoke', 'doduo', 'rattata'];
-        } else if (path.includes('procedural')) {
-            pool = ['caterpie', 'weedle', 'pidgey', 'rattata', 'zubat', 'geodude', 'pikachu', 'oddish', 'bellsprout', 'mankey', 'meowth', 'psyduck'];
+            const caveMatch = path.match(/cave_(\d+)/);
+            const caveIndex = caveMatch ? parseInt(caveMatch[1], 10) : 1;
+            if (caveIndex === 1) {
+                pool = ['zubat', 'geodude', 'onix', 'gastly', 'sandshrew', 'diglett', 'machop'];
+            } else if (caveIndex === 2) {
+                pool = ['zubat', 'geodude', 'onix', 'gastly', 'sandshrew', 'diglett', 'machop', 'paras', 'venonat', 'drowzee', 'cubone'];
+            } else {
+                pool = ['zubat', 'geodude', 'onix', 'gastly', 'sandshrew', 'diglett', 'machop', 'paras', 'venonat', 'drowzee', 'cubone', 'koffing', 'rhyhorn'];
+            }
+        } else {
+            // It's a route
+            const routeMatch = path.match(/route_(\d+)/);
+            const routeIndex = routeMatch ? parseInt(routeMatch[1], 10) : 1;
+            
+            if (routeIndex === 1) {
+                pool = ['rattata', 'pidgey', 'caterpie', 'weedle', 'pikachu'];
+            } else if (routeIndex === 2) {
+                pool = ['spearow', 'ekans', 'sandshrew', 'jigglypuff', 'rattata', 'clefairy', 'vulpix', 'paras', 'venonat'];
+            } else if (routeIndex === 3) {
+                pool = ['mankey', 'growlithe', 'abra', 'machop', 'bellsprout', 'oddish', 'drowzee', 'krabby', 'voltorb', 'cubone'];
+            } else if (routeIndex === 4) {
+                pool = ['meowth', 'psyduck', 'poliwag', 'slowpoke', 'doduo', 'rattata', 'seel', 'grimer', 'koffing', 'staryu', 'farfetchd', 'lickitung', 'mr-mime', 'tangela'];
+            } else if (routeIndex === 5) {
+                pool = ['magnemite', 'exeggcute', 'rhyhorn', 'goldeen', 'gastly', 'geodude', 'hitmonlee', 'hitmonchan', 'electabuzz', 'magmar', 'scyther', 'pinsir', 'kangaskhan', 'tauros'];
+            } else {
+                // Route 6 and above: general pool + end-game rares (Snorlax, Lapras, Ditto, Jynx, plus rare starters)
+                pool = [
+                    'caterpie', 'weedle', 'pidgey', 'rattata', 'zubat', 'geodude', 'pikachu', 'oddish', 'bellsprout', 'mankey', 'meowth', 'psyduck',
+                    'snorlax', 'lapras', 'ditto', 'jynx', 'bulbasaur', 'charmander', 'squirtle'
+                ];
+            }
         }
 
         const randomName = pool[Math.floor(Math.random() * pool.length)];
@@ -3668,8 +3913,6 @@ export default function GameCanvas({
             hp: 35,
             types: ["electric"]
         };
-
-        const wildLvl = Math.max(1, playerLevel * 2 + Math.floor(Math.random() * 3) - 1);
 
         // Calculate stats using generated IVs
         const stats = getPokemonStats(species.name, wildLvl, ivs);
@@ -4656,6 +4899,7 @@ export default function GameCanvas({
             activeWildBattleRef.current !== null ||
             showMenuModal ||
             showNurseJoyModal ||
+            showDrFosilModal ||
             showShop ||
             showDaily ||
             showMissions ||
@@ -4755,8 +4999,8 @@ export default function GameCanvas({
     // Interaction checks (facing building door or characters)
     const handleInteraction = () => {
         if (activeDialogRef.current !== null) {
-            if (showNurseJoyModal) {
-                return; // Don't close text bubble with Space while Joy's menu is open
+            if (showNurseJoyModal || showDrFosilModal) {
+                return; // Don't close text bubble with Space while Joy's or Fosil's menu is open
             }
             
             const dialogList = currentDialogListRef.current;
@@ -4874,6 +5118,16 @@ export default function GameCanvas({
                     setActiveDialog("¡Hola! ¿Qué te gustaría hacer hoy?");
                     setShowNurseJoyModal(true);
                     economyRef.current.updateMissionProgress('visit');
+                }
+                else if (entity.name === "Dr. Fosil") {
+                    setDialogName(entity.name);
+                    setActiveDialog("¡Saludos! ¿Listo para iniciar una simulación prehistórica?");
+                    setShowDrFosilModal(true);
+                    setDrFosilAttempts(3);
+                    setDrFosilPokemon(null);
+                    setDrFosilStatus('idle');
+                    setDrFosilMessage('');
+                    setDrFosilBallEffect(null);
                 }
                 else if (entity.name === "Clerk") {
                     setDialogName(entity.name);
@@ -5496,23 +5750,39 @@ export default function GameCanvas({
                 if (newWildHp <= 0) {
                     if (isGymBattle && gymLeaderTeamRef.current && gymLeaderCurrentPokeIndexRef.current < gymLeaderTeamRef.current.length - 1) {
                         // --- MID-BATTLE XP PROCESS ---
-                        let baseXP = Math.floor(activeWildBattle.level * 25 * (Math.random() * 0.2 + 0.9));
+                        let gymIsOverleveled = false;
+                        let gymIndex = 1;
+                        const returnMap = returnMapRef.current.toLowerCase();
+                        if (returnMap.includes('procedural://settlement_')) {
+                            const parts = returnMap.replace('procedural://settlement_', '').split('_');
+                            gymIndex = parseInt(parts[0] || '1', 10) + 1;
+                        } else if (returnMap.includes('city1')) {
+                            gymIndex = 2;
+                        }
+                        const gymLevels = [12, 22, 32, 42, 52, 62, 72, 82];
+                        const leaderLevel = gymIndex <= 8 ? gymLevels[gymIndex - 1] : gymIndex * 10;
+                        const maxTeamLevel = Math.max(...team.map((p: any) => p.level), 1);
+                        gymIsOverleveled = (maxTeamLevel - leaderLevel) >= 5;
+
+                        let baseXP = gymIsOverleveled ? 0 : Math.floor(activeWildBattle.level * 25 * (Math.random() * 0.2 + 0.9));
                         let xpGained = baseXP;
                         const activeLuckyEggsCount = (
                             (activePoke.held_item === 'lucky_egg' && (!activePoke.held_item_expires || Date.now() < activePoke.held_item_expires)) ? 1 : 0
                         ) + (
                             (activePoke.held_items || []).filter((item: any) => item && item.id === 'lucky_egg' && (!item.expires || Date.now() < item.expires)).length
                         );
-                        if (activeLuckyEggsCount > 0) {
+                        if (activeLuckyEggsCount > 0 && !gymIsOverleveled) {
                             xpGained = xpGained * 2;
                         }
                         let currentLvl = activePoke.level ?? 1;
                         let currentXp = (activePoke.xp ?? 0) + xpGained;
                         let nextLvlXp = currentLvl * 100;
                         let leveledUp = false;
-                        let msg = activeLuckyEggsCount > 0
-                            ? `¡Tu ${activePoke.id} ganó ${xpGained} XP! (${baseXP} base + ${xpGained - baseXP} Huevo Suerte 🥚)`
-                            : `¡Tu ${activePoke.id} ganó ${xpGained} XP!`;
+                        let msg = gymIsOverleveled
+                            ? `¡Tu ${activePoke.id} no ganó XP por diferencia de niveles!`
+                            : (activeLuckyEggsCount > 0
+                                ? `¡Tu ${activePoke.id} ganó ${xpGained} XP! (${baseXP} base + ${xpGained - baseXP} Huevo Suerte 🥚)`
+                                : `¡Tu ${activePoke.id} ganó ${xpGained} XP!`);
 
                         while (currentXp >= nextLvlXp) {
                             currentXp -= nextLvlXp;
@@ -5625,14 +5895,30 @@ export default function GameCanvas({
 
                     // --- VICTORY PROCESS ---
                     // Compute XP earned
-                    let baseXP = Math.floor(activeWildBattle.level * 25 * (Math.random() * 0.2 + 0.9));
+                    let gymIsOverleveled = false;
+                    if (isGymBattle) {
+                        let gymIndex = 1;
+                        const returnMap = returnMapRef.current.toLowerCase();
+                        if (returnMap.includes('procedural://settlement_')) {
+                            const parts = returnMap.replace('procedural://settlement_', '').split('_');
+                            gymIndex = parseInt(parts[0] || '1', 10) + 1;
+                        } else if (returnMap.includes('city1')) {
+                            gymIndex = 2;
+                        }
+                        const gymLevels = [12, 22, 32, 42, 52, 62, 72, 82];
+                        const leaderLevel = gymIndex <= 8 ? gymLevels[gymIndex - 1] : gymIndex * 10;
+                        const maxTeamLevel = Math.max(...team.map((p: any) => p.level), 1);
+                        gymIsOverleveled = (maxTeamLevel - leaderLevel) >= 5;
+                    }
+
+                    let baseXP = gymIsOverleveled ? 0 : Math.floor(activeWildBattle.level * 25 * (Math.random() * 0.2 + 0.9));
                     let xpGained = baseXP;
                     const activeLuckyEggsCount = (
                         (activePoke.held_item === 'lucky_egg' && (!activePoke.held_item_expires || Date.now() < activePoke.held_item_expires)) ? 1 : 0
                     ) + (
                         (activePoke.held_items || []).filter((item: any) => item && item.id === 'lucky_egg' && (!item.expires || Date.now() < item.expires)).length
                     );
-                    if (activeLuckyEggsCount > 0) {
+                    if (activeLuckyEggsCount > 0 && !gymIsOverleveled) {
                         xpGained = xpGained * 2;
                     }
                     
@@ -5640,9 +5926,11 @@ export default function GameCanvas({
                     let currentXp = (activePoke.xp ?? 0) + xpGained;
                     let nextLvlXp = currentLvl * 100;
                     let leveledUp = false;
-                    let msg = activeLuckyEggsCount > 0
-                        ? `¡Tu ${activePoke.id} ganó ${xpGained} XP! (${baseXP} base + ${xpGained - baseXP} Huevo Suerte 🥚)`
-                        : `¡Tu ${activePoke.id} ganó ${xpGained} XP!`;
+                    let msg = gymIsOverleveled
+                        ? `¡Tu ${activePoke.id} no ganó XP por diferencia de niveles!`
+                        : (activeLuckyEggsCount > 0
+                            ? `¡Tu ${activePoke.id} ganó ${xpGained} XP! (${baseXP} base + ${xpGained - baseXP} Huevo Suerte 🥚)`
+                            : `¡Tu ${activePoke.id} ganó ${xpGained} XP!`);
                     
                     while (currentXp >= nextLvlXp) {
                         currentXp -= nextLvlXp;
@@ -5826,7 +6114,7 @@ export default function GameCanvas({
                         const result = economyRef.current.getGymReward(gymIndex, maxTeamLevel);
 
                         // Roll gym battle drops
-                        const rolledDrops = CraftingManager.rollBattleDrops(
+                        const rolledDrops = result.isOverleveled ? [] : CraftingManager.rollBattleDrops(
                             'gym',
                             boss.name,
                             boss.level,
@@ -6635,15 +6923,24 @@ export default function GameCanvas({
         setBattleMessage(`¡Lanzaste una ${info.name || ballId}!`);
         setCatchBallState('throw');
 
+        const nameLower = activeWildBattle.name.toLowerCase();
+        const species = pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === nameLower);
+        const rarity = species ? species.rarity.toUpperCase() : "COMMON";
+
+        let rarityFactor = 1.0;
+        if (rarity === 'RARE') rarityFactor = 0.7;
+        else if (rarity === 'EPIC' || rarity === 'ULTRA_RARE') rarityFactor = 0.4;
+        else if (rarity === 'LEGENDARY') rarityFactor = 0.15;
+
         let ballRate = 0.3;
         if (ballId === 'super_ball') ballRate = 0.5;
         else if (ballId === 'ultra_ball') ballRate = 0.75;
         else if (ballId === 'master_ball') ballRate = 1.0;
 
         const hpFactor = activeWildBattle.hp <= activeWildBattle.maxHp * 0.3 ? 1.5 : 1.0;
-        const finalChance = ballRate * hpFactor;
+        const finalChance = ballRate * hpFactor * rarityFactor;
 
-        const success = Math.random() < finalChance;
+        const success = ballId === 'master_ball' || Math.random() < finalChance;
 
         setTimeout(() => {
             setCatchBallState('shake');
@@ -6655,26 +6952,22 @@ export default function GameCanvas({
                     setOpponentSpriteEffect('catch-success' as any);
                     setBattleMessage(`1, 2, 3... ¡Atrapado!`);
                     setTimeout(() => {
-                        const nameLower = activeWildBattle.name.toLowerCase();
-                        const species = pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === nameLower);
-                        const rarity = species ? species.rarity.toLowerCase() : "uncommon";
-
-                        const wildLvl = activeWildBattle.level ?? 5;
                         const caughtIvs = activeWildBattle.ivs || {
                             hp: Math.floor(Math.random() * 32),
                             attack: Math.floor(Math.random() * 32),
                             defense: Math.floor(Math.random() * 32),
                             speed: Math.floor(Math.random() * 32)
                         };
-                        const stats = getPokemonStats(activeWildBattle.name.toLowerCase(), wildLvl, caughtIvs);
-                        const caughtMoves = getPokemonMoves(activeWildBattle.name.toLowerCase(), wildLvl).slice(0, 4);
+                        const caughtLevel = 1;
+                        const stats = getPokemonStats(activeWildBattle.name.toLowerCase(), caughtLevel, caughtIvs);
+                        const caughtMoves = getPokemonMoves(activeWildBattle.name.toLowerCase(), caughtLevel).slice(0, 4);
 
                         const newPoke = {
                             id: activeWildBattle.name.toLowerCase(),
                             id_captura: generateUUID(),
-                            rarity: rarity,
+                            rarity: rarity.toLowerCase(),
                             is_evolved: false,
-                            level: wildLvl,
+                            level: caughtLevel,
                             xp: 0,
                             hp: stats.maxHp,
                             maxHp: stats.maxHp,
@@ -7134,6 +7427,118 @@ export default function GameCanvas({
             setShowNurseJoyModal(false);
             setActiveDialog(null);
         }
+    };
+
+    const handleStartSimulation = () => {
+        const activePokes = teamRef.current.filter((p: any) => p.hp > 0);
+        if (activePokes.length === 0) {
+            setDrFosilMessage("❌ ¡Tus Pokémon están debilitados! Cura a tu equipo primero.");
+            return;
+        }
+
+        if (economy.coins < 10000) {
+            setDrFosilMessage("❌ Coins insuficientes. Requiere 10,000 Coins.");
+            return;
+        }
+
+        const ownedHelix = inventoryRef.current.getQuantity('fossil_helix');
+        const ownedDome = inventoryRef.current.getQuantity('fossil_dome');
+        const totalFossils = ownedHelix + ownedDome;
+        const ownedAmber = inventoryRef.current.getQuantity('ancient_amber');
+
+        if (totalFossils < 10) {
+            setDrFosilMessage("❌ Fósiles insuficientes. Necesitas al menos 10 fósiles en total.");
+            return;
+        }
+
+        if (ownedAmber < 10) {
+            setDrFosilMessage("❌ Ámbar Viejo insuficiente. Necesitas al menos 10 Ámbar Viejo.");
+            return;
+        }
+
+        // Deduct Coins
+        economyRef.current.spendCoins(10000, 'fossil_simulation', 'Dr. Fosil Prehistoric Simulator');
+
+        // Deduct Items
+        const newInv = new Inventory(inventoryRef.current.toSaveData());
+        
+        // Deduct 10 fossils
+        let fossilsNeeded = 10;
+        const helixToDeduct = Math.min(fossilsNeeded, ownedHelix);
+        if (helixToDeduct > 0) {
+            newInv.removeItem('fossil_helix', helixToDeduct);
+            fossilsNeeded -= helixToDeduct;
+        }
+        if (fossilsNeeded > 0) {
+            newInv.removeItem('fossil_dome', fossilsNeeded);
+        }
+
+        // Deduct 10 ancient ambers
+        newInv.removeItem('ancient_amber', 10);
+
+        inventoryRef.current = newInv;
+        setInventory(newInv);
+        saveLocalEconomy(undefined, undefined, undefined, true, newInv);
+        setEconomy(new Economy(economyRef.current.toSaveData()));
+
+        // Generate Prehistoric Pokemon
+        const r = Math.random();
+        let pokeId = 'dratini';
+        if (r < 0.30) pokeId = 'dratini';
+        else if (r < 0.60) pokeId = 'omanyte';
+        else if (r < 0.90) pokeId = 'kabuto';
+        else pokeId = 'aerodactyl';
+
+        const hasShinyCharm = inventoryRef.current.hasItem('shiny_charm');
+        const isShiny = Math.random() < (hasShinyCharm ? SHINY_CHANCE * 3 : SHINY_CHANCE);
+
+        const species = pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === pokeId);
+        
+        // Level calculation: average level of player's team + 5
+        const teamCount = teamRef.current.length;
+        const avgLvl = teamCount > 0 
+            ? Math.floor(teamRef.current.reduce((sum: number, p: any) => sum + p.level, 0) / teamCount) 
+            : 1;
+        const simLevel = Math.max(1, avgLvl + 5);
+
+        const ivs = {
+            hp: Math.floor(Math.random() * 32),
+            attack: Math.floor(Math.random() * 32),
+            defense: Math.floor(Math.random() * 32),
+            speed: Math.floor(Math.random() * 32)
+        };
+        const stats = getPokemonStats(pokeId, simLevel, ivs);
+        const wildHp = stats.maxHp;
+        const displayName = species ? (species.name.charAt(0).toUpperCase() + species.name.slice(1)) : pokeId;
+
+        // Reset battle variables
+        setPlayerAtkStage(0);
+        setPlayerDefStage(0);
+        setOpponentAtkStage(0);
+        setOpponentDefStage(0);
+        setIsBattleAnimating(false);
+        setPlayerSpriteEffect('none' as any);
+        setOpponentSpriteEffect('none' as any);
+        setFloatingDamage(null);
+        
+        setShowBallSelect(false);
+        setShowBagSelect(false);
+        setShowSwitchSelect(false);
+
+        // Start wild battle
+        setActiveWildBattle({
+            name: displayName,
+            level: simLevel,
+            hp: wildHp,
+            maxHp: wildHp,
+            captureRate: 0.35,
+            isShiny: isShiny,
+            ivs: ivs
+        });
+
+        setShowDrFosilModal(false);
+        setDialogName("Dr. Fósil");
+        setActiveDialog(`¡La simulación ha comenzado! Un ${isShiny ? '✨ ' : ''}${displayName} de Nvl. ${simLevel} apareció.`);
     };
 
     const handleClaimMission = (missionId: string, isWeekly: boolean = false) => {
@@ -7670,6 +8075,27 @@ export default function GameCanvas({
                                 </button>
                             </div>
 
+                            {/* Pokédex full-width card */}
+                            <button
+                                onClick={() => { setShowPokedexModal(true); setShowMenuModal(false); }}
+                                style={{
+                                    width: '100%',
+                                    background: 'linear-gradient(135deg, rgba(236,72,153,0.15) 0%, rgba(219,39,119,0.2) 100%)',
+                                    border: '1px solid rgba(236,72,153,0.35)',
+                                    borderRadius: '12px', padding: '12px 10px', cursor: 'pointer',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px',
+                                    textAlign: 'center', transition: 'all 0.2s', marginBottom: '16px', margin: '0 0 16px 0'
+                                }}
+                                onMouseEnter={e => (e.currentTarget.style.background = 'linear-gradient(135deg, rgba(236,72,153,0.25) 0%, rgba(219,39,119,0.3) 100%)')}
+                                onMouseLeave={e => (e.currentTarget.style.background = 'linear-gradient(135deg, rgba(236,72,153,0.15) 0%, rgba(219,39,119,0.2) 100%)')}
+                            >
+                                <div style={{ fontSize: '24px', lineHeight: 1 }}>📖</div>
+                                <div style={{ textAlign: 'left' }}>
+                                    <div style={{ color: '#f472b6', fontWeight: 'bold', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Pokédex Kanto</div>
+                                    <div style={{ color: '#cbd5e1', fontSize: '9px' }}>Ver Pokémon registrados, avistados y capturados</div>
+                                </div>
+                            </button>
+
                             {/* SEPARATOR label */}
                             <div style={{ fontSize: '9px', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                 <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.07)' }} />
@@ -8092,7 +8518,7 @@ export default function GameCanvas({
                                             return (
                                                 <div key={item.id} className={`shop-card-premium dark-shop-card ${rarityClass}`}>
                                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                                                        <span style={{ fontSize: '24px' }}>{item.icon}</span>
+                                                        <img src={getItemIconUrl(item.id)} alt={item.name} style={{ width: '28px', height: '28px', objectFit: 'contain', imageRendering: 'pixelated' }} />
                                                         <span className={`shop-card-badge ${badgeClass}`}>{badgeText}</span>
                                                     </div>
                                                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', textAlign: 'left', marginBottom: '8px' }}>
@@ -8173,7 +8599,7 @@ export default function GameCanvas({
                                             return (
                                                 <div key={item.id} className={`shop-card-premium dark-shop-card ${rarityClass}`}>
                                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                                                        <span style={{ fontSize: '24px' }}>{item.icon}</span>
+                                                        <img src={getItemIconUrl(item.id)} alt={item.name} style={{ width: '28px', height: '28px', objectFit: 'contain', imageRendering: 'pixelated' }} />
                                                         <span className={`shop-card-badge ${badgeClass}`}>{badgeText}</span>
                                                     </div>
                                                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', textAlign: 'left', marginBottom: '8px' }}>
@@ -9336,14 +9762,18 @@ export default function GameCanvas({
                                     return filteredItems.map((item: any) => {
                                         const isBooster = ['gold_incense', 'repel', 'elixir_attack', 'elixir_defense', 'elixir_hp'].includes(item.id);
                                         const isUsable = item.id.includes('potion') || item.id.includes('revive') || item.id.includes('stone') || item.id === 'lucky_egg' || isBooster;
+                                        const iconUrl = getItemIconUrl(item.id);
                                         return (
-                                            <div key={item.id} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '10px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                <div style={{ flex: 1 }}>
-                                                    <div style={{ fontWeight: 'bold', fontSize: '12px', color: '#e2e8f0', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                        {item.name || item.id}
-                                                        <span style={{ fontSize: '10px', color: '#fbbf24', background: 'rgba(251,191,36,0.15)', border: '1px solid rgba(251,191,36,0.3)', borderRadius: '4px', padding: '1px 5px' }}>x{item.quantity}</span>
+                                            <div key={item.id} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '10px 12px', display: 'flex', gap: '12px', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1 }}>
+                                                    <img src={iconUrl} alt={item.name} style={{ width: '30px', height: '30px', objectFit: 'contain', imageRendering: 'pixelated' }} />
+                                                    <div style={{ flex: 1 }}>
+                                                        <div style={{ fontWeight: 'bold', fontSize: '12px', color: '#e2e8f0', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                            {item.name || item.id}
+                                                            <span style={{ fontSize: '10px', color: '#fbbf24', background: 'rgba(251,191,36,0.15)', border: '1px solid rgba(251,191,36,0.3)', borderRadius: '4px', padding: '1px 5px' }}>x{item.quantity}</span>
+                                                        </div>
+                                                        <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '2px' }}>{item.description}</div>
                                                     </div>
-                                                    <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '2px' }}>{item.description}</div>
                                                 </div>
                                                 {isUsable && (
                                                     <button
@@ -9403,7 +9833,7 @@ export default function GameCanvas({
                                 const info = inventory.getItemInfo(mat.id);
                                 return (
                                     <div key={mat.id} title={info.name || mat.id} style={{ fontSize: '10px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '6px', padding: '3px 8px', display: 'flex', alignItems: 'center', gap: '4px', color: qty > 0 ? '#e2e8f0' : '#64748b' }}>
-                                        {mat.emoji} {qty}
+                                        <img src={getItemIconUrl(mat.id)} alt={info.name} style={{ width: '12px', height: '12px', objectFit: 'contain', imageRendering: 'pixelated' }} /> {qty}
                                     </div>
                                 );
                             })}
@@ -9487,8 +9917,8 @@ export default function GameCanvas({
                                     return (
                                         <div key={recipe.id} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', padding: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                                <div style={{ display: 'flex', gap: '8px' }}>
-                                                    <span style={{ fontSize: '20px' }}>{recipe.emoji}</span>
+                                                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                                    <img src={getItemIconUrl(recipe.yieldsId || recipe.id)} alt={recipe.name} style={{ width: '24px', height: '24px', objectFit: 'contain', imageRendering: 'pixelated' }} />
                                                     <div style={{ textAlign: 'left' }}>
                                                         <div style={{ fontWeight: 'bold', fontSize: '12px', color: '#e2e8f0' }}>{recipe.name}</div>
                                                         <div style={{ fontSize: '9px', color: '#94a3b8', marginTop: '1px' }}>{recipe.description}</div>
@@ -9500,7 +9930,7 @@ export default function GameCanvas({
                                             </div>
 
                                             {/* Ingredients Required */}
-                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', padding: '6px 8px', background: 'rgba(0,0,0,0.15)', borderRadius: '6px' }}>
+                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', padding: '6px 8px', background: 'rgba(0,0,0,0.15)', borderRadius: '6px' }}>
                                                 {recipe.ingredients.map(req => {
                                                     const owned = inventory.getQuantity(req.id);
                                                     const reqInfo = inventory.getItemInfo(req.id);
@@ -9508,7 +9938,8 @@ export default function GameCanvas({
                                                     const hasEnough = owned >= req.quantity;
                                                     return (
                                                         <div key={req.id} style={{ fontSize: '9px', color: hasEnough ? '#34d399' : '#f87171', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                            • {name}: <strong style={{ textDecoration: !hasEnough ? 'underline' : 'none' }}>{owned}/{req.quantity}</strong>
+                                                            <img src={getItemIconUrl(req.id)} alt={name} style={{ width: '11px', height: '11px', objectFit: 'contain', imageRendering: 'pixelated' }} />
+                                                            <span>{name}: <strong style={{ textDecoration: !hasEnough ? 'underline' : 'none' }}>{owned}/{req.quantity}</strong></span>
                                                         </div>
                                                     );
                                                 })}
@@ -9642,6 +10073,333 @@ export default function GameCanvas({
                             >
                                 Cerrar
                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showPokedexModal && (
+                <div className="modal-overlay" style={{ zIndex: 400 }}>
+                    <div style={{
+                        background: 'linear-gradient(160deg, #0f172a 0%, #1e1b4b 50%, #111827 100%)',
+                        border: '2px solid rgba(236, 72, 153, 0.2)',
+                        borderRadius: '16px',
+                        width: '95%',
+                        maxWidth: '480px',
+                        maxHeight: '90vh',
+                        overflowY: 'hidden',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        boxShadow: '0 24px 60px rgba(0,0,0,0.8), 0 0 20px rgba(236, 72, 153, 0.1)',
+                        fontFamily: "'Segoe UI', monospace",
+                        color: '#f8fafc'
+                    }}>
+                        {/* Header */}
+                        <div style={{ 
+                            display: 'flex', 
+                            justifyContent: 'space-between', 
+                            alignItems: 'center', 
+                            padding: '16px 20px', 
+                            borderBottom: '1px solid rgba(255,255,255,0.08)' 
+                        }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span style={{ fontSize: '18px' }}>📖</span>
+                                <span style={{ color: '#f472b6', fontWeight: 'bold', fontSize: '14px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                                    Pokédex Kanto
+                                </span>
+                            </div>
+                            <button 
+                                onClick={() => {
+                                    setShowPokedexModal(false);
+                                    setSelectedPokedexSpecies(null);
+                                }} 
+                                style={{
+                                    background: 'rgba(255,255,255,0.08)',
+                                    border: '1px solid rgba(255,255,255,0.15)',
+                                    borderRadius: '8px',
+                                    color: '#94a3b8',
+                                    cursor: 'pointer',
+                                    width: '28px',
+                                    height: '28px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: '16px',
+                                    fontWeight: 'bold',
+                                    margin: 0
+                                }}
+                            >
+                                &times;
+                            </button>
+                        </div>
+
+                        {/* Top Summary Stats */}
+                        <div style={{
+                            display: 'grid',
+                            gridTemplateColumns: '1fr 1fr 1fr',
+                            gap: '8px',
+                            padding: '12px 16px',
+                            background: 'rgba(0,0,0,0.2)',
+                            borderBottom: '1px solid rgba(255,255,255,0.04)',
+                            textAlign: 'center',
+                            fontSize: '11px'
+                        }}>
+                            <div>
+                                <div style={{ color: '#94a3b8' }}>Total Kanto</div>
+                                <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#f8fafc' }}>151</div>
+                            </div>
+                            <div>
+                                <div style={{ color: '#34d399' }}>🟢 Capturados</div>
+                                <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#34d399' }}>
+                                    {pokemonSpeciesList.filter((s: any) => s.id <= 151 && (
+                                        team.some((p: any) => p.id.toLowerCase() === s.name.toLowerCase()) ||
+                                        pcPokemon.some((p: any) => p.id.toLowerCase() === s.name.toLowerCase())
+                                    )).length}
+                                </div>
+                            </div>
+                            <div>
+                                <div style={{ color: '#60a5fa' }}>🔵 Vistos</div>
+                                <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#60a5fa' }}>
+                                    {pokemonSpeciesList.filter((s: any) => s.id <= 151 && seenPokemon.includes(s.name.toLowerCase())).length}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Search and Filters Bar */}
+                        <div style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: '8px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                            <input
+                                type="text"
+                                placeholder="Buscar por nombre, número o tipo..."
+                                value={pokedexSearch}
+                                onChange={(e) => setPokedexSearch(e.target.value)}
+                                style={{
+                                    width: '100%',
+                                    background: 'rgba(0,0,0,0.3)',
+                                    border: '1px solid rgba(255,255,255,0.1)',
+                                    borderRadius: '8px',
+                                    padding: '8px 12px',
+                                    fontSize: '12px',
+                                    color: '#f8fafc',
+                                    fontFamily: 'inherit',
+                                    outline: 'none',
+                                    boxSizing: 'border-box'
+                                }}
+                            />
+                            <div style={{ display: 'flex', gap: '4px', overflowX: 'auto', paddingBottom: '2px' }}>
+                                {['all', 'captured', 'seen', 'missing'].map((f) => {
+                                    const labels: Record<string, string> = {
+                                        all: 'Todos',
+                                        captured: 'Capturados',
+                                        seen: 'Vistos',
+                                        missing: 'Por encontrar'
+                                    };
+                                    const isActive = pokedexFilter === f;
+                                    return (
+                                        <button
+                                            key={f}
+                                            onClick={() => setPokedexFilter(f as any)}
+                                            style={{
+                                                background: isActive ? 'linear-gradient(135deg, #ec4899 0%, #be185d 100%)' : 'rgba(255,255,255,0.05)',
+                                                border: 'none',
+                                                borderRadius: '6px',
+                                                padding: '4px 10px',
+                                                fontSize: '10px',
+                                                fontWeight: 'bold',
+                                                color: isActive ? '#fff' : '#94a3b8',
+                                                cursor: 'pointer',
+                                                whiteSpace: 'nowrap',
+                                                margin: 0
+                                            }}
+                                        >
+                                            {labels[f]}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        {/* Scrollable Pokémon Grid */}
+                        <div style={{ flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                            {selectedPokedexSpecies && (() => {
+                                const s = selectedPokedexSpecies;
+                                const isCaptured = team.some((p: any) => p.id.toLowerCase() === s.name.toLowerCase()) || pcPokemon.some((p: any) => p.id.toLowerCase() === s.name.toLowerCase());
+                                const isSeen = seenPokemon.includes(s.name.toLowerCase());
+                                const status = isCaptured ? 'captured' : isSeen ? 'seen' : 'unknown';
+
+                                return (
+                                    <div style={{
+                                        background: 'rgba(255,255,255,0.03)',
+                                        border: '1px solid rgba(236,72,153,0.3)',
+                                        borderRadius: '12px',
+                                        padding: '12px',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: '8px',
+                                        position: 'relative'
+                                    }}>
+                                        <button 
+                                            onClick={() => setSelectedPokedexSpecies(null)}
+                                            style={{
+                                                position: 'absolute', top: '8px', right: '8px',
+                                                background: 'none', border: 'none', color: '#94a3b8',
+                                                fontSize: '16px', cursor: 'pointer', margin: 0
+                                            }}
+                                        >
+                                            &times;
+                                        </button>
+                                        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                                            <img
+                                                src={status !== 'unknown' ? s.sprite : `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${s.id}.png`}
+                                                alt={s.name}
+                                                style={{
+                                                    width: '64px', height: '64px', objectFit: 'contain',
+                                                    filter: status === 'unknown' ? 'brightness(0)' : status === 'seen' ? 'grayscale(100%) opacity(0.6)' : 'none'
+                                                }}
+                                            />
+                                            <div>
+                                                <div style={{ fontSize: '10px', color: '#94a3b8' }}>#{String(s.id).padStart(3, '0')}</div>
+                                                <div style={{ fontSize: '14px', fontWeight: 'bold', textTransform: 'capitalize', color: status === 'unknown' ? '#64748b' : '#f8fafc' }}>
+                                                    {status === 'unknown' ? '???' : s.name}
+                                                </div>
+                                                <div style={{ display: 'flex', gap: '4px', marginTop: '4px' }}>
+                                                    {status !== 'unknown' ? s.types.map((t: string) => (
+                                                        <span key={t} style={{
+                                                            fontSize: '8px', fontWeight: 'bold', textTransform: 'uppercase',
+                                                            background: t === 'grass' ? '#22c55e' : t === 'poison' ? '#a855f7' : t === 'fire' ? '#ef4444' : t === 'water' ? '#3b82f6' : t === 'bug' ? '#84cc16' : t === 'normal' ? '#94a3b8' : t === 'electric' ? '#eab308' : t === 'ground' ? '#d97706' : t === 'fairy' ? '#f472b6' : t === 'fighting' ? '#dc2626' : t === 'psychic' ? '#ec4899' : t === 'rock' ? '#78350f' : t === 'ghost' ? '#6366f1' : t === 'ice' ? '#06b6d4' : t === 'dragon' ? '#4f46e5' : '#64748b',
+                                                            padding: '2px 6px', borderRadius: '4px', color: '#fff'
+                                                        }}>{t}</span>
+                                                    )) : <span style={{ fontSize: '8px', background: 'rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: '4px', color: '#64748b' }}>???</span>}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {status !== 'unknown' ? (
+                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', fontSize: '11px', marginTop: '4px', background: 'rgba(0,0,0,0.15)', padding: '8px', borderRadius: '8px' }}>
+                                                <div>❤️ HP: <strong>{s.hp}</strong></div>
+                                                <div>⚔️ Ataque: <strong>{s.attack}</strong></div>
+                                                <div>🛡️ Defensa: <strong>{s.defense}</strong></div>
+                                                <div>⚡ Velocidad: <strong>{s.speed}</strong></div>
+                                                <div style={{ gridColumn: 'span 2', display: 'flex', justifyContent: 'space-between', marginTop: '2px', paddingTop: '2px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                                                    <span>Rareza: <strong style={{ color: s.rarity === 'LEGENDARY' ? '#fbbf24' : s.rarity === 'EPIC' ? '#a855f7' : s.rarity === 'RARE' ? '#3b82f6' : '#cbd5e1' }}>{s.rarity}</strong></span>
+                                                    <span>Ingreso pasivo: <strong>{s.gold_per_hour}💰/h</strong></span>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div style={{ fontSize: '11px', color: '#64748b', fontStyle: 'italic', padding: '6px', textAlign: 'center' }}>
+                                                No hay datos disponibles. ¡Encuentra o captura este Pokémon para desbloquear su información!
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })()}
+
+                            <div style={{
+                                display: 'grid',
+                                gridTemplateColumns: 'repeat(3, 1fr)',
+                                gap: '10px'
+                            }}>
+                                {pokemonSpeciesList
+                                    .filter((s: any) => s.id <= 151)
+                                    .filter((s: any) => {
+                                        const isCaptured = team.some((p: any) => p.id.toLowerCase() === s.name.toLowerCase()) || pcPokemon.some((p: any) => p.id.toLowerCase() === s.name.toLowerCase());
+                                        const isSeen = seenPokemon.includes(s.name.toLowerCase());
+
+                                        if (pokedexFilter === 'captured') return isCaptured;
+                                        if (pokedexFilter === 'seen') return isSeen && !isCaptured;
+                                        if (pokedexFilter === 'missing') return !isCaptured && !isSeen;
+                                        return true;
+                                    })
+                                    .filter((s: any) => {
+                                        if (!pokedexSearch) return true;
+                                        const term = pokedexSearch.toLowerCase();
+                                        const numStr = `#${String(s.id).padStart(3, '0')}`;
+                                        const isCaptured = team.some((p: any) => p.id.toLowerCase() === s.name.toLowerCase()) || pcPokemon.some((p: any) => p.id.toLowerCase() === s.name.toLowerCase());
+                                        const isSeen = seenPokemon.includes(s.name.toLowerCase());
+                                        const nameMatch = isSeen || isCaptured ? s.name.toLowerCase().includes(term) : false;
+                                        const typeMatch = (isSeen || isCaptured) && s.types.some((t: string) => t.toLowerCase().includes(term));
+                                        const numMatch = numStr.includes(term) || String(s.id).includes(term);
+                                        return nameMatch || typeMatch || numMatch;
+                                    })
+                                    .map((s: any) => {
+                                        const isCaptured = team.some((p: any) => p.id.toLowerCase() === s.name.toLowerCase()) || pcPokemon.some((p: any) => p.id.toLowerCase() === s.name.toLowerCase());
+                                        const isSeen = seenPokemon.includes(s.name.toLowerCase());
+                                        const status = isCaptured ? 'captured' : isSeen ? 'seen' : 'unknown';
+
+                                        return (
+                                            <div
+                                                key={s.id}
+                                                onClick={() => setSelectedPokedexSpecies(s)}
+                                                style={{
+                                                    background: status === 'captured' ? 'rgba(52,211,153,0.06)' : status === 'seen' ? 'rgba(96,165,250,0.06)' : 'rgba(255,255,255,0.01)',
+                                                    border: selectedPokedexSpecies?.id === s.id 
+                                                        ? '2px solid #ec4899'
+                                                        : status === 'captured' ? '1px solid rgba(52,211,153,0.2)' : status === 'seen' ? '1px solid rgba(96,165,250,0.2)' : '1px solid rgba(255,255,255,0.04)',
+                                                    borderRadius: '10px',
+                                                    padding: '8px',
+                                                    display: 'flex',
+                                                    flexDirection: 'column',
+                                                    alignItems: 'center',
+                                                    cursor: 'pointer',
+                                                    position: 'relative',
+                                                    transition: 'transform 0.15s, border-color 0.15s',
+                                                }}
+                                                onMouseEnter={e => {
+                                                    e.currentTarget.style.transform = 'translateY(-2px)';
+                                                    if (selectedPokedexSpecies?.id !== s.id) {
+                                                        e.currentTarget.style.borderColor = 'rgba(236,72,153,0.5)';
+                                                    }
+                                                }}
+                                                onMouseLeave={e => {
+                                                    e.currentTarget.style.transform = 'translateY(0px)';
+                                                    if (selectedPokedexSpecies?.id !== s.id) {
+                                                        e.currentTarget.style.borderColor = status === 'captured' ? 'rgba(52,211,153,0.2)' : status === 'seen' ? 'rgba(96,165,250,0.2)' : 'rgba(255,255,255,0.04)';
+                                                    }
+                                                }}
+                                            >
+                                                {/* Status indicators */}
+                                                {status === 'captured' && (
+                                                    <span style={{ position: 'absolute', top: '4px', right: '4px', fontSize: '10px' }} title="Capturado">🔴</span>
+                                                )}
+                                                {status === 'seen' && (
+                                                    <span style={{ position: 'absolute', top: '4px', right: '4px', fontSize: '10px' }} title="Avistado">👁️</span>
+                                                )}
+
+                                                <div style={{ fontSize: '8px', color: '#64748b', fontWeight: 'bold', width: '100%', textAlign: 'left' }}>
+                                                    #{String(s.id).padStart(3, '0')}
+                                                </div>
+
+                                                <img
+                                                    src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${s.id}.png`}
+                                                    alt={s.name}
+                                                    style={{
+                                                        width: '48px', height: '48px', objectFit: 'contain',
+                                                        filter: status === 'unknown' ? 'brightness(0)' : status === 'seen' ? 'grayscale(100%) opacity(0.6)' : 'none',
+                                                        margin: '4px 0'
+                                                    }}
+                                                />
+
+                                                <div style={{
+                                                    fontSize: '9px', fontWeight: 'bold', textTransform: 'capitalize',
+                                                    color: status === 'unknown' ? '#475569' : '#e2e8f0',
+                                                    width: '100%', textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
+                                                }}>
+                                                    {status === 'unknown' ? '???' : s.name}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                            </div>
+                        </div>
+
+                        {/* Footer banner */}
+                        <div style={{
+                            padding: '10px 16px',
+                            background: 'rgba(0,0,0,0.3)',
+                            borderTop: '1px solid rgba(255,255,255,0.08)',
+                            fontSize: '10px',
+                            color: '#64748b',
+                            textAlign: 'center'
+                        }}>
+                            ¡Completa la Pokédex de 151 Pokémon de Kanto!
                         </div>
                     </div>
                 </div>
@@ -10719,39 +11477,8 @@ export default function GameCanvas({
                                     <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '5px' }}>
                                         {recentMaterialDrops.map((d) => (
                                             <div key={d.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(93, 64, 55, 0.05)', border: '1px solid rgba(93, 64, 55, 0.15)', borderRadius: '6px', padding: '6px 10px', fontSize: '11px' }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                    <span style={{ fontSize: '14px' }}>{
-                                                        (() => {
-                                                            const emojis: Record<string, string> = {
-                                                                magic_dust: '✨',
-                                                                iron_ore: '🪨',
-                                                                stardust: '🌌',
-                                                                apricorn_red: '🔴',
-                                                                apricorn_blue: '🔵',
-                                                                apricorn_black: '⚫',
-                                                                fossil_helix: '🐚',
-                                                                fossil_dome: '🛡️',
-                                                                fossil_dna: '🧬',
-                                                                tamer_seal: '💮',
-                                                                ancient_amber: '🏺',
-                                                                golden_shard: '🪙',
-                                                                tamer_ball: '🔴',
-                                                                super_ball: '🔵',
-                                                                potion: '🧪',
-                                                                super_potion: '🧪',
-                                                                hyper_potion: '🧪',
-                                                                revive: '✨',
-                                                                full_heal: '💊',
-                                                                evolution_stone: '🪨',
-                                                                thunder_stone: '⚡',
-                                                                water_stone: '💧',
-                                                                fire_stone: '🔥',
-                                                                leaf_stone: '🍃',
-                                                                moon_stone: '🌙'
-                                                            };
-                                                            return emojis[d.id] || '📦';
-                                                        })()
-                                                    }</span>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                    <img src={getItemIconUrl(d.id)} alt={d.name} style={{ width: '18px', height: '18px', objectFit: 'contain', imageRendering: 'pixelated' }} />
                                                     <span style={{ fontWeight: 'bold', color: '#3e2723' }}>{d.name}</span>
                                                 </div>
                                                 <span style={{ background: '#3e2723', color: '#fff', fontSize: '10px', fontWeight: 'bold', padding: '2px 8px', borderRadius: '4px' }}>
@@ -11438,6 +12165,146 @@ export default function GameCanvas({
                     isShiny={activeEvolution.isShiny}
                     onComplete={activeEvolution.onComplete}
                 />
+            )}
+
+            {showDrFosilModal && (
+                <div className="modal-overlay">
+                    <div style={{
+                        background: 'linear-gradient(160deg, #0f172a 0%, #1e1b4b 50%, #2e1035 100%)',
+                        border: '2px solid rgba(236, 72, 153, 0.25)',
+                        borderRadius: '16px',
+                        width: '95%',
+                        maxWidth: '420px',
+                        maxHeight: '92vh',
+                        overflowY: 'auto',
+                        boxShadow: '0 24px 60px rgba(0,0,0,0.8), 0 0 20px rgba(236, 72, 153, 0.15)',
+                        fontFamily: "'Segoe UI', monospace",
+                        color: '#f8fafc',
+                        margin: '10px'
+                    }}>
+                        {/* Header */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 18px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span style={{ fontSize: '18px' }}>🧬</span>
+                                <span style={{ color: '#f472b6', fontWeight: 'bold', fontSize: '13px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                                    Simulador Prehistórico
+                                </span>
+                            </div>
+                            <button 
+                                onClick={() => {
+                                    setShowDrFosilModal(false);
+                                    setActiveDialog(null);
+                                }} 
+                                style={{
+                                    background: 'rgba(255,255,255,0.08)',
+                                    border: '1px solid rgba(255,255,255,0.15)',
+                                    borderRadius: '8px',
+                                    color: '#94a3b8',
+                                    cursor: 'pointer',
+                                    width: '26px',
+                                    height: '26px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: '14px',
+                                    fontWeight: 'bold',
+                                    margin: 0
+                                }}
+                            >
+                                &times;
+                            </button>
+                        </div>
+
+                        {/* Body */}
+                        <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                            {/* Dialogue */}
+                            <div style={{ background: 'rgba(0,0,0,0.25)', padding: '10px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                <p style={{ fontWeight: 'bold', fontSize: '11px', margin: '0 0 2px', color: '#f472b6' }}>Dr. Fósil:</p>
+                                <p style={{ fontSize: '12px', margin: 0, lineHeight: '1.4', color: '#cbd5e1' }}>
+                                    "¡Estudio la regeneración del ADN antiguo! Puedo materializar un Pokémon prehistórico o dragón salvaje para ti. ¡Pero ten cuidado! El portal solo se abrirá para un único combate. ¡Intenta atraparlo!"
+                                </p>
+                            </div>
+
+                            {/* Requirements List */}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', background: 'rgba(255,255,255,0.02)', padding: '12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.03)' }}>
+                                <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#f472b6', marginBottom: '4px', textTransform: 'uppercase' }}>
+                                    Requisitos del Experimento:
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+                                    <span>💰 Monedas de oro (10,000):</span>
+                                    <span style={{ fontWeight: 'bold', color: economy.coins >= 10000 ? '#4ade80' : '#f87171' }}>
+                                        {economy.coins.toLocaleString()} / 10,000
+                                    </span>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+                                    <span>🐚/🛡️ Fósiles Helix o Domo (10):</span>
+                                    <span style={{ fontWeight: 'bold', color: (inventoryRef.current.getQuantity('fossil_helix') + inventoryRef.current.getQuantity('fossil_dome')) >= 10 ? '#4ade80' : '#f87171' }}>
+                                        {(inventoryRef.current.getQuantity('fossil_helix') + inventoryRef.current.getQuantity('fossil_dome'))} / 10
+                                    </span>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+                                    <span>🏺 Ámbar Viejo (10):</span>
+                                    <span style={{ fontWeight: 'bold', color: inventoryRef.current.getQuantity('ancient_amber') >= 10 ? '#4ade80' : '#f87171' }}>
+                                        {inventoryRef.current.getQuantity('ancient_amber')} / 10
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* 1 Attempt Warning Banner */}
+                            <div style={{ 
+                                background: 'rgba(239, 68, 68, 0.15)', 
+                                border: '1px solid rgba(239, 68, 68, 0.3)', 
+                                padding: '10px', 
+                                borderRadius: '8px', 
+                                fontSize: '11px', 
+                                color: '#fca5a5',
+                                lineHeight: '1.4'
+                            }}>
+                                ⚠️ <strong>¡IMPORTANTE!</strong> La simulación es inestable. Solo tendrás <strong>UN INTENTO de combate</strong>. Si huyes, eres derrotado o el Pokémon se escapa, la simulación se cerrará y perderás los materiales y monedas.
+                            </div>
+
+                            {/* Error Message */}
+                            {drFosilMessage && (
+                                <div style={{
+                                    fontSize: '11px',
+                                    background: 'rgba(0,0,0,0.35)',
+                                    borderLeft: '3px solid #f87171',
+                                    padding: '6px 10px',
+                                    borderRadius: '0 5px 5px 0',
+                                    color: '#cbd5e1',
+                                    lineHeight: '1.4'
+                                }}>
+                                    {drFosilMessage}
+                                </div>
+                            )}
+
+                            {/* Action Button */}
+                            <button 
+                                onClick={handleStartSimulation}
+                                disabled={
+                                    economy.coins < 10000 || 
+                                    (inventoryRef.current.getQuantity('fossil_helix') + inventoryRef.current.getQuantity('fossil_dome')) < 10 || 
+                                    inventoryRef.current.getQuantity('ancient_amber') < 10
+                                }
+                                style={{
+                                    background: 'linear-gradient(135deg, #ec4899 0%, #be185d 100%)',
+                                    border: 'none',
+                                    borderRadius: '8px',
+                                    color: '#fff',
+                                    padding: '10px 18px',
+                                    fontSize: '13px',
+                                    fontWeight: 'bold',
+                                    boxShadow: '0 4px 12px rgba(236, 72, 153, 0.4)',
+                                    opacity: (economy.coins >= 10000 && (inventoryRef.current.getQuantity('fossil_helix') + inventoryRef.current.getQuantity('fossil_dome')) >= 10 && inventoryRef.current.getQuantity('ancient_amber') >= 10) ? 1 : 0.5,
+                                    cursor: (economy.coins >= 10000 && (inventoryRef.current.getQuantity('fossil_helix') + inventoryRef.current.getQuantity('fossil_dome')) >= 10 && inventoryRef.current.getQuantity('ancient_amber') >= 10) ? 'pointer' : 'not-allowed',
+                                    margin: '6px 0 0 0'
+                                }}
+                            >
+                                ⚡ Iniciar Portal de Combate
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );

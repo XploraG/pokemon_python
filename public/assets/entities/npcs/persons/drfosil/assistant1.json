@@ -1,0 +1,17 @@
+{
+    "name": "Asistente 1",
+    "img": "src/assets/entities/npcs/persons/buisnessman/sprites.png",
+    "scale": 2,
+    "type": "npc",
+    "color_to_be_erased": "#559262",
+    "dialog": "¡Hola! Trabajo con el Dr. Fósil. Ten cuidado: su simulador es inestable, ¡solo tendrás un intento para enfrentarte y atrapar al Pokémon!",
+    "valid_moves": ["down"],
+    "down": [
+        {
+            "y": 36,
+            "x": 7,
+            "w": 17,
+            "h": 27
+        }
+    ]
+}
