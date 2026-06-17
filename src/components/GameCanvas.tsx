@@ -1511,6 +1511,8 @@ export default function GameCanvas({
     const [showInventoryModal, setShowInventoryModal] = useState(false);
     const [showMenuModal, setShowMenuModal] = useState(false);
     const [showPcModal, setShowPcModal] = useState(false);
+    const [showReleaseConfirmModal, setShowReleaseConfirmModal] = useState(false);
+    const [pokeToReleaseIndex, setPokeToReleaseIndex] = useState<number | null>(null);
     const [showPokedexModal, setShowPokedexModal] = useState(false);
     const [showTravelModal, setShowTravelModal] = useState(false);
     const [isTravelling, setIsTravelling] = useState(false);
@@ -5761,6 +5763,20 @@ export default function GameCanvas({
         setPcPokemon(updatedPc);
         saveLocalEconomy(updatedTeam, updatedPc);
         showNotification("Almacenamiento PC", `¡${pokemonToMove.id} se ha unido a tu equipo!`);
+    };
+
+    const handleReleasePokemon = () => {
+        if (pokeToReleaseIndex === null) return;
+        const pokemonToRelease = pcPokemon[pokeToReleaseIndex];
+        if (!pokemonToRelease) return;
+
+        const updatedPc = pcPokemon.filter((_, idx) => idx !== pokeToReleaseIndex);
+        setPcPokemon(updatedPc);
+        saveLocalEconomy(team, updatedPc);
+
+        showNotification("Almacenamiento PC", `¡Has liberado a ${pokemonToRelease.id}!`);
+        setShowReleaseConfirmModal(false);
+        setPokeToReleaseIndex(null);
     };
 
         const handleBattleAttack = () => {
@@ -10321,6 +10337,15 @@ export default function GameCanvas({
                                                         >
                                                             Mover a Equipo
                                                         </button>
+                                                        <button
+                                                            onClick={() => {
+                                                                setPokeToReleaseIndex(idx);
+                                                                setShowReleaseConfirmModal(true);
+                                                            }}
+                                                            style={{ padding: '4px 8px', fontSize: '10px', background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.35)', borderRadius: '6px', color: '#f87171', cursor: 'pointer', margin: 0 }}
+                                                        >
+                                                            Liberar
+                                                        </button>
                                                     </div>
                                                 </div>
                                             );
@@ -10340,6 +10365,72 @@ export default function GameCanvas({
                     </div>
                 </div>
             )}
+
+            {showReleaseConfirmModal && (() => {
+                const pokeToRelease = pokeToReleaseIndex !== null ? pcPokemon[pokeToReleaseIndex] : null;
+                if (!pokeToRelease) return null;
+                const species = pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === pokeToRelease.id.toLowerCase());
+                const sprite = species ? (pokeToRelease.is_shiny ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/shiny/${species.id}.png` : species.sprite) : '';
+
+                return (
+                    <div className="modal-overlay" style={{ zIndex: 12000 }}>
+                        <div style={{
+                            background: 'linear-gradient(160deg, #1e1b4b 0%, #0f172a 50%, #020617 100%)',
+                            border: '2px solid rgba(239, 68, 68, 0.4)',
+                            borderRadius: '16px',
+                            width: '90%',
+                            maxWidth: '360px',
+                            padding: '20px',
+                            boxShadow: '0 24px 60px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.05)',
+                            fontFamily: "'Segoe UI', monospace",
+                            color: '#e2e8f0',
+                            textAlign: 'center'
+                        }}>
+                            <div style={{ fontSize: '32px', marginBottom: '8px' }}>⚠️</div>
+                            <h3 style={{ margin: '0 0 12px 0', fontSize: '16px', fontWeight: 'bold', color: '#f87171', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                ¿Liberar Pokémon?
+                            </h3>
+                            
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '12px', marginBottom: '16px' }}>
+                                {sprite && <img src={sprite} alt={pokeToRelease.id} style={{ width: '64px', height: '64px', imageRendering: 'pixelated', marginBottom: '8px' }} />}
+                                <span style={{ textTransform: 'capitalize', fontWeight: 'bold', fontSize: '14px', color: '#e2e8f0' }}>
+                                    {pokeToRelease.is_shiny && '✨ '}{pokeToRelease.id}
+                                </span>
+                                <span style={{ fontSize: '11px', color: '#c084fc', marginTop: '2px' }}>
+                                    Nivel {pokeToRelease.level ?? 5}
+                                </span>
+                                {pokeToRelease.is_shiny && (
+                                    <span style={{ fontSize: '10px', color: '#fbbf24', fontWeight: 'bold', marginTop: '6px', background: 'rgba(251, 191, 36, 0.15)', border: '1px solid rgba(251, 191, 36, 0.3)', padding: '2px 8px', borderRadius: '20px' }}>
+                                        ¡ATENCIÓN: ES SHINY! ✨
+                                    </span>
+                                )}
+                            </div>
+
+                            <p style={{ fontSize: '12px', color: '#94a3b8', margin: '0 0 20px 0', lineHeight: '1.5' }}>
+                                ¿Estás seguro de que quieres liberar a este Pokémon? Esta acción es irreversible y no podrás recuperarlo.
+                            </p>
+
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                                <button
+                                    onClick={() => {
+                                        setShowReleaseConfirmModal(false);
+                                        setPokeToReleaseIndex(null);
+                                    }}
+                                    style={{ flex: 1, margin: 0, padding: '10px 14px', fontSize: '12px', fontWeight: 'bold', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: '#94a3b8', cursor: 'pointer' }}
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    onClick={handleReleasePokemon}
+                                    style={{ flex: 1, margin: 0, padding: '10px 14px', fontSize: '12px', fontWeight: 'bold', background: 'rgba(239,68,68,0.2)', border: '1px solid rgba(239,68,68,0.5)', borderRadius: '8px', color: '#f87171', cursor: 'pointer' }}
+                                >
+                                    Sí, Liberar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            })()}
 
             {showTravelModal && (
                 <div className="modal-overlay" style={{ zIndex: 400 }}>
