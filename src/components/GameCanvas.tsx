@@ -1306,6 +1306,8 @@ const getItemIconUrl = (itemId: string): string => {
         revive: "revive.png",
         max_revive: "max-revive.png",
         full_heal: "full-heal.png",
+        rare_candy: "rare-candy.png",
+        mega_candy: "sweet-heart.png",
 
         // Boosts / Stones / Repels
         lucky_egg: "lucky-egg.png",
@@ -6690,6 +6692,104 @@ export default function GameCanvas({
         const target = updatedTeam[idx];
         const itemInfo = inventoryRef.current.getItemInfo(usingItem.id);
 
+        if (usingItem.id === 'rare_candy' || usingItem.id === 'mega_candy') {
+            const levelsGained = usingItem.id === 'rare_candy' ? 1 : 5;
+            const currentLvl = target.level ?? 1;
+            const newLvl = currentLvl + levelsGained;
+
+            // Recalculate stats using the new level
+            const stats = getPokemonStats(target.id, newLvl, target.ivs, true, economyRef.current);
+
+            // Learn new moves if any are available at the new levels
+            const currentMoves = target.moves || getPokemonMoves(target.id, currentLvl);
+            let finalMoves = [...currentMoves];
+            let moveLearnMsg = "";
+
+            const oldLvl = currentLvl;
+            const learnableMoves = getPokemonMoves(target.id, newLvl).filter(
+                (mId: string) => !getPokemonMoves(target.id, oldLvl).includes(mId)
+            );
+
+            for (const mId of learnableMoves) {
+                if (!finalMoves.includes(mId)) {
+                    if (finalMoves.length < 4) {
+                        finalMoves.push(mId);
+                        const moveName = MOVES_DATABASE[mId]?.name || mId;
+                        moveLearnMsg += ` \n🎉 ¡Aprendió ${moveName.toUpperCase()}!`;
+                    } else {
+                        const moveName = MOVES_DATABASE[mId]?.name || mId;
+                        moveLearnMsg += ` \n⚠️ Quiere aprender ${moveName.toUpperCase()}, pero ya conoce 4 movimientos.`;
+                        setTimeout(() => setLevelUpMoveLearn({ pokeIdx: idx, newMoveId: mId, pokeName: target.id }), 1500);
+                    }
+                }
+            }
+
+            // Check for evolution
+            let evolved = false;
+            let evolvedName = target.id;
+            let tempName = target.id.toLowerCase();
+            let loopLimit = 0;
+            while (loopLimit < 5) {
+                const evo = EVOLUTION_DATABASE[tempName];
+                if (evo && evo.method === 'level' && newLvl >= (evo.level ?? 99)) {
+                    evolvedName = evo.target;
+                    tempName = evo.target.toLowerCase();
+                    evolved = true;
+                    loopLimit++;
+                } else {
+                    break;
+                }
+            }
+
+            const evolvedStats = getPokemonStats(evolvedName, newLvl, target.ivs, true, economyRef.current);
+
+            updatedTeam[idx] = {
+                ...target,
+                id: evolvedName,
+                level: newLvl,
+                xp: 0,
+                moves: finalMoves,
+                is_evolved: evolved ? true : target.is_evolved,
+                maxHp: evolvedStats.maxHp,
+                hp: evolvedStats.maxHp
+            };
+
+            inventoryRef.current.removeItem(usingItem.id);
+            const newInv = new Inventory(inventoryRef.current.toSaveData());
+
+            const applyCandyFinish = () => {
+                setInventory(newInv);
+                setTeam(updatedTeam);
+                saveLocalEconomy(updatedTeam, undefined, undefined, true, newInv);
+                setEconomy(new Economy(economyRef.current.toSaveData()));
+                setUsingItem(null);
+                setShowInventoryModal(false);
+
+                let levelUpText = `¡Tu ${target.id.toUpperCase()} subió al nivel ${newLvl}!${moveLearnMsg}`;
+                if (evolved) {
+                    levelUpText += `\n🎉 ¡Increíble! ¡Ha evolucionado en ${evolvedName.toUpperCase()}!`;
+                }
+
+                showNotification("¡Caramelo Consumido!", levelUpText);
+            };
+
+            if (evolved) {
+                setActiveEvolution({
+                    pokemonId: target.id,
+                    targetId: evolvedName,
+                    level: newLvl,
+                    isShiny: target.is_shiny,
+                    onComplete: () => {
+                        applyCandyFinish();
+                        setActiveEvolution(null);
+                    }
+                });
+            } else {
+                applyCandyFinish();
+            }
+            return;
+        }
+
         if (usingItem.id === 'lucky_egg') {
             const unlockedCount = target.unlocked_slots || 2;
             const items = target.held_items ? [...target.held_items] : [null, null, null, null];
@@ -9906,7 +10006,7 @@ export default function GameCanvas({
                                 (() => {
                                     const getItemCategory = (itemId: string): 'balls' | 'potions' | 'boosters' => {
                                         if (itemId.includes('ball')) return 'balls';
-                                        if (itemId.includes('potion') || itemId.includes('revive') || itemId.includes('heal')) return 'potions';
+                                        if (itemId.includes('potion') || itemId.includes('revive') || itemId.includes('heal') || itemId.includes('candy')) return 'potions';
                                         return 'boosters';
                                     };
                                     const filteredItems = inventory.getAllItems().filter((item: any) => {
@@ -9924,7 +10024,7 @@ export default function GameCanvas({
 
                                     return filteredItems.map((item: any) => {
                                         const isBooster = ['gold_incense', 'repel', 'elixir_attack', 'elixir_defense', 'elixir_hp'].includes(item.id);
-                                        const isUsable = item.id.includes('potion') || item.id.includes('revive') || item.id.includes('stone') || item.id === 'lucky_egg' || isBooster;
+                                        const isUsable = item.id.includes('potion') || item.id.includes('revive') || item.id.includes('stone') || item.id === 'lucky_egg' || item.id.includes('candy') || isBooster;
                                         const iconUrl = getItemIconUrl(item.id);
                                         return (
                                             <div key={item.id} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '10px 12px', display: 'flex', gap: '12px', justifyContent: 'space-between', alignItems: 'center' }}>

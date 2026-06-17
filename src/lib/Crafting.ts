@@ -214,6 +214,18 @@ export const CRAFTING_RECIPES: Record<string, CraftingRecipe> = {
         ],
         "description": "Evita encuentros salvajes por 5 minutos."
     },
+    "rare_candy": {
+        "id": "rare_candy",
+        "name": "Caramelo Raro",
+        "tier": 2,
+        "emoji": "🍬",
+        "cost": 500,
+        "ingredients": [
+            { "id": "magic_dust", "quantity": 10 },
+            { "id": "stardust", "quantity": 10 }
+        ],
+        "description": "Dulce medicina de nivel. Sube 1 nivel a tu Pokémon."
+    },
 
     // ---- TIER 3 RECIPES (MASTERPIECES MADE FROM TIER 2) ----
     "ultra_ball": {
@@ -293,6 +305,18 @@ export const CRAFTING_RECIPES: Record<string, CraftingRecipe> = {
             { "id": "magic_dust", "quantity": 10 }
         ],
         "description": "x2 XP del Pokémon equipado durante 2 horas."
+    },
+    "mega_candy": {
+        "id": "mega_candy",
+        "name": "Mega Caramelo",
+        "tier": 3,
+        "emoji": "🍭",
+        "cost": 500,
+        "ingredients": [
+            { "id": "rare_candy", "quantity": 1 },
+            { "id": "lucky_egg", "quantity": 2 }
+        ],
+        "description": "Dulce medicina colosal. Sube 5 niveles a tu Pokémon."
     },
     "shiny_charm": {
         "id": "shiny_charm",

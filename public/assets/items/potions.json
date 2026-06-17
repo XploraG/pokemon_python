@@ -39,6 +39,18 @@
         "price": 600,
         "description": "Cura todos los estados alterados",
         "sprite": "src/assets/items/sprites/full_heal.png"
+    },
+    "rare_candy": {
+        "name": "Caramelo Raro",
+        "price": 1000,
+        "description": "Dulce medicina de nivel. Sube 1 nivel a tu Pokémon.",
+        "sprite": "src/assets/items/sprites/rare_candy.png"
+    },
+    "mega_candy": {
+        "name": "Mega Caramelo",
+        "price": 5000,
+        "description": "Dulce medicina colosal. Sube 5 niveles a tu Pokémon.",
+        "sprite": "src/assets/items/sprites/mega_candy.png"
     }
 }
 
