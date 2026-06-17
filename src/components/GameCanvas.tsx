@@ -1872,14 +1872,14 @@ export default function GameCanvas({
         setIsTravelling(false);
         if (res.success) {
             let spawnX = 600;
-            let spawnY = 748;
+            let spawnY = 780; // 748 + 32: Spawn 1 tile down to avoid auto-reentry loop
             const pathLower = mapPath.toLowerCase();
             if (pathLower.includes('city1')) {
                 spawnX = 280;
-                spawnY = 940;
+                spawnY = 972; // 940 + 32: Spawn 1 tile down to avoid auto-reentry loop
             } else if (pathLower.includes('procedural://settlement_')) {
                 spawnX = 408;
-                spawnY = 300;
+                spawnY = 332; // 300 + 32: Spawn 1 tile down to avoid auto-reentry loop
                 prepareProceduralMap(mapPath);
             }
             
@@ -4476,9 +4476,9 @@ export default function GameCanvas({
                 setDialogName("Exit");
                 setActiveDialog("Exiting building...");
                 playerRef.current.x = returnCoordsRef.current[0];
-                playerRef.current.y = returnCoordsRef.current[1];
+                playerRef.current.y = returnCoordsRef.current[1] + 32; // Spawn 1 tile down to avoid auto-reentry loop
                 playerRef.current.targetX = returnCoordsRef.current[0];
-                playerRef.current.targetY = returnCoordsRef.current[1];
+                playerRef.current.targetY = returnCoordsRef.current[1] + 32;
                 playerRef.current.isMoving = false;
                 setCurrentMapPath(returnMapRef.current);
                 setActiveDialog(null);
