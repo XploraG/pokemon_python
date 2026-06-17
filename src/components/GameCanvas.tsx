@@ -1510,6 +1510,8 @@ export default function GameCanvas({
     const [showMenuModal, setShowMenuModal] = useState(false);
     const [showPcModal, setShowPcModal] = useState(false);
     const [showPokedexModal, setShowPokedexModal] = useState(false);
+    const [showTravelModal, setShowTravelModal] = useState(false);
+    const [isTravelling, setIsTravelling] = useState(false);
     const [pokedexFilter, setPokedexFilter] = useState<'all' | 'captured' | 'seen' | 'missing'>('all');
     const [pokedexSearch, setPokedexSearch] = useState('');
     const [selectedPokedexSpecies, setSelectedPokedexSpecies] = useState<any | null>(null);
@@ -1859,6 +1861,36 @@ export default function GameCanvas({
             showNotification("Anuncio no disponible", `No se pudo reproducir el anuncio. Detalle: ${res.error || 'Anuncio cancelado o no disponible'}`);
         }
     };
+
+    const handleTravelTo = async (mapPath: string) => {
+        setIsTravelling(true);
+        const adManager = AdManager.getInstance();
+        const res = await adManager.showRewardedAd({
+            monetagZoneId: "34913",
+            adsterraUrl: process.env.NEXT_PUBLIC_ADSTERRA_DIRECT_LINK || "YOUR_ADSTERRA_DIRECT_LINK"
+        });
+        setIsTravelling(false);
+        if (res.success) {
+            let spawnX = 600;
+            let spawnY = 748;
+            const pathLower = mapPath.toLowerCase();
+            if (pathLower.includes('city1')) {
+                spawnX = 280;
+                spawnY = 940;
+            } else if (pathLower.includes('procedural://settlement_')) {
+                spawnX = 408;
+                spawnY = 300;
+                prepareProceduralMap(mapPath);
+            }
+            
+            setShowTravelModal(false);
+            setShowMenuModal(false);
+            transitionToMap(mapPath, spawnX, spawnY);
+            showNotification("Viaje Rápido", `Te has teletransportado a ${getMapDisplayName(mapPath)}.`);
+        } else {
+            showNotification("Anuncio Cancelado", `No se pudo realizar el viaje. Detalle: ${res.error || 'Anuncio cancelado o no disponible'}`);
+        }
+    };
     
     // Engine loading flags
     const [loading, setLoading] = useState(true);
@@ -1880,6 +1912,16 @@ export default function GameCanvas({
     const gymLeaderCurrentPokeIndexRef = useRef<number>(0);
 
     useEffect(() => { currentMapPathRef.current = currentMapPath; }, [currentMapPath]);
+
+    // Track visited settlements/cities for fast travel
+    useEffect(() => {
+        if (!currentMapPath) return;
+        const visitedNew = economyRef.current.visitSettlement(currentMapPath);
+        if (visitedNew) {
+            saveLocalEconomy();
+            setEconomy(new Economy(economyRef.current.toSaveData()));
+        }
+    }, [currentMapPath]);
     useEffect(() => { activeWildBattleRef.current = activeWildBattle; }, [activeWildBattle]);
     useEffect(() => { activeDialogRef.current = activeDialog; }, [activeDialog]);
     useEffect(() => { economyRef.current = economy; }, [economy]);
@@ -8096,6 +8138,27 @@ export default function GameCanvas({
                                 </div>
                             </button>
 
+                            {/* Viajes full-width card */}
+                            <button
+                                onClick={() => { setShowTravelModal(true); setShowMenuModal(false); }}
+                                style={{
+                                    width: '100%',
+                                    background: 'linear-gradient(135deg, rgba(59,130,246,0.15) 0%, rgba(37,99,235,0.2) 100%)',
+                                    border: '1px solid rgba(59,130,246,0.35)',
+                                    borderRadius: '12px', padding: '12px 10px', cursor: 'pointer',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px',
+                                    textAlign: 'center', transition: 'all 0.2s', marginBottom: '16px', margin: '0 0 16px 0'
+                                }}
+                                onMouseEnter={e => (e.currentTarget.style.background = 'linear-gradient(135deg, rgba(59,130,246,0.25) 0%, rgba(37,99,235,0.3) 100%)')}
+                                onMouseLeave={e => (e.currentTarget.style.background = 'linear-gradient(135deg, rgba(59,130,246,0.15) 0%, rgba(37,99,235,0.2) 100%)')}
+                            >
+                                <div style={{ fontSize: '24px', lineHeight: 1 }}>🗺️</div>
+                                <div style={{ textAlign: 'left', flex: 1 }}>
+                                    <div style={{ color: '#60a5fa', fontWeight: 'bold', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Viajes</div>
+                                    <div style={{ color: '#cbd5e1', fontSize: '9px' }}>Viaja a ciudades visitadas anteriormente viendo un anuncio</div>
+                                </div>
+                            </button>
+
                             {/* SEPARATOR label */}
                             <div style={{ fontSize: '9px', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                 <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.07)' }} />
@@ -10072,6 +10135,124 @@ export default function GameCanvas({
                                 style={{ margin: 0, padding: '9px 14px', fontSize: '12px', fontWeight: 'bold', width: '100%', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: '8px', color: '#f87171', cursor: 'pointer' }}
                             >
                                 Cerrar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showTravelModal && (
+                <div className="modal-overlay" style={{ zIndex: 400 }}>
+                    <div style={{
+                        background: 'linear-gradient(160deg, #1e1b4b 0%, #0f172a 50%, #020617 100%)',
+                        border: '2px solid rgba(59,130,246,0.3)',
+                        borderRadius: '16px',
+                        width: '95%',
+                        maxWidth: '440px',
+                        maxHeight: '88vh',
+                        overflowY: 'auto',
+                        boxShadow: '0 24px 60px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.1)',
+                        fontFamily: "'Segoe UI', monospace"
+                    }}>
+                        {/* Header */}
+                        <div style={{
+                            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                            padding: '16px 20px 12px',
+                            borderBottom: '1px solid rgba(255,255,255,0.08)',
+                        }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span style={{ fontSize: '18px' }}>🗺️</span>
+                                <span style={{ color: '#e2e8f0', fontWeight: 'bold', fontSize: '14px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Viaje Rápido</span>
+                            </div>
+                            <button
+                                onClick={() => setShowTravelModal(false)}
+                                disabled={isTravelling}
+                                style={{
+                                    background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)',
+                                    borderRadius: '8px', color: '#94a3b8', cursor: isTravelling ? 'not-allowed' : 'pointer',
+                                    width: '28px', height: '28px', display: 'flex', alignItems: 'center',
+                                    justifyContent: 'center', fontSize: '16px', fontWeight: 'bold',
+                                }}
+                            >&times;</button>
+                        </div>
+
+                        {/* Content */}
+                        <div style={{ padding: '16px 16px 20px', color: '#e2e8f0', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            <div style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.2)', borderRadius: '10px', padding: '10px 12px', fontSize: '11px', color: '#93c5fd', lineHeight: '1.4' }}>
+                                💡 Puedes teletransportarte instantáneamente a cualquier ciudad que ya hayas visitado. Para viajar, debes ver un anuncio publicitario.
+                            </div>
+
+                            {isTravelling ? (
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyItems: 'center', padding: '40px 20px', gap: '12px' }}>
+                                    <div className="spinner" style={{ border: '4px solid rgba(255, 255, 255, 0.1)', width: '36px', height: '36px', borderRadius: '50%', borderLeftColor: '#3b82f6', animation: 'spin 1s linear infinite' }}></div>
+                                    <span style={{ fontSize: '12px', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Cargando anuncio de viaje...</span>
+                                </div>
+                            ) : (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '320px', overflowY: 'auto', paddingRight: '4px' }}>
+                                    {economy.visited_settlements && economy.visited_settlements.length > 0 ? (
+                                        economy.visited_settlements.map((mapPath: string, idx: number) => {
+                                            const name = getMapDisplayName(mapPath);
+                                            const isCurrent = currentMapPath.toLowerCase() === mapPath.toLowerCase();
+                                            
+                                            return (
+                                                <div
+                                                    key={idx}
+                                                    style={{
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'space-between',
+                                                        padding: '10px 12px',
+                                                        background: isCurrent ? 'rgba(59,130,246,0.12)' : 'rgba(255,255,255,0.03)',
+                                                        border: isCurrent ? '1px solid rgba(59,130,246,0.5)' : '1px solid rgba(255,255,255,0.08)',
+                                                        borderRadius: '8px',
+                                                        transition: 'all 0.2s'
+                                                    }}
+                                                >
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                                        <span style={{ fontWeight: 'bold', fontSize: '13px', color: isCurrent ? '#60a5fa' : '#f1f5f9' }}>
+                                                            {name}
+                                                        </span>
+                                                        <span style={{ fontSize: '10px', color: '#94a3b8' }}>
+                                                            {isCurrent ? '📍 Estás aquí actualmente' : 'Coste: 1 Anuncio'}
+                                                        </span>
+                                                    </div>
+
+                                                    {!isCurrent && (
+                                                        <button
+                                                            onClick={() => handleTravelTo(mapPath)}
+                                                            className="pokemon-button success"
+                                                            style={{
+                                                                margin: 0,
+                                                                padding: '6px 12px',
+                                                                fontSize: '11px',
+                                                                fontWeight: 'bold',
+                                                                background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+                                                                border: 'none',
+                                                                boxShadow: '0 2px 4px rgba(37,99,235,0.3)'
+                                                            }}
+                                                        >
+                                                            Viajar 🌌
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            );
+                                        })
+                                    ) : (
+                                        <div style={{ textAlign: 'center', padding: '24px', color: '#64748b', fontSize: '12px', fontStyle: 'italic' }}>
+                                            No se han registrado ciudades visitadas.
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            <AdsterraBanner />
+
+                            <button 
+                                onClick={() => setShowTravelModal(false)}
+                                disabled={isTravelling}
+                                style={{ margin: 0, padding: '9px 14px', fontSize: '12px', fontWeight: 'bold', width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#94a3b8', cursor: isTravelling ? 'not-allowed' : 'pointer' }}
+                            >
+                                Cancelar
                             </button>
                         </div>
                     </div>

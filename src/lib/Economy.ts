@@ -44,6 +44,7 @@ export interface EconomySaveData {
     elixir_attack_expires?: number;
     elixir_defense_expires?: number;
     elixir_hp_expires?: number;
+    visited_settlements?: string[];
 }
 
 export interface CoinTransaction {
@@ -91,6 +92,7 @@ export class Economy {
     public elixir_attack_expires: number = 0;
     public elixir_defense_expires: number = 0;
     public elixir_hp_expires: number = 0;
+    public visited_settlements: string[] = ['/assets/maps/tutorial/main.json'];
 
     constructor(saveData?: EconomySaveData) {
         if (saveData) {
@@ -135,6 +137,7 @@ export class Economy {
         this.elixir_attack_expires = 0;
         this.elixir_defense_expires = 0;
         this.elixir_hp_expires = 0;
+        this.visited_settlements = ['/assets/maps/tutorial/main.json'];
     }
 
     private loadFromSave(data: EconomySaveData): void {
@@ -174,6 +177,7 @@ export class Economy {
         this.elixir_attack_expires = data.elixir_attack_expires ?? 0;
         this.elixir_defense_expires = data.elixir_defense_expires ?? 0;
         this.elixir_hp_expires = data.elixir_hp_expires ?? 0;
+        this.visited_settlements = data.visited_settlements || ['/assets/maps/tutorial/main.json'];
         for (const medal of this.medals) {
             if (!this.medal_levels[medal]) {
                 this.medal_levels[medal] = 1;
@@ -218,8 +222,40 @@ export class Economy {
             repel_expires: this.repel_expires,
             elixir_attack_expires: this.elixir_attack_expires,
             elixir_defense_expires: this.elixir_defense_expires,
-            elixir_hp_expires: this.elixir_hp_expires
+            elixir_hp_expires: this.elixir_hp_expires,
+            visited_settlements: this.visited_settlements
         };
+    }
+
+    public visitSettlement(mapPath: string): boolean {
+        const path = mapPath.toLowerCase();
+        let key = mapPath;
+        let isSettlement = false;
+        
+        if (path.includes('tutorial')) {
+            key = '/assets/maps/tutorial/main.json';
+            isSettlement = true;
+        } else if (path.includes('city1')) {
+            key = '/assets/maps/city1/main.json';
+            isSettlement = true;
+        } else if (path.includes('procedural://settlement_')) {
+            const match = mapPath.match(/procedural:\/\/settlement_\d+/i);
+            if (match) {
+                key = match[0].toLowerCase();
+                isSettlement = true;
+            }
+        }
+        
+        if (isSettlement) {
+            if (!this.visited_settlements) {
+                this.visited_settlements = ['/assets/maps/tutorial/main.json'];
+            }
+            if (!this.visited_settlements.includes(key)) {
+                this.visited_settlements.push(key);
+                return true;
+            }
+        }
+        return false;
     }
 
     // ---- COIN OPERATIONS ----

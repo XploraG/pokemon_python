@@ -184,10 +184,17 @@ export default function Home() {
                 .maybeSingle();
 
             if (dbError) {
-                console.error("Database query error:", dbError);
-                setError("Error al conectar con la base de datos de guardado en la nube.");
-                setIsConnecting(false);
-                return;
+                // If it's a permissions/RLS error on SELECT, treat as a new player
+                // instead of blocking them with an error screen.
+                const isPermissionError = dbError.code === '42501' || dbError.message?.toLowerCase().includes('permission') || dbError.message?.toLowerCase().includes('policy');
+                if (!isPermissionError) {
+                    console.error("Database query error:", dbError);
+                    setError("Error al conectar con la base de datos de guardado en la nube.");
+                    setIsConnecting(false);
+                    return;
+                }
+                // Fall through: treat as new user
+                console.warn("DB SELECT error (likely RLS), treating as new player:", dbError);
             }
 
             if (data && data.save_data) {
@@ -442,19 +449,25 @@ export default function Home() {
 
             // Referral processing disabled for now
 
-            // Upsert to Supabase
+            // Upsert to Supabase (safe on retry — avoids unique constraint violations)
             const { error: insertError } = await supabase
                 .from('player_saves')
-                .insert({
+                .upsert({
                     wallet_address: pendingNewAddress,
                     save_data: saveState
-                });
+                }, { onConflict: 'wallet_address' });
 
             if (insertError) {
                 console.error("Failed to initialize save state in database:", insertError);
-                setError("No se pudo iniciar la partida en el servidor.");
-                setIsConnecting(false);
-                return;
+                // If it's a duplicate key / RLS insert error, try to load existing save
+                // before giving up — the player might have registered in a previous attempt.
+                const isConflict = insertError.code === '23505';
+                if (!isConflict) {
+                    setError("No se pudo iniciar la partida en el servidor.");
+                    setIsConnecting(false);
+                    return;
+                }
+                console.warn("Upsert conflict on player_saves, attempting to reload existing save...");
             }
 
             // Save session credentials

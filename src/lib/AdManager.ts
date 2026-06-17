@@ -182,14 +182,7 @@ class AdManager {
         const activeConfig = { ...this.config, ...customConfig };
 
         if (this.isTelegram()) {
-            let zoneId = activeConfig.monetagZoneId || '11150456';
-            
-            // Map old/invalid Adsgram block IDs or short IDs to the real, working Monetag zone ID
-            if (zoneId === '34910' || zoneId === '34911' || zoneId === '34912' || zoneId.length < 7) {
-                console.log(`[AdManager] Mapping invalid/old zone ID ${zoneId} to default Monetag zone 11150456`);
-                zoneId = '11150456';
-            }
-            
+            const zoneId = activeConfig.monetagZoneId || '11150456';
             return await this.showMontetagTelegramAd(zoneId);
         } else {
             let directLink = activeConfig.adsterraUrl || this.config.adsterraUrl!;
