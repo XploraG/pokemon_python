@@ -10696,12 +10696,67 @@ export default function GameCanvas({
                                 setNotification(null);
                                 setDoubleRewardCoins(0);
                                 setDoubleRewardType(null);
+                                setRecentMaterialDrops([]);
                             }} className="modal-close-btn">&times;</button>
                         </div>
                         <div className="modal-body">
-                            <p style={{ fontWeight: 'bold', fontSize: '13px', marginBottom: '16px', lineHeight: '1.5', color: '#3e2723' }}>
+                            <p style={{ fontWeight: 'bold', fontSize: '13px', marginBottom: '16px', lineHeight: '1.5', color: '#3e2723', whiteSpace: 'pre-line' }}>
                                 {notification.message}
                             </p>
+                            
+                            {/* Material Drops Visual Display */}
+                            {recentMaterialDrops && recentMaterialDrops.length > 0 && (notification.title.includes("Victoria") || notification.title.includes("Victory")) && (
+                                <div style={{ marginTop: '12px', borderTop: '1px solid rgba(0,0,0,0.1)', paddingTop: '10px', marginBottom: '16px' }}>
+                                    <h4 style={{ fontSize: '11px', fontWeight: 'bold', color: '#5d4037', margin: '0 0 8px 0', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                        <span>📦</span> <span>Objetos Obtenidos:</span>
+                                    </h4>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '5px' }}>
+                                        {recentMaterialDrops.map((d) => (
+                                            <div key={d.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(93, 64, 55, 0.05)', border: '1px solid rgba(93, 64, 55, 0.15)', borderRadius: '6px', padding: '6px 10px', fontSize: '11px' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                    <span style={{ fontSize: '14px' }}>{
+                                                        (() => {
+                                                            const emojis: Record<string, string> = {
+                                                                magic_dust: '✨',
+                                                                iron_ore: '🪨',
+                                                                stardust: '🌌',
+                                                                apricorn_red: '🔴',
+                                                                apricorn_blue: '🔵',
+                                                                apricorn_black: '⚫',
+                                                                fossil_helix: '🐚',
+                                                                fossil_dome: '🛡️',
+                                                                fossil_dna: '🧬',
+                                                                tamer_seal: '💮',
+                                                                ancient_amber: '🏺',
+                                                                golden_shard: '🪙',
+                                                                tamer_ball: '🔴',
+                                                                super_ball: '🔵',
+                                                                potion: '🧪',
+                                                                super_potion: '🧪',
+                                                                hyper_potion: '🧪',
+                                                                revive: '✨',
+                                                                full_heal: '💊',
+                                                                evolution_stone: '🪨',
+                                                                thunder_stone: '⚡',
+                                                                water_stone: '💧',
+                                                                fire_stone: '🔥',
+                                                                leaf_stone: '🍃',
+                                                                moon_stone: '🌙'
+                                                            };
+                                                            return emojis[d.id] || '📦';
+                                                        })()
+                                                    }</span>
+                                                    <span style={{ fontWeight: 'bold', color: '#3e2723' }}>{d.name}</span>
+                                                </div>
+                                                <span style={{ background: '#3e2723', color: '#fff', fontSize: '10px', fontWeight: 'bold', padding: '2px 8px', borderRadius: '4px' }}>
+                                                    x{d.quantity}
+                                                </span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
                             {notification.title === "¡Victoria!" && doubleRewardCoins > 0 && (
                                 <button 
                                     onClick={handleDoubleBattleReward}
@@ -10759,6 +10814,7 @@ export default function GameCanvas({
                                     setNotification(null);
                                     setDoubleRewardCoins(0);
                                     setDoubleRewardType(null);
+                                    setRecentMaterialDrops([]);
                                 }}
                                 className="pokemon-button success"
                             >
