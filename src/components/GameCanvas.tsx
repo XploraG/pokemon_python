@@ -1432,9 +1432,11 @@ export default function GameCanvas({
     const [currentMapPath, setCurrentMapPath] = useState(initialMapPath);
     const [pendingWarp, setPendingWarp] = useState<{ path: string, x: number, y: number, name: string } | null>(null);
     const [showTournamentPopup, setShowTournamentPopup] = useState(false);
+    const hasShownTournamentPopupRef = useRef(false);
 
     useEffect(() => {
-        if (currentMapPath.includes('tutorial')) {
+        if (currentMapPath.includes('tutorial') && !hasShownTournamentPopupRef.current) {
+            hasShownTournamentPopupRef.current = true;
             setShowTournamentPopup(true);
             const timer = setTimeout(() => {
                 setShowTournamentPopup(false);
@@ -1483,7 +1485,7 @@ export default function GameCanvas({
     const [otherPlayers, setOtherPlayers] = useState<Record<string, any>>({});
     const otherPlayersRef = useRef<Record<string, any>>({});
     const channelRef = useRef<any>(null);
-    const lastBroadcastRef = useRef({ x: 0, y: 0, dir: '', animFrame: 0, map: '', aura: null as string | null, in_battle: false });
+    const lastBroadcastRef = useRef({ x: 0, y: 0, dir: '', animFrame: 0, map: '', aura: null as string | null, in_battle: false, is_bicycle: false, is_surfing: false });
 
     useEffect(() => {
         otherPlayersRef.current = otherPlayers;
@@ -1560,6 +1562,7 @@ export default function GameCanvas({
         }
     });
     const [isBicycleActive, setIsBicycleActive] = useState(false);
+    const [isSurfingActive, setIsSurfingActive] = useState(false);
     const [showNurseJoyModal, setShowNurseJoyModal] = useState(false);
     const [showDrFosilModal, setShowDrFosilModal] = useState(false);
     const [drFosilAttempts, setDrFosilAttempts] = useState(3);
@@ -2079,7 +2082,9 @@ export default function GameCanvas({
             animFrame: playerRef.current.animFrame,
             map: currentMapPathRef.current,
             aura: currentAura,
-            in_battle: inBattle
+            in_battle: inBattle,
+            is_bicycle: playerRef.current.isBicycle,
+            is_surfing: playerRef.current.isSurfing
         };
     }, [activeWildBattle, activePvPBattle, isGymBattle, isTrainerBattle, walletAddress]);
 
@@ -2233,7 +2238,9 @@ export default function GameCanvas({
                         animFrame: payload.animFrame,
                         map: payload.map,
                         aura: payload.aura,
-                        in_battle: payload.in_battle
+                        in_battle: payload.in_battle,
+                        is_bicycle: payload.is_bicycle ?? false,
+                        is_surfing: payload.is_surfing ?? false
                     }
                 }));
             })
@@ -2745,7 +2752,9 @@ export default function GameCanvas({
         moveDirection: 'down',
         animFrame: 0,
         animTimer: 0,
-        speed: 4 // pixels per frame during interpolation (perfect divisor of 32)
+        speed: 4, // pixels per frame during interpolation (perfect divisor of 32)
+        isBicycle: false,
+        isSurfing: false
     });
     
     // Return coordinates tracking when entering interior maps
@@ -2778,6 +2787,8 @@ export default function GameCanvas({
     });
 
     const playerSpriteRef = useRef<HTMLCanvasElement | HTMLImageElement | null>(null);
+    const bicycleSpriteRef = useRef<HTMLCanvasElement | HTMLImageElement | null>(null);
+    const surfSpriteRef = useRef<HTMLCanvasElement | HTMLImageElement | null>(null);
     const keysPressed = useRef<Record<string, boolean>>({});
     const lastCloudSaveTimeRef = useRef<number>(0);
 
@@ -2830,10 +2841,28 @@ export default function GameCanvas({
                     playerImg.onerror = res;
                 });
 
+                const bicycleImg = new Image();
+                bicycleImg.crossOrigin = "anonymous";
+                bicycleImg.src = '/assets/entities/player/imgs/Bicycle (32x32).png';
+                const bicycleImgPromise = new Promise((res) => {
+                    bicycleImg.onload = res;
+                    bicycleImg.onerror = res;
+                });
+
+                const surfImg = new Image();
+                surfImg.crossOrigin = "anonymous";
+                surfImg.src = '/assets/entities/player/imgs/lapras_mount.png';
+                const surfImgPromise = new Promise((res) => {
+                    surfImg.onload = res;
+                    surfImg.onerror = res;
+                });
+
                 // Load player config, player sprites, and map JSON in parallel
-                const [playerConfig, _, rawMapJson] = await Promise.all([
+                const [playerConfig, _, __, ___, rawMapJson] = await Promise.all([
                     cachedFetchJson('/assets/entities/player/main.json'),
                     playerImgPromise,
+                    bicycleImgPromise,
+                    surfImgPromise,
                     cachedFetchJson(currentMapPath)
                 ]);
 
@@ -2860,6 +2889,8 @@ export default function GameCanvas({
 
                 const playerColorKey = playerConfig.color_to_be_erased ?? '#C8BFE7';
                 playerSpriteRef.current = makeColorTransparent(playerImg, playerColorKey);
+                bicycleSpriteRef.current = makeColorTransparent(bicycleImg, playerColorKey);
+                surfSpriteRef.current = makeColorTransparent(surfImg, '#FF00FF');
 
                 setLoadingMessage('Preparando el entorno...');
 
@@ -3200,7 +3231,28 @@ export default function GameCanvas({
             }
             if (key === 'b') {
                 e.preventDefault();
+                if (playerRef.current.isSurfing) {
+                    setNotification({ title: "Montura", message: "¡No puedes usar la bicicleta en el agua!" });
+                    return;
+                }
                 setIsBicycleActive(prev => !prev);
+            }
+            if (key === 'u') {
+                e.preventDefault();
+                const col = Math.floor(playerRef.current.x / mapDataRef.current.tileSize);
+                const row = Math.floor(playerRef.current.y / mapDataRef.current.tileSize);
+                const currentTile = mapDataRef.current.grid[row]?.[col];
+                if (playerRef.current.isSurfing && currentTile === 'W') {
+                    setNotification({ title: "Montura", message: "¡No puedes desmontar en medio del agua!" });
+                    return;
+                }
+                setIsSurfingActive(prev => {
+                    const nextVal = !prev;
+                    if (nextVal) {
+                        setIsBicycleActive(false);
+                    }
+                    return nextVal;
+                });
             }
         };
 
@@ -3245,7 +3297,9 @@ export default function GameCanvas({
                  player.animFrame !== lastBroadcastRef.current.animFrame ||
                  currentMapPathRef.current !== lastBroadcastRef.current.map ||
                  currentAura !== lastBroadcastRef.current.aura ||
-                 inBattle !== lastBroadcastRef.current.in_battle)
+                 inBattle !== lastBroadcastRef.current.in_battle ||
+                 player.isBicycle !== lastBroadcastRef.current.is_bicycle ||
+                 player.isSurfing !== lastBroadcastRef.current.is_surfing)
             ) {
                 channelRef.current.send({
                     type: 'broadcast',
@@ -3259,7 +3313,9 @@ export default function GameCanvas({
                         animFrame: player.animFrame,
                         map: currentMapPathRef.current,
                         aura: currentAura,
-                        in_battle: inBattle
+                        in_battle: inBattle,
+                        is_bicycle: player.isBicycle,
+                        is_surfing: player.isSurfing
                     }
                 });
                 lastBroadcastRef.current = {
@@ -3269,7 +3325,9 @@ export default function GameCanvas({
                     animFrame: player.animFrame,
                     map: currentMapPathRef.current,
                     aura: currentAura,
-                    in_battle: inBattle
+                    in_battle: inBattle,
+                    is_bicycle: player.isBicycle,
+                    is_surfing: player.isSurfing
                 };
             }
 
@@ -3348,7 +3406,10 @@ export default function GameCanvas({
             drawables.push({
                 ySort: player.y, // stand player on coordinate
                 draw: (c) => {
-                    const sprite = playerSpriteRef.current;
+                    let sprite = playerSpriteRef.current;
+                    if (player.isBicycle && bicycleSpriteRef.current) {
+                        sprite = bicycleSpriteRef.current;
+                    }
                     if (sprite) {
                         // Draw local player aura
                         const synergy = getMedalSynergy(economyRef.current.equipped_medals);
@@ -3395,13 +3456,47 @@ export default function GameCanvas({
                         }
 
                         let dirOffset = 0;
-                        if (player.moveDirection === 'left') dirOffset = 48;
-                        else if (player.moveDirection === 'up') dirOffset = 96;
-                        else if (player.moveDirection === 'right') dirOffset = 144;
+                        if (player.isBicycle) {
+                            if (player.moveDirection === 'up') dirOffset = 48;
+                            else if (player.moveDirection === 'left') dirOffset = 96;
+                            else if (player.moveDirection === 'right') dirOffset = 144;
+                        } else {
+                            if (player.moveDirection === 'left') dirOffset = 48;
+                            else if (player.moveDirection === 'up') dirOffset = 96;
+                            else if (player.moveDirection === 'right') dirOffset = 144;
+                        }
+
+                        // Draw Lapras mount under the player if surfing
+                        if (player.isSurfing && surfSpriteRef.current) {
+                            let laprasRow = 0; // Down
+                            if (player.moveDirection === 'up') laprasRow = 1;
+                            else if (player.moveDirection === 'left') laprasRow = 2;
+                            else if (player.moveDirection === 'right') laprasRow = 3;
+
+                            const frame = player.animFrame;
+                            const cellX = frame * 256;
+                            const cellY = laprasRow * 256;
+                            
+                            const laprasW = 48;
+                            const laprasH = 48;
+                            
+                            c.drawImage(
+                                surfSpriteRef.current,
+                                cellX + 68,
+                                cellY + 80,
+                                120,
+                                120,
+                                player.x - camX - laprasW / 2 + offsetX,
+                                player.y - camY - laprasH / 2 - 4 + offsetY,
+                                laprasW,
+                                laprasH
+                            );
+                        }
 
                         const frameWidth = 15;
                         const frameHeight = 20;
                         const scale = 2.5;
+                        const surfYOffset = player.isSurfing ? -4 : 0;
 
                         c.drawImage(
                             sprite,
@@ -3410,7 +3505,7 @@ export default function GameCanvas({
                             frameWidth,
                             frameHeight,
                             player.x - camX - (frameWidth * scale) / 2 + offsetX, // center player on coordinate
-                            player.y - camY - frameHeight * scale + offsetY, // stand player on coordinate
+                            player.y - camY - frameHeight * scale + offsetY + surfYOffset, // stand player on coordinate
                             frameWidth * scale,
                             frameHeight * scale
                         );
@@ -3444,7 +3539,10 @@ export default function GameCanvas({
                     drawables.push({
                         ySort: otherPlayer.y,
                         draw: (c) => {
-                            const sprite = playerSpriteRef.current;
+                            let sprite = playerSpriteRef.current;
+                            if (otherPlayer.is_bicycle && bicycleSpriteRef.current) {
+                                sprite = bicycleSpriteRef.current;
+                            }
                             if (sprite) {
                                 c.save();
                                 if (otherPlayer.in_battle) {
@@ -3494,13 +3592,47 @@ export default function GameCanvas({
                                 }
 
                                 let dirOffset = 0;
-                                if (otherPlayer.dir === 'left') dirOffset = 48;
-                                else if (otherPlayer.dir === 'up') dirOffset = 96;
-                                else if (otherPlayer.dir === 'right') dirOffset = 144;
+                                if (otherPlayer.is_bicycle) {
+                                    if (otherPlayer.dir === 'up') dirOffset = 48;
+                                    else if (otherPlayer.dir === 'left') dirOffset = 96;
+                                    else if (otherPlayer.dir === 'right') dirOffset = 144;
+                                } else {
+                                    if (otherPlayer.dir === 'left') dirOffset = 48;
+                                    else if (otherPlayer.dir === 'up') dirOffset = 96;
+                                    else if (otherPlayer.dir === 'right') dirOffset = 144;
+                                }
+
+                                // Draw Lapras mount under the remote player if surfing
+                                if (otherPlayer.is_surfing && surfSpriteRef.current) {
+                                    let laprasRow = 0; // Down
+                                    if (otherPlayer.dir === 'up') laprasRow = 1;
+                                    else if (otherPlayer.dir === 'left') laprasRow = 2;
+                                    else if (otherPlayer.dir === 'right') laprasRow = 3;
+
+                                    const frame = otherPlayer.animFrame ?? 0;
+                                    const cellX = frame * 256;
+                                    const cellY = laprasRow * 256;
+                                    
+                                    const laprasW = 48;
+                                    const laprasH = 48;
+                                    
+                                    c.drawImage(
+                                        surfSpriteRef.current,
+                                        cellX + 68,
+                                        cellY + 80,
+                                        120,
+                                        120,
+                                        otherPlayer.x - camX - laprasW / 2 + offsetX,
+                                        otherPlayer.y - camY - laprasH / 2 - 4 + offsetY,
+                                        laprasW,
+                                        laprasH
+                                    );
+                                }
 
                                 const frameWidth = 15;
                                 const frameHeight = 20;
                                 const scale = 2.5;
+                                const surfYOffset = otherPlayer.is_surfing ? -4 : 0;
 
                                 c.drawImage(
                                     sprite,
@@ -3509,7 +3641,7 @@ export default function GameCanvas({
                                     frameWidth,
                                     frameHeight,
                                     otherPlayer.x - camX - (frameWidth * scale) / 2 + offsetX,
-                                    otherPlayer.y - camY - frameHeight * scale + offsetY,
+                                    otherPlayer.y - camY - frameHeight * scale + offsetY + surfYOffset,
                                     frameWidth * scale,
                                     frameHeight * scale
                                 );
@@ -3563,8 +3695,12 @@ export default function GameCanvas({
         const player = playerRef.current;
         const mapData = mapDataRef.current;
 
-        // Set speed based on Bicycle mount state
-        player.speed = isBicycleActive ? 8 : 4;
+        // Sync ref properties with React state
+        player.isBicycle = isBicycleActive;
+        player.isSurfing = isSurfingActive;
+
+        // Set speed based on active mount
+        player.speed = player.isBicycle ? 8 : (player.isSurfing ? 8 : 4);
 
         if (!player.isMoving) {
             checkTrainerLineOfSight();
@@ -3643,8 +3779,8 @@ export default function GameCanvas({
                 player.x += (dx / dist) * player.speed;
                 player.y += (dy / dist) * player.speed;
  
-                // Animate walk frames (faster if on bicycle!)
-                player.animTimer += isBicycleActive ? 2 : 1;
+                // Animate walk frames (faster if on bicycle or surfing!)
+                player.animTimer += (player.isBicycle || player.isSurfing) ? 2 : 1;
                 if (player.animTimer >= 8) {
                     player.animFrame = (player.animFrame + 1) % 3;
                     player.animTimer = 0;
@@ -3696,7 +3832,6 @@ export default function GameCanvas({
                 const nextX = player.x + moveX * gridMoveDist;
                 const nextY = player.y + moveY * gridMoveDist;
 
-
                 // Collision bounds check
                 const isOutOfBounds = nextX < 0 || nextX >= mapData.width || nextY < 0 || nextY >= mapData.height;
                 if (isOutOfBounds) {
@@ -3705,6 +3840,11 @@ export default function GameCanvas({
                 }
 
                 if (nextX >= 0 && nextX < mapData.width && nextY >= 0 && nextY < mapData.height) {
+                    const col = Math.floor(nextX / mapData.tileSize);
+                    const row = Math.floor(nextY / mapData.tileSize);
+                    const targetTile = mapData.grid[row]?.[col];
+                    const nextIsSurfing = (targetTile === 'W');
+
                     // Bounding Box Check against solid structure colliders
                     // Player feet hitbox: 18px wide and 8px high centered at feet base
                     const pw = 18;
@@ -3720,6 +3860,10 @@ export default function GameCanvas({
                             py < collider.y + collider.h &&
                             py + ph > collider.y
                         ) {
+                            // If we expect to be surfing at target, ignore water colliders ('W')
+                            if (nextIsSurfing && collider.name.startsWith('Wall_W_')) {
+                                continue;
+                            }
                             collides = true;
                             break;
                         }
@@ -3733,6 +3877,17 @@ export default function GameCanvas({
                         player.animTimer = 0;
                         
                         setActiveDialog(null);
+
+                        // Update surf/bicycle states based on destination tile
+                        if (nextIsSurfing && !player.isSurfing) {
+                            player.isSurfing = true;
+                            setIsSurfingActive(true);
+                            player.isBicycle = false;
+                            setIsBicycleActive(false);
+                        } else if (!nextIsSurfing && player.isSurfing) {
+                            player.isSurfing = false;
+                            setIsSurfingActive(false);
+                        }
                     }
                 }
             }
@@ -8581,8 +8736,35 @@ export default function GameCanvas({
                         >A</div>
                         <div 
                             className="action-btn action-btn-b"
-                            onPointerDown={(e) => { e.preventDefault(); setIsBicycleActive(prev => !prev); }}
+                            onPointerDown={(e) => { 
+                                e.preventDefault(); 
+                                if (playerRef.current.isSurfing) {
+                                    setNotification({ title: "Montura", message: "¡No puedes usar la bicicleta en el agua!" });
+                                    return;
+                                }
+                                setIsBicycleActive(prev => !prev); 
+                            }}
                         >B</div>
+                        <div 
+                            className="action-btn action-btn-surf"
+                            onPointerDown={(e) => { 
+                                e.preventDefault(); 
+                                const col = Math.floor(playerRef.current.x / mapDataRef.current.tileSize);
+                                const row = Math.floor(playerRef.current.y / mapDataRef.current.tileSize);
+                                const currentTile = mapDataRef.current.grid[row]?.[col];
+                                if (playerRef.current.isSurfing && currentTile === 'W') {
+                                    setNotification({ title: "Montura", message: "¡No puedes desmontar en medio del agua!" });
+                                    return;
+                                }
+                                setIsSurfingActive(prev => {
+                                    const nextVal = !prev;
+                                    if (nextVal) {
+                                        setIsBicycleActive(false);
+                                    }
+                                    return nextVal;
+                                });
+                            }}
+                        >S</div>
                         <div 
                             className="action-btn action-btn-menu"
                             onPointerDown={(e) => { e.preventDefault(); setShowMenuModal(prev => !prev); setMenuSection('main'); }}

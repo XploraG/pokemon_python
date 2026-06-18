@@ -1144,8 +1144,22 @@ body::before {
   font-size: 18px;
 }
 
+.action-btn-surf {
+  bottom: 120px;
+  right: 95px;
+  width: 45px;
+  height: 45px;
+  font-size: 16px;
+  background: rgba(30, 144, 255, 0.5);
+  border-color: rgba(30, 144, 255, 0.6);
+}
+
+.action-btn-surf:active {
+  background: rgba(30, 144, 255, 0.85);
+}
+
 .action-btn-menu {
-  bottom: 115px;
+  bottom: 175px;
   right: 35px;
   width: 45px;
   height: 45px;
