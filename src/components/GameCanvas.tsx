@@ -5834,6 +5834,13 @@ export default function GameCanvas({
         if (showMarketplaceModal) {
             fetchMarketListings();
             fetchMarketHistory();
+
+            const interval = setInterval(() => {
+                fetchMarketListings();
+                fetchMarketHistory();
+            }, 3000);
+
+            return () => clearInterval(interval);
         }
     }, [showMarketplaceModal]);
 
@@ -5935,6 +5942,7 @@ export default function GameCanvas({
             setListPrice(0);
         }
 
+        setMarketTab('my_listings');
         fetchMarketListings();
     };
 
