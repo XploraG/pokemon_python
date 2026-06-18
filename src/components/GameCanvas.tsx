@@ -1431,6 +1431,17 @@ export default function GameCanvas({
     };
     const [currentMapPath, setCurrentMapPath] = useState(initialMapPath);
     const [pendingWarp, setPendingWarp] = useState<{ path: string, x: number, y: number, name: string } | null>(null);
+    const [showTournamentPopup, setShowTournamentPopup] = useState(false);
+
+    useEffect(() => {
+        if (currentMapPath.includes('tutorial')) {
+            setShowTournamentPopup(true);
+            const timer = setTimeout(() => {
+                setShowTournamentPopup(false);
+            }, 5000);
+            return () => clearTimeout(timer);
+        }
+    }, [currentMapPath]);
     
     // Player nickname / alias states
     const [playerName, setPlayerName] = useState(saveName);
@@ -1510,6 +1521,12 @@ export default function GameCanvas({
     const [missionTab, setMissionTab] = useState<'daily' | 'weekly'>('daily');
     const [showInventoryModal, setShowInventoryModal] = useState(false);
     const [showMenuModal, setShowMenuModal] = useState(false);
+    const [menuSection, setMenuSection] = useState<'main' | 'perfil' | 'economia' | 'social'>('main');
+    const [showReferralsModal, setShowReferralsModal] = useState(false);
+    const [invitedFriends, setInvitedFriends] = useState<any[]>([]);
+    const [loadingFriends, setLoadingFriends] = useState<boolean>(false);
+    const [copyWebSuccess, setCopyWebSuccess] = useState<boolean>(false);
+    const [copyTgSuccess, setCopyTgSuccess] = useState<boolean>(false);
     const [showPcModal, setShowPcModal] = useState(false);
     const [showReleaseConfirmModal, setShowReleaseConfirmModal] = useState(false);
     const [pokeToReleaseIndex, setPokeToReleaseIndex] = useState<number | null>(null);
@@ -1622,7 +1639,11 @@ export default function GameCanvas({
     const [showPvpBackpack, setShowPvpBackpack] = useState<boolean>(false);
     const [showPvpSwitch, setShowPvpSwitch] = useState<boolean>(false);
     const [showLeaderboard, setShowLeaderboard] = useState<boolean>(false);
+    const [activeLeaderboardTab, setActiveLeaderboardTab] = useState<'level' | 'pvp' | 'referrals'>('level');
+    const [levelLeaderboard, setLevelLeaderboard] = useState<any[] | null>(null);
     const [pvpLeaderboard, setPvpLeaderboard] = useState<any[] | null>(null);
+    const [referralLeaderboard, setReferralLeaderboard] = useState<any[] | null>(null);
+    const [timeLeft, setTimeLeft] = useState<string>('');
 
     const showNotification = (title: string, message: string) => {
         setNotification({ title, message });
@@ -4971,13 +4992,106 @@ export default function GameCanvas({
         }
     };
 
+    const fetchInvitedFriends = async () => {
+        if (!walletAddress) return;
+        setLoadingFriends(true);
+        try {
+            const { data, error } = await supabase
+                .from('player_saves')
+                .select('wallet_address, save_data')
+                .eq('save_data->economy_data->>referred_by', walletAddress);
+            if (error) {
+                console.error("Error fetching invited friends:", error.message);
+            } else if (data) {
+                setInvitedFriends(data);
+            }
+        } catch (e) {
+            console.error("Failed to query invited friends:", e);
+        } finally {
+            setLoadingFriends(false);
+        }
+    };
+
+    useEffect(() => {
+        if (showReferralsModal && walletAddress) {
+            fetchInvitedFriends();
+        }
+    }, [showReferralsModal, walletAddress]);
+
+    const handleClaimReferralReward = async (friendAddress: string) => {
+        try {
+            const claimed = economyRef.current.claimed_referrals || [];
+            if (claimed.includes(friendAddress)) {
+                showNotification("Referidos", "Ya reclamaste la recompensa por este invitado.");
+                return;
+            }
+
+            economyRef.current.coins += 300;
+            economyRef.current.total_coins_earned += 300;
+            inventoryRef.current.addItem('tamer_ball', 1);
+            inventoryRef.current.addItem('super_potion', 2);
+
+            if (!economyRef.current.claimed_referrals) {
+                economyRef.current.claimed_referrals = [];
+            }
+            economyRef.current.claimed_referrals.push(friendAddress);
+
+            setEconomy(new Economy(economyRef.current.toSaveData()));
+
+            await saveLocalEconomy(undefined, undefined, undefined, true, inventoryRef.current);
+
+            showNotification("¡Recompensa Reclamada! 🎁", "Recibiste 300 Coins, 1 Tamer Ball y 2 Superpociones.");
+            fetchInvitedFriends();
+        } catch (err) {
+            console.error("Error claiming referral reward:", err);
+            showNotification("Error", "No se pudo reclamar la recompensa.");
+        }
+    };
+
+    useEffect(() => {
+        const target = 1782363599000; // Wednesday June 24, 2026 23:59:59 UTC-5
+        const updateTimer = () => {
+            const diff = target - Date.now();
+            if (diff <= 0) {
+                setTimeLeft('¡Evento Finalizado!');
+                return;
+            }
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+            setTimeLeft(`${days}d ${hours}h ${minutes}m ${seconds}s`);
+        };
+        updateTimer();
+        const interval = setInterval(updateTimer, 1000);
+        return () => clearInterval(interval);
+    }, []);
+
     const fetchLeaderboard = async () => {
         const { data, error } = await supabase
             .from('player_saves')
             .select('wallet_address, save_data');
             
         if (data) {
-            const ranks = data.map((row: any) => {
+            // 1. Level Leaderboard
+            const levelRanks = data.map((row: any) => {
+                const lvl = row.save_data?.economy_data?.level || 1;
+                const xp = row.save_data?.economy_data?.xp || 0;
+                const pName = row.save_data?.name || "Entrenador";
+                return {
+                    address: row.wallet_address,
+                    name: pName,
+                    level: lvl,
+                    xp: xp
+                };
+            }).sort((a: any, b: any) => {
+                if (b.level !== a.level) return b.level - a.level;
+                return b.xp - a.xp;
+            }).slice(0, 50);
+            setLevelLeaderboard(levelRanks);
+
+            // 2. PvP Leaderboard
+            const pvpRanks = data.map((row: any) => {
                 const pvpWins = row.save_data?.economy_data?.pvp_wins || 0;
                 const pvpLosses = row.save_data?.economy_data?.pvp_losses || 0;
                 const pName = row.save_data?.name || "Entrenador";
@@ -4988,7 +5102,38 @@ export default function GameCanvas({
                     losses: pvpLosses
                 };
             }).sort((a: any, b: any) => b.wins - a.wins).slice(0, 50);
-            setPvpLeaderboard(ranks);
+            setPvpLeaderboard(pvpRanks);
+
+            // 3. Referral Leaderboard
+            const refCounts: Record<string, { total: number; valid: number; name: string; wallet: string }> = {};
+            data.forEach((row: any) => {
+                const referrer = row.save_data?.economy_data?.referred_by;
+                if (referrer) {
+                    const totalMons = (row.save_data?.team_data?.length || 0) + (row.save_data?.pc_pokemon?.length || 0);
+                    const isValid = totalMons > 1;
+                    if (!refCounts[referrer]) {
+                        refCounts[referrer] = { total: 0, valid: 0, name: `Tamer-${referrer.slice(0, 6)}`, wallet: referrer };
+                    }
+                    refCounts[referrer].total += 1;
+                    if (isValid) {
+                        refCounts[referrer].valid += 1;
+                    }
+                }
+            });
+            // Update names of referrers using the main list
+            data.forEach((row: any) => {
+                const wallet = row.wallet_address;
+                if (refCounts[wallet]) {
+                    refCounts[wallet].name = row.save_data?.name || `Tamer-${wallet.slice(0, 6)}`;
+                }
+            });
+            const refRanks = Object.values(refCounts)
+                .sort((a: any, b: any) => {
+                    if (b.valid !== a.valid) return b.valid - a.valid;
+                    return b.total - a.total;
+                })
+                .slice(0, 50);
+            setReferralLeaderboard(refRanks);
         }
     };
 
@@ -8358,6 +8503,36 @@ export default function GameCanvas({
 
     return (
         <div className="game-container">
+            {/* Tournament Beta Popup */}
+            {showTournamentPopup && (
+                <div className="absolute inset-0 z-[9999] flex flex-col items-center justify-center bg-black/85 backdrop-blur-sm p-4 fade-in">
+                    <div className="relative bg-white pixel-border max-w-[90%] w-full p-4 flex flex-col items-center">
+                        {/* Close button */}
+                        <button 
+                            onClick={() => setShowTournamentPopup(false)}
+                            className="absolute top-2 right-4 text-3xl font-bold hover:text-red-600 transition-colors z-10 text-black"
+                            style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+                        >
+                            &times;
+                        </button>
+                        
+                        {/* Image */}
+                        <div className="w-full overflow-hidden pixel-border-sm bg-black aspect-[1.78] relative mb-3">
+                            <img 
+                                src="/assets/imgs/tournament_popup.jpg" 
+                                alt="Tamer Tournament" 
+                                className="w-full h-full object-contain"
+                            />
+                        </div>
+                        
+                        {/* Text Below */}
+                        <p className="pixel-font text-[10px] uppercase text-yellow-600 animate-pulse text-center" style={{ fontFamily: "'Press Start 2P', monospace" }}>
+                            muy pronto
+                        </p>
+                    </div>
+                </div>
+            )}
+
             {/* Visual game Canvas wrapper */}
             <div className="canvas-wrapper" ref={wrapperRef}>
                 {/* Map Transition Popup */}
@@ -8410,7 +8585,7 @@ export default function GameCanvas({
                         >B</div>
                         <div 
                             className="action-btn action-btn-menu"
-                            onPointerDown={(e) => { e.preventDefault(); setShowMenuModal(prev => !prev); }}
+                            onPointerDown={(e) => { e.preventDefault(); setShowMenuModal(prev => !prev); setMenuSection('main'); }}
                         >☰</div>
                     </div>
                 )}
@@ -8418,7 +8593,7 @@ export default function GameCanvas({
                 {/* Floating Menu Button */}
                 {!loading && (
                     <>
-                        <button onClick={() => setShowMenuModal(true)} className="floating-menu-btn" style={{ zIndex: 100 }}>
+                        <button onClick={() => { setShowMenuModal(true); setMenuSection('main'); }} className="floating-menu-btn" style={{ zIndex: 100 }}>
                             ☰ MENU (Q)
                         </button>
                         <button 
@@ -8626,7 +8801,11 @@ export default function GameCanvas({
                         }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                 <span style={{ fontSize: '18px' }}>🎮</span>
-                                <span style={{ color: '#e2e8f0', fontWeight: 'bold', fontSize: '14px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>PIXEL TAMER</span>
+                                <span style={{ color: '#e2e8f0', fontWeight: 'bold', fontSize: '14px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                                    {menuSection === 'main' ? 'PIXEL TAMER' : 
+                                     menuSection === 'perfil' ? 'MI PERFIL' :
+                                     menuSection === 'economia' ? 'ECONOMÍA' : 'SOCIAL'}
+                                </span>
                             </div>
                             <button onClick={() => setShowMenuModal(false)} style={{
                                 background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)',
@@ -8637,258 +8816,442 @@ export default function GameCanvas({
                         </div>
 
                         <div style={{ padding: '16px 16px 20px' }}>
+                            {menuSection === 'main' ? (
+                                <>
+                                    {/* Perfil card (Horizontal) */}
+                                    <button
+                                        onClick={() => setMenuSection('perfil')}
+                                        style={{
+                                            width: '100%',
+                                            background: 'linear-gradient(135deg, rgba(99,102,241,0.2) 0%, rgba(139,92,246,0.15) 100%)',
+                                            border: '1px solid rgba(139,92,246,0.35)',
+                                            borderRadius: '12px', padding: '14px 16px', cursor: 'pointer',
+                                            display: 'flex', alignItems: 'center', gap: '14px',
+                                            textAlign: 'left', transition: 'all 0.2s', marginBottom: '12px', margin: '0 0 12px 0'
+                                        }}
+                                    >
+                                        <div style={{ fontSize: '32px', lineHeight: 1 }}>👤</div>
+                                        <div style={{ flex: 1 }}>
+                                            <div style={{ color: '#c4b5fd', fontWeight: 'bold', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Mi Perfil</div>
+                                            <div style={{ color: '#cbd5e1', fontSize: '10px', marginTop: '2px' }}>{playerName} • Nvl. {economy.level}</div>
+                                        </div>
+                                        <div style={{ color: '#8b5cf6', fontSize: '16px' }}>❯</div>
+                                    </button>
 
-                            {/* TOP CARDS — Perfil y Pokémon */}
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '16px' }}>
+                                    {/* Grid for Economia and Social */}
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '16px' }}>
+                                        {/* Economia Card */}
+                                        <button
+                                            onClick={() => setMenuSection('economia')}
+                                            style={{
+                                                background: 'linear-gradient(135deg, rgba(16,185,129,0.12) 0%, rgba(5,150,105,0.15) 100%)',
+                                                border: '1px solid rgba(16,185,129,0.3)',
+                                                borderRadius: '12px', padding: '16px 10px', cursor: 'pointer',
+                                                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px',
+                                                textAlign: 'center', transition: 'all 0.2s',
+                                            }}
+                                        >
+                                            <div style={{ fontSize: '32px', lineHeight: 1 }}>💰</div>
+                                            <div style={{ color: '#6ee7b7', fontWeight: 'bold', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Economía</div>
+                                            <div style={{ color: '#94a3b8', fontSize: '9px', lineHeight: '1.2' }}>Pasivos, Streak, Misiones</div>
+                                        </button>
 
-                                {/* Mi Perfil card */}
-                                <button
-                                    onClick={() => { handleViewLocalProfile(); setShowMenuModal(false); }}
-                                    style={{
-                                        background: 'linear-gradient(135deg, rgba(99,102,241,0.25) 0%, rgba(139,92,246,0.2) 100%)',
-                                        border: '1px solid rgba(139,92,246,0.4)',
-                                        borderRadius: '12px', padding: '14px 10px', cursor: 'pointer',
-                                        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px',
-                                        textAlign: 'center', transition: 'all 0.2s',
+                                        {/* Social Card */}
+                                        <button
+                                            onClick={() => setMenuSection('social')}
+                                            style={{
+                                                background: 'linear-gradient(135deg, rgba(168,85,247,0.12) 0%, rgba(109,40,217,0.15) 100%)',
+                                                border: '1px solid rgba(168,85,247,0.3)',
+                                                borderRadius: '12px', padding: '16px 10px', cursor: 'pointer',
+                                                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px',
+                                                textAlign: 'center', transition: 'all 0.2s',
+                                            }}
+                                        >
+                                            <div style={{ fontSize: '32px', lineHeight: 1 }}>🤝</div>
+                                            <div style={{ color: '#c084fc', fontWeight: 'bold', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Social</div>
+                                            <div style={{ color: '#94a3b8', fontSize: '9px', lineHeight: '1.2' }}>Mercado, Taller, Viajes, Referidos</div>
+                                        </button>
+                                    </div>
+
+                                    {/* Divider */}
+                                    <div style={{ height: '1px', background: 'rgba(255,255,255,0.07)', marginBottom: '12px' }} />
+
+                                    {/* LOGOUT */}
+                                    <button onClick={() => { saveLocalEconomy(); onBackToMenu(); }} style={{
+                                        width: '100%', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)',
+                                        borderRadius: '10px', padding: '10px 16px', cursor: 'pointer',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                                        color: '#f87171', fontWeight: 'bold', fontSize: '11px',
+                                        textTransform: 'uppercase', letterSpacing: '0.06em', transition: 'all 0.2s', margin: 0,
                                     }}
-                                    onMouseEnter={e => (e.currentTarget.style.background = 'linear-gradient(135deg, rgba(99,102,241,0.4) 0%, rgba(139,92,246,0.35) 100%)')}
-                                    onMouseLeave={e => (e.currentTarget.style.background = 'linear-gradient(135deg, rgba(99,102,241,0.25) 0%, rgba(139,92,246,0.2) 100%)')}
-                                >
-                                    <div style={{ fontSize: '28px', lineHeight: 1 }}>👤</div>
-                                    <div style={{ color: '#c4b5fd', fontWeight: 'bold', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Mi Perfil</div>
-                                    <div style={{ color: '#a78bfa', fontSize: '9px', background: 'rgba(139,92,246,0.2)', borderRadius: '4px', padding: '1px 6px', fontWeight: 'bold' }}>{playerName}</div>
-                                    <div style={{ color: '#7c6fc9', fontSize: '9px' }}>Nv. {economy.level}</div>
-                                </button>
+                                        onMouseEnter={e => (e.currentTarget.style.background = 'rgba(239,68,68,0.2)')}
+                                        onMouseLeave={e => (e.currentTarget.style.background = 'rgba(239,68,68,0.1)')}
+                                    >
+                                        <span>🚪</span> Cerrar Sesión
+                                    </button>
+                                </>
+                            ) : (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                    {/* Back Button */}
+                                    <button 
+                                        onClick={() => setMenuSection('main')}
+                                        style={{
+                                            background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
+                                            borderRadius: '8px', color: '#cbd5e1', cursor: 'pointer',
+                                            padding: '6px 12px', fontSize: '10px', fontWeight: 'bold', alignSelf: 'flex-start',
+                                            display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '8px', margin: '0 0 8px 0'
+                                        }}
+                                    >
+                                        ◀ Volver
+                                    </button>
 
-                                {/* Mis Pokémons card */}
-                                <button
-                                    onClick={() => { setShowPcModal(true); setShowMenuModal(false); }}
-                                    style={{
-                                        background: 'linear-gradient(135deg, rgba(16,185,129,0.2) 0%, rgba(5,150,105,0.25) 100%)',
-                                        border: '1px solid rgba(16,185,129,0.35)',
-                                        borderRadius: '12px', padding: '14px 10px', cursor: 'pointer',
-                                        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px',
-                                        textAlign: 'center', transition: 'all 0.2s',
-                                    }}
-                                    onMouseEnter={e => (e.currentTarget.style.background = 'linear-gradient(135deg, rgba(16,185,129,0.35) 0%, rgba(5,150,105,0.4) 100%)')}
-                                    onMouseLeave={e => (e.currentTarget.style.background = 'linear-gradient(135deg, rgba(16,185,129,0.2) 0%, rgba(5,150,105,0.25) 100%)')}
-                                >
-                                    <div style={{ fontSize: '28px', lineHeight: 1 }}>🎴</div>
-                                    <div style={{ color: '#6ee7b7', fontWeight: 'bold', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Mis Pokémon</div>
-                                    <div style={{ color: '#34d399', fontSize: '9px', background: 'rgba(16,185,129,0.2)', borderRadius: '4px', padding: '1px 6px', fontWeight: 'bold' }}>PC Storage</div>
-                                    <div style={{ color: '#6ee7b7', fontSize: '9px' }}>{team.length} en equipo</div>
-                                </button>
-                            </div>
+                                    {/* Perfil Submenu */}
+                                    {menuSection === 'perfil' && (
+                                        <>
+                                            {/* Mi perfil details */}
+                                            <button onClick={() => { handleViewLocalProfile(); setShowMenuModal(false); }} style={{
+                                                background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
+                                                borderRadius: '10px', padding: '12px 14px', cursor: 'pointer', color: '#e2e8f0',
+                                                display: 'flex', alignItems: 'center', gap: '10px', textAlign: 'left', margin: 0
+                                            }}>
+                                                <span style={{ fontSize: '20px' }}>👤</span>
+                                                <div>
+                                                    <div style={{ fontWeight: 'bold', fontSize: '11px' }}>Mi Perfil</div>
+                                                    <div style={{ fontSize: '8px', color: '#64748b' }}>Estadísticas y datos de entrenador</div>
+                                                </div>
+                                            </button>
 
-                            {/* Pokédex full-width card */}
-                            <button
-                                onClick={() => { setShowPokedexModal(true); setShowMenuModal(false); }}
-                                style={{
-                                    width: '100%',
-                                    background: 'linear-gradient(135deg, rgba(236,72,153,0.15) 0%, rgba(219,39,119,0.2) 100%)',
-                                    border: '1px solid rgba(236,72,153,0.35)',
-                                    borderRadius: '12px', padding: '12px 10px', cursor: 'pointer',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px',
-                                    textAlign: 'center', transition: 'all 0.2s', marginBottom: '16px', margin: '0 0 16px 0'
-                                }}
-                                onMouseEnter={e => (e.currentTarget.style.background = 'linear-gradient(135deg, rgba(236,72,153,0.25) 0%, rgba(219,39,119,0.3) 100%)')}
-                                onMouseLeave={e => (e.currentTarget.style.background = 'linear-gradient(135deg, rgba(236,72,153,0.15) 0%, rgba(219,39,119,0.2) 100%)')}
-                            >
-                                <div style={{ fontSize: '24px', lineHeight: 1 }}>📖</div>
-                                <div style={{ textAlign: 'left' }}>
-                                    <div style={{ color: '#f472b6', fontWeight: 'bold', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Pokédex Kanto</div>
-                                    <div style={{ color: '#cbd5e1', fontSize: '9px' }}>Ver Pokémon registrados, avistados y capturados</div>
+                                            {/* Mis Pokemon */}
+                                            <button onClick={() => { setShowPcModal(true); setShowMenuModal(false); }} style={{
+                                                background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
+                                                borderRadius: '10px', padding: '12px 14px', cursor: 'pointer', color: '#e2e8f0',
+                                                display: 'flex', alignItems: 'center', gap: '10px', textAlign: 'left', margin: 0
+                                            }}>
+                                                <span style={{ fontSize: '20px' }}>🎴</span>
+                                                <div>
+                                                    <div style={{ fontWeight: 'bold', fontSize: '11px' }}>Mis Pokémon</div>
+                                                    <div style={{ fontSize: '8px', color: '#64748b' }}>Equipo y almacenamiento PC</div>
+                                                </div>
+                                            </button>
+
+                                            {/* Pokedex */}
+                                            <button onClick={() => { setShowPokedexModal(true); setShowMenuModal(false); }} style={{
+                                                background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
+                                                borderRadius: '10px', padding: '12px 14px', cursor: 'pointer', color: '#e2e8f0',
+                                                display: 'flex', alignItems: 'center', gap: '10px', textAlign: 'left', margin: 0
+                                            }}>
+                                                <span style={{ fontSize: '20px' }}>📖</span>
+                                                <div>
+                                                    <div style={{ fontWeight: 'bold', fontSize: '11px' }}>Pokédex</div>
+                                                    <div style={{ fontSize: '8px', color: '#64748b' }}>Progreso de registro de Pokémon</div>
+                                                </div>
+                                            </button>
+
+                                            {/* Misiones */}
+                                            <button onClick={() => { setShowMissions(true); setShowMenuModal(false); }} style={{
+                                                background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
+                                                borderRadius: '10px', padding: '12px 14px', cursor: 'pointer', color: '#e2e8f0',
+                                                display: 'flex', alignItems: 'center', gap: '10px', textAlign: 'left', margin: 0
+                                            }}>
+                                                <span style={{ fontSize: '20px' }}>🏆</span>
+                                                <div>
+                                                    <div style={{ fontWeight: 'bold', fontSize: '11px' }}>Misiones</div>
+                                                    <div style={{ fontSize: '8px', color: '#64748b' }}>Desafíos diarios y semanales</div>
+                                                </div>
+                                            </button>
+
+                                            {/* Mochila */}
+                                            <button onClick={() => { setShowInventoryModal(true); setShowMenuModal(false); }} style={{
+                                                background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
+                                                borderRadius: '10px', padding: '12px 14px', cursor: 'pointer', color: '#e2e8f0',
+                                                display: 'flex', alignItems: 'center', gap: '10px', textAlign: 'left', margin: 0
+                                            }}>
+                                                <span style={{ fontSize: '20px' }}>🎒</span>
+                                                <div>
+                                                    <div style={{ fontWeight: 'bold', fontSize: '11px' }}>Mochila</div>
+                                                    <div style={{ fontSize: '8px', color: '#64748b' }}>Inventario de objetos y esferas</div>
+                                                </div>
+                                            </button>
+                                        </>
+                                    )}
+
+                                    {/* Economia Submenu */}
+                                    {menuSection === 'economia' && (
+                                        <>
+                                            {/* Pasivos */}
+                                            <button onClick={() => { setShowPassiveModal(true); setShowMenuModal(false); }} style={{
+                                                background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
+                                                borderRadius: '10px', padding: '12px 14px', cursor: 'pointer', color: '#e2e8f0',
+                                                display: 'flex', alignItems: 'center', gap: '10px', textAlign: 'left', margin: 0
+                                            }}>
+                                                <span style={{ fontSize: '20px' }}>💸</span>
+                                                <div>
+                                                    <div style={{ fontWeight: 'bold', fontSize: '11px' }}>Ingresos Pasivos</div>
+                                                    <div style={{ fontSize: '8px', color: '#64748b' }}>Reclama monedas acumuladas pasivamente</div>
+                                                </div>
+                                            </button>
+
+                                            {/* Login Streak */}
+                                            <button onClick={() => {
+                                                const result = economy.checkLoginStreak();
+                                                if (result.reward_coins > 0) {
+                                                    showNotification("Recompensa Diaria", `¡Recompensa del Día ${result.streak}: Recibiste ${result.reward_coins} Coins!`);
+                                                    saveLocalEconomy();
+                                                } else {
+                                                    showNotification("Racha Diaria", `Día de racha ${result.streak} verificado. ¡Ya reclamaste tu recompensa de hoy!`);
+                                                }
+                                                setShowDaily(true);
+                                                setShowMenuModal(false);
+                                            }} style={{
+                                                background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
+                                                borderRadius: '10px', padding: '12px 14px', cursor: 'pointer', color: '#e2e8f0',
+                                                display: 'flex', alignItems: 'center', gap: '10px', textAlign: 'left', margin: 0
+                                            }}>
+                                                <span style={{ fontSize: '20px' }}>🔥</span>
+                                                <div>
+                                                    <div style={{ fontWeight: 'bold', fontSize: '11px' }}>Login Streak</div>
+                                                    <div style={{ fontSize: '8px', color: '#64748b' }}>Racha diaria de ingresos (Día {economy.login_streak ?? 0})</div>
+                                                </div>
+                                            </button>
+
+                                            {/* Misiones */}
+                                            <button onClick={() => { setShowMissions(true); setShowMenuModal(false); }} style={{
+                                                background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
+                                                borderRadius: '10px', padding: '12px 14px', cursor: 'pointer', color: '#e2e8f0',
+                                                display: 'flex', alignItems: 'center', gap: '10px', textAlign: 'left', margin: 0
+                                            }}>
+                                                <span style={{ fontSize: '20px' }}>🏆</span>
+                                                <div>
+                                                    <div style={{ fontWeight: 'bold', fontSize: '11px' }}>Misiones</div>
+                                                    <div style={{ fontSize: '8px', color: '#64748b' }}>Gana recompensas completando tareas diarias</div>
+                                                </div>
+                                            </button>
+                                        </>
+                                    )}
+
+                                    {/* Social Submenu */}
+                                    {menuSection === 'social' && (
+                                        <>
+                                            {/* Mercado Global */}
+                                            <button onClick={() => {
+                                                if (economy.level < 2) {
+                                                    showNotification("Mercado", "El Mercado Global se desbloquea al alcanzar el Nivel de Entrenador 2. ¡Derrota a algunos entrenadores en las rutas para subir de nivel!");
+                                                    return;
+                                                }
+                                                setShowMarketplaceModal(true);
+                                                setShowMenuModal(false);
+                                            }} style={{
+                                                background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
+                                                borderRadius: '10px', padding: '12px 14px', cursor: 'pointer', color: '#e2e8f0',
+                                                display: 'flex', alignItems: 'center', gap: '10px', textAlign: 'left', margin: 0
+                                            }}>
+                                                <span style={{ fontSize: '20px' }}>🛍️</span>
+                                                <div>
+                                                    <div style={{ fontWeight: 'bold', fontSize: '11px' }}>Mercado Global</div>
+                                                    <div style={{ fontSize: '8px', color: '#64748b' }}>Intercambia objetos o Pokémon con otros domadores</div>
+                                                </div>
+                                            </button>
+
+                                            {/* Taller */}
+                                            <button onClick={() => { setShowCraftingModal(true); setShowMenuModal(false); }} style={{
+                                                background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
+                                                borderRadius: '10px', padding: '12px 14px', cursor: 'pointer', color: '#e2e8f0',
+                                                display: 'flex', alignItems: 'center', gap: '10px', textAlign: 'left', margin: 0
+                                            }}>
+                                                <span style={{ fontSize: '20px' }}>🛠️</span>
+                                                <div>
+                                                    <div style={{ fontWeight: 'bold', fontSize: '11px' }}>Taller de Alquimia</div>
+                                                    <div style={{ fontSize: '8px', color: '#64748b' }}>Crea esferas y objetos raros a partir de materiales</div>
+                                                </div>
+                                            </button>
+
+                                            {/* Viajes */}
+                                            <button onClick={() => { setShowTravelModal(true); setShowMenuModal(false); }} style={{
+                                                background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
+                                                borderRadius: '10px', padding: '12px 14px', cursor: 'pointer', color: '#e2e8f0',
+                                                display: 'flex', alignItems: 'center', gap: '10px', textAlign: 'left', margin: 0
+                                            }}>
+                                                <span style={{ fontSize: '20px' }}>🗺️</span>
+                                                <div>
+                                                    <div style={{ fontWeight: 'bold', fontSize: '11px' }}>Viajes Rápidos</div>
+                                                    <div style={{ fontSize: '8px', color: '#64748b' }}>Desplázate al instante entre ubicaciones</div>
+                                                </div>
+                                            </button>
+
+                                            {/* Referidos */}
+                                            <button onClick={() => { setShowReferralsModal(true); setShowMenuModal(false); }} style={{
+                                                background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
+                                                borderRadius: '10px', padding: '12px 14px', cursor: 'pointer', color: '#e2e8f0',
+                                                display: 'flex', alignItems: 'center', gap: '10px', textAlign: 'left', margin: 0
+                                            }}>
+                                                <span style={{ fontSize: '20px' }}>🔗</span>
+                                                <div>
+                                                    <div style={{ fontWeight: 'bold', fontSize: '11px' }}>Referidos</div>
+                                                    <div style={{ fontSize: '8px', color: '#64748b' }}>Invita amigos y reclama premios exclusivos</div>
+                                                </div>
+                                            </button>
+                                        </>
+                                    )}
                                 </div>
-                            </button>
-
-                            {/* Viajes full-width card */}
-                            <button
-                                onClick={() => { setShowTravelModal(true); setShowMenuModal(false); }}
-                                style={{
-                                    width: '100%',
-                                    background: 'linear-gradient(135deg, rgba(59,130,246,0.15) 0%, rgba(37,99,235,0.2) 100%)',
-                                    border: '1px solid rgba(59,130,246,0.35)',
-                                    borderRadius: '12px', padding: '12px 10px', cursor: 'pointer',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px',
-                                    textAlign: 'center', transition: 'all 0.2s', marginBottom: '16px', margin: '0 0 16px 0'
-                                }}
-                                onMouseEnter={e => (e.currentTarget.style.background = 'linear-gradient(135deg, rgba(59,130,246,0.25) 0%, rgba(37,99,235,0.3) 100%)')}
-                                onMouseLeave={e => (e.currentTarget.style.background = 'linear-gradient(135deg, rgba(59,130,246,0.15) 0%, rgba(37,99,235,0.2) 100%)')}
-                            >
-                                <div style={{ fontSize: '24px', lineHeight: 1 }}>🗺️</div>
-                                <div style={{ textAlign: 'left', flex: 1 }}>
-                                    <div style={{ color: '#60a5fa', fontWeight: 'bold', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Viajes</div>
-                                    <div style={{ color: '#cbd5e1', fontSize: '9px' }}>Viaja a ciudades visitadas anteriormente viendo un anuncio</div>
-                                </div>
-                            </button>
-
-                            {/* Mercado full-width card */}
-                            <button
-                                onClick={() => {
-                                    if (economy.level < 2) {
-                                        showNotification("Mercado", "El Mercado Global se desbloquea al alcanzar el Nivel de Entrenador 2. ¡Derrota a algunos entrenadores en las rutas para subir de nivel!");
-                                        return;
-                                    }
-                                    setShowMarketplaceModal(true);
-                                    setShowMenuModal(false);
-                                }}
-                                style={{
-                                    width: '100%',
-                                    background: 'linear-gradient(135deg, rgba(168,85,247,0.15) 0%, rgba(109,40,217,0.2) 100%)',
-                                    border: '1px solid rgba(168,85,247,0.35)',
-                                    borderRadius: '12px', padding: '12px 10px', cursor: 'pointer',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px',
-                                    textAlign: 'center', transition: 'all 0.2s', marginBottom: '16px', margin: '0 0 16px 0'
-                                }}
-                                onMouseEnter={e => (e.currentTarget.style.background = 'linear-gradient(135deg, rgba(168,85,247,0.25) 0%, rgba(109,40,217,0.3) 100%)')}
-                                onMouseLeave={e => (e.currentTarget.style.background = 'linear-gradient(135deg, rgba(168,85,247,0.15) 0%, rgba(109,40,217,0.2) 100%)')}
-                            >
-                                <div style={{ fontSize: '24px', lineHeight: 1 }}>🛍️</div>
-                                <div style={{ textAlign: 'left', flex: 1 }}>
-                                    <div style={{ color: '#c084fc', fontWeight: 'bold', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Mercado Global</div>
-                                    <div style={{ color: '#cbd5e1', fontSize: '9px' }}>Compra y vende objetos o Pokémon de forma descentralizada</div>
-                                </div>
-                            </button>
-
-                            {/* SEPARATOR label */}
-                            <div style={{ fontSize: '9px', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.07)' }} />
-                                ACCIONES
-                                <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.07)' }} />
-                            </div>
-
-                            {/* ACTION GRID */}
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '16px' }}>
-
-                                {/* PokeMart */}
-                                <button onClick={() => { setShowShop(true); setShowMenuModal(false); }} style={{
-                                    background: 'rgba(251,191,36,0.12)', border: '1px solid rgba(251,191,36,0.3)',
-                                    borderRadius: '10px', padding: '12px 8px', cursor: 'pointer',
-                                    display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s', margin: 0,
-                                }}
-                                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(251,191,36,0.22)')}
-                                    onMouseLeave={e => (e.currentTarget.style.background = 'rgba(251,191,36,0.12)')}
-                                >
-                                    <span style={{ fontSize: '18px' }}>🛒</span>
-                                    <div style={{ textAlign: 'left' }}>
-                                        <div style={{ color: '#fbbf24', fontWeight: 'bold', fontSize: '10px' }}>PokéMart</div>
-                                        <div style={{ color: '#78716c', fontSize: '8px' }}>Tienda</div>
-                                    </div>
-                                </button>
-
-                                {/* Mochila */}
-                                <button onClick={() => { setShowInventoryModal(true); setShowMenuModal(false); }} style={{
-                                    background: 'rgba(249,115,22,0.12)', border: '1px solid rgba(249,115,22,0.3)',
-                                    borderRadius: '10px', padding: '12px 8px', cursor: 'pointer',
-                                    display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s', margin: 0,
-                                }}
-                                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(249,115,22,0.22)')}
-                                    onMouseLeave={e => (e.currentTarget.style.background = 'rgba(249,115,22,0.12)')}
-                                >
-                                    <span style={{ fontSize: '18px' }}>🎒</span>
-                                    <div style={{ textAlign: 'left' }}>
-                                        <div style={{ color: '#fb923c', fontWeight: 'bold', fontSize: '10px' }}>Mochila</div>
-                                        <div style={{ color: '#78716c', fontSize: '8px' }}>Items</div>
-                                    </div>
-                                </button>
-
-                                {/* Login Streak */}
-                                <button onClick={() => {
-                                    const result = economy.checkLoginStreak();
-                                    if (result.reward_coins > 0) {
-                                        showNotification("Recompensa Diaria", `¡Recompensa del Día ${result.streak}: Recibiste ${result.reward_coins} Coins!`);
-                                        saveLocalEconomy();
-                                    } else {
-                                        showNotification("Racha Diaria", `Día de racha ${result.streak} verificado. ¡Ya reclamaste tu recompensa de hoy!`);
-                                    }
-                                    setShowDaily(true);
-                                    setShowMenuModal(false);
-                                }} style={{
-                                    background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)',
-                                    borderRadius: '10px', padding: '12px 8px', cursor: 'pointer',
-                                    display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s', margin: 0,
-                                }}
-                                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(239,68,68,0.22)')}
-                                    onMouseLeave={e => (e.currentTarget.style.background = 'rgba(239,68,68,0.12)')}
-                                >
-                                    <span style={{ fontSize: '18px' }}>🔥</span>
-                                    <div style={{ textAlign: 'left' }}>
-                                        <div style={{ color: '#f87171', fontWeight: 'bold', fontSize: '10px' }}>Login Streak</div>
-                                        <div style={{ color: '#78716c', fontSize: '8px' }}>Día {economy.login_streak ?? 0}</div>
-                                    </div>
-                                </button>
-
-                                {/* Misiones */}
-                                <button onClick={() => { setShowMissions(true); setShowMenuModal(false); }} style={{
-                                    background: 'rgba(168,85,247,0.12)', border: '1px solid rgba(168,85,247,0.3)',
-                                    borderRadius: '10px', padding: '12px 8px', cursor: 'pointer',
-                                    display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s', margin: 0,
-                                }}
-                                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(168,85,247,0.22)')}
-                                    onMouseLeave={e => (e.currentTarget.style.background = 'rgba(168,85,247,0.12)')}
-                                >
-                                    <span style={{ fontSize: '18px' }}>🏆</span>
-                                    <div style={{ textAlign: 'left' }}>
-                                        <div style={{ color: '#c084fc', fontWeight: 'bold', fontSize: '10px' }}>Misiones</div>
-                                        <div style={{ color: '#78716c', fontSize: '8px' }}>Daily</div>
-                                    </div>
-                                </button>
-
-                                {/* Passive Income */}
-                                <button onClick={() => { setShowPassiveModal(true); setShowMenuModal(false); }} style={{
-                                    background: 'rgba(20,184,166,0.12)', border: '1px solid rgba(20,184,166,0.3)',
-                                    borderRadius: '10px', padding: '12px 8px', cursor: 'pointer',
-                                    display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s', margin: 0,
-                                }}
-                                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(20,184,166,0.22)')}
-                                    onMouseLeave={e => (e.currentTarget.style.background = 'rgba(20,184,166,0.12)')}
-                                >
-                                    <span style={{ fontSize: '18px' }}>💰</span>
-                                    <div style={{ textAlign: 'left' }}>
-                                        <div style={{ color: '#2dd4bf', fontWeight: 'bold', fontSize: '10px' }}>Pasivos</div>
-                                        <div style={{ color: '#78716c', fontSize: '8px' }}>Ingresos</div>
-                                    </div>
-                                </button>
-
-                                {/* Taller (Crafting) */}
-                                <button onClick={() => { setShowCraftingModal(true); setShowMenuModal(false); }} style={{
-                                    background: 'rgba(192,132,252,0.12)', border: '1px solid rgba(192,132,252,0.3)',
-                                    borderRadius: '10px', padding: '12px 8px', cursor: 'pointer',
-                                    display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s', margin: 0,
-                                }}
-                                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(192,132,252,0.22)')}
-                                    onMouseLeave={e => (e.currentTarget.style.background = 'rgba(192,132,252,0.12)')}
-                                >
-                                    <span style={{ fontSize: '18px' }}>🛠️</span>
-                                    <div style={{ textAlign: 'left' }}>
-                                        <div style={{ color: '#c084fc', fontWeight: 'bold', fontSize: '10px' }}>Taller</div>
-                                        <div style={{ color: '#78716c', fontSize: '8px' }}>Alquimia</div>
-                                    </div>
-                                </button>
-                            </div>
-
-                            {/* Divider */}
-                            <div style={{ height: '1px', background: 'rgba(255,255,255,0.07)', marginBottom: '12px' }} />
-
-                            {/* LOGOUT */}
-                            <button onClick={() => { saveLocalEconomy(); onBackToMenu(); }} style={{
-                                width: '100%', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)',
-                                borderRadius: '10px', padding: '10px 16px', cursor: 'pointer',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                                color: '#f87171', fontWeight: 'bold', fontSize: '11px',
-                                textTransform: 'uppercase', letterSpacing: '0.06em', transition: 'all 0.2s', margin: 0,
-                            }}
-                                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(239,68,68,0.2)')}
-                                onMouseLeave={e => (e.currentTarget.style.background = 'rgba(239,68,68,0.1)')}
-                            >
-                                <span>🚪</span> Cerrar Sesión
-                            </button>
+                            )}
                         </div>
                     </div>
                 </div>
             )}
 
+            {showReferralsModal && (
+                <div className="modal-overlay" style={{ zIndex: 300 }}>
+                    <div style={{
+                        background: 'linear-gradient(160deg, #15102a 0%, #0e0a1f 50%, #090514 100%)',
+                        border: '2px solid rgba(192,132,252,0.18)',
+                        borderRadius: '16px',
+                        width: '95%',
+                        maxWidth: '420px',
+                        maxHeight: '88vh',
+                        overflowY: 'auto',
+                        boxShadow: '0 24px 60px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.05)',
+                        fontFamily: "'Segoe UI', monospace",
+                    }}>
+                        {/* Header */}
+                        <div style={{
+                            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                            padding: '16px 20px 12px',
+                            borderBottom: '1px solid rgba(192,132,252,0.15)',
+                        }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span style={{ fontSize: '18px' }}>🔗</span>
+                                <span style={{ color: '#c084fc', fontWeight: 'bold', fontSize: '14px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Sistema de Referidos</span>
+                            </div>
+                            <button onClick={() => setShowReferralsModal(false)} style={{
+                                background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)',
+                                borderRadius: '8px', color: '#c084fc', cursor: 'pointer',
+                                width: '28px', height: '28px', display: 'flex', alignItems: 'center',
+                                justifyContent: 'center', fontSize: '16px', fontWeight: 'bold',
+                            }}>&times;</button>
+                        </div>
 
+                        <div style={{ padding: '16px 16px 20px', color: '#cbd5e1', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                            
+                            {/* Rewards Box */}
+                            <div style={{
+                                background: 'rgba(192,132,252,0.05)',
+                                border: '1px solid rgba(192,132,252,0.25)',
+                                borderRadius: '12px', padding: '12px', fontSize: '11px', lineHeight: '1.4'
+                            }}>
+                                <div style={{ color: '#c084fc', fontWeight: 'bold', marginBottom: '6px', fontSize: '12px' }}>🎁 Premios del Programa de Referidos:</div>
+                                <div style={{ marginBottom: '4px' }}>
+                                    <strong>Para tu Invitado:</strong> 500 Coins + 1 Huevo de la suerte + 5 Pociones + 2 Super Balls al registrarse con tu enlace.
+                                </div>
+                                <div>
+                                    <strong>Para ti:</strong> 300 Coins + 1 Tamer Ball + 2 Superpociones cuando tu invitado consiga más de 1 Pokémon.
+                                </div>
+                            </div>
+
+                            {/* Copy Links Section */}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                {/* Web Invite Link */}
+                                <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '10px', padding: '10px 12px' }}>
+                                    <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 'bold', textTransform: 'uppercase', marginBottom: '6px' }}>Enlace Web (World App/Browser)</div>
+                                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                        <input 
+                                            readOnly 
+                                            value={typeof window !== 'undefined' ? `${window.location.origin}/?ref=${walletAddress || ''}` : ''}
+                                            style={{ flex: 1, background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '6px', color: '#a7f3d0', padding: '6px 8px', fontSize: '10px', fontFamily: 'monospace' }}
+                                        />
+                                        <button 
+                                            onClick={() => {
+                                                const link = `${window.location.origin}/?ref=${walletAddress || ''}`;
+                                                navigator.clipboard.writeText(link);
+                                                setCopyWebSuccess(true);
+                                                setTimeout(() => setCopyWebSuccess(false), 2000);
+                                            }}
+                                            style={{ margin: 0, padding: '6px 12px', fontSize: '10px', background: copyWebSuccess ? '#059669' : '#8b5cf6', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', minWidth: '80px' }}
+                                        >
+                                            {copyWebSuccess ? '¡Copiado! ✅' : 'Copiar'}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Telegram Invite Link */}
+                                <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '10px', padding: '10px 12px' }}>
+                                    <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 'bold', textTransform: 'uppercase', marginBottom: '6px' }}>Enlace Telegram Bot</div>
+                                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                        <input 
+                                            readOnly 
+                                            value={`https://t.me/PixelTamerBot/play?startapp=ref_${walletAddress || ''}`}
+                                            style={{ flex: 1, background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '6px', color: '#38bdf8', padding: '6px 8px', fontSize: '10px', fontFamily: 'monospace' }}
+                                        />
+                                        <button 
+                                            onClick={() => {
+                                                const link = `https://t.me/PixelTamerBot/play?startapp=ref_${walletAddress || ''}`;
+                                                navigator.clipboard.writeText(link);
+                                                setCopyTgSuccess(true);
+                                                setTimeout(() => setCopyTgSuccess(false), 2000);
+                                            }}
+                                            style={{ margin: 0, padding: '6px 12px', fontSize: '10px', background: copyTgSuccess ? '#059669' : '#0284c7', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', minWidth: '80px' }}
+                                        >
+                                            {copyTgSuccess ? '¡Copiado! ✅' : 'Copiar'}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Invited Friends List */}
+                            <div>
+                                <div style={{ fontSize: '11px', color: '#c084fc', fontWeight: 'bold', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Mis Amigos Invitados ({invitedFriends.length})</div>
+                                {loadingFriends ? (
+                                    <div style={{ textAlign: 'center', padding: '20px', color: '#94a3b8', fontSize: '11px' }}>Cargando invitados...</div>
+                                ) : invitedFriends.length === 0 ? (
+                                    <div style={{ textAlign: 'center', padding: '24px', background: 'rgba(255,255,255,0.02)', border: '1px dashed rgba(255,255,255,0.08)', borderRadius: '10px', color: '#64748b', fontSize: '11px' }}>
+                                        Aún no tienes invitados. ¡Comparte tu enlace para comenzar!
+                                    </div>
+                                ) : (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '200px', overflowY: 'auto' }}>
+                                        {invitedFriends.map((friend) => {
+                                            const name = friend.save_data?.name || `Tamer-${friend.wallet_address.slice(0, 6)}`;
+                                            const totalMons = (friend.save_data?.team_data?.length || 0) + (friend.save_data?.pc_pokemon?.length || 0);
+                                            const claimedList = economy.claimed_referrals || [];
+                                            const isClaimed = claimedList.includes(friend.wallet_address);
+                                            const canClaim = totalMons > 1 && !isClaimed;
+
+                                            return (
+                                                <div key={friend.wallet_address} style={{
+                                                    background: 'rgba(255,255,255,0.03)',
+                                                    border: '1px solid rgba(255,255,255,0.06)',
+                                                    borderRadius: '8px', padding: '10px 12px',
+                                                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                                                    fontSize: '11px'
+                                                }}>
+                                                    <div>
+                                                        <div style={{ fontWeight: 'bold', color: '#e2e8f0' }}>{name}</div>
+                                                        <div style={{ fontSize: '9px', color: '#94a3b8', marginTop: '2px' }}>
+                                                            {totalMons} Pokémon • Nivel {friend.save_data?.economy_data?.level || 1}
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        {isClaimed ? (
+                                                            <span style={{ fontSize: '9px', color: '#10b981', background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: '4px', padding: '2px 6px', fontWeight: 'bold' }}>Recompensado</span>
+                                                        ) : canClaim ? (
+                                                            <button 
+                                                                onClick={() => handleClaimReferralReward(friend.wallet_address)}
+                                                                style={{ margin: 0, padding: '4px 8px', fontSize: '9px', background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', border: 'none', borderRadius: '4px', color: '#fff', fontWeight: 'bold', cursor: 'pointer' }}
+                                                            >
+                                                                🎁 Reclamar
+                                                            </button>
+                                                        ) : (
+                                                            <span style={{ fontSize: '8px', color: '#f59e0b', background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.25)', borderRadius: '4px', padding: '2px 6px' }}>En progreso</span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {showNurseJoyModal && (
                 <div className="modal-overlay">
@@ -13431,77 +13794,195 @@ export default function GameCanvas({
 
             {showLeaderboard && (
                 <div className="modal-overlay" style={{ zIndex: 300 }}>
-                    <div style={{ background: 'linear-gradient(160deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%)', border: '2px solid rgba(255,255,255,0.12)', borderRadius: '16px', width: '95%', maxWidth: '420px', maxHeight: '88vh', overflowY: 'auto', boxShadow: '0 24px 60px rgba(0,0,0,0.7),inset 0 1px 0 rgba(255,255,255,0.1)', fontFamily: "'Segoe UI',monospace" }}>
+                    <div style={{ background: 'linear-gradient(160deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%)', border: '2px solid rgba(255,255,255,0.12)', borderRadius: '16px', width: '95%', maxWidth: '430px', maxHeight: '88vh', overflowY: 'auto', boxShadow: '0 24px 60px rgba(0,0,0,0.7),inset 0 1px 0 rgba(255,255,255,0.1)', fontFamily: "'Segoe UI',monospace" }}>
+                        {/* Header */}
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px 12px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                 <span style={{ fontSize: '20px' }}>🏆</span>
                                 <div>
-                                    <div style={{ color: '#e2e8f0', fontWeight: 'bold', fontSize: '14px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Ranking Global PvP</div>
-                                    <div style={{ color: '#64748b', fontSize: '9px' }}>Top jugadores por victorias</div>
+                                    <div style={{ color: '#e2e8f0', fontWeight: 'bold', fontSize: '14px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Clasificaciones</div>
+                                    <div style={{ color: '#64748b', fontSize: '9px' }}>Tablas de clasificación global</div>
                                 </div>
                             </div>
                             <button onClick={() => setShowLeaderboard(false)} style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: '#94a3b8', cursor: 'pointer', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', fontWeight: 'bold' }}>&times;</button>
                         </div>
-                        <div style={{ padding: '12px 16px 20px' }}>
-                            {!pvpLeaderboard ? (
-                                <div style={{ textAlign: 'center', color: '#94a3b8', padding: '24px', fontSize: '12px' }}>
-                                    <div style={{ fontSize: '24px', marginBottom: '8px' }}>⏳</div>
-                                    Cargando ranking...
-                                </div>
-                            ) : pvpLeaderboard.length === 0 ? (
-                                <div style={{ textAlign: 'center', color: '#64748b', padding: '24px', fontSize: '11px' }}>
-                                    <div style={{ fontSize: '24px', marginBottom: '8px' }}>🎮</div>
-                                    Aún no hay jugadores en el ranking. ¡Sé el primero!
-                                </div>
-                            ) : (
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                    {/* Header Row */}
-                                    <div style={{ display: 'grid', gridTemplateColumns: '32px 1fr 48px 48px 52px', gap: '6px', padding: '6px 10px', fontSize: '8px', fontWeight: 'bold', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.06em', borderBottom: '1px solid rgba(255,255,255,0.06)', marginBottom: '2px' }}>
-                                        <span>#</span>
-                                        <span>Jugador</span>
-                                        <span style={{ textAlign: 'center' }}>V</span>
-                                        <span style={{ textAlign: 'center' }}>D</span>
-                                        <span style={{ textAlign: 'center' }}>%Win</span>
-                                    </div>
-                                    {pvpLeaderboard.map((p, i) => {
-                                        const isMe = p.address === walletAddress;
-                                        const rankBadge = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i + 1}`;
-                                        const winRate = (p.wins + p.losses) > 0 ? Math.round((p.wins / (p.wins + p.losses)) * 100) : 0;
-                                        const isTop3 = i < 3;
 
-                                        return (
-                                            <div key={p.address} style={{
-                                                display: 'grid',
-                                                gridTemplateColumns: '32px 1fr 48px 48px 52px',
-                                                gap: '6px',
-                                                padding: '8px 10px',
-                                                borderRadius: '8px',
-                                                border: '1px solid',
-                                                background: isMe ? 'linear-gradient(135deg, rgba(99,102,241,0.2) 0%, rgba(79,70,229,0.1) 100%)' :
-                                                    isTop3 ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.02)',
-                                                borderColor: isMe ? 'rgba(99,102,241,0.4)' :
-                                                    i === 0 ? 'rgba(251,191,36,0.3)' :
-                                                    i === 1 ? 'rgba(148,163,184,0.3)' :
-                                                    i === 2 ? 'rgba(180,83,9,0.3)' :
-                                                    'rgba(255,255,255,0.06)',
-                                                boxShadow: i === 0 ? '0 0 10px rgba(251,191,36,0.1)' : 'none',
-                                                alignItems: 'center',
-                                                fontSize: '11px',
-                                            }}>
-                                                <span style={{ fontSize: i < 3 ? '14px' : '9px', textAlign: 'center', fontWeight: 'bold', color: i < 3 ? undefined : '#64748b' }}>{rankBadge}</span>
-                                                <div style={{ overflow: 'hidden' }}>
-                                                    <div style={{ fontWeight: 'bold', color: isMe ? '#a5b4fc' : '#e2e8f0', fontSize: '11px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                                        {isMe ? '⭐ ' : ''}{p.name.length > 12 ? p.name.slice(0, 12) + '…' : p.name}
-                                                    </div>
-                                                    {isMe && <div style={{ fontSize: '8px', color: '#818cf8' }}>Tú</div>}
-                                                </div>
-                                                <div style={{ textAlign: 'center', fontWeight: 'bold', color: '#34d399', fontSize: '12px' }}>{p.wins}</div>
-                                                <div style={{ textAlign: 'center', color: '#f87171', fontSize: '11px' }}>{p.losses}</div>
-                                                <div style={{ textAlign: 'center', fontSize: '9px', fontWeight: 'bold', color: winRate >= 60 ? '#34d399' : winRate >= 40 ? '#fbbf24' : '#f87171' }}>{winRate}%</div>
+                        {/* Tabs Bar */}
+                        <div style={{ padding: '12px 16px 0' }}>
+                            <div style={{ display: 'flex', gap: '6px', background: 'rgba(255,255,255,0.03)', padding: '4px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.06)' }}>
+                                <button
+                                    onClick={() => setActiveLeaderboardTab('level')}
+                                    style={{
+                                        flex: 1, padding: '8px 4px', borderRadius: '8px', fontSize: '10px', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s', margin: 0,
+                                        background: activeLeaderboardTab === 'level' ? 'rgba(99,102,241,0.18)' : 'transparent',
+                                        border: activeLeaderboardTab === 'level' ? '1px solid rgba(99,102,241,0.4)' : '1px solid transparent',
+                                        color: activeLeaderboardTab === 'level' ? '#a5b4fc' : '#94a3b8'
+                                    }}
+                                >
+                                    ⭐ Progreso
+                                </button>
+                                <button
+                                    onClick={() => setActiveLeaderboardTab('pvp')}
+                                    style={{
+                                        flex: 1, padding: '8px 4px', borderRadius: '8px', fontSize: '10px', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s', margin: 0,
+                                        background: activeLeaderboardTab === 'pvp' ? 'rgba(239,68,68,0.18)' : 'transparent',
+                                        border: activeLeaderboardTab === 'pvp' ? '1px solid rgba(239,68,68,0.4)' : '1px solid transparent',
+                                        color: activeLeaderboardTab === 'pvp' ? '#f87171' : '#94a3b8'
+                                    }}
+                                >
+                                    ⚔️ PvP
+                                </button>
+                                <button
+                                    onClick={() => setActiveLeaderboardTab('referrals')}
+                                    style={{
+                                        flex: 1, padding: '8px 4px', borderRadius: '8px', fontSize: '10px', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s', margin: 0,
+                                        background: activeLeaderboardTab === 'referrals' ? 'rgba(167,139,250,0.18)' : 'transparent',
+                                        border: activeLeaderboardTab === 'referrals' ? '1px solid rgba(167,139,250,0.4)' : '1px solid transparent',
+                                        color: activeLeaderboardTab === 'referrals' ? '#c084fc' : '#94a3b8'
+                                    }}
+                                >
+                                    👥 Referidos
+                                </button>
+                            </div>
+                        </div>
+
+                        <div style={{ padding: '12px 16px 20px' }}>
+                            {/* --- TAB 1: LEVEL --- */}
+                            {activeLeaderboardTab === 'level' && (
+                                <>
+                                    {!levelLeaderboard ? (
+                                        <div style={{ textAlign: 'center', color: '#94a3b8', padding: '24px', fontSize: '12px' }}>⏳ Cargando...</div>
+                                    ) : levelLeaderboard.length === 0 ? (
+                                        <div style={{ textAlign: 'center', color: '#64748b', padding: '24px', fontSize: '11px' }}>Aún no hay datos de entrenadores.</div>
+                                    ) : (
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                            <div style={{ display: 'grid', gridTemplateColumns: '32px 1fr 60px 70px', gap: '6px', padding: '6px 10px', fontSize: '8px', fontWeight: 'bold', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.06em', borderBottom: '1px solid rgba(255,255,255,0.06)', marginBottom: '2px' }}>
+                                                <span>#</span>
+                                                <span>Jugador</span>
+                                                <span style={{ textAlign: 'center' }}>Nivel</span>
+                                                <span style={{ textAlign: 'center' }}>XP</span>
                                             </div>
-                                        );
-                                    })}
-                                </div>
+                                            {levelLeaderboard.map((p, i) => {
+                                                const isMe = p.address === walletAddress;
+                                                const rankBadge = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i + 1}`;
+                                                const isTop3 = i < 3;
+                                                return (
+                                                    <div key={p.address} style={{
+                                                        display: 'grid', gridTemplateColumns: '32px 1fr 60px 70px', gap: '6px', padding: '8px 10px', borderRadius: '8px', border: '1px solid',
+                                                        background: isMe ? 'linear-gradient(135deg, rgba(99,102,241,0.2) 0%, rgba(79,70,229,0.1) 100%)' : isTop3 ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.02)',
+                                                        borderColor: isMe ? 'rgba(99,102,241,0.4)' : i === 0 ? 'rgba(251,191,36,0.3)' : i === 1 ? 'rgba(148,163,184,0.3)' : i === 2 ? 'rgba(180,83,9,0.3)' : 'rgba(255,255,255,0.06)',
+                                                        alignItems: 'center', fontSize: '11px',
+                                                    }}>
+                                                        <span style={{ fontSize: i < 3 ? '14px' : '9px', textAlign: 'center', fontWeight: 'bold' }}>{rankBadge}</span>
+                                                        <div style={{ fontWeight: 'bold', color: isMe ? '#a5b4fc' : '#e2e8f0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{isMe ? '⭐ ' : ''}{p.name}</div>
+                                                        <div style={{ textAlign: 'center', color: '#fbbf24', fontWeight: 'bold' }}>Nvl {p.level}</div>
+                                                        <div style={{ textAlign: 'center', color: '#cbd5e1', fontSize: '10px' }}>{p.xp} XP</div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+                                </>
+                            )}
+
+                            {/* --- TAB 2: PVP --- */}
+                            {activeLeaderboardTab === 'pvp' && (
+                                <>
+                                    <div style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '10px', padding: '10px 12px', marginBottom: '12px', fontSize: '11px', color: '#f87171', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold' }}>
+                                        🏆 Próximo evento: Torneo por 10$ USD - Único Ganador
+                                    </div>
+                                    {!pvpLeaderboard ? (
+                                        <div style={{ textAlign: 'center', color: '#94a3b8', padding: '24px', fontSize: '12px' }}>⏳ Cargando...</div>
+                                    ) : pvpLeaderboard.length === 0 ? (
+                                        <div style={{ textAlign: 'center', color: '#64748b', padding: '24px', fontSize: '11px' }}>Aún no hay victorias registradas.</div>
+                                    ) : (
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                            <div style={{ display: 'grid', gridTemplateColumns: '32px 1fr 48px 48px 52px', gap: '6px', padding: '6px 10px', fontSize: '8px', fontWeight: 'bold', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.06em', borderBottom: '1px solid rgba(255,255,255,0.06)', marginBottom: '2px' }}>
+                                                <span>#</span>
+                                                <span>Jugador</span>
+                                                <span style={{ textAlign: 'center' }}>V</span>
+                                                <span style={{ textAlign: 'center' }}>D</span>
+                                                <span style={{ textAlign: 'center' }}>%Win</span>
+                                            </div>
+                                            {pvpLeaderboard.map((p, i) => {
+                                                const isMe = p.address === walletAddress;
+                                                const rankBadge = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i + 1}`;
+                                                const winRate = (p.wins + p.losses) > 0 ? Math.round((p.wins / (p.wins + p.losses)) * 100) : 0;
+                                                const isTop3 = i < 3;
+                                                return (
+                                                    <div key={p.address} style={{
+                                                        display: 'grid', gridTemplateColumns: '32px 1fr 48px 48px 52px', gap: '6px', padding: '8px 10px', borderRadius: '8px', border: '1px solid',
+                                                        background: isMe ? 'linear-gradient(135deg, rgba(99,102,241,0.2) 0%, rgba(79,70,229,0.1) 100%)' : isTop3 ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.02)',
+                                                        borderColor: isMe ? 'rgba(99,102,241,0.4)' : i === 0 ? 'rgba(251,191,36,0.3)' : i === 1 ? 'rgba(148,163,184,0.3)' : i === 2 ? 'rgba(180,83,9,0.3)' : 'rgba(255,255,255,0.06)',
+                                                        alignItems: 'center', fontSize: '11px',
+                                                    }}>
+                                                        <span style={{ fontSize: i < 3 ? '14px' : '9px', textAlign: 'center', fontWeight: 'bold' }}>{rankBadge}</span>
+                                                        <div style={{ fontWeight: 'bold', color: isMe ? '#a5b4fc' : '#e2e8f0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{isMe ? '⭐ ' : ''}{p.name}</div>
+                                                        <div style={{ textAlign: 'center', fontWeight: 'bold', color: '#34d399', fontSize: '12px' }}>{p.wins}</div>
+                                                        <div style={{ textAlign: 'center', color: '#f87171', fontSize: '11px' }}>{p.losses}</div>
+                                                        <div style={{ textAlign: 'center', fontSize: '9px', fontWeight: 'bold', color: winRate >= 60 ? '#34d399' : winRate >= 40 ? '#fbbf24' : '#f87171' }}>{winRate}%</div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+                                </>
+                            )}
+
+                            {/* --- TAB 3: REFERRALS --- */}
+                            {activeLeaderboardTab === 'referrals' && (
+                                <>
+                                    {/* Timer/Deadline and Rewards Banner */}
+                                    <div style={{ background: 'rgba(167,139,250,0.08)', border: '1px solid rgba(167,139,250,0.2)', borderRadius: '12px', padding: '12px', marginBottom: '14px' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                            <span style={{ fontSize: '11px', fontWeight: 'bold', color: '#c084fc' }}>🕒 Evento de Referidos</span>
+                                            <span style={{ fontSize: '10px', background: 'rgba(167,139,250,0.2)', border: '1px solid rgba(167,139,250,0.4)', borderRadius: '6px', padding: '2px 8px', color: '#e9d5ff', fontWeight: 'bold', fontFamily: 'monospace' }}>
+                                                {timeLeft}
+                                            </span>
+                                        </div>
+                                        <div style={{ fontSize: '9px', color: '#a78bfa', marginBottom: '8px' }}>
+                                            Termina: Miércoles 24 de Junio, Hora UTC-5
+                                        </div>
+                                        <div style={{ borderTop: '1px solid rgba(167,139,250,0.15)', paddingTop: '8px', fontSize: '9px', lineHeight: '1.4' }}>
+                                            <div style={{ fontWeight: 'bold', color: '#e9d5ff', marginBottom: '4px' }}>🏆 PREMIACIÓN DEL TORNEO:</div>
+                                            <div style={{ color: '#cbd5e1' }}>🥇 <strong>1º:</strong> 5 pUSDT + Repartir EXP + 5 Luck Egg + 5 Inciensos</div>
+                                            <div style={{ color: '#cbd5e1' }}>🥈 <strong>2º:</strong> 4 pUSDT + Repartir EXP + 4 Luck Egg</div>
+                                            <div style={{ color: '#cbd5e1' }}>🥉 <strong>3º:</strong> 3 pUSDT + Repartir EXP + 2 Luck Egg</div>
+                                            <div style={{ color: '#cbd5e1' }}>🎖️ <strong>4º y 5º:</strong> 1 pUSDT + Repartir EXP</div>
+                                        </div>
+                                    </div>
+
+                                    {!referralLeaderboard ? (
+                                        <div style={{ textAlign: 'center', color: '#94a3b8', padding: '24px', fontSize: '12px' }}>⏳ Cargando...</div>
+                                    ) : referralLeaderboard.length === 0 ? (
+                                        <div style={{ textAlign: 'center', color: '#64748b', padding: '24px', fontSize: '11px' }}>Aún no hay referidos registrados. ¡Sé el primero!</div>
+                                    ) : (
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                            <div style={{ display: 'grid', gridTemplateColumns: '32px 1fr 100px', gap: '6px', padding: '6px 10px', fontSize: '8px', fontWeight: 'bold', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.06em', borderBottom: '1px solid rgba(255,255,255,0.06)', marginBottom: '2px' }}>
+                                                <span>#</span>
+                                                <span>Jugador</span>
+                                                <span style={{ textAlign: 'center' }}>Válidos (Total)</span>
+                                            </div>
+                                            {referralLeaderboard.map((p, i) => {
+                                                const isMe = p.wallet === walletAddress;
+                                                const rankBadge = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i + 1}`;
+                                                const isTop3 = i < 3;
+                                                return (
+                                                    <div key={p.wallet} style={{
+                                                        display: 'grid', gridTemplateColumns: '32px 1fr 100px', gap: '6px', padding: '8px 10px', borderRadius: '8px', border: '1px solid',
+                                                        background: isMe ? 'linear-gradient(135deg, rgba(99,102,241,0.2) 0%, rgba(79,70,229,0.1) 100%)' : isTop3 ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.02)',
+                                                        borderColor: isMe ? 'rgba(99,102,241,0.4)' : i === 0 ? 'rgba(251,191,36,0.3)' : i === 1 ? 'rgba(148,163,184,0.3)' : i === 2 ? 'rgba(180,83,9,0.3)' : 'rgba(255,255,255,0.06)',
+                                                        alignItems: 'center', fontSize: '11px',
+                                                    }}>
+                                                        <span style={{ fontSize: i < 3 ? '14px' : '9px', textAlign: 'center', fontWeight: 'bold' }}>{rankBadge}</span>
+                                                        <div style={{ fontWeight: 'bold', color: isMe ? '#a5b4fc' : '#e2e8f0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{isMe ? '⭐ ' : ''}{p.name}</div>
+                                                        <div style={{ textAlign: 'center', fontWeight: 'bold', color: '#c084fc', fontSize: '11px' }}>{p.valid} ({p.total})</div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+                                </>
                             )}
                         </div>
                     </div>

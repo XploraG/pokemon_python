@@ -46,6 +46,8 @@ export interface EconomySaveData {
     elixir_hp_expires?: number;
     visited_settlements?: string[];
     defeated_trainers?: Record<string, boolean>;
+    referred_by?: string;
+    claimed_referrals?: string[];
 }
 
 export interface CoinTransaction {
@@ -95,6 +97,8 @@ export class Economy {
     public elixir_hp_expires: number = 0;
     public visited_settlements: string[] = ['/assets/maps/tutorial/main.json'];
     public defeated_trainers: Record<string, boolean> = {};
+    public referred_by: string = '';
+    public claimed_referrals: string[] = [];
 
     constructor(saveData?: EconomySaveData) {
         if (saveData) {
@@ -141,6 +145,8 @@ export class Economy {
         this.elixir_hp_expires = 0;
         this.visited_settlements = ['/assets/maps/tutorial/main.json'];
         this.defeated_trainers = {};
+        this.referred_by = '';
+        this.claimed_referrals = [];
     }
 
     private loadFromSave(data: EconomySaveData): void {
@@ -182,6 +188,8 @@ export class Economy {
         this.elixir_hp_expires = data.elixir_hp_expires ?? 0;
         this.visited_settlements = data.visited_settlements || ['/assets/maps/tutorial/main.json'];
         this.defeated_trainers = data.defeated_trainers ?? {};
+        this.referred_by = data.referred_by ?? '';
+        this.claimed_referrals = data.claimed_referrals ?? [];
         for (const medal of this.medals) {
             if (!this.medal_levels[medal]) {
                 this.medal_levels[medal] = 1;
@@ -228,7 +236,9 @@ export class Economy {
             elixir_defense_expires: this.elixir_defense_expires,
             elixir_hp_expires: this.elixir_hp_expires,
             visited_settlements: this.visited_settlements,
-            defeated_trainers: this.defeated_trainers
+            defeated_trainers: this.defeated_trainers,
+            referred_by: this.referred_by,
+            claimed_referrals: this.claimed_referrals
         };
     }
 

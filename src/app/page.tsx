@@ -118,6 +118,14 @@ export default function Home() {
                     ? `@${user.username}` 
                     : `${user.first_name || 'Tamer'}${user.last_name ? ' ' + user.last_name : ''}`;
                 
+                // Extract Telegram referral code
+                const startParam = tg.initDataUnsafe.start_param;
+                if (startParam) {
+                    const refVal = startParam.startsWith('ref_') ? startParam.replace('ref_', '') : startParam;
+                    localStorage.setItem('pixel_tamer_referrer', refVal);
+                    console.log("Telegram referral code stored from start_param:", refVal);
+                }
+                
                 // Trigger transparent auto-login
                 handleLoginWithWallet(tgId, tgName);
             } else {
@@ -387,13 +395,33 @@ export default function Home() {
                 ivs: ivs
             };
 
+            // Check for referrer
+            const referrer = typeof window !== 'undefined' ? localStorage.getItem('pixel_tamer_referrer') : null;
+            // Check deadline: Wednesday, June 24, 2026 23:59:59 UTC-5 = 1782363599000
+            const isBeforeDeadline = Date.now() < 1782363599000;
+            
+            let initialCoins = 500;
+            let initialItems: Record<string, number> = {
+                "tamer_ball": 5,
+                "potion": 3
+            };
+            let registeredReferrer: string | undefined = undefined;
+
+            if (referrer && isBeforeDeadline) {
+                initialCoins += 500; // Extra 500 coins (total 1000)
+                initialItems["lucky_egg"] = 1; // 1 lucky egg
+                initialItems["potion"] = 8; // 3 + 5 = 8 potions
+                initialItems["super_ball"] = 2; // 2 super balls
+                registeredReferrer = referrer;
+            }
+
             const saveState: SaveData = {
                 name: pendingCustomName || `Tamer-${pendingNewAddress.slice(0, 6)}`,
                 time: 0,
                 player_coordinates: [632, 428],
                 map: "/assets/maps/tutorial/main.json",
                 economy_data: {
-                    coins: 500,
+                    coins: initialCoins,
                     pusdt: 0.0,
                     login_streak: 1,
                     last_login_date: new Date().toISOString().split('T')[0],
@@ -406,13 +434,12 @@ export default function Home() {
                     achievements_unlocked: [],
                     level: 1,
                     heals_today: 0,
-                    last_heal_date: ''
+                    last_heal_date: '',
+                    referred_by: registeredReferrer,
+                    claimed_referrals: []
                 },
                 inventory_data: {
-                    items: {
-                        "tamer_ball": 5,
-                        "potion": 3
-                    }
+                    items: initialItems
                 },
                 team_data: [starterPoke],
                 pc_pokemon: []
