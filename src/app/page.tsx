@@ -409,7 +409,23 @@ export default function Home() {
                 pc_pokemon: []
             };
 
-            // First insert to captured_monsters
+            // First upsert to Supabase (safe on retry — avoids unique constraint violations)
+            // This also ensures the player profile exists before inserting to captured_monsters (satisfying foreign key)
+            const { error: insertError } = await supabase
+                .from('player_saves')
+                .upsert({
+                    wallet_address: pendingNewAddress,
+                    save_data: saveState
+                }, { onConflict: 'wallet_address' });
+
+            if (insertError) {
+                console.error("Failed to initialize save state in database:", insertError);
+                setError("No se pudo iniciar la partida en el servidor.");
+                setIsConnecting(false);
+                return;
+            }
+
+            // Then insert to captured_monsters
             const insertPayload: any = {
                 id_captura: uuid,
                 id_jugador: pendingNewAddress,
@@ -447,29 +463,6 @@ export default function Home() {
                 setError("No se pudo registrar tu Pokémon inicial.");
                 setIsConnecting(false);
                 return;
-            }
-
-            // Referral processing disabled for now
-
-            // Upsert to Supabase (safe on retry — avoids unique constraint violations)
-            const { error: insertError } = await supabase
-                .from('player_saves')
-                .upsert({
-                    wallet_address: pendingNewAddress,
-                    save_data: saveState
-                }, { onConflict: 'wallet_address' });
-
-            if (insertError) {
-                console.error("Failed to initialize save state in database:", insertError);
-                // If it's a duplicate key / RLS insert error, try to load existing save
-                // before giving up — the player might have registered in a previous attempt.
-                const isConflict = insertError.code === '23505';
-                if (!isConflict) {
-                    setError("No se pudo iniciar la partida en el servidor.");
-                    setIsConnecting(false);
-                    return;
-                }
-                console.warn("Upsert conflict on player_saves, attempting to reload existing save...");
             }
 
             // Save session credentials
