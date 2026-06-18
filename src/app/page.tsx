@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import GameCanvas from '../components/GameCanvas';
 import { supabase } from '../lib/supabase';
 import pokemonSpeciesList from '../../public/assets/economy/pokemon_species.json';
+import Script from 'next/script';
 
 interface SaveData {
     name: string;
@@ -77,6 +78,11 @@ export default function Home() {
     // Dev bypass states for normal browsers
     const [devClickCount, setDevClickCount] = useState(0);
     const [showDevPanel, setShowDevPanel] = useState(false);
+
+    // Landing page states
+    const [startedPlaying, setStartedPlaying] = useState(false);
+    const [showRedirectModal, setShowRedirectModal] = useState(false);
+    const [clickStartAttempted, setClickStartAttempted] = useState(false);
 
     useEffect(() => {
         setMounted(true);
@@ -173,7 +179,7 @@ export default function Home() {
         };
     };
 
-    const handleLoginWithWallet = async (address: string, customName?: string) => {
+    const handleLoginWithWallet = async (address: string, customName?: string, autoStart: boolean = false) => {
         setIsConnecting(true);
         setError(null);
         try {
@@ -331,6 +337,9 @@ export default function Home() {
                 localStorage.setItem('pixel_tamer_active_wallet', databaseAddress);
                 setWalletAddress(databaseAddress);
                 setActiveSave(saveState);
+                if (autoStart || clickStartAttempted) {
+                    setStartedPlaying(true);
+                }
             } else {
                 // Trigger starter selection onboarding for new user
                 setPendingNewAddress(address);
@@ -473,6 +482,7 @@ export default function Home() {
             setPendingNewAddress(null);
             setPendingCustomName(null);
             setSelectedStarter(null);
+            setStartedPlaying(true);
         } catch (err) {
             console.error("Failed to save starter selection:", err);
             setError("Ocurrió un error inesperado al iniciar tu partida.");
@@ -506,7 +516,7 @@ export default function Home() {
             }
 
             if (result.data && result.data.address) {
-                await handleLoginWithWallet(result.data.address);
+                await handleLoginWithWallet(result.data.address, undefined, true);
             } else {
                 setError("No se pudo obtener la dirección de billetera de la respuesta.");
             }
@@ -522,6 +532,37 @@ export default function Home() {
         localStorage.removeItem('pixel_tamer_active_wallet');
         setWalletAddress(null);
         setActiveSave(null);
+        setStartedPlaying(false);
+        setClickStartAttempted(false);
+    };
+
+    const handleStartJourney = () => {
+        setClickStartAttempted(true);
+        if (walletAddress && activeSave) {
+            setStartedPlaying(true);
+            return;
+        }
+        if (isConnecting) {
+            return;
+        }
+        const isTelegram = typeof window !== 'undefined' && !!(window as any).Telegram?.WebApp?.initDataUnsafe?.user?.id;
+        if (isTelegram) {
+            const tg = (window as any).Telegram?.WebApp;
+            const user = tg?.initDataUnsafe?.user;
+            if (user) {
+                const tgId = `telegram_${user.id}`;
+                const tgName = user.username 
+                    ? `@${user.username}` 
+                    : `${user.first_name || 'Tamer'}${user.last_name ? ' ' + user.last_name : ''}`;
+                handleLoginWithWallet(tgId, tgName, true);
+            }
+            return;
+        }
+        if (isMiniKitInstalled) {
+            handleConnectWorldApp();
+            return;
+        }
+        setShowRedirectModal(true);
     };
 
     if (!mounted) {
@@ -539,7 +580,7 @@ export default function Home() {
     }
 
     // If game is active, render canvas
-    if (activeSave && walletAddress) {
+    if (activeSave && walletAddress && startedPlaying) {
         return (
             <div className="w-full h-full">
                 <GameCanvas
@@ -662,18 +703,28 @@ export default function Home() {
         );
     }
 
-    // Detect if Telegram and World App are active
-    const isTelegram = typeof window !== 'undefined' && !!(window as any).Telegram?.WebApp?.initDataUnsafe?.user?.id;
-    const isWorldApp = isMiniKitInstalled;
-    const showRedirectPopup = !isTelegram && !isWorldApp;
-
-    // Render Platform Redirect Screen for normal browsers (if developer bypass is not active)
-    if (showRedirectPopup && !showDevPanel) {
-        return (
-            <div className="landing-container">
-                <div className="landing-wrapper fade-in" style={{ maxWidth: '400px', textAlign: 'center' }}>
+    // Default: render the Landing Page!
+    return (
+        <div className="w-full max-w-[480px] mx-auto h-screen overflow-y-auto bg-[#f8f9fb] text-[#1a1a1a] font-sans antialiased relative border-x-2 border-[#2d3748]">
+            <Script src="https://cdn.tailwindcss.com?plugins=forms,container-queries" strategy="afterInteractive" />
+            
+            {/* Fonts */}
+            <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Press+Start+2P&display=swap" rel="stylesheet" />
+            
+            {/* BEGIN: HeroSection */}
+            <section className="relative w-full h-screen min-h-[600px] overflow-hidden flex flex-col items-center justify-center pt-24" data-purpose="hero-banner" id="hero">
+                {/* Full-width Background Image */}
+                <div className="absolute inset-0 z-0">
+                    <img 
+                        alt="Pixel Tamer Hero World" 
+                        className="w-full h-full object-cover" 
+                        src="/assets/imgs/hero_bg.jpg"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/70"></div>
+                </div>
+                {/* Title Overlay */}
+                <div className="relative z-10 text-center px-4 flex flex-col items-center">
                     <h1 
-                        className="landing-title retro-title"
                         onClick={() => {
                             setDevClickCount(prev => {
                                 const next = prev + 1;
@@ -685,132 +736,247 @@ export default function Home() {
                             });
                         }}
                         style={{ cursor: 'pointer', userSelect: 'none' }}
+                        className="pixel-font text-white text-4xl md:text-5xl lg:text-6xl tracking-tighter leading-tight text-shadow-pixel mb-6 uppercase"
                     >
-                        Pixel Tamer
+                        PIXEL<br/>TAMER
                     </h1>
+                    <div className="inline-block bg-white/10 backdrop-blur-sm px-6 py-2 pixel-border-sm mb-8">
+                        <p className="pixel-font text-yellow-400 text-[9px] md:text-xs tracking-[0.2em] uppercase">
+                            La aventura definitiva comienza ahora
+                        </p>
+                    </div>
+                    
+                    {/* Primary Hero Button */}
+                    <button 
+                        onClick={handleStartJourney}
+                        className="cta-glow-primary bg-[#2d5a27] text-white pixel-border px-10 py-5 transition-all flex items-center gap-4 group hover:bg-[#3d7a35] active:scale-95 cursor-pointer"
+                    >
+                        <span className="pixel-font text-xs md:text-sm uppercase">
+                            {isConnecting ? "CARGANDO..." : "INICIAR AVENTURA"}
+                        </span>
+                        <span className="text-lg transition-transform group-hover:translate-x-1">⚔️</span>
+                    </button>
+                    
+                    {/* Subtle status indicators for auto-login */}
+                    {isConnecting && (
+                        <p className="text-white text-[11px] font-bold mt-4 animate-pulse uppercase tracking-widest bg-black/40 px-3 py-1 rounded">
+                            Conectando con el servidor...
+                        </p>
+                    )}
+                    
+                    {walletAddress && activeSave && !isConnecting && (
+                        <p className="text-green-400 text-[11px] font-bold mt-4 uppercase tracking-widest bg-black/40 px-3 py-1 rounded">
+                            Sesión lista como {activeSave.name}
+                        </p>
+                    )}
+                </div>
+            </section>
+            {/* END: HeroSection */}
 
-                    <div className="pokemon-panel" style={{ padding: '20px', width: '100%', boxSizing: 'border-box', marginBottom: '20px' }}>
-                        <h2 style={{ fontSize: '13px', color: '#d32f2f', textTransform: 'uppercase', margin: '0 0 10px 0', fontWeight: 'bold' }}>
+            {/* BEGIN: FeatureHighlights */}
+            <section className="relative py-24 px-6 overflow-hidden" data-purpose="game-features" id="features">
+                {/* Background Image */}
+                <div className="absolute inset-0 z-0">
+                    <img 
+                        alt="Features Background" 
+                        className="w-full h-full object-cover" 
+                        src="/assets/imgs/features_bg.png"
+                    />
+                    <div className="absolute inset-0 bg-white/85"></div>
+                </div>
+
+                <div className="max-w-6xl mx-auto relative z-10">
+                    <div className="text-center mb-16">
+                        <h2 className="pixel-font text-lg md:text-xl tracking-tight uppercase text-gray-900 mb-4">Destacados del Mundo</h2>
+                        <div className="h-1.5 w-32 bg-[#2d5a27] mx-auto pixel-border-sm shadow-none border-none"></div>
+                    </div>
+                    <div className="grid grid-cols-1 gap-12">
+                        {/* Feature 1: Capture, Combat & Explore */}
+                        <div className="group">
+                            <div className="pixel-border bg-white overflow-hidden mb-6 aspect-[3/2] relative transition-transform group-hover:-translate-y-2">
+                                <div className="absolute inset-0 overflow-hidden">
+                                    {/* Mapping IMAGE_17 sprite: Row 1, Col 1 */}
+                                    <img alt="Capture Icon" className="absolute w-[300%] h-[200%] top-0 left-0" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCfbFhNeCx06vB-QHOGt7f-MyeA0eWdkrFhf9FOzHiGs1AfnzfON81LY-LLP4q3GfzDCGGihwJqWgSOjkastxt-ODqyexJ3xr-R6LbVUa3pSqPDb4WfBtn2JUi_cb1DNgAH3VYpvNFlb9BEsjzIN3NPsYnn7B8p1Ma98s3IxElggIWmeO8tjNy3WVfnd6975NpADZAbKZWLIPh01DMicfooWnRYhmO_qRHb6DLH-24BWLoJ_WyjEUXUifFCo8xNRWmTEq86RRvtlg6h" />
+                                </div>
+                            </div>
+                            <h3 className="pixel-font text-sm mb-3 text-[#2d5a27]">CAPTURA, COMBATE Y EXPLORA</h3>
+                            <p className="text-gray-800 font-medium leading-relaxed text-xs">Domestica criaturas salvajes, enfréntate a otros domadores en duelos estratégicos por turnos y descubre vastos mundos pixelados llenos de secretos.</p>
+                        </div>
+                        
+                        {/* Feature 2: Train, Collect & Sell */}
+                        <div className="group">
+                            <div className="pixel-border bg-white overflow-hidden mb-6 aspect-[3/2] relative transition-transform group-hover:-translate-y-2">
+                                <div className="absolute inset-0 overflow-hidden">
+                                    {/* Mapping IMAGE_17 sprite: Row 2, Col 1 */}
+                                    <img alt="Train Icon" className="absolute w-[300%] h-[200%] top-[-100%] left-0" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCfbFhNeCx06vB-QHOGt7f-MyeA0eWdkrFhf9FOzHiGs1AfnzfON81LY-LLP4q3GfzDCGGihwJqWgSOjkastxt-ODqyexJ3xr-R6LbVUa3pSqPDb4WfBtn2JUi_cb1DNgAH3VYpvNFlb9BEsjzIN3NPsYnn7B8p1Ma98s3IxElggIWmeO8tjNy3WVfnd6975NpADZAbKZWLIPh01DMicfooWnRYhmO_qRHb6DLH-24BWLoJ_WyjEUXUifFCo8xNRWmTEq86RRvtlg6h" />
+                                </div>
+                            </div>
+                            <h3 className="pixel-font text-sm mb-3 text-[#2d5a27]">ENTRENA, COLECCIONA Y VENDE</h3>
+                            <p className="text-gray-800 font-medium leading-relaxed text-xs">Mejora las habilidades de tus aliados para desbloquear su evolución, completa tu Pixel-Dex con especies legendarias y comercia en el mercado global.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            {/* END: FeatureHighlights */}
+
+            {/* BEGIN: PVPBanner */}
+            <section className="relative py-32 px-6 overflow-hidden" data-purpose="pvp-announcement">
+                <div className="absolute inset-0 z-0">
+                    <img alt="PvP Arena Background" className="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBsS_8KyeLFvu8D1y-TqMRKoZKFt6ZerftOgpl5_2POt92HbQpl63VGCOlls8nMMIeiAJnHRea32ElsmnUPOQkNCjap0fAhxwUYlYkfi8adKp9UTSLai2slPljgejciuFdfh3wKn39rx7-EVWVZXIG-1OZvWQPmi9Xcl37UYpYFbd4yjgeMoyxnMxT4jAa-QbIDPRKoiZtswZ6rritWq5xs1bAEzMYRUC9XLO4Fk6xtFpBnC9IiJbyuFakYQ7YvgbaWJq_3RIGrc7aE" />
+                    <div className="absolute inset-0 bg-black/50"></div>
+                </div>
+                <div className="max-w-4xl mx-auto relative z-10 text-center flex flex-col items-center">
+                    <div className="inline-block bg-yellow-400 text-black px-6 py-2 pixel-border-sm mb-8 font-bold uppercase text-[9px] pixel-font">
+                        Evento Global
+                    </div>
+                    <h2 className="pixel-font text-white text-xl md:text-2xl leading-tight mb-10 text-shadow-pixel uppercase">
+                        TORNEOS PVP CON PREMIOS REALES
+                    </h2>
+                    <button 
+                        onClick={handleStartJourney}
+                        className="bg-[#e11d48] hover:bg-[#fb7185] text-white pixel-border px-10 py-5 transition-all active:scale-95 group cursor-pointer"
+                    >
+                        <span className="pixel-font text-xs md:text-sm">¡ÚNETE AHORA!</span>
+                    </button>
+                    <p className="mt-10 text-white text-base font-bold italic drop-shadow-md">
+                        ¿Tienes lo necesario para ser el campeón mundial?
+                    </p>
+                    
+                    <a
+                        href="https://chat.whatsapp.com/IsfbMxWuzW33zpedjmZcLB"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-6 bg-[#25D366] hover:bg-[#20ba5a] text-white pixel-border px-6 py-4 transition-all active:scale-95 inline-flex items-center gap-2 cursor-pointer"
+                    >
+                        <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24" style={{ display: 'inline' }}>
+                            <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.724-1.455L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.825 1.451 5.436 0 9.86-4.37 9.864-9.799.002-2.623-1.023-5.086-2.884-6.948C16.636 2.002 14.17 1.01 11.55 1.01c-5.44 0-9.866 4.372-9.87 9.802 0 1.96.512 3.878 1.483 5.581L2.126 20.4l4.52-1.246z"/>
+                            <path d="M17.18 14.072c-.282-.14-.1.666-.35-.826-.226-.453-.68-.748-1.127-.923-.448-.175-1.63-.673-1.848-.76-.217-.087-.375-.13-.532.11-.157.24-.608.76-.745.92-.138.156-.275.175-.558.035-.282-.14-1.192-.44-2.27-1.402-.838-.748-1.405-1.67-1.57-1.95-.164-.28-.018-.433.123-.572.127-.125.282-.33.424-.495.143-.165.19-.28.285-.468.096-.188.048-.352-.024-.495-.072-.14-.608-1.464-.83-1.996-.217-.523-.473-.447-.648-.456-.17-.008-.363-.01-.557-.01-.193 0-.508.073-.775.362-.266.29-1.018.995-1.018 2.428 0 1.433 1.04 2.818 1.185 3.01.144.193 2.05 3.13 4.965 4.387.694.3 1.235.478 1.657.612.697.22 1.332.19 1.833.115.558-.083 1.713-.7 1.955-1.378.243-.677.243-1.258.17-1.377-.072-.116-.265-.187-.547-.327z"/>
+                        </svg>
+                        <span className="pixel-font text-[9px] uppercase ml-1">Unirse a WhatsApp</span>
+                    </a>
+                </div>
+            </section>
+            {/* END: PVPBanner */}
+
+            {/* Platform Redirect Modal (Traditional browsers block) */}
+            {showRedirectModal && (
+                <div className="fixed inset-0 max-w-[480px] mx-auto z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-4 animate-fade-in">
+                    <div className="bg-white pixel-border max-w-sm w-full p-6 relative">
+                        <button 
+                            onClick={() => setShowRedirectModal(false)}
+                            className="absolute top-2 right-4 text-3xl font-bold hover:text-red-600 transition-colors"
+                        >
+                            &times;
+                        </button>
+                        <h2 className="pixel-font text-red-600 text-sm md:text-base uppercase mb-4 text-center">
                             Acceso Restringido
                         </h2>
-                        <p style={{ fontSize: '11px', color: '#3e2723', lineHeight: '1.5', margin: '0 0 16px 0' }}>
-                            Este juego está diseñado exclusivamente para ser jugado como una Mini App móvil dentro de **World App** o **Telegram**.
+                        <p className="text-gray-700 text-xs leading-relaxed mb-6 text-center">
+                            Este juego está diseñado exclusivamente para ser jugado como una Mini App móvil dentro de <strong className="text-black">World App</strong> o <strong className="text-black">Telegram</strong>.
                         </p>
-                        <p style={{ fontSize: '11px', color: '#5d4037', fontStyle: 'italic', margin: '0 0 20px 0' }}>
-                            Por favor ingresa desde una de las siguientes opciones compatibles:
-                        </p>
-
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        
+                        <div className="flex flex-col gap-4">
                             <a
                                 href="https://t.me/PixelTamerBot/play"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="pokemon-button success"
-                                style={{ textDecoration: 'none', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', fontSize: '11px', padding: '10px 0' }}
+                                className="bg-[#0088cc] hover:bg-[#0077b3] text-white pixel-border-sm px-6 py-4 text-center transition-all flex items-center justify-center gap-3 active:scale-95"
                             >
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
-                                Jugar en Telegram (TMA)
+                                <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24" style={{ display: 'inline' }}>
+                                    <path d="m22 2-7 20-4-9-9-4Z"/>
+                                    <path d="M22 2 11 13"/>
+                                </svg>
+                                <span className="pixel-font text-[9px] uppercase ml-2">Jugar en Telegram</span>
                             </a>
-                            <div style={{ fontSize: '9px', color: '#78909c', margin: '4px 0', fontWeight: 'bold', textTransform: 'uppercase' }}>ó</div>
+                            <div className="text-center text-[9px] font-bold text-gray-400 uppercase">ó</div>
                             <a
                                 href="https://worldcoin.org/mini-app?app_id=app_6a783c64810d430744512e4207e07fce"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="pokemon-button"
-                                style={{ textDecoration: 'none', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', fontSize: '11px', padding: '10px 0', background: '#3e2723', color: '#fff' }}
+                                className="bg-black hover:bg-gray-900 text-white pixel-border-sm px-6 py-4 text-center transition-all flex items-center justify-center gap-3 active:scale-95"
                             >
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                                Descarga Pixel Tamer
+                                <img 
+                                    src="https://cdn.auth0.com/marketplace/catalog/content/assets/creators/worldcoin/worldcoin-avatar.png" 
+                                    alt="Worldcoin" 
+                                    className="w-5 h-5 rounded-full inline"
+                                />
+                                <span className="pixel-font text-[9px] uppercase ml-2">Jugar en World App</span>
                             </a>
                         </div>
-                    </div>
-                    <p style={{ fontSize: '9px', color: '#90a4ae', margin: 0 }}>
-                        Pixel Tamer &copy; 2026
-                    </p>
-                </div>
-            </div>
-        );
-    }
 
-    return (
-        <div className="landing-container">
-            <div className="landing-wrapper fade-in">
-                {/* Glowing Title */}
-                <h1 className="landing-title retro-title">Pixel Tamer</h1>
-
-                <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    {isConnecting ? (
-                        <div className="saves-list-empty glass-panel" style={{ textAlign: 'center', padding: '24px' }}>
-                            <div className="spinner" style={{ border: '4px solid rgba(0, 0, 0, 0.1)', width: '36px', height: '36px', borderRadius: '50%', borderLeftColor: '#3e2723', animation: 'spin 1s linear infinite', margin: '0 auto 12px auto' }}></div>
-                            Cargando partida desde la nube...
+                        <div className="mt-8 pt-4 border-t border-gray-200 text-center">
+                            <button
+                                onClick={() => {
+                                    setShowRedirectModal(false);
+                                    setShowDevPanel(true);
+                                }}
+                                className="text-[9px] text-gray-400 hover:text-gray-600 underline cursor-pointer"
+                            >
+                                Acceso de Desarrollador (Mock Wallet)
+                            </button>
                         </div>
-                    ) : (
-                        <>
-                            {/* Connect World App Button */}
-                            {isWorldApp && (
-                                <button
-                                    onClick={handleConnectWorldApp}
-                                    className="worldcoin-connect-btn"
-                                >
-                                    <img 
-                                        src="https://cdn.auth0.com/marketplace/catalog/content/assets/creators/worldcoin/worldcoin-avatar.png" 
-                                        alt="Connection icon" 
-                                        style={{ width: '22px', height: '22px', borderRadius: '50%' }}
-                                    />
-                                    <span>Continue with World</span>
-                                </button>
-                            )}
-
-                            {/* Fallback Dev Login Box */}
-                            {showDevPanel && (
-                                <div className="create-form-card glass-panel fade-in" style={{ width: '100%', boxSizing: 'border-box' }}>
-                                    <h2 className="form-title" style={{ fontSize: '13px', textTransform: 'uppercase', color: '#ffb300', margin: '0 0 4px 0' }}>
-                                        [ Desarrollador / Fallback ]
-                                    </h2>
-                                    <p className="form-subtitle" style={{ fontSize: '11px', margin: '0 0 12px 0', color: '#5d4037' }}>
-                                        Para pruebas en navegadores tradicionales, ingresa una dirección de wallet mock:
-                                    </p>
-                                    <input
-                                        type="text"
-                                        value={mockAddressInput}
-                                        onChange={(e) => setMockAddressInput(e.target.value)}
-                                        placeholder="Ej. 0xMockWalletAddress..."
-                                        className="form-input"
-                                        style={{ fontFamily: 'monospace', fontSize: '11px', padding: '8px', width: '100%', boxSizing: 'border-box', marginBottom: '10px' }}
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            const trimmed = mockAddressInput.trim();
-                                            if (!trimmed) {
-                                                setError("Por favor ingresa una dirección mock válida.");
-                                                return;
-                                            }
-                                            handleLoginWithWallet(trimmed);
-                                        }}
-                                        className="btn-secondary"
-                                        style={{ width: '100%', fontSize: '11px', padding: '8px' }}
-                                    >
-                                        Mock Login &rarr;
-                                    </button>
-
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setShowDevPanel(false);
-                                            setDevClickCount(0);
-                                        }}
-                                        className="btn-secondary"
-                                        style={{ width: '100%', fontSize: '10px', padding: '4px', marginTop: '10px', background: 'transparent', border: 'none', color: '#78909c', cursor: 'pointer' }}
-                                    >
-                                        &larr; Volver al bloqueo de plataforma
-                                    </button>
-                                </div>
-                            )}
-                        </>
-                    )}
+                    </div>
                 </div>
-            </div>
+            )}
+
+            {/* Developer/Bypass Panel Modal */}
+            {showDevPanel && (
+                <div className="fixed inset-0 max-w-[480px] mx-auto z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-4 animate-fade-in">
+                    <div className="bg-white pixel-border max-w-sm w-full p-6 relative">
+                        <button 
+                            onClick={() => {
+                                setShowDevPanel(false);
+                                setDevClickCount(0);
+                            }}
+                            className="absolute top-2 right-4 text-3xl font-bold hover:text-red-600 transition-colors"
+                        >
+                            &times;
+                        </button>
+                        <h2 className="pixel-font text-yellow-600 text-sm md:text-base uppercase mb-4 text-center">
+                            [ Modo Desarrollador ]
+                        </h2>
+                        <p className="text-gray-700 text-xs leading-relaxed mb-6 text-center">
+                            Para realizar pruebas en navegadores tradicionales, ingresa una dirección de billetera mock:
+                        </p>
+                        
+                        <div className="flex flex-col gap-4">
+                            <input
+                                type="text"
+                                value={mockAddressInput}
+                                onChange={(e) => setMockAddressInput(e.target.value)}
+                                placeholder="Ej. 0xMockWalletAddress..."
+                                className="pixel-border-sm p-3 w-full font-mono text-xs"
+                            />
+                            <button
+                                onClick={() => {
+                                    const trimmed = mockAddressInput.trim();
+                                    if (!trimmed) {
+                                        setError("Por favor ingresa una dirección mock válida.");
+                                        return;
+                                    }
+                                    handleLoginWithWallet(trimmed, undefined, true);
+                                }}
+                                className="bg-[#2d5a27] hover:bg-[#3d7a35] text-white pixel-border px-6 py-4 text-center transition-all active:scale-95 cursor-pointer"
+                            >
+                                <span className="pixel-font text-[9px] uppercase">Conectar Mock &rarr;</span>
+                            </button>
+                        </div>
+                        
+                        <div className="mt-6 text-center">
+                            <button
+                                onClick={() => {
+                                    setShowDevPanel(false);
+                                    setDevClickCount(0);
+                                    setShowRedirectModal(true);
+                                }}
+                                className="text-[9px] text-gray-400 hover:text-gray-600 underline cursor-pointer"
+                            >
+                                &larr; Volver al bloqueo de plataforma
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Custom Modal Error Dialog */}
             {error && (
@@ -836,6 +1002,33 @@ export default function Home() {
             )}
 
             <style jsx>{`
+                .pixel-font {
+                    font-family: 'Press Start 2P', cursive;
+                }
+                .pixel-border {
+                    border: 4px solid #000;
+                    box-shadow: 4px 4px 0px rgba(0,0,0,1);
+                }
+                .pixel-border-sm {
+                    border: 2px solid #000;
+                    box-shadow: 2px 2px 0px rgba(0,0,0,1);
+                }
+                .text-shadow-pixel {
+                    text-shadow: 4px 4px 0px #000;
+                }
+                .grid-background {
+                    background-image: 
+                        linear-gradient(to right, #e5e7eb 1px, transparent 1px),
+                        linear-gradient(to bottom, #e5e7eb 1px, transparent 1px);
+                    background-size: 24px 24px;
+                }
+                .cta-glow-primary {
+                    box-shadow: 0 0 20px rgba(45, 90, 39, 0.4), 6px 6px 0px #000;
+                }
+                .cta-glow-primary:hover {
+                    box-shadow: 0 0 30px rgba(45, 90, 39, 0.6), 4px 4px 0px #000;
+                    transform: translate(2px, 2px);
+                }
                 @keyframes spin {
                     0% { transform: rotate(0deg); }
                     100% { transform: rotate(360deg); }
