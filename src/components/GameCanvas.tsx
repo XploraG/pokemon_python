@@ -10886,6 +10886,7 @@ export default function GameCanvas({
                                         listings: any[];
                                         totalStock: number;
                                         lowestPrice: number;
+                                        assignedSeller?: string;
                                     }> = {};
 
                                     marketListings.forEach(l => {
@@ -10917,7 +10918,14 @@ export default function GameCanvas({
                                         }
                                     });
 
-                                    const sortedGroupedItems = Object.values(groupedItems).sort((a, b) => a.name.localeCompare(b.name));
+                                    Object.values(groupedItems).forEach((p: any) => {
+                                         const lowestListings = p.listings.filter((l: any) => l.price === p.lowestPrice);
+                                         const charSum = lowestListings.reduce((sum: number, l: any) => sum + l.id.split('').reduce((s: number, c: string) => s + c.charCodeAt(0), 0), 0);
+                                         const assignedIdx = lowestListings.length > 0 ? charSum % lowestListings.length : 0;
+                                         p.assignedSeller = lowestListings[assignedIdx]?.seller_name || 'N/A';
+                                     });
+
+                                     const sortedGroupedItems = Object.values(groupedItems).sort((a, b) => a.name.localeCompare(b.name));
 
                                     // Filter active Pokémon listings
                                     const activePokemonListings = marketListings.filter(l => {
@@ -11289,7 +11297,7 @@ export default function GameCanvas({
                                                                                     {tags[0]}
                                                                                 </span>
                                                                                 <span style={{ fontSize: '10px', color: '#cbd5e1' }}>
-                                                                                    Stock: <strong style={{ color: '#34d399' }}>{p.totalStock}</strong>
+                                                                                    Stock: <strong style={{ color: '#34d399' }}>{p.totalStock}</strong> • Vendedor: <strong style={{ color: '#f472b6' }}>{p.assignedSeller}</strong>
                                                                                 </span>
                                                                             </div>
                                                                         </div>
@@ -11307,13 +11315,7 @@ export default function GameCanvas({
                                                                                 onClick={() => {
                                                                                     setSelectedProductForDetail(p);
                                                                                     setBuyQty(1);
-                                                                                    const lowestListings = p.listings.filter(l => l.price === p.lowestPrice);
-                                                                                    if (lowestListings.length > 0) {
-                                                                                        const randIdx = Math.floor(Math.random() * lowestListings.length);
-                                                                                        setAssignedSeller(lowestListings[randIdx].seller_name);
-                                                                                    } else {
-                                                                                        setAssignedSeller('N/A');
-                                                                                    }
+                                                                                    setAssignedSeller(p.assignedSeller || 'N/A');
                                                                                 }}
                                                                                 style={{
                                                                                     padding: '6px 12px',
