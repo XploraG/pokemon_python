@@ -1,20 +1,17 @@
-const { createClient } = require('@supabase/supabase-js');
+const fs = require('fs');
 
-const SUPABASE_URL = 'https://rqorajspzwxvnchatcxt.supabase.co';
-const SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJxb3JhanNwend4dm5jaGF0Y3h0Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MTIwMzc2NiwiZXhwIjoyMDk2Nzc5NzY2fQ.ysimAqyjRmHEAwhCITUxDVFfGrswHrhnAz44wC-ica0';
-const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
-
-async function run() {
-    console.log("Testing purchase_marketplace_listing RPC...");
-    const { data, error } = await supabase.rpc('purchase_marketplace_listing', {
-        p_listing_id: '5c85843b-a0ef-4df6-b122-829e338a7c4d',
-        p_buyer_address: '0xf29299c07fc682edb285785723751b5ffbbd0ef1',
-        p_buyer_name: 'Test Buyer'
-    });
-    if (error) {
-        console.error("RPC error details:", error);
-    } else {
-        console.log("RPC execution result:", data);
+function getPngDimensions(filePath) {
+    try {
+        const buffer = fs.readFileSync(filePath);
+        const width = buffer.readInt32BE(16);
+        const height = buffer.readInt32BE(20);
+        return { width, height };
+    } catch (e) {
+        return { error: e.message };
     }
 }
-run();
+
+console.log("sprites.png dimensions:", getPngDimensions('public/assets/entities/player/imgs/sprites.png'));
+console.log("Bicycle (32x32).png dimensions:", getPngDimensions('public/assets/entities/player/imgs/Bicycle (32x32).png'));
+console.log("Fishing (32x32).png dimensions:", getPngDimensions('public/assets/entities/player/imgs/Fishing (32x32).png'));
+console.log("lapras_mount.png dimensions:", getPngDimensions('public/assets/entities/player/imgs/lapras_mount.png'));

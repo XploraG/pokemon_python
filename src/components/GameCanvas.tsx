@@ -3472,9 +3472,34 @@ export default function GameCanvas({
                         }
 
                         let dirOffset = 0;
-                        if (player.moveDirection === 'left') dirOffset = 48;
-                        else if (player.moveDirection === 'up') dirOffset = 96;
-                        else if (player.moveDirection === 'right') dirOffset = 144;
+                        let srcX = 0;
+                        let srcY = 12;
+                        let frameW = 15;
+                        let frameH = 20;
+                        const scale = 2.5;
+                        const surfYOffset = player.isSurfing ? -4 : 0;
+
+                        if (player.isBicycle) {
+                            if (player.moveDirection === 'left') dirOffset = 96;
+                            else if (player.moveDirection === 'up') dirOffset = 192;
+                            else if (player.moveDirection === 'right') dirOffset = 288;
+                            else dirOffset = 0;
+
+                            srcX = dirOffset + player.animFrame * 32;
+                            srcY = 0;
+                            frameW = 32;
+                            frameH = 32;
+                        } else {
+                            if (player.moveDirection === 'left') dirOffset = 48;
+                            else if (player.moveDirection === 'up') dirOffset = 96;
+                            else if (player.moveDirection === 'right') dirOffset = 144;
+                            else dirOffset = 0;
+
+                            srcX = dirOffset + player.animFrame * 16;
+                            srcY = 12;
+                            frameW = 15;
+                            frameH = 20;
+                        }
 
                         // Draw Lapras mount under the player if surfing
                         if (player.isSurfing && surfSpriteRef.current) {
@@ -3503,21 +3528,16 @@ export default function GameCanvas({
                             );
                         }
 
-                        const frameWidth = 15;
-                        const frameHeight = 20;
-                        const scale = 2.5;
-                        const surfYOffset = player.isSurfing ? -4 : 0;
-
                         c.drawImage(
                             sprite,
-                            dirOffset + player.animFrame * 16, // source x
-                            12, // source y
-                            frameWidth,
-                            frameHeight,
-                            player.x - camX - (frameWidth * scale) / 2 + offsetX, // center player on coordinate
-                            player.y - camY - frameHeight * scale + offsetY + surfYOffset, // stand player on coordinate
-                            frameWidth * scale,
-                            frameHeight * scale
+                            srcX, // source x
+                            srcY, // source y
+                            frameW,
+                            frameH,
+                            player.x - camX - (frameW * scale) / 2 + offsetX, // center player on coordinate
+                            player.y - camY - frameH * scale + offsetY + surfYOffset, // stand player on coordinate
+                            frameW * scale,
+                            frameH * scale
                         );
 
                         // Draw name tag above local player's head
@@ -3528,7 +3548,7 @@ export default function GameCanvas({
                         c.fillStyle = "rgba(0, 0, 0, 0.5)";
                         c.fillRect(
                             player.x - camX - textWidth / 2 - 3 + offsetX,
-                            player.y - camY - frameHeight * scale - 14 + offsetY,
+                            player.y - camY - frameH * scale - 14 + offsetY,
                             textWidth + 6,
                             11
                         );
@@ -3537,7 +3557,7 @@ export default function GameCanvas({
                         c.fillText(
                             nameTag,
                             player.x - camX - textWidth / 2 + offsetX,
-                            player.y - camY - frameHeight * scale - 6 + offsetY
+                            player.y - camY - frameH * scale - 6 + offsetY
                         );
                     }
                 }
@@ -3602,9 +3622,34 @@ export default function GameCanvas({
                                 }
 
                                 let dirOffset = 0;
-                                if (otherPlayer.dir === 'left') dirOffset = 48;
-                                else if (otherPlayer.dir === 'up') dirOffset = 96;
-                                else if (otherPlayer.dir === 'right') dirOffset = 144;
+                                let srcX = 0;
+                                let srcY = 12;
+                                let frameW = 15;
+                                let frameH = 20;
+                                const scale = 2.5;
+                                const surfYOffset = otherPlayer.is_surfing ? -4 : 0;
+
+                                if (otherPlayer.is_bicycle) {
+                                    if (otherPlayer.dir === 'left') dirOffset = 96;
+                                    else if (otherPlayer.dir === 'up') dirOffset = 192;
+                                    else if (otherPlayer.dir === 'right') dirOffset = 288;
+                                    else dirOffset = 0;
+
+                                    srcX = dirOffset + (otherPlayer.animFrame ?? 0) * 32;
+                                    srcY = 0;
+                                    frameW = 32;
+                                    frameH = 32;
+                                } else {
+                                    if (otherPlayer.dir === 'left') dirOffset = 48;
+                                    else if (otherPlayer.dir === 'up') dirOffset = 96;
+                                    else if (otherPlayer.dir === 'right') dirOffset = 144;
+                                    else dirOffset = 0;
+
+                                    srcX = dirOffset + (otherPlayer.animFrame ?? 0) * 16;
+                                    srcY = 12;
+                                    frameW = 15;
+                                    frameH = 20;
+                                }
 
                                 // Draw Lapras mount under the remote player if surfing
                                 if (otherPlayer.is_surfing && surfSpriteRef.current) {
@@ -3633,21 +3678,16 @@ export default function GameCanvas({
                                     );
                                 }
 
-                                const frameWidth = 15;
-                                const frameHeight = 20;
-                                const scale = 2.5;
-                                const surfYOffset = otherPlayer.is_surfing ? -4 : 0;
-
                                 c.drawImage(
                                     sprite,
-                                    dirOffset + (otherPlayer.animFrame ?? 0) * 16, // source x
-                                    12, // source y
-                                    frameWidth,
-                                    frameHeight,
-                                    otherPlayer.x - camX - (frameWidth * scale) / 2 + offsetX,
-                                    otherPlayer.y - camY - frameHeight * scale + offsetY + surfYOffset,
-                                    frameWidth * scale,
-                                    frameHeight * scale
+                                    srcX, // source x
+                                    srcY, // source y
+                                    frameW,
+                                    frameH,
+                                    otherPlayer.x - camX - (frameW * scale) / 2 + offsetX,
+                                    otherPlayer.y - camY - frameH * scale + offsetY + surfYOffset,
+                                    frameW * scale,
+                                    frameH * scale
                                 );
 
                                 // Draw name tags
@@ -3658,7 +3698,7 @@ export default function GameCanvas({
                                 c.fillStyle = "rgba(0, 0, 0, 0.5)";
                                 c.fillRect(
                                     otherPlayer.x - camX - textWidth / 2 - 3 + offsetX,
-                                    otherPlayer.y - camY - frameHeight * scale - 14 + offsetY,
+                                    otherPlayer.y - camY - frameH * scale - 14 + offsetY,
                                     textWidth + 6,
                                     11
                                 );
@@ -3667,7 +3707,7 @@ export default function GameCanvas({
                                 c.fillText(
                                     nameTag,
                                     otherPlayer.x - camX - textWidth / 2 + offsetX,
-                                    otherPlayer.y - camY - frameHeight * scale - 6 + offsetY
+                                    otherPlayer.y - camY - frameH * scale - 6 + offsetY
                                 );
                                 c.restore();
                             }
