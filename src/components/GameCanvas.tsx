@@ -1517,6 +1517,7 @@ export default function GameCanvas({
     const [marketTab, setMarketTab] = useState<'buy' | 'sell' | 'my_listings' | 'history'>('buy');
     const [marketSearch, setMarketSearch] = useState('');
     const [marketFilterType, setMarketFilterType] = useState<'all' | 'item' | 'pokemon'>('all');
+    const [sellTabType, setSellTabType] = useState<'item' | 'pokemon'>('item');
     const [marketListings, setMarketListings] = useState<any[]>([]);
     const [marketHistory, setMarketHistory] = useState<any[]>([]);
     const [selectedItemToList, setSelectedItemToList] = useState<string>('');
@@ -10901,7 +10902,7 @@ export default function GameCanvas({
                                             groupedItems[assetId] = {
                                                 asset_id: assetId,
                                                 name: info.name || assetId,
-                                                sprite: info.sprite ? `/assets/items/${info.sprite}` : '',
+                                                sprite: getItemIconUrl(assetId),
                                                 description: info.description || '',
                                                 rarity: info.rarity || 'Común',
                                                 listings: [],
@@ -11447,30 +11448,30 @@ export default function GameCanvas({
                                         {/* Sub-selectors */}
                                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', background: 'rgba(0,0,0,0.2)', borderRadius: '8px', padding: '4px' }}>
                                             <button
-                                                onClick={() => { setSelectedPokeToListIdx(null); setSelectedItemToList(''); setMarketFilterType('item'); }}
+                                                onClick={() => { setSelectedPokeToListIdx(null); setSelectedItemToList(''); setSellTabType('item'); }}
                                                 style={{
                                                     padding: '6px',
                                                     fontSize: '11px',
                                                     fontWeight: 'bold',
-                                                    background: marketFilterType === 'item' ? '#1e293b' : 'transparent',
+                                                    background: sellTabType === 'item' ? '#1e293b' : 'transparent',
                                                     border: 'none',
                                                     borderRadius: '6px',
-                                                    color: marketFilterType === 'item' ? '#fff' : '#94a3b8',
+                                                    color: sellTabType === 'item' ? '#fff' : '#94a3b8',
                                                     cursor: 'pointer'
                                                 }}
                                             >
                                                 📦 Vender Objeto
                                             </button>
                                             <button
-                                                onClick={() => { setSelectedPokeToListIdx(null); setSelectedItemToList(''); setMarketFilterType('pokemon'); }}
+                                                onClick={() => { setSelectedPokeToListIdx(null); setSelectedItemToList(''); setSellTabType('pokemon'); }}
                                                 style={{
                                                     padding: '6px',
                                                     fontSize: '11px',
                                                     fontWeight: 'bold',
-                                                    background: marketFilterType === 'pokemon' ? '#1e293b' : 'transparent',
+                                                    background: sellTabType === 'pokemon' ? '#1e293b' : 'transparent',
                                                     border: 'none',
                                                     borderRadius: '6px',
-                                                    color: marketFilterType === 'pokemon' ? '#fff' : '#94a3b8',
+                                                    color: sellTabType === 'pokemon' ? '#fff' : '#94a3b8',
                                                     cursor: 'pointer'
                                                 }}
                                             >
@@ -11479,7 +11480,7 @@ export default function GameCanvas({
                                         </div>
 
                                         {/* Sell Item Form */}
-                                        {marketFilterType === 'item' && (
+                                        {sellTabType === 'item' && (
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '12px', padding: '14px' }}>
                                                 <label style={{ fontSize: '11px', color: '#c084fc', textTransform: 'uppercase', fontWeight: 'bold' }}>1. Selecciona el Objeto</label>
                                                 <select
@@ -11535,7 +11536,7 @@ export default function GameCanvas({
                                         )}
 
                                         {/* Sell Pokemon Form */}
-                                        {marketFilterType === 'pokemon' && (
+                                        {sellTabType === 'pokemon' && (
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '12px', padding: '14px' }}>
                                                 <label style={{ fontSize: '11px', color: '#c084fc', textTransform: 'uppercase', fontWeight: 'bold' }}>1. Selecciona el Pokémon (desde PC)</label>
                                                 {listablePokemon.length === 0 ? (
@@ -11602,7 +11603,7 @@ export default function GameCanvas({
 
                                                     if (l.type === 'item') {
                                                         const info = inventoryRef.current.getItemInfo(l.asset_id);
-                                                        spriteUrl = info.sprite ? `/assets/items/${info.sprite}` : '';
+                                                        spriteUrl = getItemIconUrl(l.asset_id);
                                                     } else {
                                                         const species = pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === l.asset_id.toLowerCase());
                                                         if (species) {
