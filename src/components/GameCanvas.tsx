@@ -1523,6 +1523,10 @@ export default function GameCanvas({
     const [selectedPokeToListIdx, setSelectedPokeToListIdx] = useState<number | null>(null);
     const [listPrice, setListPrice] = useState<number>(0);
     const [listQuantity, setListQuantity] = useState<number>(1);
+    const [selectedProductForDetail, setSelectedProductForDetail] = useState<any | null>(null);
+    const [buyQty, setBuyQty] = useState<number>(1);
+    const [isPurchasing, setIsPurchasing] = useState<boolean>(false);
+    const [assignedSeller, setAssignedSeller] = useState<string>('');
     const [showPokedexModal, setShowPokedexModal] = useState(false);
     const [showTravelModal, setShowTravelModal] = useState(false);
     const [isTravelling, setIsTravelling] = useState(false);
@@ -6019,6 +6023,7 @@ export default function GameCanvas({
             setTeam(updatedSave.team_data || []);
             setPcPokemon(updatedSave.pc_pokemon || []);
             economyRef.current = new Economy(updatedSave.economy_data);
+            setEconomy(new Economy(updatedSave.economy_data));
             inventoryRef.current = new Inventory(updatedSave.inventory_data);
 
             showNotification("Mercado", `¡Compra realizada exitosamente a ${sellerName}!`);
@@ -6028,6 +6033,76 @@ export default function GameCanvas({
         } catch (e) {
             console.error("Error purchasing listing:", e);
             showNotification("Mercado", "Error al procesar la compra.");
+        }
+    };
+
+    const handlePurchaseOrderbookItems = async (assetId: string, quantity: number, totalCost: number) => {
+        const currentCoins = economyRef.current.coins;
+        if (currentCoins < totalCost) {
+            showNotification("Mercado", "No tienes suficientes Coins para realizar esta compra.");
+            return;
+        }
+
+        setIsPurchasing(true);
+        try {
+            const { data, error: rpcErr } = await supabase.rpc('purchase_items_from_orderbook', {
+                p_asset_id: assetId,
+                p_quantity: quantity,
+                p_buyer_address: walletAddress,
+                p_buyer_name: playerName || 'Tamer'
+            });
+
+            if (rpcErr) {
+                console.error("RPC Error:", rpcErr);
+                showNotification("Mercado", "Error al procesar la compra de objetos en el servidor.");
+                return;
+            }
+
+            if (data && !data.success) {
+                const errMsg = data.error;
+                if (errMsg === 'buyer_not_found') {
+                    showNotification("Mercado", "No se encontró tu perfil de guardado.");
+                } else if (errMsg === 'insufficient_market_stock') {
+                    showNotification("Mercado", "No hay suficiente stock disponible al precio calculado.");
+                } else if (errMsg === 'insufficient_funds') {
+                    showNotification("Mercado", "Fondos insuficientes en el servidor.");
+                } else {
+                    showNotification("Mercado", `Error: ${errMsg}`);
+                }
+                fetchMarketListings();
+                return;
+            }
+
+            const { data: userData, error: fetchErr } = await supabase
+                .from('player_saves')
+                .select('save_data')
+                .eq('wallet_address', walletAddress)
+                .single();
+
+            if (fetchErr || !userData || !userData.save_data) {
+                showNotification("Mercado", "¡Compra exitosa! Por favor recarga el juego para ver los cambios.");
+                return;
+            }
+
+            const updatedSave = userData.save_data;
+            setTeam(updatedSave.team_data || []);
+            setPcPokemon(updatedSave.pc_pokemon || []);
+            economyRef.current = new Economy(updatedSave.economy_data);
+            setEconomy(new Economy(updatedSave.economy_data));
+            inventoryRef.current = new Inventory(updatedSave.inventory_data);
+
+            showNotification("Mercado", `¡Has comprado ${quantity}x ${assetId} por ${totalCost} Coins!`);
+            
+            setSelectedProductForDetail(null);
+            setBuyQty(1);
+
+            fetchMarketListings();
+            fetchMarketHistory();
+        } catch (e) {
+            console.error("Error purchasing orderbook items:", e);
+            showNotification("Mercado", "Error al procesar la compra.");
+        } finally {
+            setIsPurchasing(false);
         }
     };
 
@@ -8629,7 +8704,14 @@ export default function GameCanvas({
 
                             {/* Mercado full-width card */}
                             <button
-                                onClick={() => { setShowMarketplaceModal(true); setShowMenuModal(false); }}
+                                onClick={() => {
+                                    if (economy.level < 2) {
+                                        showNotification("Mercado", "El Mercado Global se desbloquea al alcanzar el Nivel de Entrenador 2. ¡Derrota a algunos entrenadores en las rutas para subir de nivel!");
+                                        return;
+                                    }
+                                    setShowMarketplaceModal(true);
+                                    setShowMenuModal(false);
+                                }}
                                 style={{
                                     width: '100%',
                                     background: 'linear-gradient(135deg, rgba(168,85,247,0.15) 0%, rgba(109,40,217,0.2) 100%)',
@@ -10706,18 +10788,6 @@ export default function GameCanvas({
             })()}
 
             {showMarketplaceModal && (() => {
-                const activeListings = marketListings.filter(l => {
-                    const matchesTab = l.status === 'active';
-                    if (!matchesTab) return false;
-
-                    const matchesType = marketFilterType === 'all' || l.type === marketFilterType;
-                    if (!matchesType) return false;
-
-                    const matchesSearch = l.asset_id.toLowerCase().includes(marketSearch.toLowerCase()) ||
-                                          (l.seller_name || '').toLowerCase().includes(marketSearch.toLowerCase());
-                    return matchesSearch;
-                });
-
                 const listableItems = inventoryRef.current.getAllItems();
                 const listablePokemon = pcPokemon;
 
@@ -10745,7 +10815,7 @@ export default function GameCanvas({
                                         <span style={{ fontSize: '9px', color: '#c084fc' }}>Comercio Seguro P2P • Saldo: {economyRef.current.coins} Coins</span>
                                     </div>
                                 </div>
-                                <button onClick={() => setShowMarketplaceModal(false)} style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: '#94a3b8', cursor: 'pointer', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', fontWeight: 'bold' }}>&times;</button>
+                                <button onClick={() => { setShowMarketplaceModal(false); setSelectedProductForDetail(null); }} style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: '#94a3b8', cursor: 'pointer', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', fontWeight: 'bold' }}>&times;</button>
                             </div>
 
                             {/* Tabs */}
@@ -10760,7 +10830,7 @@ export default function GameCanvas({
                                     return (
                                         <button
                                             key={t.id}
-                                            onClick={() => setMarketTab(t.id as any)}
+                                            onClick={() => { setMarketTab(t.id as any); setSelectedProductForDetail(null); }}
                                             style={{
                                                 flex: 1,
                                                 padding: '10px 4px',
@@ -10785,117 +10855,572 @@ export default function GameCanvas({
                             <div style={{ padding: '16px', color: '#e2e8f0', flex: 1 }}>
                                 
                                 {/* TAB 1: BUY */}
-                                {marketTab === 'buy' && (
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                                        {/* Filters */}
-                                        <div style={{ display: 'flex', gap: '8px' }}>
-                                            <input
-                                                type="text"
-                                                placeholder="Buscar por nombre o vendedor..."
-                                                value={marketSearch}
-                                                onChange={e => setMarketSearch(e.target.value)}
-                                                style={{ flex: 1, padding: '8px 12px', fontSize: '12px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', color: '#fff', outline: 'none' }}
-                                            />
-                                            <select
-                                                value={marketFilterType}
-                                                onChange={e => setMarketFilterType(e.target.value as any)}
-                                                style={{ padding: '8px', fontSize: '12px', background: '#1e293b', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', color: '#fff', outline: 'none' }}
-                                            >
-                                                <option value="all">Todos</option>
-                                                <option value="item">Objetos</option>
-                                                <option value="pokemon">Pokémon</option>
-                                            </select>
-                                        </div>
+                                {marketTab === 'buy' && (() => {
+                                    // Group active item listings by asset_id
+                                    const groupedItems: Record<string, {
+                                        asset_id: string;
+                                        name: string;
+                                        sprite: string;
+                                        description: string;
+                                        rarity: string;
+                                        listings: any[];
+                                        totalStock: number;
+                                        lowestPrice: number;
+                                    }> = {};
 
-                                        {/* Listings list */}
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '340px', overflowY: 'auto', paddingRight: '4px' }}>
-                                            {activeListings.length === 0 ? (
-                                                <div style={{ textAlign: 'center', padding: '30px', color: '#64748b', fontSize: '12px', fontStyle: 'italic' }}>
-                                                    No hay ofertas activas que coincidan con la búsqueda.
+                                    marketListings.forEach(l => {
+                                        if (l.status !== 'active' || l.type !== 'item' || l.seller_address === walletAddress) {
+                                            return;
+                                        }
+
+                                        const matchesSearch = l.asset_id.toLowerCase().includes(marketSearch.toLowerCase());
+                                        if (marketSearch && !matchesSearch) return;
+
+                                        const assetId = l.asset_id;
+                                        if (!groupedItems[assetId]) {
+                                            const info = inventoryRef.current.getItemInfo(assetId);
+                                            groupedItems[assetId] = {
+                                                asset_id: assetId,
+                                                name: info.name || assetId,
+                                                sprite: info.sprite ? `/assets/items/${info.sprite}` : '',
+                                                description: info.description || '',
+                                                rarity: info.rarity || 'Común',
+                                                listings: [],
+                                                totalStock: 0,
+                                                lowestPrice: Infinity
+                                            };
+                                        }
+                                        groupedItems[assetId].listings.push(l);
+                                        groupedItems[assetId].totalStock += l.quantity;
+                                        if (l.price < groupedItems[assetId].lowestPrice) {
+                                            groupedItems[assetId].lowestPrice = l.price;
+                                        }
+                                    });
+
+                                    const sortedGroupedItems = Object.values(groupedItems).sort((a, b) => a.name.localeCompare(b.name));
+
+                                    // Filter active Pokémon listings
+                                    const activePokemonListings = marketListings.filter(l => {
+                                        if (l.status !== 'active' || l.type !== 'pokemon' || l.seller_address === walletAddress) {
+                                            return false;
+                                        }
+                                        const matchesSearch = l.asset_id.toLowerCase().includes(marketSearch.toLowerCase()) ||
+                                                              (l.seller_name || '').toLowerCase().includes(marketSearch.toLowerCase());
+                                        return matchesSearch;
+                                    });
+
+                                    const getItemTags = (assetId: string) => {
+                                        const lower = assetId.toLowerCase();
+                                        if (lower.includes('ball')) return ['POKÉBALL', 'MATERIAL'];
+                                        if (lower.includes('potion') || lower.includes('candy') || lower.includes('egg') || lower.includes('heal')) return ['MEDICINA', 'CONSUMIBLE'];
+                                        if (lower.includes('elixir') || lower.includes('incense') || lower.includes('repel')) return ['BOOST', 'TEMPORAL'];
+                                        return ['RARO', 'MATERIAL'];
+                                    };
+
+                                    // Render detailed product sub-modal if selectedProductForDetail is set
+                                    if (selectedProductForDetail) {
+                                        const p = selectedProductForDetail;
+                                        const itemTags = getItemTags(p.asset_id);
+                                        
+                                        const sortedListings = [...p.listings].sort((a, b) => a.price - b.price);
+                                        const lowestPrice = p.lowestPrice;
+                                        
+                                        const lowestPriceStock = sortedListings
+                                            .filter(l => l.price === lowestPrice)
+                                            .reduce((sum, l) => sum + l.quantity, 0);
+                                            
+                                        const higherPriceStock = p.totalStock - lowestPriceStock;
+                                        
+                                        // Calculate total price dynamically for buyQty
+                                        let tempQty = buyQty;
+                                        let totalPrice = 0;
+                                        for (const l of sortedListings) {
+                                            const take = Math.min(tempQty, l.quantity);
+                                            totalPrice += take * l.price;
+                                            tempQty -= take;
+                                            if (tempQty <= 0) break;
+                                        }
+
+                                        return (
+                                            <div style={{
+                                                background: 'radial-gradient(circle at top, #1e1b4b 0%, #0f0b24 100%)',
+                                                border: '1px solid rgba(139,92,246,0.3)',
+                                                borderRadius: '16px',
+                                                padding: '20px',
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                gap: '16px',
+                                                boxShadow: '0 0 25px rgba(139,92,246,0.15)',
+                                                position: 'relative'
+                                            }}>
+                                                {/* Back button */}
+                                                <button
+                                                    onClick={() => setSelectedProductForDetail(null)}
+                                                    style={{
+                                                        position: 'absolute',
+                                                        top: '12px',
+                                                        right: '12px',
+                                                        background: 'rgba(255,255,255,0.06)',
+                                                        border: '1px solid rgba(255,255,255,0.12)',
+                                                        borderRadius: '50%',
+                                                        color: '#cbd5e1',
+                                                        cursor: 'pointer',
+                                                        width: '28px',
+                                                        height: '28px',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        fontSize: '14px',
+                                                        fontWeight: 'bold',
+                                                        margin: 0
+                                                    }}
+                                                >
+                                                    &larr;
+                                                </button>
+
+                                                {/* Item Sprite and details */}
+                                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', marginTop: '10px' }}>
+                                                    <div style={{
+                                                        width: '96px',
+                                                        height: '96px',
+                                                        background: 'radial-gradient(circle, rgba(168,85,247,0.15) 0%, transparent 70%)',
+                                                        borderRadius: '50%',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center'
+                                                    }}>
+                                                        {p.sprite ? (
+                                                            <img src={p.sprite} alt={p.name} style={{ width: '64px', height: '64px', imageRendering: 'pixelated', filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.3))' }} />
+                                                        ) : (
+                                                            <span style={{ fontSize: '32px' }}>📦</span>
+                                                        )}
+                                                    </div>
+                                                    
+                                                    <span style={{
+                                                        fontSize: '20px',
+                                                        fontWeight: 'bold',
+                                                        color: '#e0e7ff',
+                                                        textTransform: 'uppercase',
+                                                        letterSpacing: '0.05em',
+                                                        textShadow: '0 0 8px rgba(99,102,241,0.5)',
+                                                        textAlign: 'center'
+                                                    }}>
+                                                        {p.name}
+                                                    </span>
+
+                                                    {/* Tags */}
+                                                    <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
+                                                        <span style={{
+                                                            background: 'rgba(59,130,246,0.15)',
+                                                            color: '#60a5fa',
+                                                            border: '1px solid rgba(59,130,246,0.3)',
+                                                            padding: '2px 8px',
+                                                            borderRadius: '4px',
+                                                            fontSize: '9px',
+                                                            fontWeight: 'bold'
+                                                        }}>
+                                                            {itemTags[0]}
+                                                        </span>
+                                                        <span style={{
+                                                            background: 'rgba(20,184,166,0.15)',
+                                                            color: '#2dd4bf',
+                                                            border: '1px solid rgba(20,184,166,0.3)',
+                                                            padding: '2px 8px',
+                                                            borderRadius: '4px',
+                                                            fontSize: '9px',
+                                                            fontWeight: 'bold'
+                                                        }}>
+                                                            {itemTags[1]}
+                                                        </span>
+                                                    </div>
+
+                                                    <span style={{
+                                                        color: '#a5b4fc',
+                                                        fontStyle: 'italic',
+                                                        fontSize: '11px',
+                                                        textAlign: 'center',
+                                                        marginTop: '6px',
+                                                        maxWidth: '320px',
+                                                        lineHeight: '1.4'
+                                                    }}>
+                                                        "{p.description || 'Ingrediente o consumible del juego.'}"
+                                                    </span>
                                                 </div>
-                                            ) : (
-                                                activeListings.map((l: any) => {
-                                                    const isOwnListing = l.seller_address === walletAddress;
-                                                    let spriteUrl = '';
-                                                    let rarityColor = '#e2e8f0';
-                                                    let nameLabel = l.asset_id;
 
-                                                    if (l.type === 'item') {
-                                                        const info = inventoryRef.current.getItemInfo(l.asset_id);
-                                                        spriteUrl = info.sprite ? `/assets/items/${info.sprite}` : '';
-                                                    } else {
-                                                        const species = pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === l.asset_id.toLowerCase());
-                                                        if (species) {
-                                                            spriteUrl = l.pokemon_data?.is_shiny
-                                                                ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/shiny/${species.id}.png`
-                                                                : species.sprite;
-                                                            
-                                                            if (species.rarity === 'Legendary') rarityColor = '#f59e0b';
-                                                            else if (species.rarity === 'Epic') rarityColor = '#a855f7';
-                                                            else if (species.rarity === 'Rare') rarityColor = '#3b82f6';
-                                                        }
-                                                        nameLabel = `${l.pokemon_data?.is_shiny ? '✨ ' : ''}${l.asset_id}`;
-                                                    }
-
-                                                    return (
-                                                        <div key={l.id} style={{ display: 'flex', alignItems: 'center', padding: '10px 12px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '10px', gap: '10px' }}>
-                                                            {/* Asset Sprite */}
-                                                            <div style={{ width: '40px', height: '40px', background: 'rgba(0,0,0,0.2)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                                                                {spriteUrl ? (
-                                                                    <img src={spriteUrl} alt={l.asset_id} style={{ width: '36px', height: '36px', imageRendering: 'pixelated' }} />
-                                                                ) : (
-                                                                    <span style={{ fontSize: '18px' }}>{l.type === 'item' ? '📦' : '👾'}</span>
-                                                                )}
-                                                            </div>
-
-                                                            {/* Asset Details */}
-                                                            <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                                                                <span style={{ textTransform: 'capitalize', fontWeight: 'bold', fontSize: '12px', color: rarityColor }}>
-                                                                    {nameLabel}
-                                                                </span>
-                                                                <span style={{ fontSize: '10px', color: '#94a3b8' }}>
-                                                                    {l.type === 'item' ? `Cantidad: ${l.quantity}` : `Nivel: ${l.pokemon_data?.level || 1}`} • Vendedor: {l.seller_name}
-                                                                </span>
-                                                            </div>
-
-                                                            {/* Price & Action */}
-                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                                                                    <span style={{ color: '#fbbf24', fontWeight: 'bold', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '2px' }}>
-                                                                        🪙 {l.price}
-                                                                    </span>
-                                                                    {l.type === 'pokemon' && (
-                                                                        <span style={{ fontSize: '8px', color: '#34d399' }}>
-                                                                            +{l.pokemon_data?.is_evolved ? Math.floor((pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === l.asset_id.toLowerCase())?.gold_per_hour || 5) * 24 * 1.25) : ((pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === l.asset_id.toLowerCase())?.gold_per_hour || 5) * 24)} Coins/Día
-                                                                        </span>
-                                                                    )}
-                                                                </div>
-
-                                                                <button
-                                                                    onClick={() => handlePurchaseListing(l.id, l.price, l.seller_name)}
-                                                                    disabled={isOwnListing}
-                                                                    style={{
-                                                                        padding: '6px 12px',
-                                                                        fontSize: '11px',
-                                                                        fontWeight: 'bold',
-                                                                        background: isOwnListing ? 'rgba(255,255,255,0.05)' : 'rgba(168,85,247,0.2)',
-                                                                        border: isOwnListing ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(168,85,247,0.4)',
-                                                                        borderRadius: '8px',
-                                                                        color: isOwnListing ? '#64748b' : '#c084fc',
-                                                                        cursor: isOwnListing ? 'not-allowed' : 'pointer',
-                                                                        margin: 0
-                                                                    }}
-                                                                >
-                                                                    {isOwnListing ? 'Tuyo' : 'Comprar'}
-                                                                </button>
-                                                            </div>
+                                                {/* OTRAS OFERTAS */}
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                                    <span style={{ color: '#fbbf24', fontWeight: 'bold', fontSize: '9px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                                                        📂 Otras Ofertas
+                                                    </span>
+                                                    <div style={{
+                                                        background: 'rgba(0,0,0,0.25)',
+                                                        border: '1px solid rgba(255,255,255,0.06)',
+                                                        borderRadius: '8px',
+                                                        padding: '8px 12px',
+                                                        fontSize: '11px',
+                                                        display: 'flex',
+                                                        flexDirection: 'column',
+                                                        gap: '6px'
+                                                    }}>
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                            <span style={{ color: '#60a5fa', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                                                                🪙 {lowestPrice}
+                                                            </span>
+                                                            <span style={{ color: '#cbd5e1' }}>×{lowestPriceStock}</span>
                                                         </div>
-                                                    );
-                                                })
-                                            )}
+                                                        {higherPriceStock > 0 && (
+                                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(255,255,255,0.04)', paddingTop: '6px' }}>
+                                                                <span style={{ color: '#94a3b8' }}>
+                                                                    {lowestPrice + 1} o más
+                                                                </span>
+                                                                <span style={{ color: '#94a3b8' }}>×{higherPriceStock}</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                {/* CANTIDAD */}
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                                    <span style={{ color: '#fbbf24', fontWeight: 'bold', fontSize: '9px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                                                        📦 Cantidad
+                                                    </span>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '6px', padding: '2px 8px' }}>
+                                                            <button
+                                                                onClick={() => setBuyQty(Math.max(1, buyQty - 1))}
+                                                                style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', cursor: 'pointer', width: '24px', height: '24px', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: 'bold', margin: 0 }}
+                                                            >
+                                                                -
+                                                            </button>
+                                                            <span style={{ fontSize: '13px', fontWeight: 'bold', width: '36px', textAlign: 'center', color: '#fff' }}>
+                                                                {buyQty}
+                                                            </span>
+                                                            <button
+                                                                onClick={() => setBuyQty(Math.min(p.totalStock, buyQty + 1))}
+                                                                style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', cursor: 'pointer', width: '24px', height: '24px', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: 'bold', margin: 0 }}
+                                                            >
+                                                                +
+                                                            </button>
+                                                        </div>
+                                                        <span style={{ fontSize: '11px', color: '#64748b' }}>
+                                                            / {p.totalStock} disponibles
+                                                        </span>
+                                                    </div>
+
+                                                    {/* Quick selectors */}
+                                                    <div style={{ display: 'flex', gap: '6px', marginTop: '2px' }}>
+                                                        {[1, 5, 10, 50].map(val => (
+                                                            <button
+                                                                key={val}
+                                                                onClick={() => setBuyQty(Math.min(p.totalStock, val))}
+                                                                style={{
+                                                                    padding: '4px 10px',
+                                                                    background: buyQty === val ? 'rgba(168,85,247,0.2)' : 'rgba(255,255,255,0.04)',
+                                                                    border: buyQty === val ? '1px solid #a855f7' : '1px solid rgba(255,255,255,0.08)',
+                                                                    borderRadius: '6px',
+                                                                    cursor: 'pointer',
+                                                                    fontSize: '10px',
+                                                                    color: buyQty === val ? '#c084fc' : '#cbd5e1',
+                                                                    fontWeight: 'bold',
+                                                                    margin: 0
+                                                                }}
+                                                            >
+                                                                {val}
+                                                            </button>
+                                                        ))}
+                                                        <button
+                                                            onClick={() => {
+                                                                let walletCoins = economyRef.current.coins;
+                                                                let affordableQty = 0;
+                                                                for (const l of sortedListings) {
+                                                                    const count = Math.min(l.quantity, Math.floor(walletCoins / l.price));
+                                                                    affordableQty += count;
+                                                                    walletCoins -= count * l.price;
+                                                                    if (count < l.quantity) break;
+                                                                }
+                                                                const maxQty = Math.max(1, Math.min(p.totalStock, affordableQty));
+                                                                setBuyQty(maxQty);
+                                                            }}
+                                                            style={{
+                                                                padding: '4px 10px',
+                                                                background: 'rgba(251,191,36,0.1)',
+                                                                border: '1px solid rgba(251,191,36,0.3)',
+                                                                borderRadius: '6px',
+                                                                cursor: 'pointer',
+                                                                fontSize: '10px',
+                                                                color: '#fbbf24',
+                                                                fontWeight: 'bold',
+                                                                margin: 0
+                                                            }}
+                                                        >
+                                                            Máx
+                                                        </button>
+                                                    </div>
+                                                </div>
+
+                                                {/* PRECIO TOTAL */}
+                                                <div style={{
+                                                    background: 'rgba(99,102,241,0.08)',
+                                                    border: '1px solid rgba(99,102,241,0.25)',
+                                                    borderRadius: '10px',
+                                                    padding: '12px 14px',
+                                                    display: 'flex',
+                                                    flexDirection: 'column',
+                                                    gap: '8px'
+                                                }}>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                        <span style={{ fontSize: '11px', color: '#c7d2fe', fontWeight: 'bold' }}>PRECIO TOTAL</span>
+                                                        <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#fbbf24', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                                                            🪙 {totalPrice}
+                                                        </span>
+                                                    </div>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px dashed rgba(99,102,241,0.15)', paddingTop: '6px', fontSize: '10px', color: '#94a3b8' }}>
+                                                        <span>Tus gemas (Coins):</span>
+                                                        <span style={{ color: '#fff' }}>{economyRef.current.coins}</span>
+                                                    </div>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '10px', color: '#94a3b8' }}>
+                                                        <span>Vendedor asignado:</span>
+                                                        <span style={{ color: '#f472b6', fontWeight: 'bold' }}>{assignedSeller}</span>
+                                                    </div>
+                                                </div>
+
+                                                {/* BUY BUTTON */}
+                                                <button
+                                                    onClick={() => handlePurchaseOrderbookItems(p.asset_id, buyQty, totalPrice)}
+                                                    disabled={isPurchasing || economyRef.current.coins < totalPrice}
+                                                    style={{
+                                                        padding: '12px',
+                                                        background: (isPurchasing || economyRef.current.coins < totalPrice) ? 'rgba(255,255,255,0.04)' : 'linear-gradient(135deg, #a855f7 0%, #6d28d9 100%)',
+                                                        border: (isPurchasing || economyRef.current.coins < totalPrice) ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(168,85,247,0.5)',
+                                                        borderRadius: '8px',
+                                                        color: (isPurchasing || economyRef.current.coins < totalPrice) ? '#64748b' : '#fff',
+                                                        fontWeight: 'bold',
+                                                        cursor: (isPurchasing || economyRef.current.coins < totalPrice) ? 'not-allowed' : 'pointer',
+                                                        textAlign: 'center',
+                                                        fontSize: '12px',
+                                                        margin: 0
+                                                    }}
+                                                >
+                                                    {isPurchasing ? 'Procesando...' : economyRef.current.coins < totalPrice ? 'FONDOS INSUFICIENTES' : 'COMPRAR AHORA'}
+                                                </button>
+                                            </div>
+                                        );
+                                    }
+
+                                    const showItems = marketFilterType === 'all' || marketFilterType === 'item';
+                                    const showPokemon = marketFilterType === 'all' || marketFilterType === 'pokemon';
+
+                                    return (
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                            {/* Filters */}
+                                            <div style={{ display: 'flex', gap: '8px' }}>
+                                                <input
+                                                    type="text"
+                                                    placeholder="Buscar por nombre o vendedor..."
+                                                    value={marketSearch}
+                                                    onChange={e => setMarketSearch(e.target.value)}
+                                                    style={{ flex: 1, padding: '8px 12px', fontSize: '12px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', color: '#fff', outline: 'none' }}
+                                                />
+                                                <select
+                                                    value={marketFilterType}
+                                                    onChange={e => setMarketFilterType(e.target.value as any)}
+                                                    style={{ padding: '8px', fontSize: '12px', background: '#1e293b', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', color: '#fff', outline: 'none' }}
+                                                >
+                                                    <option value="all">Todos</option>
+                                                    <option value="item">Objetos</option>
+                                                    <option value="pokemon">Pokémon</option>
+                                                </select>
+                                            </div>
+
+                                            {/* Catalog list */}
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '340px', overflowY: 'auto', paddingRight: '4px' }}>
+                                                
+                                                {/* Grouped Items List */}
+                                                {showItems && (
+                                                    <>
+                                                        {marketFilterType === 'all' && sortedGroupedItems.length > 0 && (
+                                                            <div style={{ fontSize: '9px', color: '#c084fc', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 'bold', marginBottom: '2px' }}>Objetos en Venta</div>
+                                                        )}
+                                                        {sortedGroupedItems.length === 0 && marketFilterType === 'item' ? (
+                                                            <div style={{ textAlign: 'center', padding: '20px', color: '#64748b', fontSize: '12px', fontStyle: 'italic' }}>
+                                                                No hay objetos en venta en este momento.
+                                                            </div>
+                                                        ) : (
+                                                            sortedGroupedItems.map(p => {
+                                                                const tags = getItemTags(p.asset_id);
+                                                                return (
+                                                                    <div key={p.asset_id} style={{ display: 'flex', alignItems: 'center', padding: '10px 12px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '10px', gap: '10px' }}>
+                                                                        {/* Sprite */}
+                                                                        <div style={{ width: '40px', height: '40px', background: 'rgba(0,0,0,0.2)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                                                                            {p.sprite ? (
+                                                                                <img src={p.sprite} alt={p.name} style={{ width: '36px', height: '36px', imageRendering: 'pixelated' }} />
+                                                                            ) : (
+                                                                                <span style={{ fontSize: '18px' }}>📦</span>
+                                                                            )}
+                                                                        </div>
+
+                                                                        {/* Details */}
+                                                                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                                                            <span style={{ textTransform: 'capitalize', fontWeight: 'bold', fontSize: '12px', color: '#e2e8f0' }}>
+                                                                                {p.name}
+                                                                            </span>
+                                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                                                <span style={{ fontSize: '8px', padding: '1px 4px', background: 'rgba(255,255,255,0.06)', borderRadius: '3px', color: '#94a3b8' }}>
+                                                                                    {tags[0]}
+                                                                                </span>
+                                                                                <span style={{ fontSize: '10px', color: '#cbd5e1' }}>
+                                                                                    Stock: <strong style={{ color: '#34d399' }}>{p.totalStock}</strong>
+                                                                                </span>
+                                                                            </div>
+                                                                        </div>
+
+                                                                        {/* Price & Action */}
+                                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                                                                                <span style={{ fontSize: '8px', color: '#94a3b8' }}>Desde</span>
+                                                                                <span style={{ color: '#fbbf24', fontWeight: 'bold', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '2px' }}>
+                                                                                    🪙 {p.lowestPrice}
+                                                                                </span>
+                                                                            </div>
+
+                                                                            <button
+                                                                                onClick={() => {
+                                                                                    setSelectedProductForDetail(p);
+                                                                                    setBuyQty(1);
+                                                                                    const lowestListings = p.listings.filter(l => l.price === p.lowestPrice);
+                                                                                    if (lowestListings.length > 0) {
+                                                                                        const randIdx = Math.floor(Math.random() * lowestListings.length);
+                                                                                        setAssignedSeller(lowestListings[randIdx].seller_name);
+                                                                                    } else {
+                                                                                        setAssignedSeller('N/A');
+                                                                                    }
+                                                                                }}
+                                                                                style={{
+                                                                                    padding: '6px 12px',
+                                                                                    fontSize: '11px',
+                                                                                    fontWeight: 'bold',
+                                                                                    background: 'rgba(168,85,247,0.2)',
+                                                                                    border: '1px solid rgba(168,85,247,0.4)',
+                                                                                    borderRadius: '8px',
+                                                                                    color: '#c084fc',
+                                                                                    cursor: 'pointer',
+                                                                                    margin: 0
+                                                                                }}
+                                                                            >
+                                                                                Comprar
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
+                                                                );
+                                                            })
+                                                        )}
+                                                    </>
+                                                )}
+
+                                                {/* Individual Pokémon Listings */}
+                                                {showPokemon && (
+                                                    <>
+                                                        {marketFilterType === 'all' && activePokemonListings.length > 0 && (
+                                                            <div style={{ fontSize: '9px', color: '#c084fc', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 'bold', marginTop: '6px', marginBottom: '2px' }}>Pokémon en Venta</div>
+                                                        )}
+                                                        {activePokemonListings.length === 0 && marketFilterType === 'pokemon' ? (
+                                                            <div style={{ textAlign: 'center', padding: '20px', color: '#64748b', fontSize: '12px', fontStyle: 'italic' }}>
+                                                                No hay Pokémon en venta en este momento.
+                                                            </div>
+                                                        ) : (
+                                                            activePokemonListings.map((l: any) => {
+                                                                let spriteUrl = '';
+                                                                let rarityColor = '#e2e8f0';
+                                                                const species = pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === l.asset_id.toLowerCase());
+                                                                if (species) {
+                                                                    spriteUrl = l.pokemon_data?.is_shiny
+                                                                        ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/shiny/${species.id}.png`
+                                                                        : species.sprite;
+                                                                    
+                                                                    if (species.rarity === 'Legendary') rarityColor = '#f59e0b';
+                                                                    else if (species.rarity === 'Epic') rarityColor = '#a855f7';
+                                                                    else if (species.rarity === 'Rare') rarityColor = '#3b82f6';
+                                                                }
+                                                                const nameLabel = `${l.pokemon_data?.is_shiny ? '✨ ' : ''}${l.asset_id}`;
+
+                                                                return (
+                                                                    <div key={l.id} style={{ display: 'flex', alignItems: 'center', padding: '10px 12px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '10px', gap: '10px' }}>
+                                                                        {/* Sprite */}
+                                                                        <div style={{ width: '40px', height: '40px', background: 'rgba(0,0,0,0.2)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                                                                            {spriteUrl ? (
+                                                                                <img src={spriteUrl} alt={l.asset_id} style={{ width: '36px', height: '36px', imageRendering: 'pixelated' }} />
+                                                                            ) : (
+                                                                                <span style={{ fontSize: '18px' }}>👾</span>
+                                                                            )}
+                                                                        </div>
+
+                                                                        {/* Details */}
+                                                                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                                                                            <span style={{ textTransform: 'capitalize', fontWeight: 'bold', fontSize: '12px', color: rarityColor }}>
+                                                                                {nameLabel}
+                                                                            </span>
+                                                                            <span style={{ fontSize: '10px', color: '#94a3b8' }}>
+                                                                                Nivel: {l.pokemon_data?.level || 1} • Vendedor: {l.seller_name}
+                                                                            </span>
+                                                                            {(() => {
+                                                                                const ivs = l.pokemon_data?.ivs || { hp: 15, attack: 15, defense: 15, speed: 15 };
+                                                                                const ivSum = (ivs.hp ?? 15) + (ivs.attack ?? 15) + (ivs.defense ?? 15) + (ivs.speed ?? 15);
+                                                                                const ivPct = Math.round((ivSum / 124) * 100);
+                                                                                return (
+                                                                                    <span style={{ fontSize: '9px', color: ivPct >= 90 ? '#fbbf24' : '#a5b4fc', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: ivPct >= 90 ? 'bold' : 'normal' }}>
+                                                                                        <span>🧬 IVs:</span> 
+                                                                                        <span>HP:{ivs.hp ?? 15} ATK:{ivs.attack ?? 15} DEF:{ivs.defense ?? 15} VEL:{ivs.speed ?? 15} ({ivPct}%)</span>
+                                                                                    </span>
+                                                                                );
+                                                                            })()}
+                                                                        </div>
+
+                                                                        {/* Price & Action */}
+                                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                                                                                <span style={{ color: '#fbbf24', fontWeight: 'bold', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '2px' }}>
+                                                                                    🪙 {l.price}
+                                                                                </span>
+                                                                                <span style={{ fontSize: '8px', color: '#34d399' }}>
+                                                                                    +{l.pokemon_data?.is_evolved ? Math.floor((pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === l.asset_id.toLowerCase())?.gold_per_hour || 5) * 24 * 1.25) : ((pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === l.asset_id.toLowerCase())?.gold_per_hour || 5) * 24)} Coins/Día
+                                                                                </span>
+                                                                            </div>
+
+                                                                            <button
+                                                                                onClick={() => handlePurchaseListing(l.id, l.price, l.seller_name)}
+                                                                                style={{
+                                                                                    padding: '6px 12px',
+                                                                                    fontSize: '11px',
+                                                                                    fontWeight: 'bold',
+                                                                                    background: 'rgba(168,85,247,0.2)',
+                                                                                    border: '1px solid rgba(168,85,247,0.4)',
+                                                                                    borderRadius: '8px',
+                                                                                    color: '#c084fc',
+                                                                                    cursor: 'pointer',
+                                                                                    margin: 0
+                                                                                }}
+                                                                            >
+                                                                                Comprar
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
+                                                                );
+                                                            })
+                                                        )}
+                                                    </>
+                                                )}
+
+                                                {/* Global empty state if nothing listed at all */}
+                                                {showItems && sortedGroupedItems.length === 0 && showPokemon && activePokemonListings.length === 0 && (
+                                                    <div style={{ textAlign: 'center', padding: '30px', color: '#64748b', fontSize: '12px', fontStyle: 'italic' }}>
+                                                        No hay ofertas activas en el mercado.
+                                                    </div>
+                                                )}
+
+                                            </div>
                                         </div>
-                                    </div>
-                                )}
+                                    );
+                                })()}
 
                                 {/* TAB 2: SELL */}
                                 {marketTab === 'sell' && (
@@ -11086,6 +11611,17 @@ export default function GameCanvas({
                                                                 <span style={{ fontSize: '10px', color: '#94a3b8' }}>
                                                                     {l.type === 'item' ? `Cantidad: ${l.quantity}` : `Nivel: ${l.pokemon_data?.level || 1}`} • Precio: 🪙 {l.price} Coins
                                                                 </span>
+                                                                {l.type === 'pokemon' && (() => {
+                                                                    const ivs = l.pokemon_data?.ivs || { hp: 15, attack: 15, defense: 15, speed: 15 };
+                                                                    const ivSum = (ivs.hp ?? 15) + (ivs.attack ?? 15) + (ivs.defense ?? 15) + (ivs.speed ?? 15);
+                                                                    const ivPct = Math.round((ivSum / 124) * 100);
+                                                                    return (
+                                                                        <span style={{ fontSize: '9px', color: ivPct >= 90 ? '#fbbf24' : '#a5b4fc', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: ivPct >= 90 ? 'bold' : 'normal' }}>
+                                                                            <span>🧬 IVs:</span> 
+                                                                            <span>HP:{ivs.hp ?? 15} ATK:{ivs.attack ?? 15} DEF:{ivs.defense ?? 15} VEL:{ivs.speed ?? 15} ({ivPct}%)</span>
+                                                                        </span>
+                                                                    );
+                                                                })()}
                                                             </div>
 
                                                             <button
