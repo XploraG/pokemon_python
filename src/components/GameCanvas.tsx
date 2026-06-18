@@ -1513,6 +1513,16 @@ export default function GameCanvas({
     const [showPcModal, setShowPcModal] = useState(false);
     const [showReleaseConfirmModal, setShowReleaseConfirmModal] = useState(false);
     const [pokeToReleaseIndex, setPokeToReleaseIndex] = useState<number | null>(null);
+    const [showMarketplaceModal, setShowMarketplaceModal] = useState(false);
+    const [marketTab, setMarketTab] = useState<'buy' | 'sell' | 'my_listings' | 'history'>('buy');
+    const [marketSearch, setMarketSearch] = useState('');
+    const [marketFilterType, setMarketFilterType] = useState<'all' | 'item' | 'pokemon'>('all');
+    const [marketListings, setMarketListings] = useState<any[]>([]);
+    const [marketHistory, setMarketHistory] = useState<any[]>([]);
+    const [selectedItemToList, setSelectedItemToList] = useState<string>('');
+    const [selectedPokeToListIdx, setSelectedPokeToListIdx] = useState<number | null>(null);
+    const [listPrice, setListPrice] = useState<number>(0);
+    const [listQuantity, setListQuantity] = useState<number>(1);
     const [showPokedexModal, setShowPokedexModal] = useState(false);
     const [showTravelModal, setShowTravelModal] = useState(false);
     const [isTravelling, setIsTravelling] = useState(false);
@@ -3157,6 +3167,9 @@ export default function GameCanvas({
             }
             if (key === 'q') {
                 e.preventDefault();
+                if (showShop || showPcModal || showInventoryModal || showMarketplaceModal || showDaily || showMissions || showPokedexModal || showTravelModal) {
+                    return;
+                }
                 setShowMenuModal(prev => !prev);
             }
             if (key === 'b') {
@@ -3621,6 +3634,8 @@ export default function GameCanvas({
                 showDaily || 
                 showMissions || 
                 showInventoryModal || 
+                showPcModal || 
+                showMarketplaceModal || 
                 activeWildBattleRef.current !== null ||
                 activeDialogRef.current !== null ||
                 activePvPBattleRef.current !== null ||
@@ -4986,6 +5001,8 @@ export default function GameCanvas({
             showDaily ||
             showMissions ||
             showInventoryModal ||
+            showPcModal ||
+            showMarketplaceModal || 
             activePvPBattleRef.current !== null ||
             pendingPvPInviteRef.current !== null ||
             incomingPvPInviteRef.current !== null ||
@@ -5777,6 +5794,241 @@ export default function GameCanvas({
         showNotification("Almacenamiento PC", `¡Has liberado a ${pokemonToRelease.id}!`);
         setShowReleaseConfirmModal(false);
         setPokeToReleaseIndex(null);
+    };
+
+    const fetchMarketListings = async () => {
+        try {
+            const { data, error } = await supabase
+                .from('marketplace_listings')
+                .select('*')
+                .eq('status', 'active')
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+            setMarketListings(data || []);
+        } catch (e) {
+            console.error("Error fetching market listings:", e);
+        }
+    };
+
+    const fetchMarketHistory = async () => {
+        try {
+            const { data, error } = await supabase
+                .from('marketplace_history')
+                .select('*')
+                .order('created_at', { ascending: false })
+                .limit(50);
+
+            if (error) throw error;
+            setMarketHistory(data || []);
+        } catch (e) {
+            console.error("Error fetching market history:", e);
+        }
+    };
+
+    useEffect(() => {
+        if (showMarketplaceModal) {
+            fetchMarketListings();
+            fetchMarketHistory();
+        }
+    }, [showMarketplaceModal]);
+
+    const handleCreateListing = async (type: 'item' | 'pokemon') => {
+        if (listPrice <= 0) {
+            showNotification("Mercado", "El precio debe ser mayor a 0 Coins.");
+            return;
+        }
+
+        if (type === 'item') {
+            if (!selectedItemToList) {
+                showNotification("Mercado", "Selecciona un objeto para vender.");
+                return;
+            }
+            if (listQuantity <= 0) {
+                showNotification("Mercado", "La cantidad debe ser mayor a 0.");
+                return;
+            }
+
+            const currentQty = inventoryRef.current.getQuantity(selectedItemToList);
+            if (currentQty < listQuantity) {
+                showNotification("Mercado", "No tienes suficiente cantidad de este objeto.");
+                return;
+            }
+
+            inventoryRef.current.removeItem(selectedItemToList, listQuantity);
+            const updatedInv = inventoryRef.current;
+            await saveLocalEconomy(team, pcPokemon, undefined, true, updatedInv);
+
+            const { error: insertErr } = await supabase
+                .from('marketplace_listings')
+                .insert({
+                    seller_address: walletAddress,
+                    seller_name: playerName || 'Tamer',
+                    type: 'item',
+                    asset_id: selectedItemToList,
+                    quantity: listQuantity,
+                    price: listPrice,
+                    status: 'active'
+                });
+
+            if (insertErr) {
+                console.error("Error inserting listing:", insertErr);
+                showNotification("Mercado", "Error al crear la oferta.");
+                inventoryRef.current.addItem(selectedItemToList, listQuantity);
+                saveLocalEconomy(team, pcPokemon, undefined, true, inventoryRef.current);
+                return;
+            }
+
+            showNotification("Mercado", `¡Oferta creada! Pusiste a la venta ${listQuantity}x ${selectedItemToList} por ${listPrice} Coins.`);
+            setSelectedItemToList('');
+            setListPrice(0);
+            setListQuantity(1);
+
+        } else {
+            if (selectedPokeToListIdx === null) {
+                showNotification("Mercado", "Selecciona un Pokémon de tu PC para vender.");
+                return;
+            }
+
+            const poke = pcPokemon[selectedPokeToListIdx];
+            if (!poke) return;
+
+            const updatedPc = pcPokemon.filter((_, idx) => idx !== selectedPokeToListIdx);
+            setPcPokemon(updatedPc);
+            await saveLocalEconomy(team, updatedPc, undefined, true);
+
+            const { error: insertErr } = await supabase
+                .from('marketplace_listings')
+                .insert({
+                    seller_address: walletAddress,
+                    seller_name: playerName || 'Tamer',
+                    type: 'pokemon',
+                    asset_id: poke.id,
+                    pokemon_data: poke,
+                    quantity: 1,
+                    price: listPrice,
+                    status: 'active'
+                });
+
+            if (insertErr) {
+                console.error("Error inserting listing:", insertErr);
+                showNotification("Mercado", "Error al crear la oferta.");
+                const rollbackPc = [...updatedPc, poke];
+                setPcPokemon(rollbackPc);
+                saveLocalEconomy(team, rollbackPc, undefined, true);
+                return;
+            }
+
+            showNotification("Mercado", `¡Oferta creada! Pusiste a la venta a ${poke.id} por ${listPrice} Coins.`);
+            setSelectedPokeToListIdx(null);
+            setListPrice(0);
+        }
+
+        fetchMarketListings();
+    };
+
+    const handleCancelListing = async (listingId: string) => {
+        try {
+            const { data: listing, error: fetchErr } = await supabase
+                .from('marketplace_listings')
+                .select('*')
+                .eq('id', listingId)
+                .single();
+
+            if (fetchErr || !listing || listing.status !== 'active') {
+                showNotification("Mercado", "No se pudo recuperar la oferta.");
+                return;
+            }
+
+            const { error: updateErr } = await supabase
+                .from('marketplace_listings')
+                .update({ status: 'cancelled' })
+                .eq('id', listingId)
+                .eq('seller_address', walletAddress);
+
+            if (updateErr) {
+                showNotification("Mercado", "No se pudo retirar la oferta.");
+                return;
+            }
+
+            if (listing.type === 'item') {
+                inventoryRef.current.addItem(listing.asset_id, listing.quantity);
+                await saveLocalEconomy(team, pcPokemon, undefined, true, inventoryRef.current);
+                showNotification("Mercado", `Oferta retirada. Se devolvieron ${listing.quantity}x ${listing.asset_id} a tu mochila.`);
+            } else {
+                const updatedPc = [...pcPokemon, listing.pokemon_data];
+                setPcPokemon(updatedPc);
+                await saveLocalEconomy(team, updatedPc, undefined, true);
+                showNotification("Mercado", `Oferta retirada. Se devolvió a ${listing.asset_id} a tu PC.`);
+            }
+
+            fetchMarketListings();
+        } catch (e) {
+            console.error("Error cancelling listing:", e);
+            showNotification("Mercado", "Error al retirar la oferta.");
+        }
+    };
+
+    const handlePurchaseListing = async (listingId: string, price: number, sellerName: string) => {
+        const currentCoins = economyRef.current.coins;
+        if (currentCoins < price) {
+            showNotification("Mercado", "No tienes suficientes Coins para realizar esta compra.");
+            return;
+        }
+
+        try {
+            const { data, error: rpcErr } = await supabase.rpc('purchase_marketplace_listing', {
+                p_listing_id: listingId,
+                p_buyer_address: walletAddress,
+                p_buyer_name: playerName || 'Tamer'
+            });
+
+            if (rpcErr) {
+                console.error("RPC Error:", rpcErr);
+                showNotification("Mercado", "Error al procesar la compra en el servidor.");
+                return;
+            }
+
+            if (data && !data.success) {
+                const errMsg = data.error;
+                if (errMsg === 'listing_not_active') {
+                    showNotification("Mercado", "Esta oferta ya no está activa.");
+                } else if (errMsg === 'cannot_buy_own_listing') {
+                    showNotification("Mercado", "No puedes comprar tu propia oferta.");
+                } else if (errMsg === 'insufficient_funds') {
+                    showNotification("Mercado", "Fondos insuficientes en el servidor.");
+                } else {
+                    showNotification("Mercado", `Error: ${errMsg}`);
+                }
+                fetchMarketListings();
+                return;
+            }
+
+            const { data: userData, error: fetchErr } = await supabase
+                .from('player_saves')
+                .select('save_data')
+                .eq('wallet_address', walletAddress)
+                .single();
+
+            if (fetchErr || !userData || !userData.save_data) {
+                showNotification("Mercado", "¡Compra exitosa! Por favor recarga el juego para ver los cambios.");
+                return;
+            }
+
+            const updatedSave = userData.save_data;
+            setTeam(updatedSave.team_data || []);
+            setPcPokemon(updatedSave.pc_pokemon || []);
+            economyRef.current = new Economy(updatedSave.economy_data);
+            inventoryRef.current = new Inventory(updatedSave.inventory_data);
+
+            showNotification("Mercado", `¡Compra realizada exitosamente a ${sellerName}!`);
+            
+            fetchMarketListings();
+            fetchMarketHistory();
+        } catch (e) {
+            console.error("Error purchasing listing:", e);
+            showNotification("Mercado", "Error al procesar la compra.");
+        }
     };
 
         const handleBattleAttack = () => {
@@ -8375,6 +8627,27 @@ export default function GameCanvas({
                                 </div>
                             </button>
 
+                            {/* Mercado full-width card */}
+                            <button
+                                onClick={() => { setShowMarketplaceModal(true); setShowMenuModal(false); }}
+                                style={{
+                                    width: '100%',
+                                    background: 'linear-gradient(135deg, rgba(168,85,247,0.15) 0%, rgba(109,40,217,0.2) 100%)',
+                                    border: '1px solid rgba(168,85,247,0.35)',
+                                    borderRadius: '12px', padding: '12px 10px', cursor: 'pointer',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px',
+                                    textAlign: 'center', transition: 'all 0.2s', marginBottom: '16px', margin: '0 0 16px 0'
+                                }}
+                                onMouseEnter={e => (e.currentTarget.style.background = 'linear-gradient(135deg, rgba(168,85,247,0.25) 0%, rgba(109,40,217,0.3) 100%)')}
+                                onMouseLeave={e => (e.currentTarget.style.background = 'linear-gradient(135deg, rgba(168,85,247,0.15) 0%, rgba(109,40,217,0.2) 100%)')}
+                            >
+                                <div style={{ fontSize: '24px', lineHeight: 1 }}>🛍️</div>
+                                <div style={{ textAlign: 'left', flex: 1 }}>
+                                    <div style={{ color: '#c084fc', fontWeight: 'bold', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Mercado Global</div>
+                                    <div style={{ color: '#cbd5e1', fontSize: '9px' }}>Compra y vende objetos o Pokémon de forma descentralizada</div>
+                                </div>
+                            </button>
+
                             {/* SEPARATOR label */}
                             <div style={{ fontSize: '9px', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                 <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.07)' }} />
@@ -10425,6 +10698,455 @@ export default function GameCanvas({
                                     style={{ flex: 1, margin: 0, padding: '10px 14px', fontSize: '12px', fontWeight: 'bold', background: 'rgba(239,68,68,0.2)', border: '1px solid rgba(239,68,68,0.5)', borderRadius: '8px', color: '#f87171', cursor: 'pointer' }}
                                 >
                                     Sí, Liberar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            })()}
+
+            {showMarketplaceModal && (() => {
+                const activeListings = marketListings.filter(l => {
+                    const matchesTab = l.status === 'active';
+                    if (!matchesTab) return false;
+
+                    const matchesType = marketFilterType === 'all' || l.type === marketFilterType;
+                    if (!matchesType) return false;
+
+                    const matchesSearch = l.asset_id.toLowerCase().includes(marketSearch.toLowerCase()) ||
+                                          (l.seller_name || '').toLowerCase().includes(marketSearch.toLowerCase());
+                    return matchesSearch;
+                });
+
+                const listableItems = inventoryRef.current.getAllItems();
+                const listablePokemon = pcPokemon;
+
+                return (
+                    <div className="modal-overlay" style={{ zIndex: 380 }}>
+                        <div style={{
+                            background: 'linear-gradient(160deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)',
+                            border: '2px solid rgba(168,85,247,0.3)',
+                            borderRadius: '16px',
+                            width: '95%',
+                            maxWidth: '520px',
+                            maxHeight: '90vh',
+                            overflowY: 'auto',
+                            boxShadow: '0 24px 60px rgba(0,0,0,0.75), inset 0 1px 0 rgba(255,255,255,0.1)',
+                            fontFamily: "'Segoe UI', monospace",
+                            display: 'flex',
+                            flexDirection: 'column'
+                        }}>
+                            {/* Header */}
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px 12px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <span style={{ fontSize: '20px' }}>🛍️</span>
+                                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                        <span style={{ color: '#e2e8f0', fontWeight: 'bold', fontSize: '14px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Mercado Global</span>
+                                        <span style={{ fontSize: '9px', color: '#c084fc' }}>Comercio Seguro P2P • Saldo: {economyRef.current.coins} Coins</span>
+                                    </div>
+                                </div>
+                                <button onClick={() => setShowMarketplaceModal(false)} style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: '#94a3b8', cursor: 'pointer', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', fontWeight: 'bold' }}>&times;</button>
+                            </div>
+
+                            {/* Tabs */}
+                            <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(0,0,0,0.15)' }}>
+                                {[
+                                    { id: 'buy', label: '🛍️ Comprar' },
+                                    { id: 'sell', label: '➕ Publicar' },
+                                    { id: 'my_listings', label: '📂 Mis Ventas' },
+                                    { id: 'history', label: '📜 Historial' }
+                                ].map(t => {
+                                    const isActive = marketTab === t.id;
+                                    return (
+                                        <button
+                                            key={t.id}
+                                            onClick={() => setMarketTab(t.id as any)}
+                                            style={{
+                                                flex: 1,
+                                                padding: '10px 4px',
+                                                fontSize: '11px',
+                                                fontWeight: 'bold',
+                                                background: isActive ? 'rgba(168,85,247,0.15)' : 'transparent',
+                                                border: 'none',
+                                                borderBottom: isActive ? '2px solid #a855f7' : '2px solid transparent',
+                                                color: isActive ? '#c084fc' : '#94a3b8',
+                                                cursor: 'pointer',
+                                                textAlign: 'center',
+                                                transition: 'all 0.2s'
+                                            }}
+                                        >
+                                            {t.label}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
+                            {/* Body Content */}
+                            <div style={{ padding: '16px', color: '#e2e8f0', flex: 1 }}>
+                                
+                                {/* TAB 1: BUY */}
+                                {marketTab === 'buy' && (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                        {/* Filters */}
+                                        <div style={{ display: 'flex', gap: '8px' }}>
+                                            <input
+                                                type="text"
+                                                placeholder="Buscar por nombre o vendedor..."
+                                                value={marketSearch}
+                                                onChange={e => setMarketSearch(e.target.value)}
+                                                style={{ flex: 1, padding: '8px 12px', fontSize: '12px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', color: '#fff', outline: 'none' }}
+                                            />
+                                            <select
+                                                value={marketFilterType}
+                                                onChange={e => setMarketFilterType(e.target.value as any)}
+                                                style={{ padding: '8px', fontSize: '12px', background: '#1e293b', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', color: '#fff', outline: 'none' }}
+                                            >
+                                                <option value="all">Todos</option>
+                                                <option value="item">Objetos</option>
+                                                <option value="pokemon">Pokémon</option>
+                                            </select>
+                                        </div>
+
+                                        {/* Listings list */}
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '340px', overflowY: 'auto', paddingRight: '4px' }}>
+                                            {activeListings.length === 0 ? (
+                                                <div style={{ textAlign: 'center', padding: '30px', color: '#64748b', fontSize: '12px', fontStyle: 'italic' }}>
+                                                    No hay ofertas activas que coincidan con la búsqueda.
+                                                </div>
+                                            ) : (
+                                                activeListings.map((l: any) => {
+                                                    const isOwnListing = l.seller_address === walletAddress;
+                                                    let spriteUrl = '';
+                                                    let rarityColor = '#e2e8f0';
+                                                    let nameLabel = l.asset_id;
+
+                                                    if (l.type === 'item') {
+                                                        const info = inventoryRef.current.getItemInfo(l.asset_id);
+                                                        spriteUrl = info.sprite ? `/assets/items/${info.sprite}` : '';
+                                                    } else {
+                                                        const species = pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === l.asset_id.toLowerCase());
+                                                        if (species) {
+                                                            spriteUrl = l.pokemon_data?.is_shiny
+                                                                ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/shiny/${species.id}.png`
+                                                                : species.sprite;
+                                                            
+                                                            if (species.rarity === 'Legendary') rarityColor = '#f59e0b';
+                                                            else if (species.rarity === 'Epic') rarityColor = '#a855f7';
+                                                            else if (species.rarity === 'Rare') rarityColor = '#3b82f6';
+                                                        }
+                                                        nameLabel = `${l.pokemon_data?.is_shiny ? '✨ ' : ''}${l.asset_id}`;
+                                                    }
+
+                                                    return (
+                                                        <div key={l.id} style={{ display: 'flex', alignItems: 'center', padding: '10px 12px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '10px', gap: '10px' }}>
+                                                            {/* Asset Sprite */}
+                                                            <div style={{ width: '40px', height: '40px', background: 'rgba(0,0,0,0.2)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                                                                {spriteUrl ? (
+                                                                    <img src={spriteUrl} alt={l.asset_id} style={{ width: '36px', height: '36px', imageRendering: 'pixelated' }} />
+                                                                ) : (
+                                                                    <span style={{ fontSize: '18px' }}>{l.type === 'item' ? '📦' : '👾'}</span>
+                                                                )}
+                                                            </div>
+
+                                                            {/* Asset Details */}
+                                                            <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                                                                <span style={{ textTransform: 'capitalize', fontWeight: 'bold', fontSize: '12px', color: rarityColor }}>
+                                                                    {nameLabel}
+                                                                </span>
+                                                                <span style={{ fontSize: '10px', color: '#94a3b8' }}>
+                                                                    {l.type === 'item' ? `Cantidad: ${l.quantity}` : `Nivel: ${l.pokemon_data?.level || 1}`} • Vendedor: {l.seller_name}
+                                                                </span>
+                                                            </div>
+
+                                                            {/* Price & Action */}
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                                                                    <span style={{ color: '#fbbf24', fontWeight: 'bold', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '2px' }}>
+                                                                        🪙 {l.price}
+                                                                    </span>
+                                                                    {l.type === 'pokemon' && (
+                                                                        <span style={{ fontSize: '8px', color: '#34d399' }}>
+                                                                            +{l.pokemon_data?.is_evolved ? Math.floor((pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === l.asset_id.toLowerCase())?.gold_per_hour || 5) * 24 * 1.25) : ((pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === l.asset_id.toLowerCase())?.gold_per_hour || 5) * 24)} Coins/Día
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+
+                                                                <button
+                                                                    onClick={() => handlePurchaseListing(l.id, l.price, l.seller_name)}
+                                                                    disabled={isOwnListing}
+                                                                    style={{
+                                                                        padding: '6px 12px',
+                                                                        fontSize: '11px',
+                                                                        fontWeight: 'bold',
+                                                                        background: isOwnListing ? 'rgba(255,255,255,0.05)' : 'rgba(168,85,247,0.2)',
+                                                                        border: isOwnListing ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(168,85,247,0.4)',
+                                                                        borderRadius: '8px',
+                                                                        color: isOwnListing ? '#64748b' : '#c084fc',
+                                                                        cursor: isOwnListing ? 'not-allowed' : 'pointer',
+                                                                        margin: 0
+                                                                    }}
+                                                                >
+                                                                    {isOwnListing ? 'Tuyo' : 'Comprar'}
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* TAB 2: SELL */}
+                                {marketTab === 'sell' && (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                        {/* Sub-selectors */}
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', background: 'rgba(0,0,0,0.2)', borderRadius: '8px', padding: '4px' }}>
+                                            <button
+                                                onClick={() => { setSelectedPokeToListIdx(null); setSelectedItemToList(''); setMarketFilterType('item'); }}
+                                                style={{
+                                                    padding: '6px',
+                                                    fontSize: '11px',
+                                                    fontWeight: 'bold',
+                                                    background: marketFilterType === 'item' ? '#1e293b' : 'transparent',
+                                                    border: 'none',
+                                                    borderRadius: '6px',
+                                                    color: marketFilterType === 'item' ? '#fff' : '#94a3b8',
+                                                    cursor: 'pointer'
+                                                }}
+                                            >
+                                                📦 Vender Objeto
+                                            </button>
+                                            <button
+                                                onClick={() => { setSelectedPokeToListIdx(null); setSelectedItemToList(''); setMarketFilterType('pokemon'); }}
+                                                style={{
+                                                    padding: '6px',
+                                                    fontSize: '11px',
+                                                    fontWeight: 'bold',
+                                                    background: marketFilterType === 'pokemon' ? '#1e293b' : 'transparent',
+                                                    border: 'none',
+                                                    borderRadius: '6px',
+                                                    color: marketFilterType === 'pokemon' ? '#fff' : '#94a3b8',
+                                                    cursor: 'pointer'
+                                                }}
+                                            >
+                                                👾 Vender Pokémon (de PC)
+                                            </button>
+                                        </div>
+
+                                        {/* Sell Item Form */}
+                                        {marketFilterType === 'item' && (
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '12px', padding: '14px' }}>
+                                                <label style={{ fontSize: '11px', color: '#c084fc', textTransform: 'uppercase', fontWeight: 'bold' }}>1. Selecciona el Objeto</label>
+                                                <select
+                                                    value={selectedItemToList}
+                                                    onChange={e => { setSelectedItemToList(e.target.value); setListQuantity(1); }}
+                                                    style={{ padding: '10px', fontSize: '12px', background: '#1e293b', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', color: '#fff', outline: 'none' }}
+                                                >
+                                                    <option value="">-- Elige un Objeto --</option>
+                                                    {listableItems.map(i => (
+                                                        <option key={i.id} value={i.id}>
+                                                            {i.emoji || '📦'} {i.name || i.id} (Disponibles: {i.quantity})
+                                                        </option>
+                                                    ))}
+                                                </select>
+
+                                                {selectedItemToList && (
+                                                    <>
+                                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                                                <label style={{ fontSize: '10px', color: '#94a3b8' }}>Cantidad a Vender</label>
+                                                                <input
+                                                                    type="number"
+                                                                    min={1}
+                                                                    max={inventoryRef.current.getQuantity(selectedItemToList)}
+                                                                    value={listQuantity}
+                                                                    onChange={e => setListQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                                                                    style={{ padding: '8px 10px', fontSize: '12px', background: '#0f172a', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', color: '#fff' }}
+                                                                />
+                                                            </div>
+                                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                                                <label style={{ fontSize: '10px', color: '#94a3b8' }}>Precio Total (Coins)</label>
+                                                                <input
+                                                                    type="number"
+                                                                    min={1}
+                                                                    value={listPrice}
+                                                                    onChange={e => setListPrice(Math.max(1, parseInt(e.target.value) || 0))}
+                                                                    style={{ padding: '8px 10px', fontSize: '12px', background: '#0f172a', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', color: '#fbbf24', fontWeight: 'bold' }}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                        <div style={{ fontSize: '10px', color: '#ef4444', fontStyle: 'italic', marginTop: '4px' }}>
+                                                            * Comisión del Mercado (5%): Se retendrán {Math.floor(listPrice * 0.05)} Coins al concretarse la venta. Recibirás {listPrice - Math.floor(listPrice * 0.05)} Coins.
+                                                        </div>
+                                                        <button
+                                                            onClick={() => handleCreateListing('item')}
+                                                            style={{ marginTop: '8px', padding: '10px', fontSize: '12px', fontWeight: 'bold', background: 'rgba(168,85,247,0.2)', border: '1px solid rgba(168,85,247,0.5)', borderRadius: '8px', color: '#c084fc', cursor: 'pointer' }}
+                                                        >
+                                                            🚀 Publicar Oferta de Venta
+                                                        </button>
+                                                    </>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        {/* Sell Pokemon Form */}
+                                        {marketFilterType === 'pokemon' && (
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '12px', padding: '14px' }}>
+                                                <label style={{ fontSize: '11px', color: '#c084fc', textTransform: 'uppercase', fontWeight: 'bold' }}>1. Selecciona el Pokémon (desde PC)</label>
+                                                {listablePokemon.length === 0 ? (
+                                                    <div style={{ fontSize: '11px', color: '#64748b', fontStyle: 'italic', textAlign: 'center', padding: '10px' }}>
+                                                        No tienes Pokémon disponibles en el PC para vender. Mueve uno de tu equipo al PC primero.
+                                                    </div>
+                                                ) : (
+                                                    <>
+                                                        <select
+                                                            value={selectedPokeToListIdx !== null ? selectedPokeToListIdx : ''}
+                                                            onChange={e => setSelectedPokeToListIdx(e.target.value !== '' ? parseInt(e.target.value) : null)}
+                                                            style={{ padding: '10px', fontSize: '12px', background: '#1e293b', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', color: '#fff', outline: 'none' }}
+                                                        >
+                                                            <option value="">-- Elige un Pokémon --</option>
+                                                            {listablePokemon.map((p, idx) => (
+                                                                <option key={idx} value={idx}>
+                                                                    {p.is_shiny ? '✨ ' : ''}{p.id} (Nvl. {p.level || 5})
+                                                                </option>
+                                                            ))}
+                                                        </select>
+
+                                                        {selectedPokeToListIdx !== null && (
+                                                            <>
+                                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                                                    <label style={{ fontSize: '10px', color: '#94a3b8' }}>Precio Solicitado (Coins)</label>
+                                                                    <input
+                                                                        type="number"
+                                                                        min={1}
+                                                                        value={listPrice}
+                                                                        onChange={e => setListPrice(Math.max(1, parseInt(e.target.value) || 0))}
+                                                                        style={{ padding: '8px 10px', fontSize: '12px', background: '#0f172a', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', color: '#fbbf24', fontWeight: 'bold' }}
+                                                                    />
+                                                                </div>
+                                                                <div style={{ fontSize: '10px', color: '#ef4444', fontStyle: 'italic', marginTop: '4px' }}>
+                                                                    * Comisión del Mercado (5%): Se retendrán {Math.floor(listPrice * 0.05)} Coins al concretarse la venta. Recibirás {listPrice - Math.floor(listPrice * 0.05)} Coins.
+                                                                </div>
+                                                                <button
+                                                                    onClick={() => handleCreateListing('pokemon')}
+                                                                    style={{ marginTop: '8px', padding: '10px', fontSize: '12px', fontWeight: 'bold', background: 'rgba(168,85,247,0.2)', border: '1px solid rgba(168,85,247,0.5)', borderRadius: '8px', color: '#c084fc', cursor: 'pointer' }}
+                                                                >
+                                                                    🚀 Publicar Oferta de Venta
+                                                                </button>
+                                                            </>
+                                                        )}
+                                                    </>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* TAB 3: MY LISTINGS */}
+                                {marketTab === 'my_listings' && (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '380px', overflowY: 'auto', paddingRight: '4px' }}>
+                                            {marketListings.filter(l => l.seller_address === walletAddress && l.status === 'active').length === 0 ? (
+                                                <div style={{ textAlign: 'center', padding: '30px', color: '#64748b', fontSize: '12px', fontStyle: 'italic' }}>
+                                                    No tienes ofertas de venta activas en este momento.
+                                                </div>
+                                            ) : (
+                                                marketListings.filter(l => l.seller_address === walletAddress && l.status === 'active').map((l: any) => {
+                                                    let spriteUrl = '';
+                                                    let nameLabel = l.asset_id;
+
+                                                    if (l.type === 'item') {
+                                                        const info = inventoryRef.current.getItemInfo(l.asset_id);
+                                                        spriteUrl = info.sprite ? `/assets/items/${info.sprite}` : '';
+                                                    } else {
+                                                        const species = pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === l.asset_id.toLowerCase());
+                                                        if (species) {
+                                                            spriteUrl = l.pokemon_data?.is_shiny
+                                                                ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/shiny/${species.id}.png`
+                                                                : species.sprite;
+                                                        }
+                                                        nameLabel = `${l.pokemon_data?.is_shiny ? '✨ ' : ''}${l.asset_id}`;
+                                                    }
+
+                                                    return (
+                                                        <div key={l.id} style={{ display: 'flex', alignItems: 'center', padding: '10px 12px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '10px', gap: '10px' }}>
+                                                            <div style={{ width: '40px', height: '40px', background: 'rgba(0,0,0,0.2)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                                {spriteUrl ? (
+                                                                    <img src={spriteUrl} alt={l.asset_id} style={{ width: '36px', height: '36px', imageRendering: 'pixelated' }} />
+                                                                ) : (
+                                                                    <span style={{ fontSize: '18px' }}>📦</span>
+                                                                )}
+                                                            </div>
+
+                                                            <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                                                                <span style={{ textTransform: 'capitalize', fontWeight: 'bold', fontSize: '12px' }}>
+                                                                    {nameLabel}
+                                                                </span>
+                                                                <span style={{ fontSize: '10px', color: '#94a3b8' }}>
+                                                                    {l.type === 'item' ? `Cantidad: ${l.quantity}` : `Nivel: ${l.pokemon_data?.level || 1}`} • Precio: 🪙 {l.price} Coins
+                                                                </span>
+                                                            </div>
+
+                                                            <button
+                                                                onClick={() => handleCancelListing(l.id)}
+                                                                style={{
+                                                                    padding: '6px 12px',
+                                                                    fontSize: '11px',
+                                                                    fontWeight: 'bold',
+                                                                    background: 'rgba(239,68,68,0.15)',
+                                                                    border: '1px solid rgba(239,68,68,0.35)',
+                                                                    borderRadius: '8px',
+                                                                    color: '#f87171',
+                                                                    cursor: 'pointer',
+                                                                    margin: 0
+                                                                }}
+                                                            >
+                                                                Retirar
+                                                            </button>
+                                                        </div>
+                                                    );
+                                                })
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* TAB 4: HISTORY */}
+                                {marketTab === 'history' && (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '380px', overflowY: 'auto', paddingRight: '4px' }}>
+                                            {marketHistory.length === 0 ? (
+                                                <div style={{ textAlign: 'center', padding: '30px', color: '#64748b', fontSize: '12px', fontStyle: 'italic' }}>
+                                                    No se registran transacciones recientes en el mercado.
+                                                </div>
+                                            ) : (
+                                                marketHistory.map((h: any) => {
+                                                    const dateStr = new Date(h.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' ' + new Date(h.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' });
+                                                    return (
+                                                        <div key={h.id} style={{ padding: '8px 10px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '8px', fontSize: '11px', lineHeight: '1.4' }}>
+                                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                                                                <span style={{ color: '#a855f7', fontWeight: 'bold' }}>🛍️ Venta Realizada</span>
+                                                                <span style={{ color: '#64748b', fontSize: '9px' }}>{dateStr}</span>
+                                                            </div>
+                                                            <span style={{ color: '#60a5fa', fontWeight: 'bold' }}>{h.buyer_name}</span> compró <span style={{ textTransform: 'capitalize', color: '#fff', fontWeight: 'bold' }}>{h.quantity}x {h.asset_id}</span> de <span style={{ color: '#f472b6', fontWeight: 'bold' }}>{h.seller_name}</span> por <span style={{ color: '#fbbf24', fontWeight: 'bold' }}>🪙 {h.price} Coins</span>.
+                                                        </div>
+                                                    );
+                                                })
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+
+                            </div>
+
+                            {/* Footer */}
+                            <div style={{ padding: '12px 16px', borderTop: '1px solid rgba(255,255,255,0.08)', background: 'rgba(0,0,0,0.1)' }}>
+                                <button
+                                    onClick={() => setShowMarketplaceModal(false)}
+                                    style={{ margin: 0, padding: '9px 14px', fontSize: '12px', fontWeight: 'bold', width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '8px', color: '#94a3b8', cursor: 'pointer' }}
+                                >
+                                    Cerrar Mercado
                                 </button>
                             </div>
                         </div>
