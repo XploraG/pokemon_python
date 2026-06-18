@@ -5901,6 +5901,13 @@ export default function GameCanvas({
             setPcPokemon(updatedPc);
             await saveLocalEconomy(team, updatedPc, undefined, true);
 
+            const species = pokemonSpeciesList.find(s => s.name.toLowerCase() === poke.id.toLowerCase());
+            const specId = species ? species.id : 25;
+            const pokeWithSpecId = {
+                ...poke,
+                especie_id: poke.especie_id || specId
+            };
+
             const { error: insertErr } = await supabase
                 .from('marketplace_listings')
                 .insert({
@@ -5908,7 +5915,7 @@ export default function GameCanvas({
                     seller_name: playerName || 'Tamer',
                     type: 'pokemon',
                     asset_id: poke.id,
-                    pokemon_data: poke,
+                    pokemon_data: pokeWithSpecId,
                     quantity: 1,
                     price: listPrice,
                     status: 'active'
@@ -7547,9 +7554,13 @@ export default function GameCanvas({
                         const stats = getPokemonStats(activeWildBattle.name.toLowerCase(), caughtLevel, caughtIvs);
                         const caughtMoves = getPokemonMoves(activeWildBattle.name.toLowerCase(), caughtLevel).slice(0, 4);
 
+                        const species = pokemonSpeciesList.find(s => s.name.toLowerCase() === activeWildBattle.name.toLowerCase());
+                        const specId = species ? species.id : 25;
+
                         const newPoke = {
                             id: activeWildBattle.name.toLowerCase(),
                             id_captura: generateUUID(),
+                            especie_id: specId,
                             rarity: rarity.toLowerCase(),
                             is_evolved: false,
                             level: caughtLevel,

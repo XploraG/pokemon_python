@@ -153,6 +153,7 @@ export default function Home() {
         return {
             id: speciesName,
             id_captura: m.id_captura,
+            especie_id: m.especie_id,
             rarity: species ? species.rarity.toLowerCase() : 'common',
             is_evolved: !BASE_STAGE_POKEMON.has(speciesName),
             level: m.nivel,
@@ -365,6 +366,7 @@ export default function Home() {
             const starterPoke = {
                 id: selectedStarter,
                 id_captura: uuid,
+                especie_id: specId,
                 rarity: "common",
                 is_evolved: false,
                 level: 1,

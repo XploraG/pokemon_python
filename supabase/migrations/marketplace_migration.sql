@@ -139,9 +139,14 @@ BEGIN
 
     INSERT INTO captured_monsters (id_captura, id_jugador, especie_id, nivel, xp, hp_actual, iv_hp, iv_ataque, iv_defensa, iv_velocidad, es_shiny, moves, is_team, team_order, unlocked_slots, held_items)
     VALUES (
-        (v_pokemon_data->>'id_captura')::UUID,
+        COALESCE((v_pokemon_data->>'id_captura')::UUID, gen_random_uuid()),
         p_buyer_address,
-        (v_pokemon_data->>'especie_id')::INT,
+        COALESCE(
+            (v_pokemon_data->>'especie_id')::INT,
+            (SELECT id FROM pokemon_species WHERE name = LOWER(v_pokemon_data->>'id')),
+            (SELECT id FROM pokemon_species WHERE name = LOWER(v_asset_id)),
+            25
+        ),
         COALESCE((v_pokemon_data->>'level')::INT, 1),
         COALESCE((v_pokemon_data->>'xp')::INT, 0),
         COALESCE((v_pokemon_data->>'hp')::INT, 10),
