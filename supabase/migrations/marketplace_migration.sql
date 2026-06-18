@@ -155,7 +155,7 @@ BEGIN
         COALESCE((v_pokemon_data->'ivs'->>'defense')::INT, 15),
         COALESCE((v_pokemon_data->'ivs'->>'speed')::INT, 15),
         COALESCE((v_pokemon_data->>'is_shiny')::BOOLEAN, false),
-        COALESCE(v_pokemon_data->'moves', '[]'::jsonb),
+        ARRAY(SELECT jsonb_array_elements_text(COALESCE(v_pokemon_data->'moves', '[]'::jsonb))),
         false,
         0,
         COALESCE((v_pokemon_data->>'unlocked_slots')::INT, 2),

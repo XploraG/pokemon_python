@@ -3246,6 +3246,22 @@ export default function GameCanvas({
                     setNotification({ title: "Montura", message: "¡No puedes desmontar en medio del agua!" });
                     return;
                 }
+                
+                // If trying to mount (turn on surfing), check if water is nearby
+                if (!playerRef.current.isSurfing) {
+                    const hasWaterNearby = 
+                        currentTile === 'W' ||
+                        mapDataRef.current.grid[row - 1]?.[col] === 'W' ||
+                        mapDataRef.current.grid[row + 1]?.[col] === 'W' ||
+                        mapDataRef.current.grid[row]?.[col - 1] === 'W' ||
+                        mapDataRef.current.grid[row]?.[col + 1] === 'W';
+
+                    if (!hasWaterNearby) {
+                        setNotification({ title: "Montura", message: "¡No hay agua cerca para hacer surf!" });
+                        return;
+                    }
+                }
+
                 setIsSurfingActive(prev => {
                     const nextVal = !prev;
                     if (nextVal) {
@@ -3456,15 +3472,9 @@ export default function GameCanvas({
                         }
 
                         let dirOffset = 0;
-                        if (player.isBicycle) {
-                            if (player.moveDirection === 'up') dirOffset = 48;
-                            else if (player.moveDirection === 'left') dirOffset = 96;
-                            else if (player.moveDirection === 'right') dirOffset = 144;
-                        } else {
-                            if (player.moveDirection === 'left') dirOffset = 48;
-                            else if (player.moveDirection === 'up') dirOffset = 96;
-                            else if (player.moveDirection === 'right') dirOffset = 144;
-                        }
+                        if (player.moveDirection === 'left') dirOffset = 48;
+                        else if (player.moveDirection === 'up') dirOffset = 96;
+                        else if (player.moveDirection === 'right') dirOffset = 144;
 
                         // Draw Lapras mount under the player if surfing
                         if (player.isSurfing && surfSpriteRef.current) {
@@ -3592,15 +3602,9 @@ export default function GameCanvas({
                                 }
 
                                 let dirOffset = 0;
-                                if (otherPlayer.is_bicycle) {
-                                    if (otherPlayer.dir === 'up') dirOffset = 48;
-                                    else if (otherPlayer.dir === 'left') dirOffset = 96;
-                                    else if (otherPlayer.dir === 'right') dirOffset = 144;
-                                } else {
-                                    if (otherPlayer.dir === 'left') dirOffset = 48;
-                                    else if (otherPlayer.dir === 'up') dirOffset = 96;
-                                    else if (otherPlayer.dir === 'right') dirOffset = 144;
-                                }
+                                if (otherPlayer.dir === 'left') dirOffset = 48;
+                                else if (otherPlayer.dir === 'up') dirOffset = 96;
+                                else if (otherPlayer.dir === 'right') dirOffset = 144;
 
                                 // Draw Lapras mount under the remote player if surfing
                                 if (otherPlayer.is_surfing && surfSpriteRef.current) {
@@ -8756,6 +8760,22 @@ export default function GameCanvas({
                                     setNotification({ title: "Montura", message: "¡No puedes desmontar en medio del agua!" });
                                     return;
                                 }
+
+                                // If trying to mount (turn on surfing), check if water is nearby
+                                if (!playerRef.current.isSurfing) {
+                                    const hasWaterNearby = 
+                                        currentTile === 'W' ||
+                                        mapDataRef.current.grid[row - 1]?.[col] === 'W' ||
+                                        mapDataRef.current.grid[row + 1]?.[col] === 'W' ||
+                                        mapDataRef.current.grid[row]?.[col - 1] === 'W' ||
+                                        mapDataRef.current.grid[row]?.[col + 1] === 'W';
+
+                                    if (!hasWaterNearby) {
+                                        setNotification({ title: "Montura", message: "¡No hay agua cerca para hacer surf!" });
+                                        return;
+                                    }
+                                }
+
                                 setIsSurfingActive(prev => {
                                     const nextVal = !prev;
                                     if (nextVal) {
