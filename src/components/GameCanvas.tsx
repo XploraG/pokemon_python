@@ -6380,11 +6380,30 @@ export default function GameCanvas({
             }
 
             const updatedSave = userData.save_data;
+            
+            // Sync React state and refs
             setTeam(updatedSave.team_data || []);
+            teamRef.current = updatedSave.team_data || [];
+            
             setPcPokemon(updatedSave.pc_pokemon || []);
-            economyRef.current = new Economy(updatedSave.economy_data);
-            setEconomy(new Economy(updatedSave.economy_data));
-            inventoryRef.current = new Inventory(updatedSave.inventory_data);
+            pcPokemonRef.current = updatedSave.pc_pokemon || [];
+            
+            const newEconomy = new Economy(updatedSave.economy_data);
+            economyRef.current = newEconomy;
+            setEconomy(newEconomy);
+            
+            const newInventory = new Inventory(updatedSave.inventory_data);
+            inventoryRef.current = newInventory;
+            setInventory(newInventory);
+
+            // Sync localStorage
+            try {
+                const fullSaves = JSON.parse(localStorage.getItem('pixel_tamer_saves') || '{}');
+                fullSaves[walletAddress || saveName] = updatedSave;
+                localStorage.setItem('pixel_tamer_saves', JSON.stringify(fullSaves));
+            } catch (err) {
+                console.error("Failed to write purchased state to localStorage:", err);
+            }
 
             showNotification("Mercado", `¡Compra realizada exitosamente a ${sellerName}!`);
             
@@ -6445,11 +6464,30 @@ export default function GameCanvas({
             }
 
             const updatedSave = userData.save_data;
+            
+            // Sync React state and refs
             setTeam(updatedSave.team_data || []);
+            teamRef.current = updatedSave.team_data || [];
+            
             setPcPokemon(updatedSave.pc_pokemon || []);
-            economyRef.current = new Economy(updatedSave.economy_data);
-            setEconomy(new Economy(updatedSave.economy_data));
-            inventoryRef.current = new Inventory(updatedSave.inventory_data);
+            pcPokemonRef.current = updatedSave.pc_pokemon || [];
+            
+            const newEconomy = new Economy(updatedSave.economy_data);
+            economyRef.current = newEconomy;
+            setEconomy(newEconomy);
+            
+            const newInventory = new Inventory(updatedSave.inventory_data);
+            inventoryRef.current = newInventory;
+            setInventory(newInventory);
+
+            // Sync localStorage
+            try {
+                const fullSaves = JSON.parse(localStorage.getItem('pixel_tamer_saves') || '{}');
+                fullSaves[walletAddress || saveName] = updatedSave;
+                localStorage.setItem('pixel_tamer_saves', JSON.stringify(fullSaves));
+            } catch (err) {
+                console.error("Failed to write purchased state to localStorage:", err);
+            }
 
             showNotification("Mercado", `¡Has comprado ${quantity}x ${assetId} por ${totalCost} Coins!`);
             
