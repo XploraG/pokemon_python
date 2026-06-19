@@ -3480,8 +3480,8 @@ export default function GameCanvas({
                         const surfYOffset = player.isSurfing ? -4 : 0;
 
                         if (player.isBicycle) {
-                            if (player.moveDirection === 'left') dirOffset = 96;
-                            else if (player.moveDirection === 'up') dirOffset = 192;
+                            if (player.moveDirection === 'left') dirOffset = 192;
+                            else if (player.moveDirection === 'up') dirOffset = 96;
                             else if (player.moveDirection === 'right') dirOffset = 288;
                             else dirOffset = 0;
 
@@ -3630,8 +3630,8 @@ export default function GameCanvas({
                                 const surfYOffset = otherPlayer.is_surfing ? -4 : 0;
 
                                 if (otherPlayer.is_bicycle) {
-                                    if (otherPlayer.dir === 'left') dirOffset = 96;
-                                    else if (otherPlayer.dir === 'up') dirOffset = 192;
+                                    if (otherPlayer.dir === 'left') dirOffset = 192;
+                                    else if (otherPlayer.dir === 'up') dirOffset = 96;
                                     else if (otherPlayer.dir === 'right') dirOffset = 288;
                                     else dirOffset = 0;
 
