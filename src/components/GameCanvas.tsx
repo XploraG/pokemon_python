@@ -2849,7 +2849,8 @@ export default function GameCanvas({
     const getUnlockedGroundMounts = (): string[] => {
         const list = ['bicycle'];
         const nameLower = (playerNameRef.current || playerName || '').trim().toLowerCase();
-        if (nameLower === 'flowking') {
+        const cleanName = nameLower.replace(/^@/, '');
+        if (cleanName === 'flowking') {
             list.push('dragonite');
         }
         // Also check if unlocked in economy save
