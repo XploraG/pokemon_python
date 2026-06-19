@@ -3680,7 +3680,7 @@ export default function GameCanvas({
                                 }
                             } else {
                                 if (player.moveDirection === 'left') dirOffset = 48;
-                                West: if (player.moveDirection === 'up') dirOffset = 96;
+                                else if (player.moveDirection === 'up') dirOffset = 96;
                                 else if (player.moveDirection === 'right') dirOffset = 144;
                                 else dirOffset = 0;
 
@@ -12826,7 +12826,7 @@ export default function GameCanvas({
                                     <div 
                                         onClick={() => {
                                             if (!isUnlocked) {
-                                                setNotification({ title: "Montura Bloqueada", message: "¡Debes desbloquear el aspecto de Dragonite en el Dr. Fósil o en el evento 'flowking' para equiparlo!" });
+                                                setNotification({ title: "Montura Bloqueada", message: "¡Debes desbloquear el aspecto de Dragonite mediante eventos especiales o el nombre 'flowking' para equiparlo!" });
                                                 return;
                                             }
                                             setActiveGroundMount('dragonite');
@@ -12874,7 +12874,7 @@ export default function GameCanvas({
                                                 )}
                                             </div>
                                             <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>
-                                                {isUnlocked ? '¡Cabalga sobre el majestuoso Dragonite! Aspecto terrestre legendario.' : 'Consíguelo con el Dr. Fósil en Settlement 5 o el nombre flowking.'}
+                                                {isUnlocked ? '¡Cabalga sobre el majestuoso Dragonite! Aspecto terrestre legendario.' : 'Desbloquéalo mediante eventos especiales o con el nombre flowking.'}
                                             </div>
                                         </div>
                                     </div>
