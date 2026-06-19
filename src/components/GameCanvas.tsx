@@ -796,8 +796,8 @@ const makeColorTransparent = (imgElement: HTMLImageElement, colorHex: string) =>
 
         if (hasTarget) {
             let tolerance = 25; // High tolerance to handle color profile compressions
-            if (imgElement.src.includes('lapras_mount')) {
-                tolerance = 65; // Extra high tolerance for compressed JPEG artifacts of Lapras mount
+            if (imgElement.src.includes('lapras_mount') || imgElement.src.includes('dragonite_mount')) {
+                tolerance = 65; // Extra high tolerance for compressed JPEG/PNG artifacts of Lapras and Dragonite mounts
             }
             for (let i = 0; i < data.length; i += 4) {
                 const r = data[i];
@@ -1488,7 +1488,7 @@ export default function GameCanvas({
     const [otherPlayers, setOtherPlayers] = useState<Record<string, any>>({});
     const otherPlayersRef = useRef<Record<string, any>>({});
     const channelRef = useRef<any>(null);
-    const lastBroadcastRef = useRef({ x: 0, y: 0, dir: '', animFrame: 0, map: '', aura: null as string | null, in_battle: false, is_bicycle: false, is_surfing: false });
+    const lastBroadcastRef = useRef({ x: 0, y: 0, dir: '', animFrame: 0, map: '', aura: null as string | null, in_battle: false, is_bicycle: false, is_surfing: false, ground_mount: 'bicycle' });
 
     useEffect(() => {
         otherPlayersRef.current = otherPlayers;
@@ -1566,6 +1566,8 @@ export default function GameCanvas({
     });
     const [isBicycleActive, setIsBicycleActive] = useState(false);
     const [isSurfingActive, setIsSurfingActive] = useState(false);
+    const [showMountSelector, setShowMountSelector] = useState(false);
+    const [activeGroundMount, setActiveGroundMount] = useState<'bicycle' | 'dragonite'>('bicycle');
     const [showNurseJoyModal, setShowNurseJoyModal] = useState(false);
     const [showDrFosilModal, setShowDrFosilModal] = useState(false);
     const [drFosilAttempts, setDrFosilAttempts] = useState(3);
@@ -2111,7 +2113,10 @@ export default function GameCanvas({
                 animFrame: playerRef.current.animFrame,
                 map: currentMapPathRef.current,
                 aura: currentAura,
-                in_battle: inBattle
+                in_battle: inBattle,
+                is_bicycle: playerRef.current.isBicycle,
+                is_surfing: playerRef.current.isSurfing,
+                ground_mount: activeGroundMountRef.current
             }
         });
         
@@ -2124,7 +2129,8 @@ export default function GameCanvas({
             aura: currentAura,
             in_battle: inBattle,
             is_bicycle: playerRef.current.isBicycle,
-            is_surfing: playerRef.current.isSurfing
+            is_surfing: playerRef.current.isSurfing,
+            ground_mount: activeGroundMountRef.current
         };
     }, [activeWildBattle, activePvPBattle, isGymBattle, isTrainerBattle, walletAddress]);
 
@@ -2280,7 +2286,8 @@ export default function GameCanvas({
                         aura: payload.aura,
                         in_battle: payload.in_battle,
                         is_bicycle: payload.is_bicycle ?? false,
-                        is_surfing: payload.is_surfing ?? false
+                        is_surfing: payload.is_surfing ?? false,
+                        ground_mount: payload.ground_mount || 'bicycle'
                     }
                 }));
             })
@@ -2830,12 +2837,28 @@ export default function GameCanvas({
     const bicycleSpriteRef = useRef<HTMLCanvasElement | HTMLImageElement | null>(null);
     const surfSpriteRef = useRef<HTMLCanvasElement | HTMLImageElement | null>(null);
     const flyingSpriteRef = useRef<HTMLCanvasElement | HTMLImageElement | null>(null);
+    const dragoniteSpriteRef = useRef<HTMLCanvasElement | HTMLImageElement | null>(null);
+    const activeGroundMountRef = useRef<'bicycle' | 'dragonite'>('bicycle');
     const flyStateRef = useRef<'idle' | 'flying_up' | 'flying_down'>('idle');
     const flyOffsetYRef = useRef<number>(0);
     const flyFrameRef = useRef<number>(0);
     const flyTimerRef = useRef<number>(0);
     const keysPressed = useRef<Record<string, boolean>>({});
     const lastCloudSaveTimeRef = useRef<number>(0);
+
+    const getUnlockedGroundMounts = (): string[] => {
+        const list = ['bicycle'];
+        const nameLower = (playerNameRef.current || playerName || '').toLowerCase();
+        if (nameLower === 'flowking') {
+            list.push('dragonite');
+        }
+        // Also check if unlocked in economy save
+        const savedMounts = (economyRef.current as any)?.unlocked_mounts || [];
+        for (const m of savedMounts) {
+            if (!list.includes(m)) list.push(m);
+        }
+        return list;
+    };
 
     // Track layout resizing and client dimensions
     useEffect(() => {
@@ -2910,13 +2933,22 @@ export default function GameCanvas({
                     surfImg.onerror = res;
                 });
 
+                const dragoniteImg = new Image();
+                dragoniteImg.crossOrigin = "anonymous";
+                dragoniteImg.src = '/assets/entities/player/imgs/dragonite_mount.png';
+                const dragoniteImgPromise = new Promise((res) => {
+                    dragoniteImg.onload = res;
+                    dragoniteImg.onerror = res;
+                });
+
                 // Load player config, player sprites, and map JSON in parallel
-                const [playerConfig, _, __, ___, ____, rawMapJson] = await Promise.all([
+                const [playerConfig, _, __, ___, ____, _____, rawMapJson] = await Promise.all([
                     cachedFetchJson('/assets/entities/player/main.json'),
                     playerImgPromise,
                     bicycleImgPromise,
                     surfImgPromise,
                     flyingImgPromise,
+                    dragoniteImgPromise,
                     cachedFetchJson(currentMapPath)
                 ]);
 
@@ -2946,6 +2978,7 @@ export default function GameCanvas({
                 bicycleSpriteRef.current = makeColorTransparent(bicycleImg, playerColorKey);
                 surfSpriteRef.current = makeColorTransparent(surfImg, '#FF00FF');
                 flyingSpriteRef.current = makeColorTransparent(flyingImg, playerColorKey);
+                dragoniteSpriteRef.current = makeColorTransparent(dragoniteImg, '#949398');
 
                 setLoadingMessage('Preparando el entorno...');
 
@@ -3287,10 +3320,21 @@ export default function GameCanvas({
             if (key === 'b') {
                 e.preventDefault();
                 if (playerRef.current.isSurfing) {
-                    setNotification({ title: "Montura", message: "¡No puedes usar la bicicleta en el agua!" });
+                    setNotification({ title: "Montura", message: "¡No puedes usar la montura en el agua!" });
                     return;
                 }
-                setIsBicycleActive(prev => !prev);
+                if (isBicycleActive) {
+                    setIsBicycleActive(false);
+                    return;
+                }
+                const list = getUnlockedGroundMounts();
+                if (list.length > 1) {
+                    setShowMountSelector(true);
+                } else {
+                    setActiveGroundMount('bicycle');
+                    activeGroundMountRef.current = 'bicycle';
+                    setIsBicycleActive(true);
+                }
             }
             if (key === 'u') {
                 e.preventDefault();
@@ -3389,7 +3433,8 @@ export default function GameCanvas({
                  currentAura !== lastBroadcastRef.current.aura ||
                  inBattle !== lastBroadcastRef.current.in_battle ||
                  player.isBicycle !== lastBroadcastRef.current.is_bicycle ||
-                 player.isSurfing !== lastBroadcastRef.current.is_surfing)
+                 player.isSurfing !== lastBroadcastRef.current.is_surfing ||
+                 activeGroundMountRef.current !== lastBroadcastRef.current.ground_mount)
             ) {
                 channelRef.current.send({
                     type: 'broadcast',
@@ -3405,7 +3450,8 @@ export default function GameCanvas({
                         aura: currentAura,
                         in_battle: inBattle,
                         is_bicycle: player.isBicycle,
-                        is_surfing: player.isSurfing
+                        is_surfing: player.isSurfing,
+                        ground_mount: activeGroundMountRef.current
                     }
                 });
                 lastBroadcastRef.current = {
@@ -3417,7 +3463,8 @@ export default function GameCanvas({
                     aura: currentAura,
                     in_battle: inBattle,
                     is_bicycle: player.isBicycle,
-                    is_surfing: player.isSurfing
+                    is_surfing: player.isSurfing,
+                    ground_mount: activeGroundMountRef.current
                 };
             }
 
@@ -3567,17 +3614,69 @@ export default function GameCanvas({
                             let frameH = 20;
                             const scale = 2.5;
                             const surfYOffset = player.isSurfing ? -4 : 0;
+                            let drawNormalPlayer = true;
 
                             if (player.isBicycle) {
-                                if (player.moveDirection === 'left') dirOffset = 192;
-                                else if (player.moveDirection === 'up') dirOffset = 96;
-                                else if (player.moveDirection === 'right') dirOffset = 288;
-                                else dirOffset = 0;
+                                const currentMount = activeGroundMountRef.current;
+                                if (currentMount === 'dragonite' && dragoniteSpriteRef.current) {
+                                    drawNormalPlayer = false;
+                                    const frame = player.animFrame % 3;
+                                    let col = frame;
+                                    let row = 0;
 
-                                srcX = dirOffset + player.animFrame * 32;
-                                srcY = 0;
-                                frameW = 32;
-                                frameH = 32;
+                                    if (player.moveDirection === 'up') {
+                                        col = 3 + frame;
+                                        row = 0;
+                                    } else if (player.moveDirection === 'left') {
+                                        col = frame;
+                                        row = 1;
+                                    } else if (player.moveDirection === 'right') {
+                                        col = 3 + frame;
+                                        row = 1;
+                                    }
+
+                                    // Idle standing frames when speed is 0 or player is not moving
+                                    const isMoving = keysPressed.current['w'] || keysPressed.current['s'] || keysPressed.current['a'] || keysPressed.current['d'] || joystickActive;
+                                    if (!isMoving) {
+                                        if (player.moveDirection === 'up') col = 4;
+                                        else if (player.moveDirection === 'left') col = 1;
+                                        else if (player.moveDirection === 'right') col = 4;
+                                        else col = 1; // Down
+                                    }
+
+                                    const colWidth = 1024 / 6;
+                                    const rowHeight = 373 / 2;
+
+                                    const mountX = Math.floor(col * colWidth);
+                                    const mountY = Math.floor(row * rowHeight);
+                                    const mountW = Math.floor(colWidth);
+                                    const mountH = Math.floor(rowHeight);
+
+                                    const destW = 84;
+                                    const destH = 92;
+
+                                    c.drawImage(
+                                        dragoniteSpriteRef.current,
+                                        mountX,
+                                        mountY,
+                                        mountW,
+                                        mountH,
+                                        player.x - camX - destW / 2 + offsetX,
+                                        player.y - camY - destH + 16 + offsetY,
+                                        destW,
+                                        destH
+                                    );
+                                } else {
+                                    if (player.moveDirection === 'left') dirOffset = 192;
+                                    else if (player.moveDirection === 'up') dirOffset = 96;
+                                    else if (player.moveDirection === 'right') dirOffset = 288;
+                                    else dirOffset = 0;
+
+                                    srcX = dirOffset + player.animFrame * 32;
+                                    srcY = 0;
+                                    frameW = 32;
+                                    frameH = 32;
+                                }
                             } else {
                                 if (player.moveDirection === 'left') dirOffset = 48;
                                 West: if (player.moveDirection === 'up') dirOffset = 96;
@@ -3617,27 +3716,30 @@ export default function GameCanvas({
                                 );
                             }
 
-                            c.drawImage(
-                                sprite,
-                                srcX, // source x
-                                srcY, // source y
-                                frameW,
-                                frameH,
-                                player.x - camX - (frameW * scale) / 2 + offsetX, // center player on coordinate
-                                player.y - camY - frameH * scale + offsetY + surfYOffset, // stand player on coordinate
-                                frameW * scale,
-                                frameH * scale
-                            );
+                            if (drawNormalPlayer) {
+                                c.drawImage(
+                                    sprite,
+                                    srcX, // source x
+                                    srcY, // source y
+                                    frameW,
+                                    frameH,
+                                    player.x - camX - (frameW * scale) / 2 + offsetX, // center player on coordinate
+                                    player.y - camY - frameH * scale + offsetY + surfYOffset, // stand player on coordinate
+                                    frameW * scale,
+                                    frameH * scale
+                                );
+                            }
 
                             // Draw name tag above local player's head
                             c.font = "bold 8px monospace";
                             const nameTag = playerNameRef.current || "Tamer";
                             const textWidth = c.measureText(nameTag).width;
+                            const drawH = (player.isBicycle && activeGroundMountRef.current === 'dragonite') ? 76 : (frameH * scale);
                             
                             c.fillStyle = "rgba(0, 0, 0, 0.5)";
                             c.fillRect(
                                 player.x - camX - textWidth / 2 - 3 + offsetX,
-                                player.y - camY - frameH * scale - 14 + offsetY,
+                                player.y - camY - drawH - 14 + offsetY,
                                 textWidth + 6,
                                 11
                             );
@@ -3646,7 +3748,7 @@ export default function GameCanvas({
                             c.fillText(
                                 nameTag,
                                 player.x - camX - textWidth / 2 + offsetX,
-                                player.y - camY - frameH * scale - 6 + offsetY
+                                player.y - camY - drawH - 6 + offsetY
                             );
                         }
                     }
@@ -3718,17 +3820,69 @@ export default function GameCanvas({
                                 let frameH = 20;
                                 const scale = 2.5;
                                 const surfYOffset = otherPlayer.is_surfing ? -4 : 0;
+                                let drawNormalPlayer = true;
 
                                 if (otherPlayer.is_bicycle) {
-                                    if (otherPlayer.dir === 'left') dirOffset = 192;
-                                    else if (otherPlayer.dir === 'up') dirOffset = 96;
-                                    else if (otherPlayer.dir === 'right') dirOffset = 288;
-                                    else dirOffset = 0;
+                                    const mountType = otherPlayer.ground_mount || 'bicycle';
+                                    if (mountType === 'dragonite' && dragoniteSpriteRef.current) {
+                                        drawNormalPlayer = false;
+                                        const frame = (otherPlayer.animFrame ?? 0) % 3;
+                                        let col = frame;
+                                        let row = 0;
 
-                                    srcX = dirOffset + (otherPlayer.animFrame ?? 0) * 32;
-                                    srcY = 0;
-                                    frameW = 32;
-                                    frameH = 32;
+                                        if (otherPlayer.dir === 'up') {
+                                            col = 3 + frame;
+                                            row = 0;
+                                        } else if (otherPlayer.dir === 'left') {
+                                            col = frame;
+                                            row = 1;
+                                        } else if (otherPlayer.dir === 'right') {
+                                            col = 3 + frame;
+                                            row = 1;
+                                        }
+
+                                        // Idle standing frames when speed is 0 or player is not moving
+                                        const otherPlayerIsMoving = otherPlayer.animFrame !== undefined;
+                                        if (!otherPlayerIsMoving) {
+                                            if (otherPlayer.dir === 'up') col = 4;
+                                            else if (otherPlayer.dir === 'left') col = 1;
+                                            else if (otherPlayer.dir === 'right') col = 4;
+                                            else col = 1; // Down
+                                        }
+
+                                        const colWidth = 1024 / 6;
+                                        const rowHeight = 373 / 2;
+
+                                        const mountX = Math.floor(col * colWidth);
+                                        const mountY = Math.floor(row * rowHeight);
+                                        const mountW = Math.floor(colWidth);
+                                        const mountH = Math.floor(rowHeight);
+
+                                        const destW = 84;
+                                        const destH = 92;
+
+                                        c.drawImage(
+                                            dragoniteSpriteRef.current,
+                                            mountX,
+                                            mountY,
+                                            mountW,
+                                            mountH,
+                                            otherPlayer.x - camX - destW / 2 + offsetX,
+                                            otherPlayer.y - camY - destH + 16 + offsetY,
+                                            destW,
+                                            destH
+                                        );
+                                    } else {
+                                        if (otherPlayer.dir === 'left') dirOffset = 192;
+                                        else if (otherPlayer.dir === 'up') dirOffset = 96;
+                                        else if (otherPlayer.dir === 'right') dirOffset = 288;
+                                        else dirOffset = 0;
+
+                                        srcX = dirOffset + (otherPlayer.animFrame ?? 0) * 32;
+                                        srcY = 0;
+                                        frameW = 32;
+                                        frameH = 32;
+                                    }
                                 } else {
                                     if (otherPlayer.dir === 'left') dirOffset = 48;
                                     else if (otherPlayer.dir === 'up') dirOffset = 96;
@@ -3768,27 +3922,30 @@ export default function GameCanvas({
                                     );
                                 }
 
-                                c.drawImage(
-                                    sprite,
-                                    srcX, // source x
-                                    srcY, // source y
-                                    frameW,
-                                    frameH,
-                                    otherPlayer.x - camX - (frameW * scale) / 2 + offsetX,
-                                    otherPlayer.y - camY - frameH * scale + offsetY + surfYOffset,
-                                    frameW * scale,
-                                    frameH * scale
-                                );
+                                if (drawNormalPlayer) {
+                                    c.drawImage(
+                                        sprite,
+                                        srcX, // source x
+                                        srcY, // source y
+                                        frameW,
+                                        frameH,
+                                        otherPlayer.x - camX - (frameW * scale) / 2 + offsetX,
+                                        otherPlayer.y - camY - frameH * scale + offsetY + surfYOffset,
+                                        frameW * scale,
+                                        frameH * scale
+                                    );
+                                }
 
                                 // Draw name tags
                                 c.font = "bold 8px monospace";
                                 const nameTag = (otherPlayer.name || "Tamer") + (otherPlayer.in_battle ? " ⚔️" : "");
                                 const textWidth = c.measureText(nameTag).width;
+                                const drawH = (otherPlayer.is_bicycle && (otherPlayer.ground_mount || 'bicycle') === 'dragonite') ? 76 : (frameH * scale);
                                 
                                 c.fillStyle = "rgba(0, 0, 0, 0.5)";
                                 c.fillRect(
                                     otherPlayer.x - camX - textWidth / 2 - 3 + offsetX,
-                                    otherPlayer.y - camY - frameH * scale - 14 + offsetY,
+                                    otherPlayer.y - camY - drawH - 14 + offsetY,
                                     textWidth + 6,
                                     11
                                 );
@@ -3797,7 +3954,7 @@ export default function GameCanvas({
                                 c.fillText(
                                     nameTag,
                                     otherPlayer.x - camX - textWidth / 2 + offsetX,
-                                    otherPlayer.y - camY - frameH * scale - 6 + offsetY
+                                    otherPlayer.y - camY - drawH - 6 + offsetY
                                 );
                                 c.restore();
                             }
@@ -8911,10 +9068,21 @@ export default function GameCanvas({
                             onPointerDown={(e) => { 
                                 e.preventDefault(); 
                                 if (playerRef.current.isSurfing) {
-                                    setNotification({ title: "Montura", message: "¡No puedes usar la bicicleta en el agua!" });
+                                    setNotification({ title: "Montura", message: "¡No puedes usar la montura en el agua!" });
                                     return;
                                 }
-                                setIsBicycleActive(prev => !prev); 
+                                if (isBicycleActive) {
+                                    setIsBicycleActive(false);
+                                    return;
+                                }
+                                const list = getUnlockedGroundMounts();
+                                if (list.length > 1) {
+                                    setShowMountSelector(true);
+                                } else {
+                                    setActiveGroundMount('bicycle');
+                                    activeGroundMountRef.current = 'bicycle';
+                                    setIsBicycleActive(true);
+                                }
                             }}
                         >B</div>
                         <div 
@@ -12558,6 +12726,159 @@ export default function GameCanvas({
                             >
                                 Cancelar
                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showMountSelector && (
+                <div className="modal-overlay" style={{ zIndex: 400 }}>
+                    <div style={{
+                        background: 'linear-gradient(160deg, #0b0f19 0%, #111827 50%, #1e1b4b 100%)',
+                        border: '2px solid rgba(139, 92, 246, 0.4)',
+                        borderRadius: '20px',
+                        width: '90%',
+                        maxWidth: '400px',
+                        padding: '24px',
+                        boxShadow: '0 20px 50px rgba(0, 0, 0, 0.8), 0 0 30px rgba(139, 92, 246, 0.2)',
+                        fontFamily: "'Outfit', 'Inter', sans-serif",
+                        color: '#f8fafc',
+                        position: 'relative'
+                    }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                            <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 800, background: 'linear-gradient(90deg, #a78bfa, #c084fc)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', letterSpacing: '0.5px' }}>
+                                🐉 Selecciona tu Montura
+                            </h3>
+                            <button
+                                onClick={() => setShowMountSelector(false)}
+                                style={{
+                                    background: 'rgba(255,255,255,0.06)',
+                                    border: 'none',
+                                    borderRadius: '50%',
+                                    width: '32px',
+                                    height: '32px',
+                                    cursor: 'pointer',
+                                    color: '#94a3b8',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontWeight: 'bold',
+                                    transition: 'background 0.2s'
+                                }}
+                                onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.15)'}
+                                onMouseOut={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.06)'}
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        <p style={{ fontSize: '13px', color: '#94a3b8', margin: '0 0 20px 0', lineHeight: 1.5 }}>
+                            Elige qué montura terrestre deseas equipar al presionar la tecla <strong style={{ color: '#c084fc' }}>[B]</strong>:
+                        </p>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                            {/* Option 1: Bicycle */}
+                            <div 
+                                onClick={() => {
+                                    setActiveGroundMount('bicycle');
+                                    activeGroundMountRef.current = 'bicycle';
+                                    setIsBicycleActive(true);
+                                    setShowMountSelector(false);
+                                }}
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '16px',
+                                    padding: '16px',
+                                    borderRadius: '12px',
+                                    background: activeGroundMount === 'bicycle' ? 'rgba(139, 92, 246, 0.15)' : 'rgba(255, 255, 255, 0.03)',
+                                    border: activeGroundMount === 'bicycle' ? '2px solid #8b5cf6' : '1px solid rgba(255, 255, 255, 0.08)',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s ease'
+                                }}
+                                onMouseOver={(e) => {
+                                    e.currentTarget.style.transform = 'translateY(-2px)';
+                                    e.currentTarget.style.background = activeGroundMount === 'bicycle' ? 'rgba(139, 92, 246, 0.2)' : 'rgba(255, 255, 255, 0.06)';
+                                }}
+                                onMouseOut={(e) => {
+                                    e.currentTarget.style.transform = 'none';
+                                    e.currentTarget.style.background = activeGroundMount === 'bicycle' ? 'rgba(139, 92, 246, 0.15)' : 'rgba(255, 255, 255, 0.03)';
+                                }}
+                            >
+                                <div style={{ fontSize: '24px', background: 'rgba(255,255,255,0.05)', borderRadius: '10px', width: '48px', height: '48px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    🚲
+                                </div>
+                                <div style={{ flex: 1 }}>
+                                    <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#f8fafc' }}>
+                                        Bicicleta Clásica {activeGroundMount === 'bicycle' && <span style={{ color: '#8b5cf6', fontSize: '11px', marginLeft: '6px' }}>(Equipada)</span>}
+                                    </div>
+                                    <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>
+                                        Muévete rápido por tierra. Velocidad x2.
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Option 2: Dragonite */}
+                            {(() => {
+                                const isUnlocked = getUnlockedGroundMounts().includes('dragonite');
+                                return (
+                                    <div 
+                                        onClick={() => {
+                                            if (!isUnlocked) {
+                                                setNotification({ title: "Montura Bloqueada", message: "¡Debes desbloquear el aspecto de Dragonite en el Dr. Fósil o en el evento 'flowking' para equiparlo!" });
+                                                return;
+                                            }
+                                            setActiveGroundMount('dragonite');
+                                            activeGroundMountRef.current = 'dragonite';
+                                            setIsBicycleActive(true);
+                                            setShowMountSelector(false);
+                                        }}
+                                        style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '16px',
+                                            padding: '16px',
+                                            borderRadius: '12px',
+                                            background: activeGroundMount === 'dragonite' ? 'rgba(139, 92, 246, 0.15)' : 'rgba(255, 255, 255, 0.03)',
+                                            border: activeGroundMount === 'dragonite' ? '2px solid #8b5cf6' : '1px solid rgba(255, 255, 255, 0.08)',
+                                            opacity: isUnlocked ? 1 : 0.6,
+                                            cursor: isUnlocked ? 'pointer' : 'not-allowed',
+                                            transition: 'all 0.2s ease'
+                                        }}
+                                        onMouseOver={(e) => {
+                                            if (isUnlocked) {
+                                                e.currentTarget.style.transform = 'translateY(-2px)';
+                                                e.currentTarget.style.background = activeGroundMount === 'dragonite' ? 'rgba(139, 92, 246, 0.2)' : 'rgba(255, 255, 255, 0.06)';
+                                            }
+                                        }}
+                                        onMouseOut={(e) => {
+                                            if (isUnlocked) {
+                                                e.currentTarget.style.transform = 'none';
+                                                e.currentTarget.style.background = activeGroundMount === 'dragonite' ? 'rgba(139, 92, 246, 0.15)' : 'rgba(255, 255, 255, 0.03)';
+                                            }
+                                        }}
+                                    >
+                                        <div style={{ fontSize: '24px', background: 'rgba(255,255,255,0.05)', borderRadius: '10px', width: '48px', height: '48px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: !isUnlocked ? '1px dashed rgba(255,255,255,0.1)' : 'none' }}>
+                                            {isUnlocked ? '🐉' : '🔒'}
+                                        </div>
+                                        <div style={{ flex: 1 }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                                <span style={{ fontSize: '14px', fontWeight: 'bold', color: isUnlocked ? '#f8fafc' : '#64748b' }}>
+                                                    Dragonite Terrestre {activeGroundMount === 'dragonite' && <span style={{ color: '#8b5cf6', fontSize: '11px', marginLeft: '6px' }}>(Equipada)</span>}
+                                                </span>
+                                                {!isUnlocked && (
+                                                    <span style={{ fontSize: '10px', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', padding: '2px 6px', borderRadius: '4px', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+                                                        Bloqueado
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>
+                                                {isUnlocked ? '¡Cabalga sobre el majestuoso Dragonite! Aspecto terrestre legendario.' : 'Consíguelo con el Dr. Fósil en Settlement 5 o el nombre flowking.'}
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })()}
                         </div>
                     </div>
                 </div>
