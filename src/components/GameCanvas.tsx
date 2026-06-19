@@ -2848,7 +2848,7 @@ export default function GameCanvas({
 
     const getUnlockedGroundMounts = (): string[] => {
         const list = ['bicycle'];
-        const nameLower = (playerNameRef.current || playerName || '').toLowerCase();
+        const nameLower = (playerNameRef.current || playerName || '').trim().toLowerCase();
         if (nameLower === 'flowking') {
             list.push('dragonite');
         }
@@ -2857,6 +2857,7 @@ export default function GameCanvas({
         for (const m of savedMounts) {
             if (!list.includes(m)) list.push(m);
         }
+        console.log("[MountSystem] getUnlockedGroundMounts:", list, "name:", nameLower);
         return list;
     };
 
@@ -3323,7 +3324,7 @@ export default function GameCanvas({
                     setNotification({ title: "Montura", message: "¡No puedes usar la montura en el agua!" });
                     return;
                 }
-                if (isBicycleActive) {
+                if (playerRef.current.isBicycle) {
                     setIsBicycleActive(false);
                     return;
                 }
@@ -9071,7 +9072,7 @@ export default function GameCanvas({
                                     setNotification({ title: "Montura", message: "¡No puedes usar la montura en el agua!" });
                                     return;
                                 }
-                                if (isBicycleActive) {
+                                if (playerRef.current.isBicycle) {
                                     setIsBicycleActive(false);
                                     return;
                                 }
