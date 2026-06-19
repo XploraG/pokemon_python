@@ -66,5 +66,26 @@
         "duration_minutes": 5,
         "description": "Sin encuentros salvajes por 5 min",
         "sprite": "src/assets/items/sprites/repel.png"
+    },
+    "bicycle": {
+        "name": "Bicicleta",
+        "price": 5000,
+        "effect": "ground_mount",
+        "description": "Bicicleta clásica para viajar velozmente por tierra.",
+        "sprite": "src/assets/items/sprites/bicycle.png"
+    },
+    "lapras_mount": {
+        "name": "Montura de Lapras",
+        "price": 10000,
+        "effect": "surf_mount",
+        "description": "Te permite surfear en el agua y cruzar lagos y mares.",
+        "sprite": "src/assets/items/sprites/lapras_mount.png"
+    },
+    "dragonite_mount": {
+        "name": "Dragonite Terrestre",
+        "price": 25000,
+        "effect": "ground_mount",
+        "description": "¡Aspecto legendario para viajar por tierra! (Skin de Dragonite).",
+        "sprite": "src/assets/items/sprites/dragonite_mount.png"
     }
 }

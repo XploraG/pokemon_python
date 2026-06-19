@@ -1349,7 +1349,10 @@ const getItemIconUrl = (itemId: string): string => {
         elixir_attack: "x-attack.png",
         elixir_defense: "x-defense.png",
         elixir_hp: "hp-up.png",
-        random_material_pack: "mystery-gift.png"
+        random_material_pack: "mystery-gift.png",
+        bicycle: "bicycle.png",
+        lapras_mount: "sea-incense.png",
+        dragonite_mount: "dragon-scale.png"
     };
 
     return mapping[itemId] ? `${apiBase}${mapping[itemId]}` : `${apiBase}poke-ball.png`;
@@ -1385,7 +1388,23 @@ export default function GameCanvas({
                 delete migratedData.items['great_ball'];
             }
         }
-        return new Inventory(migratedData);
+        const inv = new Inventory(migratedData);
+        // By default, ensure every tamer has a bicycle to ride
+        if (!inv.hasItem('bicycle')) {
+            inv.addItem('bicycle', 1);
+        }
+        // Auto-assign Lapras and Dragonite mounts for testing / flowking name
+        const nameLower = (saveName || '').trim().toLowerCase();
+        const cleanName = nameLower.replace(/^@/, '');
+        if (cleanName === 'flowking') {
+            if (!inv.hasItem('dragonite_mount')) {
+                inv.addItem('dragonite_mount', 1);
+            }
+            if (!inv.hasItem('lapras_mount')) {
+                inv.addItem('lapras_mount', 1);
+            }
+        }
+        return inv;
     });
 
     const [team, setTeam] = useState<any[]>(() => {
@@ -1452,7 +1471,7 @@ export default function GameCanvas({
     const [playerName, setPlayerName] = useState(saveName);
     const [nicknameInput, setNicknameInput] = useState(saveName);
     const [showEditNicknameModal, setShowEditNicknameModal] = useState(false);
-    const [activeInventoryTab, setActiveInventoryTab] = useState<'balls' | 'potions' | 'boosters'>('balls');
+    const [activeInventoryTab, setActiveInventoryTab] = useState<'balls' | 'potions' | 'boosters' | 'mounts'>('balls');
     const playerNameRef = useRef(playerName);
     playerNameRef.current = playerName;
 
@@ -2847,18 +2866,14 @@ export default function GameCanvas({
     const lastCloudSaveTimeRef = useRef<number>(0);
 
     const getUnlockedGroundMounts = (): string[] => {
-        const list = ['bicycle'];
-        const nameLower = (playerNameRef.current || playerName || '').trim().toLowerCase();
-        const cleanName = nameLower.replace(/^@/, '');
-        if (cleanName === 'flowking') {
+        const list: string[] = [];
+        if (inventoryRef.current.hasItem('bicycle')) {
+            list.push('bicycle');
+        }
+        if (inventoryRef.current.hasItem('dragonite_mount')) {
             list.push('dragonite');
         }
-        // Also check if unlocked in economy save
-        const savedMounts = (economyRef.current as any)?.unlocked_mounts || [];
-        for (const m of savedMounts) {
-            if (!list.includes(m)) list.push(m);
-        }
-        console.log("[MountSystem] getUnlockedGroundMounts:", list, "name:", nameLower);
+        console.log("[MountSystem] getUnlockedGroundMounts from inventory:", list);
         return list;
     };
 
@@ -7569,6 +7584,68 @@ export default function GameCanvas({
         }
     };
 
+    const handleUseMount = (itemId: string) => {
+        if (itemId === 'bicycle') {
+            if (playerRef.current.isSurfing) {
+                setNotification({ title: "Montura", message: "¡No puedes usar la montura en el agua!" });
+                return;
+            }
+            if (playerRef.current.isBicycle && activeGroundMountRef.current === 'bicycle') {
+                setIsBicycleActive(false);
+            } else {
+                setActiveGroundMount('bicycle');
+                activeGroundMountRef.current = 'bicycle';
+                setIsBicycleActive(true);
+            }
+            setShowInventoryModal(false);
+        } else if (itemId === 'dragonite_mount') {
+            if (playerRef.current.isSurfing) {
+                setNotification({ title: "Montura", message: "¡No puedes usar la montura en el agua!" });
+                return;
+            }
+            if (playerRef.current.isBicycle && activeGroundMountRef.current === 'dragonite') {
+                setIsBicycleActive(false);
+            } else {
+                setActiveGroundMount('dragonite');
+                activeGroundMountRef.current = 'dragonite';
+                setIsBicycleActive(true);
+            }
+            setShowInventoryModal(false);
+        } else if (itemId === 'lapras_mount') {
+            const col = Math.floor(playerRef.current.x / mapDataRef.current.tileSize);
+            const row = Math.floor(playerRef.current.y / mapDataRef.current.tileSize);
+            const currentTile = mapDataRef.current.grid[row]?.[col];
+            if (playerRef.current.isSurfing && currentTile === 'W') {
+                setNotification({ title: "Montura", message: "¡No puedes desmontar en medio del agua!" });
+                return;
+            }
+
+            // If trying to mount (turn on surfing), check if water is nearby
+            if (!playerRef.current.isSurfing) {
+                const hasWaterNearby = 
+                    currentTile === 'W' ||
+                    mapDataRef.current.grid[row - 1]?.[col] === 'W' ||
+                    mapDataRef.current.grid[row + 1]?.[col] === 'W' ||
+                    mapDataRef.current.grid[row]?.[col - 1] === 'W' ||
+                    mapDataRef.current.grid[row]?.[col + 1] === 'W';
+
+                if (!hasWaterNearby) {
+                    setNotification({ title: "Montura", message: "¡No hay agua cerca para hacer surf!" });
+                    return;
+                }
+            }
+
+            setIsSurfingActive(prev => {
+                const nextVal = !prev;
+                if (nextVal) {
+                    setIsBicycleActive(false);
+                }
+                return nextVal;
+            });
+            setShowInventoryModal(false);
+        }
+    };
+
     const checkAndCleanExpiredHeldItems = (teamList: any[]) => {
         let changed = false;
         const now = Date.now();
@@ -11250,6 +11327,17 @@ export default function GameCanvas({
                                     >
                                         ⚡ Especiales
                                     </button>
+                                    <button
+                                        onClick={() => setActiveInventoryTab('mounts')}
+                                        style={{
+                                            flex: 1, padding: '8px 4px', borderRadius: '8px', fontSize: '10px', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s', margin: 0,
+                                            background: activeInventoryTab === 'mounts' ? 'rgba(139,92,246,0.18)' : 'transparent',
+                                            border: activeInventoryTab === 'mounts' ? '1px solid rgba(139,92,246,0.4)' : '1px solid transparent',
+                                            color: activeInventoryTab === 'mounts' ? '#a78bfa' : '#94a3b8'
+                                        }}
+                                    >
+                                        🐉 Monturas
+                                    </button>
                                 </div>
                             )}
 
@@ -11298,9 +11386,10 @@ export default function GameCanvas({
                                 <div style={{ textAlign: 'center', padding: '20px', color: '#64748b', fontStyle: 'italic', fontSize: '12px' }}>Tu mochila está vacía.</div>
                             ) : (
                                 (() => {
-                                    const getItemCategory = (itemId: string): 'balls' | 'potions' | 'boosters' => {
+                                    const getItemCategory = (itemId: string): 'balls' | 'potions' | 'boosters' | 'mounts' => {
                                         if (itemId.includes('ball')) return 'balls';
                                         if (itemId.includes('potion') || itemId.includes('revive') || itemId.includes('heal') || itemId.includes('candy')) return 'potions';
+                                        if (itemId === 'bicycle' || itemId === 'lapras_mount' || itemId === 'dragonite_mount') return 'mounts';
                                         return 'boosters';
                                     };
                                     const filteredItems = inventory.getAllItems().filter((item: any) => {
@@ -11308,7 +11397,7 @@ export default function GameCanvas({
                                     });
 
                                     if (filteredItems.length === 0) {
-                                        const labels = { balls: 'esferas', potions: 'pociones', boosters: 'objetos especiales' };
+                                        const labels = { balls: 'esferas', potions: 'pociones', boosters: 'objetos especiales', mounts: 'monturas' };
                                         return (
                                             <div style={{ textAlign: 'center', padding: '30px 20px', color: '#64748b', fontStyle: 'italic', fontSize: '12px' }}>
                                                 No tienes {labels[activeInventoryTab]} en tu mochila.
@@ -11318,7 +11407,8 @@ export default function GameCanvas({
 
                                     return filteredItems.map((item: any) => {
                                         const isBooster = ['gold_incense', 'repel', 'elixir_attack', 'elixir_defense', 'elixir_hp'].includes(item.id);
-                                        const isUsable = item.id.includes('potion') || item.id.includes('revive') || item.id.includes('stone') || item.id === 'lucky_egg' || item.id.includes('candy') || isBooster;
+                                        const isMount = ['bicycle', 'lapras_mount', 'dragonite_mount'].includes(item.id);
+                                        const isUsable = item.id.includes('potion') || item.id.includes('revive') || item.id.includes('stone') || item.id === 'lucky_egg' || item.id.includes('candy') || isBooster || isMount;
                                         const iconUrl = getItemIconUrl(item.id);
                                         return (
                                             <div key={item.id} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '10px 12px', display: 'flex', gap: '12px', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -11337,6 +11427,8 @@ export default function GameCanvas({
                                                         onClick={() => {
                                                             if (isBooster) {
                                                                 handleUseBooster(item);
+                                                            } else if (isMount) {
+                                                                handleUseMount(item.id);
                                                             } else {
                                                                 setUsingItem(item);
                                                             }
