@@ -787,7 +787,9 @@ const makeColorTransparent = (imgElement: HTMLImageElement, colorHex: string) =>
         }
 
         // If top-left pixel has alpha > 0, we prioritize it as it matches the actual drawn pixels in canvas context
-        if (data[3] > 0) {
+        // Exception: For custom mounts (Lapras/Dragonite), we skip the top-left pixel check so it uses our exact target color
+        const isMount = imgElement.src.includes('lapras_mount') || imgElement.src.includes('dragonite_mount');
+        if (data[3] > 0 && !isMount) {
             rTarget = data[0];
             gTarget = data[1];
             bTarget = data[2];
@@ -3645,10 +3647,10 @@ export default function GameCanvas({
                                         col = 3 + frame;
                                         row = 0;
                                     } else if (player.moveDirection === 'left') {
-                                        col = frame;
+                                        col = 3 + frame;
                                         row = 1;
                                     } else if (player.moveDirection === 'right') {
-                                        col = 3 + frame;
+                                        col = frame;
                                         row = 1;
                                     }
 
@@ -3656,8 +3658,8 @@ export default function GameCanvas({
                                     const isMoving = keysPressed.current['w'] || keysPressed.current['s'] || keysPressed.current['a'] || keysPressed.current['d'] || joystickActive;
                                     if (!isMoving) {
                                         if (player.moveDirection === 'up') col = 4;
-                                        else if (player.moveDirection === 'left') col = 1;
-                                        else if (player.moveDirection === 'right') col = 4;
+                                        else if (player.moveDirection === 'left') col = 4;
+                                        else if (player.moveDirection === 'right') col = 1;
                                         else col = 1; // Down
                                     }
 
@@ -3851,10 +3853,10 @@ export default function GameCanvas({
                                             col = 3 + frame;
                                             row = 0;
                                         } else if (otherPlayer.dir === 'left') {
-                                            col = frame;
+                                            col = 3 + frame;
                                             row = 1;
                                         } else if (otherPlayer.dir === 'right') {
-                                            col = 3 + frame;
+                                            col = frame;
                                             row = 1;
                                         }
 
@@ -3862,8 +3864,8 @@ export default function GameCanvas({
                                         const otherPlayerIsMoving = otherPlayer.animFrame !== undefined;
                                         if (!otherPlayerIsMoving) {
                                             if (otherPlayer.dir === 'up') col = 4;
-                                            else if (otherPlayer.dir === 'left') col = 1;
-                                            else if (otherPlayer.dir === 'right') col = 4;
+                                            else if (otherPlayer.dir === 'left') col = 4;
+                                            else if (otherPlayer.dir === 'right') col = 1;
                                             else col = 1; // Down
                                         }
 
