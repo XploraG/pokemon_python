@@ -1912,13 +1912,29 @@ export default function GameCanvas({
     };
 
     const handleTravelTo = async (mapPath: string) => {
+        // Start fly up animation
+        setShowTravelModal(false);
+        setShowMenuModal(false);
         setIsTravelling(true);
+        flyStateRef.current = 'flying_up';
+        flyOffsetYRef.current = 0;
+
+        // Wait for player to fly off-screen
+        await new Promise<void>((resolve) => {
+            const check = setInterval(() => {
+                if (flyOffsetYRef.current <= -350) {
+                    clearInterval(check);
+                    resolve();
+                }
+            }, 50);
+        });
+
         const adManager = AdManager.getInstance();
         const res = await adManager.showRewardedAd({
             monetagZoneId: "34912",
             adsterraUrl: process.env.NEXT_PUBLIC_ADSTERRA_DIRECT_LINK || "YOUR_ADSTERRA_DIRECT_LINK"
         });
-        setIsTravelling(false);
+
         if (res.success) {
             let spawnX = 600;
             let spawnY = 780; // 748 + 32: Spawn 1 tile down to avoid auto-reentry loop
@@ -1932,13 +1948,34 @@ export default function GameCanvas({
                 prepareProceduralMap(mapPath);
             }
             
-            setShowTravelModal(false);
-            setShowMenuModal(false);
+            // Disable surfing mount if traveling to land
+            setIsSurfingActive(false);
+
             transitionToMap(mapPath, spawnX, spawnY);
+            
+            // Start fly down animation on the destination map
+            flyStateRef.current = 'flying_down';
+            flyOffsetYRef.current = -350;
+
             showNotification("Viaje Rápido", `Te has teletransportado a ${getMapDisplayName(mapPath)}.`);
         } else {
+            // Ad was cancelled - fly back down to original position
+            flyStateRef.current = 'flying_down';
+            flyOffsetYRef.current = -350;
             showNotification("Anuncio Cancelado", `No se pudo realizar el viaje. Detalle: ${res.error || 'Anuncio cancelado o no disponible'}`);
         }
+
+        // Wait for player to land on the ground
+        await new Promise<void>((resolve) => {
+            const check = setInterval(() => {
+                if (flyStateRef.current === 'idle') {
+                    clearInterval(check);
+                    resolve();
+                }
+            }, 50);
+        });
+
+        setIsTravelling(false);
     };
     
     // Engine loading flags
@@ -2789,6 +2826,11 @@ export default function GameCanvas({
     const playerSpriteRef = useRef<HTMLCanvasElement | HTMLImageElement | null>(null);
     const bicycleSpriteRef = useRef<HTMLCanvasElement | HTMLImageElement | null>(null);
     const surfSpriteRef = useRef<HTMLCanvasElement | HTMLImageElement | null>(null);
+    const flyingSpriteRef = useRef<HTMLCanvasElement | HTMLImageElement | null>(null);
+    const flyStateRef = useRef<'idle' | 'flying_up' | 'flying_down'>('idle');
+    const flyOffsetYRef = useRef<number>(0);
+    const flyFrameRef = useRef<number>(0);
+    const flyTimerRef = useRef<number>(0);
     const keysPressed = useRef<Record<string, boolean>>({});
     const lastCloudSaveTimeRef = useRef<number>(0);
 
@@ -2849,6 +2891,14 @@ export default function GameCanvas({
                     bicycleImg.onerror = res;
                 });
 
+                const flyingImg = new Image();
+                flyingImg.crossOrigin = "anonymous";
+                flyingImg.src = '/assets/entities/player/imgs/Flying (32x32).png';
+                const flyingImgPromise = new Promise((res) => {
+                    flyingImg.onload = res;
+                    flyingImg.onerror = res;
+                });
+
                 const surfImg = new Image();
                 surfImg.crossOrigin = "anonymous";
                 surfImg.src = '/assets/entities/player/imgs/lapras_mount.png';
@@ -2858,11 +2908,12 @@ export default function GameCanvas({
                 });
 
                 // Load player config, player sprites, and map JSON in parallel
-                const [playerConfig, _, __, ___, rawMapJson] = await Promise.all([
+                const [playerConfig, _, __, ___, ____, rawMapJson] = await Promise.all([
                     cachedFetchJson('/assets/entities/player/main.json'),
                     playerImgPromise,
                     bicycleImgPromise,
                     surfImgPromise,
+                    flyingImgPromise,
                     cachedFetchJson(currentMapPath)
                 ]);
 
@@ -2891,6 +2942,7 @@ export default function GameCanvas({
                 playerSpriteRef.current = makeColorTransparent(playerImg, playerColorKey);
                 bicycleSpriteRef.current = makeColorTransparent(bicycleImg, playerColorKey);
                 surfSpriteRef.current = makeColorTransparent(surfImg, '#FF00FF');
+                flyingSpriteRef.current = makeColorTransparent(flyingImg, playerColorKey);
 
                 setLoadingMessage('Preparando el entorno...');
 
@@ -3299,6 +3351,25 @@ export default function GameCanvas({
             const player = playerRef.current;
             const mapData = mapDataRef.current;
 
+            // Update fly animation
+            if (flyStateRef.current === 'flying_up') {
+                flyOffsetYRef.current -= 8;
+                flyTimerRef.current++;
+                if (flyTimerRef.current % 8 === 0) {
+                    flyFrameRef.current = (flyFrameRef.current + 1) % 2;
+                }
+            } else if (flyStateRef.current === 'flying_down') {
+                flyOffsetYRef.current += 8;
+                flyTimerRef.current++;
+                if (flyTimerRef.current % 8 === 0) {
+                    flyFrameRef.current = (flyFrameRef.current + 1) % 2;
+                }
+                if (flyOffsetYRef.current >= 0) {
+                    flyOffsetYRef.current = 0;
+                    flyStateRef.current = 'idle';
+                }
+            }
+
             // 1. Process movement animation & inputs
             processMovementRef.current();
 
@@ -3427,138 +3498,154 @@ export default function GameCanvas({
                         sprite = bicycleSpriteRef.current;
                     }
                     if (sprite) {
-                        // Draw local player aura
-                        const synergy = getMedalSynergy(economyRef.current.equipped_medals);
-                        const activeAura = synergy ? synergy.name : null;
-                        if (activeAura && synergyAuras[activeAura]) {
-                            const colors = synergyAuras[activeAura];
-                            const radiusX = 16;
-                            const radiusY = 6;
-                            const grad = c.createRadialGradient(
-                                player.x - camX + offsetX,
-                                player.y - camY - 2 + offsetY,
-                                2,
-                                player.x - camX + offsetX,
-                                player.y - camY - 2 + offsetY,
-                                radiusX
+                        if (flyStateRef.current !== 'idle' && flyingSpriteRef.current) {
+                            const frame = flyFrameRef.current;
+                            const scale = 2.5;
+                            c.drawImage(
+                                flyingSpriteRef.current,
+                                frame * 32, // source x
+                                0, // source y
+                                32, // source w
+                                32, // source h
+                                player.x - camX - (32 * scale) / 2 + offsetX,
+                                player.y - camY - 32 * scale + offsetY + flyOffsetYRef.current,
+                                32 * scale,
+                                32 * scale
                             );
-                            grad.addColorStop(0, colors.color1);
-                            grad.addColorStop(1, colors.color2);
-                            
-                            c.save();
-                            c.beginPath();
-                            if (c.ellipse) {
-                                c.ellipse(
+                        } else {
+                            // Draw local player aura
+                            const synergy = getMedalSynergy(economyRef.current.equipped_medals);
+                            const activeAura = synergy ? synergy.name : null;
+                            if (activeAura && synergyAuras[activeAura]) {
+                                const colors = synergyAuras[activeAura];
+                                const radiusX = 16;
+                                const radiusY = 6;
+                                const grad = c.createRadialGradient(
                                     player.x - camX + offsetX,
                                     player.y - camY - 2 + offsetY,
-                                    radiusX,
-                                    radiusY,
-                                    0,
-                                    0,
-                                    2 * Math.PI
+                                    2,
+                                    player.x - camX + offsetX,
+                                    player.y - camY - 2 + offsetY,
+                                    radiusX
                                 );
+                                grad.addColorStop(0, colors.color1);
+                                grad.addColorStop(1, colors.color2);
+                                
+                                c.save();
+                                c.beginPath();
+                                if (c.ellipse) {
+                                    c.ellipse(
+                                        player.x - camX + offsetX,
+                                        player.y - camY - 2 + offsetY,
+                                        radiusX,
+                                        radiusY,
+                                        0,
+                                        0,
+                                        2 * Math.PI
+                                    );
+                                } else {
+                                    c.arc(
+                                        player.x - camX + offsetX,
+                                        player.y - camY - 2 + offsetY,
+                                        radiusX,
+                                        0,
+                                        2 * Math.PI
+                                    );
+                                }
+                                c.fillStyle = grad;
+                                c.fill();
+                                c.restore();
+                            }
+
+                            let dirOffset = 0;
+                            let srcX = 0;
+                            let srcY = 12;
+                            let frameW = 15;
+                            let frameH = 20;
+                            const scale = 2.5;
+                            const surfYOffset = player.isSurfing ? -4 : 0;
+
+                            if (player.isBicycle) {
+                                if (player.moveDirection === 'left') dirOffset = 192;
+                                else if (player.moveDirection === 'up') dirOffset = 96;
+                                else if (player.moveDirection === 'right') dirOffset = 288;
+                                else dirOffset = 0;
+
+                                srcX = dirOffset + player.animFrame * 32;
+                                srcY = 0;
+                                frameW = 32;
+                                frameH = 32;
                             } else {
-                                c.arc(
-                                    player.x - camX + offsetX,
-                                    player.y - camY - 2 + offsetY,
-                                    radiusX,
-                                    0,
-                                    2 * Math.PI
+                                if (player.moveDirection === 'left') dirOffset = 48;
+                                West: if (player.moveDirection === 'up') dirOffset = 96;
+                                else if (player.moveDirection === 'right') dirOffset = 144;
+                                else dirOffset = 0;
+
+                                srcX = dirOffset + player.animFrame * 16;
+                                srcY = 12;
+                                frameW = 15;
+                                frameH = 20;
+                            }
+
+                            // Draw Lapras mount under the player if surfing
+                            if (player.isSurfing && surfSpriteRef.current) {
+                                let laprasRow = 0; // Down
+                                if (player.moveDirection === 'up') laprasRow = 1;
+                                else if (player.moveDirection === 'left') laprasRow = 2;
+                                else if (player.moveDirection === 'right') laprasRow = 3;
+
+                                const frame = player.animFrame;
+                                const cellX = frame * 256;
+                                const cellY = laprasRow * 256;
+                                
+                                const laprasW = 48;
+                                const laprasH = 48;
+                                
+                                c.drawImage(
+                                    surfSpriteRef.current,
+                                    cellX + 68,
+                                    cellY + 80,
+                                    120,
+                                    120,
+                                    player.x - camX - laprasW / 2 + offsetX,
+                                    player.y - camY - laprasH / 2 - 4 + offsetY,
+                                    laprasW,
+                                    laprasH
                                 );
                             }
-                            c.fillStyle = grad;
-                            c.fill();
-                            c.restore();
-                        }
 
-                        let dirOffset = 0;
-                        let srcX = 0;
-                        let srcY = 12;
-                        let frameW = 15;
-                        let frameH = 20;
-                        const scale = 2.5;
-                        const surfYOffset = player.isSurfing ? -4 : 0;
-
-                        if (player.isBicycle) {
-                            if (player.moveDirection === 'left') dirOffset = 192;
-                            else if (player.moveDirection === 'up') dirOffset = 96;
-                            else if (player.moveDirection === 'right') dirOffset = 288;
-                            else dirOffset = 0;
-
-                            srcX = dirOffset + player.animFrame * 32;
-                            srcY = 0;
-                            frameW = 32;
-                            frameH = 32;
-                        } else {
-                            if (player.moveDirection === 'left') dirOffset = 48;
-                            else if (player.moveDirection === 'up') dirOffset = 96;
-                            else if (player.moveDirection === 'right') dirOffset = 144;
-                            else dirOffset = 0;
-
-                            srcX = dirOffset + player.animFrame * 16;
-                            srcY = 12;
-                            frameW = 15;
-                            frameH = 20;
-                        }
-
-                        // Draw Lapras mount under the player if surfing
-                        if (player.isSurfing && surfSpriteRef.current) {
-                            let laprasRow = 0; // Down
-                            if (player.moveDirection === 'up') laprasRow = 1;
-                            else if (player.moveDirection === 'left') laprasRow = 2;
-                            else if (player.moveDirection === 'right') laprasRow = 3;
-
-                            const frame = player.animFrame;
-                            const cellX = frame * 256;
-                            const cellY = laprasRow * 256;
-                            
-                            const laprasW = 48;
-                            const laprasH = 48;
-                            
                             c.drawImage(
-                                surfSpriteRef.current,
-                                cellX + 68,
-                                cellY + 80,
-                                120,
-                                120,
-                                player.x - camX - laprasW / 2 + offsetX,
-                                player.y - camY - laprasH / 2 - 4 + offsetY,
-                                laprasW,
-                                laprasH
+                                sprite,
+                                srcX, // source x
+                                srcY, // source y
+                                frameW,
+                                frameH,
+                                player.x - camX - (frameW * scale) / 2 + offsetX, // center player on coordinate
+                                player.y - camY - frameH * scale + offsetY + surfYOffset, // stand player on coordinate
+                                frameW * scale,
+                                frameH * scale
+                            );
+
+                            // Draw name tag above local player's head
+                            c.font = "bold 8px monospace";
+                            const nameTag = playerNameRef.current || "Tamer";
+                            const textWidth = c.measureText(nameTag).width;
+                            
+                            c.fillStyle = "rgba(0, 0, 0, 0.5)";
+                            c.fillRect(
+                                player.x - camX - textWidth / 2 - 3 + offsetX,
+                                player.y - camY - frameH * scale - 14 + offsetY,
+                                textWidth + 6,
+                                11
+                            );
+                            
+                            c.fillStyle = "#ffe082"; // Light yellow for local player to easily distinguish themselves
+                            c.fillText(
+                                nameTag,
+                                player.x - camX - textWidth / 2 + offsetX,
+                                player.y - camY - frameH * scale - 6 + offsetY
                             );
                         }
-
-                        c.drawImage(
-                            sprite,
-                            srcX, // source x
-                            srcY, // source y
-                            frameW,
-                            frameH,
-                            player.x - camX - (frameW * scale) / 2 + offsetX, // center player on coordinate
-                            player.y - camY - frameH * scale + offsetY + surfYOffset, // stand player on coordinate
-                            frameW * scale,
-                            frameH * scale
-                        );
-
-                        // Draw name tag above local player's head
-                        c.font = "bold 8px monospace";
-                        const nameTag = playerNameRef.current || "Tamer";
-                        const textWidth = c.measureText(nameTag).width;
-                        
-                        c.fillStyle = "rgba(0, 0, 0, 0.5)";
-                        c.fillRect(
-                            player.x - camX - textWidth / 2 - 3 + offsetX,
-                            player.y - camY - frameH * scale - 14 + offsetY,
-                            textWidth + 6,
-                            11
-                        );
-                        
-                        c.fillStyle = "#ffe082"; // Light yellow for local player to easily distinguish themselves
-                        c.fillText(
-                            nameTag,
-                            player.x - camX - textWidth / 2 + offsetX,
-                            player.y - camY - frameH * scale - 6 + offsetY
-                        );
                     }
                 }
             });
