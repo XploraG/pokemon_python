@@ -3666,13 +3666,16 @@ export default function GameCanvas({
                                     const colWidth = 1024 / 6;
                                     const rowHeight = 373 / 2;
 
-                                    const mountX = Math.floor(col * colWidth);
-                                    const mountY = Math.floor(row * rowHeight);
-                                    const mountW = Math.floor(colWidth);
-                                    const mountH = Math.floor(rowHeight);
+                                    const cropX = 4;
+                                    const cropY = 4;
 
-                                    const destW = 84;
-                                    const destH = 92;
+                                    const mountX = Math.floor(col * colWidth) + cropX;
+                                    const mountY = Math.floor(row * rowHeight) + cropY;
+                                    const mountW = Math.floor(colWidth) - cropX * 2;
+                                    const mountH = Math.floor(rowHeight) - cropY * 2;
+
+                                    const destW = 84 * (mountW / colWidth);
+                                    const destH = 92 * (mountH / rowHeight);
 
                                     c.drawImage(
                                         dragoniteSpriteRef.current,
@@ -3872,13 +3875,16 @@ export default function GameCanvas({
                                         const colWidth = 1024 / 6;
                                         const rowHeight = 373 / 2;
 
-                                        const mountX = Math.floor(col * colWidth);
-                                        const mountY = Math.floor(row * rowHeight);
-                                        const mountW = Math.floor(colWidth);
-                                        const mountH = Math.floor(rowHeight);
+                                        const cropX = 4;
+                                        const cropY = 4;
 
-                                        const destW = 84;
-                                        const destH = 92;
+                                        const mountX = Math.floor(col * colWidth) + cropX;
+                                        const mountY = Math.floor(row * rowHeight) + cropY;
+                                        const mountW = Math.floor(colWidth) - cropX * 2;
+                                        const mountH = Math.floor(rowHeight) - cropY * 2;
+
+                                        const destW = 84 * (mountW / colWidth);
+                                        const destH = 92 * (mountH / rowHeight);
 
                                         c.drawImage(
                                             dragoniteSpriteRef.current,
