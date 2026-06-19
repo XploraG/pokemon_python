@@ -1,14 +1,20 @@
-const fs = require('fs');
+const sharp = require('sharp');
 
-function getPngDimensions(filePath) {
+async function run() {
     try {
-        const buffer = fs.readFileSync(filePath);
-        const width = buffer.readInt32BE(16);
-        const height = buffer.readInt32BE(20);
-        return { width, height };
-    } catch (e) {
-        return { error: e.message };
+        const imagePath = 'public/assets/entities/player/imgs/lapras_mount.png';
+        const image = sharp(imagePath);
+        const { data, info } = await image.raw().toBuffer({ resolveWithObject: true });
+        
+        console.log("Top-left pixel RGB:", data[0], data[1], data[2]);
+        console.log("Pixel at (10, 10) RGB:", 
+            data[(10 * info.width + 10) * info.channels], 
+            data[(10 * info.width + 10) * info.channels + 1], 
+            data[(10 * info.width + 10) * info.channels + 2]
+        );
+    } catch (err) {
+        console.error("Error:", err);
     }
 }
 
-console.log("Flying (32x32).png dimensions:", getPngDimensions('public/assets/entities/player/imgs/Flying (32x32).png'));
+run();

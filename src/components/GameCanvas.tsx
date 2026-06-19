@@ -795,7 +795,10 @@ const makeColorTransparent = (imgElement: HTMLImageElement, colorHex: string) =>
         }
 
         if (hasTarget) {
-            const tolerance = 25; // High tolerance to handle color profile compressions
+            let tolerance = 25; // High tolerance to handle color profile compressions
+            if (imgElement.src.includes('lapras_mount')) {
+                tolerance = 65; // Extra high tolerance for compressed JPEG artifacts of Lapras mount
+            }
             for (let i = 0; i < data.length; i += 4) {
                 const r = data[i];
                 const g = data[i + 1];
@@ -3594,21 +3597,21 @@ export default function GameCanvas({
                                 else if (player.moveDirection === 'left') laprasRow = 2;
                                 else if (player.moveDirection === 'right') laprasRow = 3;
 
-                                const frame = player.animFrame;
+                                const frame = player.animFrame % 4;
                                 const cellX = frame * 256;
                                 const cellY = laprasRow * 256;
                                 
-                                const laprasW = 48;
-                                const laprasH = 48;
+                                const laprasW = 72;
+                                const laprasH = 72;
                                 
                                 c.drawImage(
                                     surfSpriteRef.current,
-                                    cellX + 68,
-                                    cellY + 80,
-                                    120,
-                                    120,
+                                    cellX,
+                                    cellY,
+                                    256,
+                                    256,
                                     player.x - camX - laprasW / 2 + offsetX,
-                                    player.y - camY - laprasH / 2 - 4 + offsetY,
+                                    player.y - camY - 40 + offsetY,
                                     laprasW,
                                     laprasH
                                 );
@@ -3745,21 +3748,21 @@ export default function GameCanvas({
                                     else if (otherPlayer.dir === 'left') laprasRow = 2;
                                     else if (otherPlayer.dir === 'right') laprasRow = 3;
 
-                                    const frame = otherPlayer.animFrame ?? 0;
+                                    const frame = (otherPlayer.animFrame ?? 0) % 4;
                                     const cellX = frame * 256;
                                     const cellY = laprasRow * 256;
                                     
-                                    const laprasW = 48;
-                                    const laprasH = 48;
+                                    const laprasW = 72;
+                                    const laprasH = 72;
                                     
                                     c.drawImage(
                                         surfSpriteRef.current,
-                                        cellX + 68,
-                                        cellY + 80,
-                                        120,
-                                        120,
+                                        cellX,
+                                        cellY,
+                                        256,
+                                        256,
                                         otherPlayer.x - camX - laprasW / 2 + offsetX,
-                                        otherPlayer.y - camY - laprasH / 2 - 4 + offsetY,
+                                        otherPlayer.y - camY - 40 + offsetY,
                                         laprasW,
                                         laprasH
                                     );
