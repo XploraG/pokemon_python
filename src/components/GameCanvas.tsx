@@ -1922,7 +1922,7 @@ export default function GameCanvas({
         // Wait for player to fly off-screen
         await new Promise<void>((resolve) => {
             const check = setInterval(() => {
-                if (flyOffsetYRef.current <= -350) {
+                if (flyOffsetYRef.current <= -500) {
                     clearInterval(check);
                     resolve();
                 }
@@ -1955,13 +1955,13 @@ export default function GameCanvas({
             
             // Start fly down animation on the destination map
             flyStateRef.current = 'flying_down';
-            flyOffsetYRef.current = -350;
+            flyOffsetYRef.current = -500;
 
             showNotification("Viaje Rápido", `Te has teletransportado a ${getMapDisplayName(mapPath)}.`);
         } else {
             // Ad was cancelled - fly back down to original position
             flyStateRef.current = 'flying_down';
-            flyOffsetYRef.current = -350;
+            flyOffsetYRef.current = -500;
             showNotification("Anuncio Cancelado", `No se pudo realizar el viaje. Detalle: ${res.error || 'Anuncio cancelado o no disponible'}`);
         }
 
@@ -3353,15 +3353,15 @@ export default function GameCanvas({
 
             // Update fly animation
             if (flyStateRef.current === 'flying_up') {
-                flyOffsetYRef.current -= 8;
+                flyOffsetYRef.current -= 2;
                 flyTimerRef.current++;
-                if (flyTimerRef.current % 8 === 0) {
+                if (flyTimerRef.current % 12 === 0) {
                     flyFrameRef.current = (flyFrameRef.current + 1) % 2;
                 }
             } else if (flyStateRef.current === 'flying_down') {
-                flyOffsetYRef.current += 8;
+                flyOffsetYRef.current += 2;
                 flyTimerRef.current++;
-                if (flyTimerRef.current % 8 === 0) {
+                if (flyTimerRef.current % 12 === 0) {
                     flyFrameRef.current = (flyFrameRef.current + 1) % 2;
                 }
                 if (flyOffsetYRef.current >= 0) {
