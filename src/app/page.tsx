@@ -155,9 +155,11 @@ export default function Home() {
         const species = pokemonSpeciesList.find((s: any) => s.id === m.especie_id);
         const speciesName = species ? species.name.toLowerCase() : 'pikachu';
         
+        // Cap level at 99
+        const level = Math.min(m.nivel ?? 5, 99);
         // Bulbapedia HP formula: Math.floor(((2 * base + iv) * level) / 100) + level + 10
         const baseHp = species ? species.hp : 40;
-        const maxHp = Math.floor(((2 * baseHp + m.iv_hp) * m.nivel) / 100) + m.nivel + 10;
+        const maxHp = Math.floor(((2 * baseHp + m.iv_hp) * level) / 100) + level + 10;
         
         let heldItems = m.held_items !== undefined && m.held_items !== null ? m.held_items : [null, null, null, null];
         while (heldItems.length < 4) {
@@ -170,9 +172,9 @@ export default function Home() {
             especie_id: m.especie_id,
             rarity: species ? species.rarity.toLowerCase() : 'common',
             is_evolved: !BASE_STAGE_POKEMON.has(speciesName),
-            level: m.nivel,
+            level: level,
             xp: m.xp,
-            hp: m.hp_actual,
+            hp: Math.min(m.hp_actual, maxHp),
             maxHp: maxHp,
             moves: m.moves || [],
             is_shiny: m.es_shiny,
@@ -267,7 +269,7 @@ export default function Home() {
                             id_captura: uuid,
                             id_jugador: databaseAddress,
                             especie_id: specId,
-                            nivel: p.level ?? 5,
+                            nivel: Math.min(p.level ?? 5, 99),
                             xp: p.xp ?? 0,
                             hp_actual: p.hp ?? 10,
                             iv_hp: ivs.hp,
@@ -304,7 +306,7 @@ export default function Home() {
                             id_captura: uuid,
                             id_jugador: databaseAddress,
                             especie_id: specId,
-                            nivel: p.level ?? 5,
+                            nivel: Math.min(p.level ?? 5, 99),
                             xp: p.xp ?? 0,
                             hp_actual: p.hp ?? 10,
                             iv_hp: ivs.hp,

@@ -4406,6 +4406,10 @@ export default function GameCanvas({
             wildLvl = Math.max(1, avgLvl + 5);
         }
 
+        if (wildLvl > 99) {
+            wildLvl = 99;
+        }
+
         // Water Pokémon pool for lake encounters
         if (isWater) {
             const waterPool = ['poliwag', 'psyduck', 'slowpoke', 'magikarp', 'tentacool', 'shellder', 'horsea'];
@@ -6226,8 +6230,13 @@ export default function GameCanvas({
     const saveLocalEconomy = async (updatedTeam?: any[], updatedPcPokemon?: any[], nameOverride?: string, forceCloud: boolean = true, updatedInventory?: any) => {
         const economyData = economyRef.current.toSaveData();
         const inventoryData = updatedInventory !== undefined ? updatedInventory.toSaveData() : inventoryRef.current.toSaveData();
-        const teamToSave = updatedTeam !== undefined ? updatedTeam : teamRef.current;
-        const pcPokemonToSave = updatedPcPokemon !== undefined ? updatedPcPokemon : pcPokemonRef.current;
+        const rawTeam = updatedTeam !== undefined ? updatedTeam : teamRef.current;
+        const rawPc = updatedPcPokemon !== undefined ? updatedPcPokemon : pcPokemonRef.current;
+        
+        // Cap levels at 99
+        const teamToSave = rawTeam.map((p: any) => p && p.level > 99 ? { ...p, level: 99 } : p);
+        const pcPokemonToSave = rawPc.map((p: any) => p && p.level > 99 ? { ...p, level: 99 } : p);
+
         const activeName = nameOverride !== undefined ? nameOverride : playerNameRef.current;
 
         // Sanitize moves: remove any move ID that doesn't exist in MOVES_DATABASE, cap at 4
@@ -6925,15 +6934,27 @@ export default function GameCanvas({
                         }
                         let currentLvl = activePoke.level ?? 1;
                         let currentXp = (activePoke.xp ?? 0) + xpGained;
+                        if (currentLvl >= 99) {
+                            currentLvl = 99;
+                            currentXp = 0;
+                            xpGained = 0;
+                        }
                         let nextLvlXp = currentLvl * 100;
                         let leveledUp = false;
                         let msg = gymIsOverleveled
                             ? `¡Tu ${activePoke.id} no ganó XP por diferencia de niveles!`
-                            : (activeLuckyEggsCount > 0
-                                ? `¡Tu ${activePoke.id} ganó ${xpGained} XP! (${baseXP} base + ${xpGained - baseXP} Huevo Suerte 🥚)`
-                                : `¡Tu ${activePoke.id} ganó ${xpGained} XP!`);
+                            : (activePoke.level >= 99
+                                ? `¡Tu ${activePoke.id} ya está en su nivel máximo (99)!`
+                                : (activeLuckyEggsCount > 0
+                                    ? `¡Tu ${activePoke.id} ganó ${xpGained} XP! (${baseXP} base + ${xpGained - baseXP} Huevo Suerte 🥚)`
+                                    : `¡Tu ${activePoke.id} ganó ${xpGained} XP!`));
 
                         while (currentXp >= nextLvlXp) {
+                            if (currentLvl >= 99) {
+                                currentLvl = 99;
+                                currentXp = 0;
+                                break;
+                            }
                             currentXp -= nextLvlXp;
                             currentLvl += 1;
                             nextLvlXp = currentLvl * 100;
@@ -7074,15 +7095,27 @@ export default function GameCanvas({
                     
                     let currentLvl = activePoke.level ?? 1;
                     let currentXp = (activePoke.xp ?? 0) + xpGained;
+                    if (currentLvl >= 99) {
+                        currentLvl = 99;
+                        currentXp = 0;
+                        xpGained = 0;
+                    }
                     let nextLvlXp = currentLvl * 100;
                     let leveledUp = false;
                     let msg = gymIsOverleveled
                         ? `¡Tu ${activePoke.id} no ganó XP por diferencia de niveles!`
-                        : (activeLuckyEggsCount > 0
-                            ? `¡Tu ${activePoke.id} ganó ${xpGained} XP! (${baseXP} base + ${xpGained - baseXP} Huevo Suerte 🥚)`
-                            : `¡Tu ${activePoke.id} ganó ${xpGained} XP!`);
+                        : (activePoke.level >= 99
+                            ? `¡Tu ${activePoke.id} ya está en su nivel máximo (99)!`
+                            : (activeLuckyEggsCount > 0
+                                ? `¡Tu ${activePoke.id} ganó ${xpGained} XP! (${baseXP} base + ${xpGained - baseXP} Huevo Suerte 🥚)`
+                                : `¡Tu ${activePoke.id} ganó ${xpGained} XP!`));
                     
                     while (currentXp >= nextLvlXp) {
+                        if (currentLvl >= 99) {
+                            currentLvl = 99;
+                            currentXp = 0;
+                            break;
+                        }
                         currentXp -= nextLvlXp;
                         currentLvl += 1;
                         nextLvlXp = currentLvl * 100;
@@ -7762,9 +7795,18 @@ export default function GameCanvas({
         const itemInfo = inventoryRef.current.getItemInfo(usingItem.id);
 
         if (usingItem.id === 'rare_candy' || usingItem.id === 'mega_candy') {
-            const levelsGained = usingItem.id === 'rare_candy' ? 1 : 5;
             const currentLvl = target.level ?? 1;
-            const newLvl = currentLvl + levelsGained;
+            if (currentLvl >= 99) {
+                showNotification("Aviso", "Este Pokémon ya está en su nivel máximo (99).");
+                setUsingItem(null);
+                setShowInventoryModal(false);
+                return;
+            }
+            const levelsGained = usingItem.id === 'rare_candy' ? 1 : 5;
+            let newLvl = currentLvl + levelsGained;
+            if (newLvl > 99) {
+                newLvl = 99;
+            }
 
             // Recalculate stats using the new level
             const stats = getPokemonStats(target.id, newLvl, target.ivs, true, economyRef.current);
