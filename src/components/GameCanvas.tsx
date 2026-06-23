@@ -1421,7 +1421,7 @@ export default function GameCanvas({
                 xp: xp,
                 hp: p.hp !== undefined ? Math.min(p.hp, stats.maxHp) : stats.maxHp,
                 maxHp: stats.maxHp,
-                moves: p.moves || getPokemonMoves(p.id, lvl)
+                moves: (p.moves && p.moves.length > 0) ? p.moves : getPokemonMoves(p.id, lvl)
             };
         });
     });
@@ -1437,7 +1437,7 @@ export default function GameCanvas({
                 xp: xp,
                 hp: p.hp !== undefined ? Math.min(p.hp, stats.maxHp) : stats.maxHp,
                 maxHp: stats.maxHp,
-                moves: p.moves || getPokemonMoves(p.id, lvl)
+                moves: (p.moves && p.moves.length > 0) ? p.moves : getPokemonMoves(p.id, lvl)
             };
         });
     });
@@ -6244,7 +6244,7 @@ export default function GameCanvas({
             (pokeList || []).map(p => {
                 if (!p || !p.moves) return p;
                 const cleanMoves = (p.moves as string[]).filter((m: string) => !!MOVES_DATABASE[m]).slice(0, 4);
-                if (cleanMoves.length === Math.min(p.moves.length, 4) && cleanMoves.length === p.moves.filter((m: string) => !!MOVES_DATABASE[m]).length) return p;
+                if (p.moves.length > 0 && cleanMoves.length === Math.min(p.moves.length, 4) && cleanMoves.length === p.moves.filter((m: string) => !!MOVES_DATABASE[m]).length) return p;
                 // Fill missing slots with species-appropriate fallback
                 const fallbackList = getPokemonMoves(p.id || 'normal', p.level ?? 1);
                 for (const fb of fallbackList) {
@@ -6963,7 +6963,7 @@ export default function GameCanvas({
 
                         let evolved = false;
                         let evolvedName = activePoke.id;
-                        const currentMoves = activePoke.moves || getPokemonMoves(activePoke.id, activePoke.level ?? 1);
+                        const currentMoves = (activePoke.moves && activePoke.moves.length > 0) ? activePoke.moves : getPokemonMoves(activePoke.id, activePoke.level ?? 1);
                         let finalMoves = [...currentMoves];
 
                         if (leveledUp) {
@@ -7126,7 +7126,7 @@ export default function GameCanvas({
                     let evolvedName = activePoke.id;
                     let oldName = activePoke.id;
 
-                    const currentMoves = activePoke.moves || getPokemonMoves(activePoke.id, activePoke.level ?? 1);
+                    const currentMoves = (activePoke.moves && activePoke.moves.length > 0) ? activePoke.moves : getPokemonMoves(activePoke.id, activePoke.level ?? 1);
                     let finalMoves = [...currentMoves];
 
                     if (leveledUp) {
@@ -7812,7 +7812,7 @@ export default function GameCanvas({
             const stats = getPokemonStats(target.id, newLvl, target.ivs, true, economyRef.current);
 
             // Learn new moves if any are available at the new levels
-            const currentMoves = target.moves || getPokemonMoves(target.id, currentLvl);
+            const currentMoves = (target.moves && target.moves.length > 0) ? target.moves : getPokemonMoves(target.id, currentLvl);
             let finalMoves = [...currentMoves];
             let moveLearnMsg = "";
 
@@ -10500,7 +10500,7 @@ export default function GameCanvas({
                                             <>
                                                 {(() => {
                                                     const targetPoke = team[selectedTutorPokeIdx];
-                                                    const currentMoves = targetPoke.moves || getPokemonMoves(targetPoke.id, targetPoke.level);
+                                                    const currentMoves = (targetPoke.moves && targetPoke.moves.length > 0) ? targetPoke.moves : getPokemonMoves(targetPoke.id, targetPoke.level);
                                                     
                                                     // Handle direct learn if fewer than 4 moves
                                                     const learnDirectly = async () => {
@@ -13358,7 +13358,7 @@ export default function GameCanvas({
                 // Calculate current stats using the same formulas as getPokemonStats
                 const currentStats = getPokemonStats(p.id, p.level ?? 5, p.ivs, true, economy);
                 const allMoves = getPokemonAllMovesInfo(p.id);
-                const currentMoves = p.moves || getPokemonMoves(p.id, p.level ?? 5);
+                const currentMoves = (p.moves && p.moves.length > 0) ? p.moves : getPokemonMoves(p.id, p.level ?? 5);
                 const evolutionMsg = getPokemonEvolutionInfo(p.id);
                 const pct = Math.round((p.hp / getPokeMaxHp(p)) * 100);
 
@@ -14093,7 +14093,7 @@ export default function GameCanvas({
                                 {(() => {
                                     const activePoke = team.find((p: any) => p.hp > 0);
                                     if (!activePoke) return null;
-                                    const activePokeMoves = activePoke.moves || getPokemonMoves(activePoke.id, activePoke.level ?? 1);
+                                    const activePokeMoves = (activePoke.moves && activePoke.moves.length > 0) ? activePoke.moves : getPokemonMoves(activePoke.id, activePoke.level ?? 1);
                                     return (activePokeMoves as string[]).map((moveId: string) => {
                                         const m = MOVES_DATABASE[moveId] || { name: moveId, type: 'normal', power: 40 };
                                         const cooldownKey = `${activePoke.id_captura || activePoke.id}_${moveId}`;
@@ -15100,7 +15100,7 @@ export default function GameCanvas({
                                         {(() => {
                                             const activePoke = team.find(p => p.hp > 0);
                                             if (!activePoke) return null;
-                                            const activePokeMoves = activePoke.moves || getPokemonMoves(activePoke.id, activePoke.level ?? 1);
+                                            const activePokeMoves = (activePoke.moves && activePoke.moves.length > 0) ? activePoke.moves : getPokemonMoves(activePoke.id, activePoke.level ?? 1);
                                             return (activePokeMoves as string[]).map((moveId: string) => {
                                                 const m = MOVES_DATABASE[moveId] || { name: moveId, type: 'normal', power: 40 };
                                                 const cooldownKey = `${activePoke.id_captura || activePoke.id}_${moveId}`;
