@@ -66,7 +66,6 @@ export default function Home() {
     const [isConnecting, setIsConnecting] = useState(false);
     const [isMiniKitInstalled, setIsMiniKitInstalled] = useState(false);
     const [mounted, setMounted] = useState(false);
-    const [mockAddressInput, setMockAddressInput] = useState('');
     const [error, setError] = useState<string | null>(null);
 
     // Onboarding states for selecting starter Pokémon
@@ -74,10 +73,6 @@ export default function Home() {
     const [pendingNewAddress, setPendingNewAddress] = useState<string | null>(null);
     const [pendingCustomName, setPendingCustomName] = useState<string | null>(null);
     const [selectedStarter, setSelectedStarter] = useState<string | null>(null);
-
-    // Dev bypass states for normal browsers
-    const [devClickCount, setDevClickCount] = useState(0);
-    const [showDevPanel, setShowDevPanel] = useState(false);
 
     // Landing page states
     const [startedPlaying, setStartedPlaying] = useState(false);
@@ -933,79 +928,11 @@ export default function Home() {
                             </a>
                         </div>
 
-                        <div className="mt-8 pt-4 border-t border-gray-200 text-center">
-                            <button
-                                onClick={() => {
-                                    setShowRedirectModal(false);
-                                    setShowDevPanel(true);
-                                }}
-                                className="text-[9px] text-gray-400 hover:text-gray-600 underline cursor-pointer"
-                            >
-                                Acceso de Desarrollador (Mock Wallet)
-                            </button>
-                        </div>
                     </div>
                 </div>
             )}
 
-            {/* Developer/Bypass Panel Modal */}
-            {showDevPanel && (
-                <div className="fixed inset-0 max-w-[480px] mx-auto z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-4 animate-fade-in">
-                    <div className="bg-white pixel-border max-w-sm w-full p-6 relative">
-                        <button 
-                            onClick={() => {
-                                setShowDevPanel(false);
-                                setDevClickCount(0);
-                            }}
-                            className="absolute top-2 right-4 text-3xl font-bold hover:text-red-600 transition-colors"
-                        >
-                            &times;
-                        </button>
-                        <h2 className="pixel-font text-yellow-600 text-sm md:text-base uppercase mb-4 text-center">
-                            [ Modo Desarrollador ]
-                        </h2>
-                        <p className="text-gray-700 text-xs leading-relaxed mb-6 text-center">
-                            Para realizar pruebas en navegadores tradicionales, ingresa una dirección de billetera mock:
-                        </p>
-                        
-                        <div className="flex flex-col gap-4">
-                            <input
-                                type="text"
-                                value={mockAddressInput}
-                                onChange={(e) => setMockAddressInput(e.target.value)}
-                                placeholder="Ej. 0xMockWalletAddress..."
-                                className="pixel-border-sm p-3 w-full font-mono text-xs"
-                            />
-                            <button
-                                onClick={() => {
-                                    const trimmed = mockAddressInput.trim();
-                                    if (!trimmed) {
-                                        setError("Por favor ingresa una dirección mock válida.");
-                                        return;
-                                    }
-                                    handleLoginWithWallet(trimmed, undefined, true);
-                                }}
-                                className="bg-[#2d5a27] hover:bg-[#3d7a35] text-white pixel-border px-6 py-4 text-center transition-all active:scale-95 cursor-pointer"
-                            >
-                                <span className="pixel-font text-[9px] uppercase">Conectar Mock &rarr;</span>
-                            </button>
-                        </div>
-                        
-                        <div className="mt-6 text-center">
-                            <button
-                                onClick={() => {
-                                    setShowDevPanel(false);
-                                    setDevClickCount(0);
-                                    setShowRedirectModal(true);
-                                }}
-                                className="text-[9px] text-gray-400 hover:text-gray-600 underline cursor-pointer"
-                            >
-                                &larr; Volver al bloqueo de plataforma
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+
 
             {/* Custom Modal Error Dialog */}
             {error && (

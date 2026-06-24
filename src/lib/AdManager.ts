@@ -1,12 +1,12 @@
 /**
  * AdManager.ts
  * Helper unificado para monetización dinámica basada en la plataforma.
- * Usa Monetag en Telegram (rewarded interstitial) y Monetag/Adsterra en World App / web.
+ * Usa Monetag (Rewarded Interstitial) en Telegram Mini App y Adsterra (Direct Link) en World App / Web.
  */
 
 export interface AdManagerConfig {
-    monetagZoneId?: string;   // Monetag zone ID (expuesto como window.show_ZONE_ID)
-    adsterraUrl?: string;     // Adsterra/Monetag Direct Link o URL de redirección
+    monetagZoneId?: string;    // Monetag zone ID para Telegram (ej: "11150456")
+    adsterraUrl?: string;      // Adsterra Direct Link para Web/World App
 }
 
 export interface AdResult {
@@ -17,8 +17,8 @@ export interface AdResult {
 class AdManager {
     private static instance: AdManager;
     private config: AdManagerConfig = {
-        monetagZoneId: '11150456',           // Zone ID de Monetag — reemplazar con el real
-        adsterraUrl: 'https://www.profitablecpmrate.com/watch?key=ef8451479fc47e5125adbeab41214bcf',
+        monetagZoneId: '11150456',           // Zone ID de Monetag por defecto para Telegram
+        adsterraUrl: 'https://www.profitablecpmrate.com/watch?key=ef8451479fc47e5125adbeab41214bcf', // Direct Link por defecto para Adsterra (Web/World App)
     };
 
     private constructor() {}
@@ -38,7 +38,7 @@ class AdManager {
     }
 
     /**
-     * Carga dinámicamente el SDK de Monetag para una zona específica.
+     * Carga dinámicamente el SDK de Monetag para Telegram.
      */
     private async loadMonetagSdk(zoneId: string): Promise<boolean> {
         if (typeof window === 'undefined') return false;
@@ -102,7 +102,16 @@ class AdManager {
                 return;
             }
 
-            showFn()
+            showFn({
+                type: 'inApp',
+                inAppSettings: {
+                    frequency: 2,
+                    capping: 0.1,
+                    interval: 30,
+                    timeout: 5,
+                    everyPage: false
+                }
+            })
                 .then(() => {
                     resolve({ success: true });
                 })
@@ -117,7 +126,7 @@ class AdManager {
     }
 
     /**
-     * Muestra un anuncio en World App / navegador convencional usando Monetag/Adsterra.
+     * Muestra un anuncio en World App / navegador convencional usando Adsterra Direct Link.
      * Para World App, intentamos forzar que se abra en el navegador externo del dispositivo
      * agregando el parámetro 'open_out_of_window=true' e iniciando un enlace <a> con
      * target="_blank" y rel="noopener noreferrer", lo cual tiene mejor soporte en Webviews
@@ -165,7 +174,7 @@ class AdManager {
         }
 
         if (!popupOpened) {
-            console.log('[AdManager] Ad popup was blocked. Double reward is still granted to ensure smooth UX.');
+            console.log('[AdManager] Ad popup was blocked. Reward is still granted to ensure smooth UX.');
         }
 
         // Breve espera para que el usuario tenga tiempo de ver el anuncio antes de recibir la recompensa
@@ -176,25 +185,23 @@ class AdManager {
     /**
      * Método público para mostrar un Anuncio Recompensado (Rewarded Ad).
      * Telegram  → Monetag Rewarded Interstitial (show_ZONE_ID())
-     * Web/World → Monetag/Adsterra Direct Link popup
+     * Web/World → Adsterra Direct Link
      */
     public async showRewardedAd(customConfig?: AdManagerConfig): Promise<AdResult> {
         const activeConfig = { ...this.config, ...customConfig };
 
         if (this.isTelegram()) {
-            let zoneId = activeConfig.monetagZoneId || '11150456';
+            let zoneId = activeConfig.monetagZoneId || this.config.monetagZoneId!;
             
-            // Map old/invalid Adsgram block IDs or short IDs to the real, working Monetag zone ID
+            // Si el Zone ID pasado es uno de los antiguos IDs de Adsgram, mapearlo al ID por defecto de Monetag
             if (zoneId === '34910' || zoneId === '34911' || zoneId === '34912' || zoneId === '34913' || zoneId.length < 7) {
-                console.log(`[AdManager] Mapping invalid/old zone ID ${zoneId} to default Monetag zone 11150456`);
-                zoneId = '11150456';
+                zoneId = this.config.monetagZoneId!;
             }
             
             return await this.showMontetagTelegramAd(zoneId);
         } else {
             let directLink = activeConfig.adsterraUrl || this.config.adsterraUrl!;
-            // Si el valor no está configurado, usar la URL fallback interna
-            if (directLink === "YOUR_ADSTERRA_DIRECT_LINK") {
+            if (directLink === "YOUR_ADSTERRA_DIRECT_LINK" || !directLink) {
                 directLink = this.config.adsterraUrl!;
             }
             const ok = await this.showWebAd(directLink);
