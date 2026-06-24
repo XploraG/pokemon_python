@@ -4398,6 +4398,32 @@ export default function GameCanvas({
 
         if (isEarlyArea) {
             wildLvl = Math.floor(Math.random() * 8) + 1; // 1 to 8
+
+            // Extra validation for Route 1 when the player has only one Pokémon in their team
+            let isRoute1 = false;
+            if (lowerPath.includes('route_1') || lowerPath.includes('route1')) {
+                isRoute1 = true;
+            } else if (lowerPath.includes('procedural://')) {
+                const cleanPath = lowerPath.replace('procedural://', '');
+                const parts = cleanPath.split('_');
+                const type = parts[0];
+                const idx = parseInt(parts[1] || '1', 10);
+                if (type === 'route' && idx === 1) {
+                    isRoute1 = true;
+                }
+            }
+
+            if (isRoute1) {
+                const activeTeam = teamRef.current.filter((p: any) => p);
+                if (activeTeam.length === 1) {
+                    const pokeLvl = activeTeam[0].level;
+                    if (pokeLvl >= 3) {
+                        wildLvl = Math.floor(Math.random() * 2) + 2; // levels 2 and 3
+                    } else {
+                        wildLvl = Math.floor(Math.random() * 2) + 1; // levels 1 and 2
+                    }
+                }
+            }
         } else {
             const teamCount = teamRef.current.length;
             const avgLvl = teamCount > 0 

@@ -78,6 +78,8 @@ export default function Home() {
     const [startedPlaying, setStartedPlaying] = useState(false);
     const [showRedirectModal, setShowRedirectModal] = useState(false);
     const [clickStartAttempted, setClickStartAttempted] = useState(false);
+    const [devClickCount, setDevClickCount] = useState<number>(0);
+    const [showDevPanel, setShowDevPanel] = useState<boolean>(false);
 
     useEffect(() => {
         setMounted(true);
