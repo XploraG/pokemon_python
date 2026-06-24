@@ -1821,7 +1821,7 @@ export default function GameCanvas({
 
         const adManager = AdManager.getInstance();
         const res = await adManager.showRewardedAd({
-            monetagZoneId: "34910",
+            monetagZoneId: process.env.NEXT_PUBLIC_MONETAG_ZONE_COINS || "11150456",
             adsterraUrl: process.env.NEXT_PUBLIC_ADSTERRA_DIRECT_LINK || "YOUR_ADSTERRA_DIRECT_LINK"
         });
 
@@ -1839,7 +1839,7 @@ export default function GameCanvas({
     const handleWatchHealAd = async () => {
         const adManager = AdManager.getInstance();
         const res = await adManager.showRewardedAd({
-            monetagZoneId: "34911",
+            monetagZoneId: process.env.NEXT_PUBLIC_MONETAG_ZONE_HEAL || "11150456",
             adsterraUrl: process.env.NEXT_PUBLIC_ADSTERRA_DIRECT_LINK || "YOUR_ADSTERRA_DIRECT_LINK"
         });
 
@@ -1878,7 +1878,7 @@ export default function GameCanvas({
 
         const adManager = AdManager.getInstance();
         const res = await adManager.showRewardedAd({
-            monetagZoneId: "34912",
+            monetagZoneId: process.env.NEXT_PUBLIC_MONETAG_ZONE_DOUBLE || "11150456",
             adsterraUrl: process.env.NEXT_PUBLIC_ADSTERRA_DIRECT_LINK || "YOUR_ADSTERRA_DIRECT_LINK"
         });
 
@@ -1910,7 +1910,7 @@ export default function GameCanvas({
 
         const adManager = AdManager.getInstance();
         const res = await adManager.showRewardedAd({
-            monetagZoneId: "34912",
+            monetagZoneId: process.env.NEXT_PUBLIC_MONETAG_ZONE_DOUBLE || "11150456",
             adsterraUrl: process.env.NEXT_PUBLIC_ADSTERRA_DIRECT_LINK || "YOUR_ADSTERRA_DIRECT_LINK"
         });
 
@@ -1957,7 +1957,7 @@ export default function GameCanvas({
 
         const adManager = AdManager.getInstance();
         const res = await adManager.showRewardedAd({
-            monetagZoneId: "34912",
+            monetagZoneId: process.env.NEXT_PUBLIC_MONETAG_ZONE_TRAVEL || "11150456",
             adsterraUrl: process.env.NEXT_PUBLIC_ADSTERRA_DIRECT_LINK || "YOUR_ADSTERRA_DIRECT_LINK"
         });
 
