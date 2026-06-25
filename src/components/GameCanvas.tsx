@@ -1373,6 +1373,7 @@ export default function GameCanvas({
 }: GameCanvasProps) {
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const wrapperRef = useRef<HTMLDivElement | null>(null);
+    const storage = typeof window !== 'undefined' && walletAddress?.startsWith('free_local_') ? sessionStorage : localStorage;
     const [canvasSize, setCanvasSize] = useState({ width: 640, height: 480 });
     
     // Core game state
@@ -1579,7 +1580,7 @@ export default function GameCanvas({
     const [selectedPokedexSpecies, setSelectedPokedexSpecies] = useState<any | null>(null);
     const [seenPokemon, setSeenPokemon] = useState<string[]>(() => {
         try {
-            const saved = localStorage.getItem(`pixel_tamer_seen_pokemon_${saveName}`);
+            const saved = storage.getItem(`pixel_tamer_seen_pokemon_${saveName}`);
             return saved ? JSON.parse(saved) : [];
         } catch (e) {
             return [];
@@ -2066,7 +2067,7 @@ export default function GameCanvas({
         if (changed) {
             const updated = Array.from(initialSeen);
             setSeenPokemon(updated);
-            localStorage.setItem(`pixel_tamer_seen_pokemon_${saveName}`, JSON.stringify(updated));
+            storage.setItem(`pixel_tamer_seen_pokemon_${saveName}`, JSON.stringify(updated));
         }
     }, [team, pcPokemon, saveName]);
 
@@ -2077,7 +2078,7 @@ export default function GameCanvas({
             setSeenPokemon(prev => {
                 if (prev.includes(lowerName)) return prev;
                 const updated = [...prev, lowerName];
-                localStorage.setItem(`pixel_tamer_seen_pokemon_${saveName}`, JSON.stringify(updated));
+                storage.setItem(`pixel_tamer_seen_pokemon_${saveName}`, JSON.stringify(updated));
                 return updated;
             });
         }
@@ -2222,12 +2223,12 @@ export default function GameCanvas({
             };
             
             // Local save
-            const fullSaves = JSON.parse(localStorage.getItem('pixel_tamer_saves') || '{}');
+            const fullSaves = JSON.parse(storage.getItem('pixel_tamer_saves') || '{}');
             fullSaves[walletAddress || saveName] = saveState;
-            localStorage.setItem('pixel_tamer_saves', JSON.stringify(fullSaves));
+            storage.setItem('pixel_tamer_saves', JSON.stringify(fullSaves));
             
             // Cloud save
-            if (walletAddress) {
+            if (walletAddress && !walletAddress.startsWith('free_local_')) {
                 setCloudSaveStatus('saving');
                 supabase
                     .from('player_saves')
@@ -2244,6 +2245,8 @@ export default function GameCanvas({
                             setCloudSaveStatus('synced');
                         }
                     });
+            } else if (walletAddress?.startsWith('free_local_')) {
+                setCloudSaveStatus('synced');
             }
             
             setEconomy(new Economy(economy.toSaveData()));
@@ -2696,9 +2699,9 @@ export default function GameCanvas({
                     updated_at: new Date().toISOString()
                 };
 
-                const fullSaves = JSON.parse(localStorage.getItem('pixel_tamer_saves') || '{}');
+                const fullSaves = JSON.parse(storage.getItem('pixel_tamer_saves') || '{}');
                 fullSaves[walletAddress || saveName] = saveState;
-                localStorage.setItem('pixel_tamer_saves', JSON.stringify(fullSaves));
+                storage.setItem('pixel_tamer_saves', JSON.stringify(fullSaves));
 
                 // Send abandon broadcast to opponent
                 if (channelRef.current) {
@@ -2712,7 +2715,7 @@ export default function GameCanvas({
                     });
                 }
             } else if (!activeWildBattleRef.current && !activePvPBattleRef.current && !isGymBattle) {
-                const fullSaves = JSON.parse(localStorage.getItem('pixel_tamer_saves') || '{}');
+                const fullSaves = JSON.parse(storage.getItem('pixel_tamer_saves') || '{}');
                 fullSaves[walletAddress || saveName] = {
                     name: playerNameRef.current,
                     time: 0,
@@ -2724,7 +2727,7 @@ export default function GameCanvas({
                     pc_pokemon: pcPokemonRef.current,
                     updated_at: new Date().toISOString()
                 };
-                localStorage.setItem('pixel_tamer_saves', JSON.stringify(fullSaves));
+                storage.setItem('pixel_tamer_saves', JSON.stringify(fullSaves));
             }
         };
         window.addEventListener('beforeunload', handleBeforeUnload);
@@ -5488,7 +5491,11 @@ export default function GameCanvas({
     };
 
     const fetchInvitedFriends = async () => {
-        if (!walletAddress) return;
+        if (!walletAddress || walletAddress.startsWith('free_local_')) {
+            setInvitedFriends([]);
+            setLoadingFriends(false);
+            return;
+        }
         setLoadingFriends(true);
         try {
             const { data, error } = await supabase
@@ -6297,13 +6304,13 @@ export default function GameCanvas({
             updated_at: new Date().toISOString()
         };
 
-        // 1. Save locally to localStorage
-        const fullSaves = JSON.parse(localStorage.getItem('pixel_tamer_saves') || '{}');
+        // 1. Save locally to storage
+        const fullSaves = JSON.parse(storage.getItem('pixel_tamer_saves') || '{}');
         fullSaves[walletAddress || saveName] = saveState;
-        localStorage.setItem('pixel_tamer_saves', JSON.stringify(fullSaves));
+        storage.setItem('pixel_tamer_saves', JSON.stringify(fullSaves));
 
         // 2. Cloud sync to Supabase
-        if (walletAddress) {
+        if (walletAddress && !walletAddress.startsWith('free_local_')) {
             const now = Date.now();
             if (forceCloud || now - lastCloudSaveTimeRef.current >= 10000) {
                 lastCloudSaveTimeRef.current = now;
@@ -6401,6 +6408,9 @@ export default function GameCanvas({
                     setCloudSaveStatus('error');
                 }
             }
+        } else if (walletAddress?.startsWith('free_local_')) {
+            setCloudSaveStatus('synced');
+        }
         }
     };
 
@@ -6699,9 +6709,9 @@ export default function GameCanvas({
 
             // Sync localStorage
             try {
-                const fullSaves = JSON.parse(localStorage.getItem('pixel_tamer_saves') || '{}');
+                const fullSaves = JSON.parse(storage.getItem('pixel_tamer_saves') || '{}');
                 fullSaves[walletAddress || saveName] = updatedSave;
-                localStorage.setItem('pixel_tamer_saves', JSON.stringify(fullSaves));
+                storage.setItem('pixel_tamer_saves', JSON.stringify(fullSaves));
             } catch (err) {
                 console.error("Failed to write purchased state to localStorage:", err);
             }
@@ -6783,9 +6793,9 @@ export default function GameCanvas({
 
             // Sync localStorage
             try {
-                const fullSaves = JSON.parse(localStorage.getItem('pixel_tamer_saves') || '{}');
+                const fullSaves = JSON.parse(storage.getItem('pixel_tamer_saves') || '{}');
                 fullSaves[walletAddress || saveName] = updatedSave;
-                localStorage.setItem('pixel_tamer_saves', JSON.stringify(fullSaves));
+                storage.setItem('pixel_tamer_saves', JSON.stringify(fullSaves));
             } catch (err) {
                 console.error("Failed to write purchased state to localStorage:", err);
             }

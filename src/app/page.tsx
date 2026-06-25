@@ -77,6 +77,8 @@ export default function Home() {
     // Landing page states
     const [startedPlaying, setStartedPlaying] = useState(false);
     const [showRedirectModal, setShowRedirectModal] = useState(false);
+    const [showSolanaManualModal, setShowSolanaManualModal] = useState(false);
+    const [manualSolanaAddress, setManualSolanaAddress] = useState('');
     const [clickStartAttempted, setClickStartAttempted] = useState(false);
     const [devClickCount, setDevClickCount] = useState<number>(0);
     const [showDevPanel, setShowDevPanel] = useState<boolean>(false);
@@ -127,7 +129,7 @@ export default function Home() {
                 handleLoginWithWallet(tgId, tgName);
             } else {
                 // Auto-login from cache (only if not in Telegram context)
-                const savedWallet = localStorage.getItem('pixel_tamer_active_wallet');
+                const savedWallet = localStorage.getItem('pixel_tamer_active_wallet') || sessionStorage.getItem('pixel_tamer_active_wallet');
                 if (savedWallet) {
                     handleLoginWithWallet(savedWallet);
                 }
@@ -190,6 +192,27 @@ export default function Home() {
         setIsConnecting(true);
         setError(null);
         try {
+            if (address.startsWith('free_local_')) {
+                // Check sessionStorage for local saves
+                const localSaves = JSON.parse(sessionStorage.getItem('pixel_tamer_saves') || '{}');
+                const savedData = localSaves[address];
+                if (savedData) {
+                    sessionStorage.setItem('pixel_tamer_active_wallet', address);
+                    setWalletAddress(address);
+                    setActiveSave(savedData);
+                    if (autoStart || clickStartAttempted) {
+                        setStartedPlaying(true);
+                    }
+                } else {
+                    // Trigger starter selection onboarding for new local free user
+                    setPendingNewAddress(address);
+                    setPendingCustomName(customName || null);
+                    setNeedsStarterSelection(true);
+                }
+                setIsConnecting(false);
+                return;
+            }
+
             // Fetch save data from Supabase - case insensitive
             const { data, error: dbError } = await supabase
                 .from('player_saves')
@@ -341,7 +364,11 @@ export default function Home() {
                 }
 
                 // Save session credentials
-                localStorage.setItem('pixel_tamer_active_wallet', databaseAddress);
+                if (databaseAddress.startsWith('free_local_')) {
+                    sessionStorage.setItem('pixel_tamer_active_wallet', databaseAddress);
+                } else {
+                    localStorage.setItem('pixel_tamer_active_wallet', databaseAddress);
+                }
                 setWalletAddress(databaseAddress);
                 setActiveSave(saveState);
                 if (autoStart || clickStartAttempted) {
@@ -444,64 +471,75 @@ export default function Home() {
                 pc_pokemon: []
             };
 
-            // First upsert to Supabase (safe on retry — avoids unique constraint violations)
-            // This also ensures the player profile exists before inserting to captured_monsters (satisfying foreign key)
-            const { error: insertError } = await supabase
-                .from('player_saves')
-                .upsert({
-                    wallet_address: pendingNewAddress,
-                    save_data: saveState
-                }, { onConflict: 'wallet_address' });
+            if (!pendingNewAddress.startsWith('free_local_')) {
+                // First upsert to Supabase (safe on retry — avoids unique constraint violations)
+                // This also ensures the player profile exists before inserting to captured_monsters (satisfying foreign key)
+                const { error: insertError } = await supabase
+                    .from('player_saves')
+                    .upsert({
+                        wallet_address: pendingNewAddress,
+                        save_data: saveState
+                    }, { onConflict: 'wallet_address' });
 
-            if (insertError) {
-                console.error("Failed to initialize save state in database:", insertError);
-                setError("No se pudo iniciar la partida en el servidor.");
-                setIsConnecting(false);
-                return;
-            }
+                if (insertError) {
+                    console.error("Failed to initialize save state in database:", insertError);
+                    setError("No se pudo iniciar la partida en el servidor.");
+                    setIsConnecting(false);
+                    return;
+                }
 
-            // Then insert to captured_monsters
-            const insertPayload: any = {
-                id_captura: uuid,
-                id_jugador: pendingNewAddress,
-                especie_id: specId,
-                nivel: 1,
-                xp: 0,
-                hp_actual: maxHp,
-                iv_hp: ivs.hp,
-                iv_ataque: ivs.attack,
-                iv_defensa: ivs.defense,
-                iv_velocidad: ivs.speed,
-                es_shiny: isShiny,
-                moves: [],
-                is_team: true,
-                team_order: 0,
-                unlocked_slots: 2,
-                held_items: [null, null, null, null]
-            };
+                // Then insert to captured_monsters
+                const insertPayload: any = {
+                    id_captura: uuid,
+                    id_jugador: pendingNewAddress,
+                    especie_id: specId,
+                    nivel: 1,
+                    xp: 0,
+                    hp_actual: maxHp,
+                    iv_hp: ivs.hp,
+                    iv_ataque: ivs.attack,
+                    iv_defensa: ivs.defense,
+                    iv_velocidad: ivs.speed,
+                    es_shiny: isShiny,
+                    moves: [],
+                    is_team: true,
+                    team_order: 0,
+                    unlocked_slots: 2,
+                    held_items: [null, null, null, null]
+                };
 
-            let { error: monsterError } = await supabase
-                .from('captured_monsters')
-                .insert(insertPayload);
-
-            if (monsterError) {
-                console.warn("Failed to save starter with unlocked_slots/held_items in captured_monsters, retrying fallback:", monsterError);
-                const { unlocked_slots, held_items, ...fallbackPayload } = insertPayload;
-                const { error: fallbackError } = await supabase
+                let { error: monsterError } = await supabase
                     .from('captured_monsters')
-                    .insert(fallbackPayload);
-                monsterError = fallbackError;
-            }
+                    .insert(insertPayload);
 
-            if (monsterError) {
-                console.error("Failed to save starter in captured_monsters:", monsterError);
-                setError("No se pudo registrar tu Pokémon inicial.");
-                setIsConnecting(false);
-                return;
+                if (monsterError) {
+                    console.warn("Failed to save starter with unlocked_slots/held_items in captured_monsters, retrying fallback:", monsterError);
+                    const { unlocked_slots, held_items, ...fallbackPayload } = insertPayload;
+                    const { error: fallbackError } = await supabase
+                        .from('captured_monsters')
+                        .insert(fallbackPayload);
+                    monsterError = fallbackError;
+                }
+
+                if (monsterError) {
+                    console.error("Failed to save starter in captured_monsters:", monsterError);
+                    setError("No se pudo registrar tu Pokémon inicial.");
+                    setIsConnecting(false);
+                    return;
+                }
+            } else {
+                // Guardar localmente en sessionStorage para cuentas libres
+                const localSaves = JSON.parse(sessionStorage.getItem('pixel_tamer_saves') || '{}');
+                localSaves[pendingNewAddress] = saveState;
+                sessionStorage.setItem('pixel_tamer_saves', JSON.stringify(localSaves));
             }
 
             // Save session credentials
-            localStorage.setItem('pixel_tamer_active_wallet', pendingNewAddress);
+            if (pendingNewAddress.startsWith('free_local_')) {
+                sessionStorage.setItem('pixel_tamer_active_wallet', pendingNewAddress);
+            } else {
+                localStorage.setItem('pixel_tamer_active_wallet', pendingNewAddress);
+            }
             setWalletAddress(pendingNewAddress);
             setActiveSave(saveState);
             setNeedsStarterSelection(false);
@@ -515,6 +553,38 @@ export default function Home() {
         } finally {
             setIsConnecting(false);
         }
+    };
+
+    const handleConnectSolana = async () => {
+        setError(null);
+        setIsConnecting(true);
+        try {
+            const provider = (window as any).solana;
+            if (provider && provider.isPhantom) {
+                const response = await provider.connect();
+                const pubKey = response.publicKey.toString();
+                await handleLoginWithWallet(pubKey, `Solana Tamer`);
+            } else {
+                setShowSolanaManualModal(true);
+            }
+        } catch (err: any) {
+            console.error("Solana connection error:", err);
+            setError(err.message || "Error al conectar con Solana Wallet.");
+        } finally {
+            setIsConnecting(false);
+        }
+    };
+
+    const handleManualSolanaLogin = () => {
+        if (!manualSolanaAddress.trim()) return;
+        setShowSolanaManualModal(false);
+        handleLoginWithWallet(manualSolanaAddress.trim(), `Solana Tamer`);
+    };
+
+    const handlePlayFree = () => {
+        const randomId = Math.random().toString(36).substring(2, 8);
+        const freeAddress = `free_local_${randomId}`;
+        handleLoginWithWallet(freeAddress, `Free Tamer`, true);
     };
 
     const handleConnectWorldApp = async () => {
@@ -556,6 +626,7 @@ export default function Home() {
 
     const handleLogOut = () => {
         localStorage.removeItem('pixel_tamer_active_wallet');
+        sessionStorage.removeItem('pixel_tamer_active_wallet');
         setWalletAddress(null);
         setActiveSave(null);
         setStartedPlaying(false);
@@ -568,27 +639,9 @@ export default function Home() {
             setStartedPlaying(true);
             return;
         }
-        if (isConnecting) {
-            return;
+        if (typeof window !== 'undefined') {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
-        const isTelegram = typeof window !== 'undefined' && !!(window as any).Telegram?.WebApp?.initDataUnsafe?.user?.id;
-        if (isTelegram) {
-            const tg = (window as any).Telegram?.WebApp;
-            const user = tg?.initDataUnsafe?.user;
-            if (user) {
-                const tgId = `telegram_${user.id}`;
-                const tgName = user.username 
-                    ? `@${user.username}` 
-                    : `${user.first_name || 'Tamer'}${user.last_name ? ' ' + user.last_name : ''}`;
-                handleLoginWithWallet(tgId, tgName, true);
-            }
-            return;
-        }
-        if (isMiniKitInstalled) {
-            handleConnectWorldApp();
-            return;
-        }
-        setShowRedirectModal(true);
     };
 
     if (!mounted) {
@@ -738,7 +791,7 @@ export default function Home() {
             <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Press+Start+2P&display=swap" rel="stylesheet" />
             
             {/* BEGIN: HeroSection */}
-            <section className="relative w-full h-screen min-h-[600px] overflow-hidden flex flex-col items-center justify-center pt-24" data-purpose="hero-banner" id="hero">
+            <section className="relative w-full h-screen min-h-[650px] overflow-hidden flex flex-col items-center justify-center py-12" data-purpose="hero-banner" id="hero">
                 {/* Full-width Background Image */}
                 <div className="absolute inset-0 z-0">
                     <img 
@@ -746,10 +799,10 @@ export default function Home() {
                         className="w-full h-full object-cover" 
                         src="/assets/imgs/hero_bg.jpg"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/70"></div>
+                    <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/20 to-black/80"></div>
                 </div>
                 {/* Title Overlay */}
-                <div className="relative z-10 text-center px-4 flex flex-col items-center">
+                <div className="relative z-10 text-center px-4 flex flex-col items-center w-full max-w-[420px] mx-auto">
                     <h1 
                         onClick={() => {
                             setDevClickCount(prev => {
@@ -762,38 +815,126 @@ export default function Home() {
                             });
                         }}
                         style={{ cursor: 'pointer', userSelect: 'none' }}
-                        className="pixel-font text-white text-4xl md:text-5xl lg:text-6xl tracking-tighter leading-tight text-shadow-pixel mb-6 uppercase"
+                        className="pixel-font text-white text-4xl tracking-tighter leading-tight text-shadow-pixel mb-3 uppercase"
                     >
                         PIXEL<br/>TAMER
                     </h1>
-                    <div className="inline-block bg-white/10 backdrop-blur-sm px-6 py-2 pixel-border-sm mb-8">
-                        <p className="pixel-font text-yellow-400 text-[9px] md:text-xs tracking-[0.2em] uppercase">
-                            La aventura definitiva comienza ahora
+
+                    {/* Badge: Lanzamiento Liga Tamer */}
+                    <div className="bg-[#9945FF]/20 backdrop-blur-md px-4 py-2 border-2 border-[#14F195] rounded-lg shadow-[0_0_15px_rgba(20,241,149,0.3)] mb-4 w-full">
+                        <p className="text-[#14F195] text-[10px] md:text-xs font-bold tracking-[0.1em] uppercase font-sans">
+                            🏆 Lanzamiento Liga Tamer
+                        </p>
+                        <p className="text-white text-[9px] font-semibold uppercase tracking-[0.05em] mt-0.5">
+                            Explora, compite e intercambia
                         </p>
                     </div>
-                    
-                    {/* Primary Hero Button */}
-                    <button 
-                        onClick={handleStartJourney}
-                        className="cta-glow-primary bg-[#2d5a27] text-white pixel-border px-10 py-5 transition-all flex items-center gap-4 group hover:bg-[#3d7a35] active:scale-95 cursor-pointer"
-                    >
-                        <span className="pixel-font text-xs md:text-sm uppercase">
-                            {isConnecting ? "CARGANDO..." : "INICIAR AVENTURA"}
-                        </span>
-                        <span className="text-lg transition-transform group-hover:translate-x-1">⚔️</span>
-                    </button>
+
+                    {/* Hook Text: Sé el Mejor Entrenador de la Web3 */}
+                    <div className="mb-6">
+                        <p className="pixel-font text-yellow-400 text-[10px] tracking-widest uppercase text-shadow-sm animate-pulse">
+                            Sé el Mejor Entrenador de la Web3
+                        </p>
+                    </div>
+
+                    {/* Login/Connection Options */}
+                    <div className="flex flex-col gap-3.5 w-full mt-2">
+                        {/* 1. Primary Button: Solana Wallet Connection */}
+                        <button 
+                            onClick={handleConnectSolana}
+                            disabled={isConnecting}
+                            className="bg-gradient-to-r from-[#9945FF] to-[#14F195] text-black font-extrabold pixel-border px-6 py-4.5 rounded-md transition-all hover:scale-105 active:scale-98 cursor-pointer flex items-center justify-center gap-3 w-full shadow-[0_0_20px_rgba(153,69,255,0.6)]"
+                        >
+                            <img 
+                                src="https://cryptologos.cc/logos/solana-sol-logo.png" 
+                                alt="Solana Logo" 
+                                className="w-5 h-5 object-contain"
+                            />
+                            <span className="pixel-font text-xs uppercase tracking-wider text-black">
+                                {isConnecting ? "CONECTANDO..." : "CONECTAR SOLANA WALLET"}
+                            </span>
+                        </button>
+
+                        <div className="flex items-center justify-between w-full px-2 my-1">
+                            <span className="h-0.5 bg-white/20 flex-1"></span>
+                            <span className="text-white/60 text-[9px] font-bold uppercase mx-3 tracking-widest">o inicia sesión con</span>
+                            <span className="h-0.5 bg-white/20 flex-1"></span>
+                        </div>
+
+                        {/* 2. World App & Telegram Buttons */}
+                        <div className="flex flex-col gap-2.5 w-full">
+                            <button
+                                onClick={() => {
+                                    if (isMiniKitInstalled) {
+                                        handleConnectWorldApp();
+                                    } else {
+                                        window.open('https://worldcoin.org/mini-app?app_id=app_6a783c64810d430744512e4207e07fce', '_blank');
+                                    }
+                                }}
+                                disabled={isConnecting}
+                                className="bg-black hover:bg-gray-900 text-white pixel-border px-5 py-3 rounded-md transition-all flex items-center justify-center gap-3 active:scale-95 cursor-pointer w-full"
+                            >
+                                <img 
+                                    src="https://cdn.auth0.com/marketplace/catalog/content/assets/creators/worldcoin/worldcoin-avatar.png" 
+                                    alt="Worldcoin" 
+                                    className="w-4 h-4 rounded-full"
+                                />
+                                <span className="pixel-font text-[9px] uppercase tracking-wider">Jugar desde World App</span>
+                            </button>
+
+                            <button
+                                onClick={() => {
+                                    const tg = (window as any).Telegram?.WebApp;
+                                    if (tg && tg.initDataUnsafe?.user?.id) {
+                                        setStartedPlaying(true);
+                                    } else {
+                                        window.open('https://t.me/PixelTamerBot/play', '_blank');
+                                    }
+                                }}
+                                disabled={isConnecting}
+                                className="bg-[#0088cc] hover:bg-[#0077b3] text-white pixel-border px-5 py-3 rounded-md transition-all flex items-center justify-center gap-3 active:scale-95 cursor-pointer w-full"
+                            >
+                                <svg className="w-4 h-4 fill-current text-white" viewBox="0 0 24 24">
+                                    <path d="m22 2-7 20-4-9-9-4Z"/>
+                                    <path d="M22 2 11 13"/>
+                                </svg>
+                                <span className="pixel-font text-[9px] uppercase tracking-wider">Jugar desde Telegram</span>
+                            </button>
+                        </div>
+
+                        {/* 3. Free Play Local Mode */}
+                        <div className="mt-4 border-t border-white/10 pt-4 w-full flex flex-col items-center">
+                            <button 
+                                onClick={handlePlayFree}
+                                className="text-yellow-400 hover:text-yellow-300 underline font-medium transition-colors text-xs flex items-center gap-1.5 cursor-pointer"
+                            >
+                                🎮 Prueba el juego de manera free
+                            </button>
+                            <p className="text-white/60 text-[8px] leading-normal mt-2 text-center max-w-[280px]">
+                                * El progreso se guardará localmente en la pestaña del navegador y se perderá por completo al cerrarlo, a menos que conectes una wallet.
+                            </p>
+                        </div>
+                    </div>
                     
                     {/* Subtle status indicators for auto-login */}
                     {isConnecting && (
-                        <p className="text-white text-[11px] font-bold mt-4 animate-pulse uppercase tracking-widest bg-black/40 px-3 py-1 rounded">
+                        <p className="text-white text-[10px] font-bold mt-4 animate-pulse uppercase tracking-widest bg-black/60 px-3 py-1.5 rounded pixel-border-sm">
                             Conectando con el servidor...
                         </p>
                     )}
                     
                     {walletAddress && activeSave && !isConnecting && (
-                        <p className="text-green-400 text-[11px] font-bold mt-4 uppercase tracking-widest bg-black/40 px-3 py-1 rounded">
-                            Sesión lista como {activeSave.name}
-                        </p>
+                        <div className="mt-4 bg-black/60 p-2.5 rounded pixel-border-sm w-full flex flex-col items-center">
+                            <p className="text-green-400 text-[9px] font-bold uppercase tracking-widest">
+                                Sesión lista como: {activeSave.name}
+                            </p>
+                            <button
+                                onClick={() => setStartedPlaying(true)}
+                                className="mt-2 bg-[#2d5a27] hover:bg-[#3d7a35] text-white pixel-border-sm px-4 py-2 text-[9px] pixel-font w-full uppercase"
+                            >
+                                Reanudar Partida
+                            </button>
+                        </div>
                     )}
                 </div>
             </section>
@@ -884,52 +1025,50 @@ export default function Home() {
             </section>
             {/* END: PVPBanner */}
 
-            {/* Platform Redirect Modal (Traditional browsers block) */}
-            {showRedirectModal && (
-                <div className="fixed inset-0 max-w-[480px] mx-auto z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-4 animate-fade-in">
+            {/* Modal de Conexión Manual de Solana */}
+            {showSolanaManualModal && (
+                <div className="fixed inset-0 max-w-[480px] mx-auto z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4 animate-fade-in animate-duration-200">
                     <div className="bg-white pixel-border max-w-sm w-full p-6 relative">
                         <button 
-                            onClick={() => setShowRedirectModal(false)}
+                            onClick={() => setShowSolanaManualModal(false)}
                             className="absolute top-2 right-4 text-3xl font-bold hover:text-red-600 transition-colors"
                         >
                             &times;
                         </button>
-                        <h2 className="pixel-font text-red-600 text-sm md:text-base uppercase mb-4 text-center">
-                            Acceso Restringido
+                        <h2 className="pixel-font text-[#9945FF] text-xs md:text-sm uppercase mb-4 text-center">
+                            Conectar Solana Wallet
                         </h2>
-                        <p className="text-gray-700 text-xs leading-relaxed mb-6 text-center">
-                            Este juego está diseñado exclusivamente para ser jugado como una Mini App móvil dentro de <strong className="text-black">World App</strong> o <strong className="text-black">Telegram</strong>.
+                        <p className="text-gray-700 text-[10px] leading-relaxed mb-6 text-center">
+                            No detectamos una billetera de Solana (como Phantom) en tu navegador. Puedes instalar la extensión o ingresar tu dirección públicamente para cargar tu progreso:
                         </p>
                         
                         <div className="flex flex-col gap-4">
-                            <a
-                                href="https://t.me/PixelTamerBot/play"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="bg-[#0088cc] hover:bg-[#0077b3] text-white pixel-border-sm px-6 py-4 text-center transition-all flex items-center justify-center gap-3 active:scale-95"
+                            <input 
+                                type="text"
+                                placeholder="Dirección pública de Solana (Base58)"
+                                value={manualSolanaAddress}
+                                onChange={(e) => setManualSolanaAddress(e.target.value)}
+                                className="w-full px-3 py-2 text-xs border-2 border-black rounded focus:outline-none focus:border-[#9945FF]"
+                            />
+                            
+                            <button
+                                onClick={handleManualSolanaLogin}
+                                className="bg-[#9945FF] hover:bg-[#803bd4] text-white pixel-border-sm px-6 py-3 text-center transition-all flex items-center justify-center gap-2 active:scale-95"
                             >
-                                <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24" style={{ display: 'inline' }}>
-                                    <path d="m22 2-7 20-4-9-9-4Z"/>
-                                    <path d="M22 2 11 13"/>
-                                </svg>
-                                <span className="pixel-font text-[9px] uppercase ml-2">Jugar en Telegram</span>
-                            </a>
+                                <span className="pixel-font text-[9px] uppercase">Cargar Dirección</span>
+                            </button>
+
                             <div className="text-center text-[9px] font-bold text-gray-400 uppercase">ó</div>
+
                             <a
-                                href="https://worldcoin.org/mini-app?app_id=app_6a783c64810d430744512e4207e07fce"
+                                href="https://phantom.app/"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="bg-black hover:bg-gray-900 text-white pixel-border-sm px-6 py-4 text-center transition-all flex items-center justify-center gap-3 active:scale-95"
+                                className="bg-black hover:bg-gray-900 text-white pixel-border-sm px-6 py-3 text-center transition-all flex items-center justify-center gap-2 active:scale-95"
                             >
-                                <img 
-                                    src="https://cdn.auth0.com/marketplace/catalog/content/assets/creators/worldcoin/worldcoin-avatar.png" 
-                                    alt="Worldcoin" 
-                                    className="w-5 h-5 rounded-full inline"
-                                />
-                                <span className="pixel-font text-[9px] uppercase ml-2">Jugar en World App</span>
+                                <span className="pixel-font text-[9px] uppercase">Descargar Phantom Wallet</span>
                             </a>
                         </div>
-
                     </div>
                 </div>
             )}
