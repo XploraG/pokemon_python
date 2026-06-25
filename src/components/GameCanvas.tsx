@@ -1373,7 +1373,16 @@ export default function GameCanvas({
 }: GameCanvasProps) {
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const wrapperRef = useRef<HTMLDivElement | null>(null);
-    const storage = typeof window !== 'undefined' && walletAddress?.startsWith('free_local_') ? sessionStorage : localStorage;
+    const storage = typeof window !== 'undefined'
+        ? (walletAddress?.startsWith('free_local_') ? window.sessionStorage : window.localStorage)
+        : {
+            getItem: () => null,
+            setItem: () => {},
+            removeItem: () => {},
+            clear: () => {},
+            key: () => null,
+            length: 0
+          } as Storage;
     const [canvasSize, setCanvasSize] = useState({ width: 640, height: 480 });
     
     // Core game state
