@@ -15,6 +15,436 @@ import PokemonCenterBanner from './PokemonCenterBanner';
 import MontetagBattleBanner from './MontetagBattleBanner';
 import { CraftingManager, CRAFTING_RECIPES } from '../lib/Crafting';
 
+const MENU_TRANSLATIONS = {
+    es: {
+        back: "◀ Volver",
+        close: "Cerrar",
+        buy: "Comprar",
+        sell: "Publicar",
+        cancel: "Cancelar",
+        confirm: "Confirmar",
+        level: "Nivel",
+        xp: "XP",
+        wins: "Victorias",
+        losses: "Derrotas",
+        winRate: "Win Rate",
+        status: "Estado",
+        available: "¡Disponible!",
+        cost: "Coste",
+        coins: "Coins",
+        copy: "Copiar",
+        copied: "¡Copiado! ✅",
+        referralSystem: "Sistema de Referidos",
+        referralRewards: "🎁 Premios del Programa de Referidos:",
+        guestReward: "Para tu Invitado: 500 Coins + 1 Huevo de la suerte + 5 Pociones + 2 Super Balls al registrarse con tu enlace.",
+        yourReward: "Para ti: 300 Coins + 1 Tamer Ball + 2 Superpociones cuando tu invitado consiga más de 1 Pokémon.",
+        webInviteLink: "Enlace Web (World App/Browser)",
+        tgInviteLink: "Enlace Telegram Bot",
+        myInvitedFriends: "Mis Amigos Invitados",
+        loadingInvited: "Cargando invitados...",
+        noInvited: "Aún no tienes invitados. ¡Comparte tu enlace para comenzar!",
+        rewarded: "Recompensado",
+        claimReward: "🎁 Reclamar",
+        inProgress: "En progreso",
+        trainerProfile: "Mi Perfil de Entrenador",
+        otherProfile: "Perfil",
+        stats: "📊 Estadísticas",
+        editNickname: "Editar Alias ✏️",
+        pokemonTeam: "⚔️ Equipo Pokémon",
+        noActivePokemon: "Sin Pokémon activos",
+        gymMedals: "🏅 Medallas de Gimnasio",
+        equippedCount: "Equipadas",
+        bronze: "🟤 Bronce",
+        silver: "⚪ Plata",
+        gold: "🟡 Oro",
+        notObtained: "Sin obtener",
+        equip: "Equipar",
+        upgrade: "Subir",
+        medalLimit: "Límite de Medallas",
+        medalLimitMsg: "Sólo puedes equipar hasta 2 medallas.",
+        noEvolutions: "Sin evoluciones disponibles",
+        requirementsNotMet: "Requisitos no cumplidos",
+        cannotEvolve: "No se puede evolucionar.",
+        activeSynergy: "Sinergia Activa",
+        none: "Ninguna",
+        currentStreak: "🔥 Racha Actual",
+        day: "Día",
+        days: "Días",
+        dayReward: "Recompensa del día",
+        keepItUp: "¡Sigue así!",
+        streakTip: "💡 Las recompensas escalan +10 Coins por día consecutivo. Empiezas con 20 el Día 1 y ganas más cada día. Si fallas un día, la racha vuelve a 0.",
+        next7Days: "Próximos 7 días:",
+        noLimit: "Sin límite",
+        trainerMissions: "Misiones de Entrenador",
+        daily: "📅 Diarias",
+        weekly: "⚔️ Semanales",
+        reward: "Recompensa",
+        item: "Objeto",
+        claimed: "Reclamada",
+        bag: "Mochila",
+        activeEffects: "⚡ Efectos Activos",
+        repel: "Repelente",
+        balls: "🔴 Esferas",
+        potions: "🧪 Pociones",
+        boosters: "⚡ Especiales",
+        mounts: "🐉 Monturas",
+        useItemOn: "Usar en",
+        noItems: "No tienes objetos en esta categoría.",
+        alchemyWorkshop: "Taller de Alquimia",
+        yourMaterials: "Tus Materiales",
+        yourCoins: "Tus Coins",
+        rmtBalance: "Saldo RMT",
+        inviteTip: "🔗 Gana Fragmentos Dorados invitando amigos:",
+        copyLink: "📋 Copiar Link",
+        goldTicketsRedeem: "🎫 ¡Tienes Tiques de Oro para Canjear!",
+        redeemTicketMsg: "Canjear 1 Tique por 1.00 pUSDT 💸",
+        tier2Tools: "🔧 Tier 2 (Útiles)",
+        tier3Mastery: "👑 Tier 3 (Maestría)",
+        craft: "Fabricar",
+        pcStorage: "Almacenamiento PC",
+        team: "Tu Equipo",
+        moveToPc: "Mover a PC",
+        pcNoPokemon: "No tienes Pokémon en la PC.",
+        moveToTeam: "Mover a Equipo",
+        release: "Liberar",
+        info: "Info",
+        pokemonInfo: "ℹ️ Info",
+        unlockedSlots: "Desbloqueados",
+        emptySlot: "Slot libre",
+        lockedSlot: "Slot Bloqueado",
+        unlockSlot: "Desbloquear (5 PUSDT)",
+        unlockPrev: "(Desbloquea el anterior)",
+        currentStats: "Estadísticas Actuales",
+        maxHp: "PS Máx",
+        attack: "Ataque",
+        defense: "Defensa",
+        speed: "Velocidad",
+        geneticsIv: "Genética (IV)",
+        availableMoves: "Ataques Disponibles (por Nivel)",
+        power: "Poder",
+        known: "Conocido",
+        evolution: "Evolución",
+        passiveGeneration: "Generación Pasiva",
+        passiveCoins24h: "Coins automáticos cada 24 horas",
+        passiveTip: "🌟 Tus Pokémon generan Coins pasivos automáticamente cada 24 horas. Los Pokémon evolucionados generan +25% extra.",
+        dailyTotal: "Total Diario",
+        claimPassive: "💰 Reclamar Coins Pasivos",
+        hour: "hora",
+        fastTravel: "Viaje Rápido",
+        travelTip: "💡 Puedes teletransportarte instantáneamente a cualquier ciudad que ya hayas visitado. Para viajar, debes ver un anuncio publicitario.",
+        loadingTravelAd: "Cargando anuncio de viaje...",
+        youAreHere: "📍 Estás aquí actualmente",
+        travelAdCost: "Coste: 1 Anuncio",
+        travel: "Viajar 🌌",
+        pokedexKanto: "Pokédex Kanto",
+        pokedexTotal: "Total Kanto",
+        pokedexCaptured: "🟢 Capturados",
+        pokedexSeen: "🔵 Vistos",
+        pokedexSearchPlaceholder: "Buscar por nombre, número o tipo...",
+        pokedexFilterAll: "Todos",
+        pokedexFilterCaptured: "Capturados",
+        pokedexFilterSeen: "Vistos",
+        pokedexFilterMissing: "Por encontrar",
+        pokedexRarity: "Rareza",
+        pokedexPassive: "Ingreso pasivo",
+        pokedexNoData: "No hay datos disponibles. ¡Encuentra o captura este Pokémon para desbloquear su información!",
+        pokedexFooter: "¡Completa la Pokédex de 151 Pokémon de Kanto!",
+        marketplace: "Mercado Global",
+        secureP2P: "Comercio Seguro P2P",
+        marketBuy: "🛍️ Comprar",
+        marketSell: "➕ Publicar",
+        marketMyListings: "📂 Mis Ventas",
+        marketHistory: "📜 Historial",
+        lowestPrice: "Precio más bajo",
+        seller: "Vendedor",
+        stock: "Stock",
+        buyQuantity: "Cantidad a comprar",
+        payTotal: "Pagar Total",
+        publishNewListing: "Publicar en el Mercado",
+        chooseItemType: "Selecciona qué deseas vender",
+        pokemon: "Pokémon",
+        items: "Objetos",
+        publishPrice: "Precio de Venta (Coins)",
+        publishQuantity: "Cantidad a vender",
+        publishListingButton: "Publicar Artículo",
+        myActiveListings: "Tus Publicaciones Activas",
+        noActiveListings: "No tienes publicaciones activas en este momento.",
+        earnings: "Ganancias",
+        withdrawEarnings: "Retirar Ganancias",
+        mySalesHistory: "Historial de tus Ventas",
+        noSalesHistory: "Aún no tienes registro de ventas finalizadas.",
+        searchMarket: "Buscar por nombre...",
+        showOffers: "Ver Ofertas",
+        noListingsAvailable: "No hay artículos en venta que coincidan con tu búsqueda.",
+        tamerName: "Domador",
+        pokemonLevel: "Nivel",
+        pokemonIvs: "IVs",
+        buyListing: "Comprar",
+        insufficientCoins: "Coins insuficientes para realizar la compra.",
+        listingPublishedSuccess: "¡Artículo publicado con éxito!",
+        listingBoughtSuccess: "¡Compra realizada con éxito!",
+        listingCancelledSuccess: "¡Publicación cancelada!",
+    },
+    en: {
+        back: "◀ Back",
+        close: "Close",
+        buy: "Buy",
+        sell: "Sell",
+        cancel: "Cancel",
+        confirm: "Confirm",
+        level: "Level",
+        xp: "XP",
+        wins: "Wins",
+        losses: "Losses",
+        winRate: "Win Rate",
+        status: "Status",
+        available: "Available!",
+        cost: "Cost",
+        coins: "Coins",
+        copy: "Copy",
+        copied: "Copied! ✅",
+        referralSystem: "Referral System",
+        referralRewards: "🎁 Referral Program Rewards:",
+        guestReward: "For your Guest: 500 Coins + 1 Lucky Egg + 5 Potions + 2 Super Balls when signing up with your link.",
+        yourReward: "For you: 300 Coins + 1 Tamer Ball + 2 Superpotions when your guest obtains more than 1 Pokémon.",
+        webInviteLink: "Web Link (World App/Browser)",
+        tgInviteLink: "Telegram Bot Link",
+        myInvitedFriends: "My Invited Friends",
+        loadingInvited: "Loading guests...",
+        noInvited: "You have no guests yet. Share your link to start!",
+        rewarded: "Rewarded",
+        claimReward: "🎁 Claim",
+        inProgress: "In progress",
+        trainerProfile: "My Trainer Profile",
+        otherProfile: "Profile",
+        stats: "📊 Stats",
+        editNickname: "Edit Nickname ✏️",
+        pokemonTeam: "⚔️ Pokémon Team",
+        noActivePokemon: "No active Pokémon",
+        gymMedals: "🏅 Gym Medals",
+        equippedCount: "Equipped",
+        bronze: "🟤 Bronze",
+        silver: "⚪ Silver",
+        gold: "🟡 Gold",
+        notObtained: "Not obtained",
+        equip: "Equip",
+        upgrade: "Upgrade",
+        medalLimit: "Medal Limit",
+        medalLimitMsg: "You can only equip up to 2 medals.",
+        noEvolutions: "No evolutions available",
+        requirementsNotMet: "Requirements not met",
+        cannotEvolve: "Cannot upgrade.",
+        activeSynergy: "Active Synergy",
+        none: "None",
+        currentStreak: "🔥 Current Streak",
+        day: "Day",
+        days: "Days",
+        dayReward: "Day reward",
+        keepItUp: "Keep it up!",
+        streakTip: "💡 Rewards scale +10 Coins per consecutive day. You start with 20 on Day 1 and earn more each day. If you miss a day, the streak resets to 0.",
+        next7Days: "Next 7 days:",
+        noLimit: "No limit",
+        trainerMissions: "Trainer Missions",
+        daily: "📅 Daily",
+        weekly: "⚔️ Weekly",
+        reward: "Reward",
+        item: "Item",
+        claimed: "Claimed",
+        bag: "Bag",
+        activeEffects: "⚡ Active Effects",
+        repel: "Repel",
+        balls: "🔴 Balls",
+        potions: "🧪 Potions",
+        boosters: "⚡ Boosters",
+        mounts: "🐉 Mounts",
+        useItemOn: "Use on",
+        noItems: "You have no items in this category.",
+        alchemyWorkshop: "Alchemy Workshop",
+        yourMaterials: "Your Materials",
+        yourCoins: "Your Coins",
+        rmtBalance: "RMT Balance",
+        inviteTip: "🔗 Earn Golden Shards by inviting friends:",
+        copyLink: "📋 Copy Link",
+        goldTicketsRedeem: "🎫 You have Gold Tickets to Redeem!",
+        redeemTicketMsg: "Redeem 1 Ticket for 1.00 pUSDT 💸",
+        tier2Tools: "🔧 Tier 2 (Tools)",
+        tier3Mastery: "👑 Tier 3 (Mastery)",
+        craft: "Craft",
+        pcStorage: "PC Storage",
+        team: "Your Team",
+        moveToPc: "Move to PC",
+        pcNoPokemon: "You don't have Pokémon in the PC.",
+        moveToTeam: "Move to Team",
+        release: "Release",
+        info: "Info",
+        pokemonInfo: "ℹ️ Info",
+        unlockedSlots: "Unlocked",
+        emptySlot: "Empty slot",
+        lockedSlot: "Locked slot",
+        unlockSlot: "Unlock (5 PUSDT)",
+        unlockPrev: "(Unlock previous slot)",
+        currentStats: "Current Stats",
+        maxHp: "Max HP",
+        attack: "Attack",
+        defense: "Defense",
+        speed: "Speed",
+        geneticsIv: "Genetics (IV)",
+        availableMoves: "Available Moves (by Level)",
+        power: "Power",
+        known: "Learned",
+        evolution: "Evolution",
+        passiveGeneration: "Passive Generation",
+        passiveCoins24h: "Automatic Coins every 24 hours",
+        passiveTip: "🌟 Your Pokémon generate passive Coins automatically every 24 hours. Evolved Pokémon generate +25% extra.",
+        dailyTotal: "Daily Total",
+        claimPassive: "💰 Claim Passive Coins",
+        hour: "hour",
+        fastTravel: "Fast Travel",
+        travelTip: "💡 You can instantly teleport to any city you have already visited. To travel, you must watch an ad.",
+        loadingTravelAd: "Loading travel ad...",
+        youAreHere: "📍 You are currently here",
+        travelAdCost: "Cost: 1 Ad",
+        travel: "Travel 🌌",
+        pokedexKanto: "Kanto Pokédex",
+        pokedexTotal: "Total Kanto",
+        pokedexCaptured: "🟢 Captured",
+        pokedexSeen: "🔵 Seen",
+        pokedexSearchPlaceholder: "Search by name, number or type...",
+        pokedexFilterAll: "All",
+        pokedexFilterCaptured: "Captured",
+        pokedexFilterSeen: "Seen",
+        pokedexFilterMissing: "Missing",
+        pokedexRarity: "Rarity",
+        pokedexPassive: "Passive income",
+        pokedexNoData: "No data available. Find or catch this Pokémon to unlock its info!",
+        pokedexFooter: "Complete the Kanto Pokédex of 151 Pokémon!",
+        marketplace: "Global Marketplace",
+        secureP2P: "Secure P2P Trading",
+        marketBuy: "🛍️ Buy",
+        marketSell: "➕ Sell",
+        marketMyListings: "📂 My Listings",
+        marketHistory: "📜 History",
+        lowestPrice: "Lowest price",
+        seller: "Seller",
+        stock: "Stock",
+        buyQuantity: "Buy quantity",
+        payTotal: "Pay Total",
+        publishNewListing: "List on Marketplace",
+        chooseItemType: "Select what you want to sell",
+        pokemon: "Pokémon",
+        items: "Items",
+        publishPrice: "Sale Price (Coins)",
+        publishQuantity: "Quantity to sell",
+        publishListingButton: "List Item",
+        myActiveListings: "Your Active Listings",
+        noActiveListings: "You have no active listings at the moment.",
+        earnings: "Earnings",
+        withdrawEarnings: "Withdraw Earnings",
+        mySalesHistory: "Your Sales History",
+        noSalesHistory: "You have no finalized sales history yet.",
+        searchMarket: "Search by name...",
+        showOffers: "Show Offers",
+        noListingsAvailable: "No items for sale matching your search.",
+        tamerName: "Tamer",
+        pokemonLevel: "Level",
+        pokemonIvs: "IVs",
+        buyListing: "Buy",
+        insufficientCoins: "Insufficient coins to make the purchase.",
+        listingPublishedSuccess: "Item listed successfully!",
+        listingBoughtSuccess: "Purchase completed successfully!",
+        listingCancelledSuccess: "Listing cancelled!",
+    }
+};
+
+const translateItemName = (name: string, lang: 'es' | 'en') => {
+    if (lang === 'es') return name;
+    const n = name || '';
+    if (n === 'Tamer Ball') return 'Tamer Ball';
+    if (n === 'Super Ball') return 'Super Ball';
+    if (n === 'Hyper Ball') return 'Hyper Ball';
+    if (n === 'Ultra Ball') return 'Ultra Ball';
+    if (n === 'Poción') return 'Potion';
+    if (n === 'Superpoción') return 'Super Potion';
+    if (n === 'Hiperpoción') return 'Hyper Potion';
+    if (n === 'Poción Máxima') return 'Max Potion';
+    if (n === 'Incienso de Oro') return 'Gold Incense';
+    if (n === 'Repelente') return 'Repel';
+    if (n === 'Huevo Suerte') return 'Lucky Egg';
+    if (n === 'Montura Arcanine') return 'Arcanine Mount';
+    if (n === 'Montura Charizard') return 'Charizard Mount';
+    if (n === 'Hierba Medicinal') return 'Medicinal Herb';
+    if (n === 'Polvo de Oro') return 'Gold Dust';
+    if (n === 'Escama de Dragón') return 'Dragon Scale';
+    if (n === 'Piedra Fuego') return 'Fire Stone';
+    if (n === 'Piedra Agua') return 'Water Stone';
+    if (n === 'Piedra Trueno') return 'Thunder Stone';
+    if (n === 'Piedra Hoja') return 'Leaf Stone';
+    return n;
+};
+
+const translateItemDesc = (desc: string, lang: 'es' | 'en') => {
+    if (lang === 'es') return desc;
+    const d = desc || '';
+    if (d.includes('Probabilidad de captura')) {
+        return d.replace('Probabilidad de captura', 'Catch probability').replace('básica', 'basic').replace('media', 'medium').replace('alta', 'high').replace('máxima', 'maximum');
+    }
+    if (d.includes('Restaura')) {
+        return d.replace('Restaura', 'Restores').replace('puntos de vida (HP) de un Pokémon', 'health points (HP) of a Pokémon');
+    }
+    if (d.includes('Duplica las monedas obtenidas')) {
+        return 'Doubles the coins obtained from battles for 30 minutes.';
+    }
+    if (d.includes('Evita encuentros con Pokémon salvajes')) {
+        return 'Prevents wild Pokémon encounters for 15 minutes.';
+    }
+    if (d.includes('Duplica la experiencia obtenida')) {
+        return 'Doubles the experience obtained from battles for 30 minutes.';
+    }
+    if (d.includes('Te permite viajar más rápido')) {
+        return 'Allows you to travel faster between areas.';
+    }
+    if (d.includes('Hierba aromática para preparar pociones')) {
+        return 'Aromatic herb to craft potions.';
+    }
+    if (d.includes('Polvo brillante usado para fabricar esferas premium')) {
+        return 'Shiny dust used to craft premium spheres.';
+    }
+    if (d.includes('Un objeto muy raro')) {
+        return 'A very rare item used for high-level crafting.';
+    }
+    if (d.includes('Evoluciona a ciertos Pokémon')) {
+        return d.replace('Evoluciona a ciertos Pokémon', 'Evolves certain Pokémon');
+    }
+    return d;
+};
+
+const getMissionDescription = (m: any, lang: 'es' | 'en') => {
+    const desc = m.description || '';
+    if (lang === 'es') return desc;
+    if (desc.includes('Derrota a')) {
+        return desc.replace('Derrota a', 'Defeat').replace('entrenadores', 'trainers');
+    }
+    if (desc.includes('Captura')) {
+        return desc.replace('Captura', 'Catch').replace('Pokémon', 'Pokémon');
+    }
+    if (desc.includes('Completa')) {
+        return desc.replace('Completa', 'Complete').replace('combates PvP', 'PvP battles');
+    }
+    if (desc.includes('Camina')) {
+        return desc.replace('Camina', 'Walk').replace('pasos', 'steps');
+    }
+    if (desc.includes('Compra')) {
+        return desc.replace('Compra', 'Buy').replace('objetos en la tienda', 'items in the shop');
+    }
+    if (desc.includes('Gana')) {
+        return desc.replace('Gana', 'Win').replace('combates contra entrenadores', 'battles against trainers');
+    }
+    if (desc.includes('Reclama')) {
+        return desc.replace('Reclama', 'Claim').replace('ingresos pasivos', 'passive income');
+    }
+    return desc;
+};
+
 interface GameCanvasProps {
     saveName: string;
     playerCoordinates: [number, number];
@@ -547,20 +977,20 @@ const EVOLUTION_DATABASE: Record<string, { method: 'level' | 'stone'; target: st
     eevee: { method: 'stone', target: 'vaporeon' }
 };
 
-const getPokemonEvolutionInfo = (speciesName: string): string => {
+const getPokemonEvolutionInfo = (speciesName: string, lang: 'es' | 'en' = 'es'): string => {
     const name = speciesName.toLowerCase();
     const evo = EVOLUTION_DATABASE[name];
-    if (!evo) return 'Sin evoluciones disponibles';
+    if (!evo) return lang === 'es' ? 'Sin evoluciones disponibles' : 'No evolutions available';
     
     if (name === 'eevee') {
-        return 'Evoluciona a Vaporeon, Jolteon o Flareon usando Piedra Evolución';
+        return lang === 'es' ? 'Evoluciona a Vaporeon, Jolteon o Flareon usando Piedra Evolución' : 'Evolves to Vaporeon, Jolteon or Flareon using Evolution Stone';
     }
     
     const targetCap = evo.target.charAt(0).toUpperCase() + evo.target.slice(1);
     if (evo.method === 'level') {
-        return `Evoluciona a ${targetCap} al Nvl. ${evo.level}`;
+        return lang === 'es' ? `Evoluciona a ${targetCap} al Nvl. ${evo.level}` : `Evolves to ${targetCap} at Lvl. ${evo.level}`;
     } else {
-        return `Evoluciona a ${targetCap} usando Piedra Evolución`;
+        return lang === 'es' ? `Evoluciona a ${targetCap} usando Piedra Evolución` : `Evolves to ${targetCap} using Evolution Stone`;
     }
 };
 
@@ -854,56 +1284,56 @@ interface MedalSynergyInfo {
     combatEffect: string;
 }
 
-const getMedalSynergy = (equipped: string[] | undefined): MedalSynergyInfo | null => {
+const getMedalSynergy = (equipped: string[] | undefined, lang: 'es' | 'en' = 'es'): MedalSynergyInfo | null => {
     if (!equipped || equipped.length !== 2) return null;
     const sorted = [...equipped].sort();
     
     if (sorted.includes("Medalla Roca") && sorted.includes("Medalla Volcan")) {
         return {
-            name: "Magma Volcánico",
+            name: lang === 'es' ? "Magma Volcánico" : "Volcanic Magma",
             auraColor1: "rgba(255, 69, 0, 0.8)",
             auraColor2: "rgba(255, 140, 0, 0.0)",
-            description: "Aura incandescente de fuego y roca fundida.",
-            combatEffect: "+10% daño infligido en PvP"
+            description: lang === 'es' ? "Aura incandescente de fuego y roca fundida." : "Incandescent aura of fire and molten rock.",
+            combatEffect: lang === 'es' ? "+10% daño infligido en PvP" : "+10% damage dealt in PvP"
         };
     }
     
     if (sorted.includes("Medalla Cascada") && sorted.includes("Medalla Trueno")) {
         return {
-            name: "Tempestad Eléctrica",
+            name: lang === 'es' ? "Tempestad Eléctrica" : "Electric Tempest",
             auraColor1: "rgba(0, 191, 255, 0.8)",
             auraColor2: "rgba(255, 215, 0, 0.0)",
-            description: "Aura chispeante que combina electricidad y agua.",
-            combatEffect: "+10% probabilidad de crítico en PvP"
+            description: lang === 'es' ? "Aura chispeante que combina electricidad y agua." : "Sparkling aura combining electricity and water.",
+            combatEffect: lang === 'es' ? "+10% probabilidad de crítico en PvP" : "+10% critical hit chance in PvP"
         };
     }
     
     if (sorted.includes("Medalla Arcoiris") && sorted.includes("Medalla Alma")) {
         return {
-            name: "Pantano Tóxico",
+            name: lang === 'es' ? "Pantano Tóxico" : "Toxic Swamp",
             auraColor1: "rgba(50, 205, 50, 0.8)",
             auraColor2: "rgba(148, 0, 211, 0.0)",
-            description: "Aura brumosa de toxinas y naturaleza salvaje.",
-            combatEffect: "+10% daño en ataques de estado (flat 8 en PvP)"
+            description: lang === 'es' ? "Aura brumosa de toxinas y naturaleza salvaje." : "Misty aura of toxins and wild nature.",
+            combatEffect: lang === 'es' ? "+10% daño en ataques de estado (flat 8 en PvP)" : "+10% status attack damage (flat 8 in PvP)"
         };
     }
     
     if (sorted.includes("Medalla Pantano") && sorted.includes("Medalla Tierra")) {
         return {
-            name: "Fuerza Mística",
+            name: lang === 'es' ? "Fuerza Mística" : "Mystic Force",
             auraColor1: "rgba(0, 255, 255, 0.8)",
             auraColor2: "rgba(255, 215, 0, 0.0)",
-            description: "Aura sagrada que protege al entrenador.",
-            combatEffect: "-10% daño recibido en PvP"
+            description: lang === 'es' ? "Aura sagrada que protege al entrenador." : "Sacred aura that protects the trainer.",
+            combatEffect: lang === 'es' ? "-10% daño recibido en PvP" : "-10% damage received in PvP"
         };
     }
     
     return {
-        name: "Duo Versátil",
+        name: lang === 'es' ? "Duo Versátil" : "Versatile Duo",
         auraColor1: "rgba(135, 206, 235, 0.8)",
         auraColor2: "rgba(70, 130, 180, 0.0)",
-        description: "Aura equilibrada de dos disciplinas combinadas.",
-        combatEffect: "+5% HP máximo en combates PvP"
+        description: lang === 'es' ? "Aura equilibrada de dos disciplinas combinadas." : "Balanced aura of two combined disciplines.",
+        combatEffect: lang === 'es' ? "+5% HP máximo en combates PvP" : "+5% max HP in PvP battles"
     };
 };
 
@@ -926,42 +1356,32 @@ const getSpecialMedals = (econ: any) => {
     return specials;
 };
 
-const getMapDisplayName = (mapPath: string): string => {
+const getMapDisplayName = (mapPath: string, lang: 'es' | 'en' = 'es'): string => {
     const path = mapPath.toLowerCase();
+    let esName = 'Zona Desconocida';
     if (path.includes('tutorial')) {
-        return 'Pueblo Tutorial';
-    }
-    if (path.includes('city1')) {
-        return 'Ciudad Celeste';
-    }
-    if (path.includes('cave/main')) {
-        return 'Cueva Celeste';
-    }
-    if (path.includes('pokecenter')) {
-        return 'Centro Pokémon';
-    }
-    if (path.includes('pokemart')) {
-        return 'Tienda Pokémon';
-    }
-    if (path.includes('gym')) {
-        return 'Gimnasio Pokémon';
-    }
-    if (path.includes('redhouse')) {
-        return 'Casa del Entrenador';
-    }
-    if (path.includes('route1')) {
-        return 'Ruta 01';
-    }
-    if (path.includes('route2')) {
-        return 'Ruta 02';
-    }
-    if (path.includes('route3')) {
-        return 'Ruta 03';
-    }
-    if (path.includes('route4')) {
-        return 'Ruta 04';
-    }
-    if (path.startsWith('procedural://')) {
+        esName = 'Pueblo Tutorial';
+    } else if (path.includes('city1')) {
+        esName = 'Ciudad Celeste';
+    } else if (path.includes('cave/main')) {
+        esName = 'Cueva Celeste';
+    } else if (path.includes('pokecenter')) {
+        esName = 'Centro Pokémon';
+    } else if (path.includes('pokemart')) {
+        esName = 'Tienda Pokémon';
+    } else if (path.includes('gym')) {
+        esName = 'Gimnasio Pokémon';
+    } else if (path.includes('redhouse')) {
+        esName = 'Casa del Entrenador';
+    } else if (path.includes('route1')) {
+        esName = 'Ruta 01';
+    } else if (path.includes('route2')) {
+        esName = 'Ruta 02';
+    } else if (path.includes('route3')) {
+        esName = 'Ruta 03';
+    } else if (path.includes('route4')) {
+        esName = 'Ruta 04';
+    } else if (path.startsWith('procedural://')) {
         const parts = path.replace('procedural://', '').split('_');
         const type = parts[0];
         const index = parts[1] || '1';
@@ -969,62 +1389,83 @@ const getMapDisplayName = (mapPath: string): string => {
 
         if (type === 'route') {
             const routeNames = [
-                "Ruta Esmeralda",
-                "Ruta del Lago",
-                "Ruta Tormenta",
-                "Ruta del Mar",
-                "Ruta Celestial",
-                "Ruta del Viento",
-                "Ruta Hondonada",
-                "Ruta del Alba",
-                "Ruta Crepúsculo",
-                "Ruta del Silencio"
+                "Ruta Esmeralda", "Ruta del Lago", "Ruta Tormenta", "Ruta del Mar", "Ruta Celestial",
+                "Ruta del Viento", "Ruta Hondonada", "Ruta del Alba", "Ruta Crepúsculo", "Ruta del Silencio"
             ];
             const name = routeNames[(idx - 1) % routeNames.length] || `Ruta ${index}`;
-            return `${name} (R-${index})`;
-        }
-        if (type === 'settlement') {
+            esName = `${name} (R-${index})`;
+        } else if (type === 'settlement') {
             const cityNames = [
-                "Ciudad Aurora",
-                "Ciudad Bruma",
-                "Ciudad Coral",
-                "Ciudad Volcán",
-                "Ciudad Pétalo",
-                "Ciudad Glaciar",
-                "Ciudad Prisma",
-                "Ciudad Cumbre",
-                "Pueblo Nébula",
-                "Pueblo Ópalo",
-                "Ciudad Meteoro",
-                "Ciudad Zafiro",
-                "Pueblo Amatista",
-                "Pueblo Esmeralda",
-                "Ciudad Cuarzo",
-                "Santuario Articulado",
-                "Santuario Eléctrico",
-                "Santuario Fuego",
-                "Santuario Psíquico",
-                "Santuario Divino"
+                "Ciudad Aurora", "Ciudad Bruma", "Ciudad Coral", "Ciudad Volcán", "Ciudad Pétalo",
+                "Ciudad Glaciar", "Ciudad Prisma", "Ciudad Cumbre", "Pueblo Nébula", "Pueblo Ópalo",
+                "Ciudad Meteoro", "Ciudad Zafiro", "Pueblo Amatista", "Pueblo Esmeralda", "Ciudad Cuarzo",
+                "Santuario Articulado", "Santuario Eléctrico", "Santuario Fuego", "Santuario Psíquico", "Santuario Divino"
             ];
             const name = cityNames[(idx - 1) % cityNames.length] || `Ciudad ${index}`;
-            return name;
-        }
-        if (type === 'cave') {
+            esName = name;
+        } else if (type === 'cave') {
             const caveNames = [
-                "Cueva Sombría",
-                "Cueva Cristal",
-                "Cueva Infinita",
-                "Cueva Ancestral",
-                "Túnel de Lava",
-                "Gruta Helada",
-                "Mina de Carbón",
-                "Cueva del Eco"
+                "Cueva Sombría", "Cueva Cristal", "Cueva Infinita", "Cueva Ancestral", "Túnel de Lava",
+                "Gruta Helada", "Mina de Carbón", "Cueva del Eco"
             ];
             const name = caveNames[(idx - 1) % caveNames.length] || `Cueva ${index}`;
-            return `${name} (C-${index})`;
+            esName = `${name} (C-${index})`;
         }
     }
-    return 'Zona Desconocida';
+
+    if (lang === 'es') return esName;
+
+    return esName
+        .replace('Pueblo Tutorial', 'Tutorial Town')
+        .replace('Ciudad Celeste', 'Celeste City')
+        .replace('Cueva Celeste', 'Celeste Cave')
+        .replace('Centro Pokémon', 'Pokémon Center')
+        .replace('Tienda Pokémon', 'Pokémon Mart')
+        .replace('Gimnasio Pokémon', 'Pokémon Gym')
+        .replace('Casa del Entrenador', 'Trainer\'s House')
+        .replace('Zona Desconocida', 'Unknown Zone')
+        .replace('Ruta Esmeralda', 'Emerald Route')
+        .replace('Ruta del Lago', 'Lake Route')
+        .replace('Ruta Tormenta', 'Storm Route')
+        .replace('Ruta del Mar', 'Sea Route')
+        .replace('Ruta Celestial', 'Celestial Route')
+        .replace('Ruta del Viento', 'Wind Route')
+        .replace('Ruta Hondonada', 'Hollow Route')
+        .replace('Ruta del Alba', 'Dawn Route')
+        .replace('Ruta Crepúsculo', 'Twilight Route')
+        .replace('Ruta del Silencio', 'Silence Route')
+        .replace('Ruta ', 'Route ')
+        .replace('Ciudad Aurora', 'Aurora City')
+        .replace('Ciudad Bruma', 'Mist City')
+        .replace('Ciudad Coral', 'Coral City')
+        .replace('Ciudad Volcán', 'Volcano City')
+        .replace('Ciudad Pétalo', 'Petal City')
+        .replace('Ciudad Glaciar', 'Glacier City')
+        .replace('Ciudad Prisma', 'Prism City')
+        .replace('Ciudad Cumbre', 'Summit City')
+        .replace('Pueblo Nébula', 'Nebula Town')
+        .replace('Pueblo Ópalo', 'Opal Town')
+        .replace('Ciudad Meteoro', 'Meteor City')
+        .replace('Ciudad Zafiro', 'Sapphire City')
+        .replace('Pueblo Amatista', 'Amethyst Town')
+        .replace('Pueblo Esmeralda', 'Emerald Town')
+        .replace('Ciudad Cuarzo', 'Quartz City')
+        .replace('Santuario Articulado', 'Articuno Shrine')
+        .replace('Santuario Eléctrico', 'Zapdos Shrine')
+        .replace('Santuario Fuego', 'Moltres Shrine')
+        .replace('Santuario Psíquico', 'Mewtwo Shrine')
+        .replace('Santuario Divino', 'Divine Shrine')
+        .replace('Ciudad ', 'City ')
+        .replace('Pueblo ', 'Town ')
+        .replace('Cueva Sombría', 'Shadow Cave')
+        .replace('Cueva Cristal', 'Crystal Cave')
+        .replace('Cueva Infinita', 'Infinite Cave')
+        .replace('Cueva Ancestral', 'Ancient Cave')
+        .replace('Túnel de Lava', 'Lava Tunnel')
+        .replace('Gruta Helada', 'Frost Grotto')
+        .replace('Mina de Carbón', 'Coal Mine')
+        .replace('Cueva del Eco', 'Echo Cave')
+        .replace('Cueva ', 'Cave ');
 };
 
 const getClosestPokeCenter = (currentPath: string, returnMap?: string): { map: string; coords: [number, number] } => {
@@ -1572,6 +2013,7 @@ export default function GameCanvas({
             localStorage.setItem('game_language', lang);
         }
     };
+    const t = MENU_TRANSLATIONS[language];
     const [showReferralsModal, setShowReferralsModal] = useState(false);
     const [invitedFriends, setInvitedFriends] = useState<any[]>([]);
     const [loadingFriends, setLoadingFriends] = useState<boolean>(false);
@@ -7772,10 +8214,10 @@ export default function GameCanvas({
         return { updated, changed };
     };
 
-    const getHeldItemRemainingTimeStr = (expires: number | undefined) => {
+    const getHeldItemRemainingTimeStr = (expires: number | undefined, lang: 'es' | 'en' = 'es') => {
         if (!expires) return '';
         const diff = expires - Date.now();
-        if (diff <= 0) return 'Expirado';
+        if (diff <= 0) return lang === 'es' ? 'Expirado' : 'Expired';
         const hours = Math.floor(diff / 3600000);
         const mins = Math.ceil((diff % 3600000) / 60000);
         if (hours > 0) {
@@ -9884,7 +10326,7 @@ export default function GameCanvas({
                         }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                 <span style={{ fontSize: '18px' }}>🔗</span>
-                                <span style={{ color: '#c084fc', fontWeight: 'bold', fontSize: '14px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Sistema de Referidos</span>
+                                <span style={{ color: '#c084fc', fontWeight: 'bold', fontSize: '14px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>{t.referralSystem}</span>
                             </div>
                             <button onClick={() => setShowReferralsModal(false)} style={{
                                 background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)',
@@ -9902,12 +10344,12 @@ export default function GameCanvas({
                                 border: '1px solid rgba(192,132,252,0.25)',
                                 borderRadius: '12px', padding: '12px', fontSize: '11px', lineHeight: '1.4'
                             }}>
-                                <div style={{ color: '#c084fc', fontWeight: 'bold', marginBottom: '6px', fontSize: '12px' }}>🎁 Premios del Programa de Referidos:</div>
+                                <div style={{ color: '#c084fc', fontWeight: 'bold', marginBottom: '6px', fontSize: '12px' }}>{t.referralRewards}</div>
                                 <div style={{ marginBottom: '4px' }}>
-                                    <strong>Para tu Invitado:</strong> 500 Coins + 1 Huevo de la suerte + 5 Pociones + 2 Super Balls al registrarse con tu enlace.
+                                    <strong>{language === 'es' ? 'Para tu Invitado:' : 'For your Guest:'}</strong> {language === 'es' ? '500 Coins + 1 Huevo de la suerte + 5 Pociones + 2 Super Balls al registrarse con tu enlace.' : '500 Coins + 1 Lucky Egg + 5 Potions + 2 Super Balls when signing up with your link.'}
                                 </div>
                                 <div>
-                                    <strong>Para ti:</strong> 300 Coins + 1 Tamer Ball + 2 Superpociones cuando tu invitado consiga más de 1 Pokémon.
+                                    <strong>{language === 'es' ? 'Para ti:' : 'For you:'}</strong> {language === 'es' ? '300 Coins + 1 Tamer Ball + 2 Superpociones cuando tu invitado consiga más de 1 Pokémon.' : '300 Coins + 1 Tamer Ball + 2 Superpotions when your guest obtains more than 1 Pokémon.'}
                                 </div>
                             </div>
 
@@ -9915,7 +10357,7 @@ export default function GameCanvas({
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                                 {/* Web Invite Link */}
                                 <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '10px', padding: '10px 12px' }}>
-                                    <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 'bold', textTransform: 'uppercase', marginBottom: '6px' }}>Enlace Web (World App/Browser)</div>
+                                    <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 'bold', textTransform: 'uppercase', marginBottom: '6px' }}>{t.webInviteLink}</div>
                                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                                         <input 
                                             readOnly 
@@ -9931,14 +10373,14 @@ export default function GameCanvas({
                                             }}
                                             style={{ margin: 0, padding: '6px 12px', fontSize: '10px', background: copyWebSuccess ? '#059669' : '#8b5cf6', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', minWidth: '80px' }}
                                         >
-                                            {copyWebSuccess ? '¡Copiado! ✅' : 'Copiar'}
+                                            {copyWebSuccess ? t.copied : t.copy}
                                         </button>
                                     </div>
                                 </div>
 
                                 {/* Telegram Invite Link */}
                                 <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '10px', padding: '10px 12px' }}>
-                                    <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 'bold', textTransform: 'uppercase', marginBottom: '6px' }}>Enlace Telegram Bot</div>
+                                    <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 'bold', textTransform: 'uppercase', marginBottom: '6px' }}>{t.tgInviteLink}</div>
                                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                                         <input 
                                             readOnly 
@@ -9954,7 +10396,7 @@ export default function GameCanvas({
                                             }}
                                             style={{ margin: 0, padding: '6px 12px', fontSize: '10px', background: copyTgSuccess ? '#059669' : '#0284c7', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', minWidth: '80px' }}
                                         >
-                                            {copyTgSuccess ? '¡Copiado! ✅' : 'Copiar'}
+                                            {copyTgSuccess ? t.copied : t.copy}
                                         </button>
                                     </div>
                                 </div>
@@ -9962,12 +10404,12 @@ export default function GameCanvas({
 
                             {/* Invited Friends List */}
                             <div>
-                                <div style={{ fontSize: '11px', color: '#c084fc', fontWeight: 'bold', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Mis Amigos Invitados ({invitedFriends.length})</div>
+                                <div style={{ fontSize: '11px', color: '#c084fc', fontWeight: 'bold', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t.myInvitedFriends} ({invitedFriends.length})</div>
                                 {loadingFriends ? (
-                                    <div style={{ textAlign: 'center', padding: '20px', color: '#94a3b8', fontSize: '11px' }}>Cargando invitados...</div>
+                                    <div style={{ textAlign: 'center', padding: '20px', color: '#94a3b8', fontSize: '11px' }}>{t.loadingInvited}</div>
                                 ) : invitedFriends.length === 0 ? (
                                     <div style={{ textAlign: 'center', padding: '24px', background: 'rgba(255,255,255,0.02)', border: '1px dashed rgba(255,255,255,0.08)', borderRadius: '10px', color: '#64748b', fontSize: '11px' }}>
-                                        Aún no tienes invitados. ¡Comparte tu enlace para comenzar!
+                                        {t.noInvited}
                                     </div>
                                 ) : (
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '200px', overflowY: 'auto' }}>
@@ -9989,21 +10431,21 @@ export default function GameCanvas({
                                                     <div>
                                                         <div style={{ fontWeight: 'bold', color: '#e2e8f0' }}>{name}</div>
                                                         <div style={{ fontSize: '9px', color: '#94a3b8', marginTop: '2px' }}>
-                                                            {totalMons} Pokémon • Nivel {friend.save_data?.economy_data?.level || 1}
+                                                            {totalMons} Pokémon • {t.level} {friend.save_data?.economy_data?.level || 1}
                                                         </div>
                                                     </div>
                                                     <div>
                                                         {isClaimed ? (
-                                                            <span style={{ fontSize: '9px', color: '#10b981', background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: '4px', padding: '2px 6px', fontWeight: 'bold' }}>Recompensado</span>
+                                                            <span style={{ fontSize: '9px', color: '#10b981', background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: '4px', padding: '2px 6px', fontWeight: 'bold' }}>{t.rewarded}</span>
                                                         ) : canClaim ? (
                                                             <button 
                                                                 onClick={() => handleClaimReferralReward(friend.wallet_address)}
                                                                 style={{ margin: 0, padding: '4px 8px', fontSize: '9px', background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', border: 'none', borderRadius: '4px', color: '#fff', fontWeight: 'bold', cursor: 'pointer' }}
                                                             >
-                                                                🎁 Reclamar
+                                                                {t.claimReward}
                                                             </button>
                                                         ) : (
-                                                            <span style={{ fontSize: '8px', color: '#f59e0b', background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.25)', borderRadius: '4px', padding: '2px 6px' }}>En progreso</span>
+                                                            <span style={{ fontSize: '8px', color: '#f59e0b', background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.25)', borderRadius: '4px', padding: '2px 6px' }}>{t.inProgress}</span>
                                                         )}
                                                     </div>
                                                 </div>
@@ -10735,7 +11177,7 @@ export default function GameCanvas({
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                 <span style={{ fontSize: '20px' }}>🏆</span>
                                 <span style={{ color: '#e2e8f0', fontWeight: 'bold', fontSize: '14px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-                                    {viewingProfile.isLocal ? 'Mi Perfil de Entrenador' : `Perfil: ${viewingProfile.name}`}
+                                    {viewingProfile.isLocal ? t.trainerProfile : `${t.otherProfile}: ${viewingProfile.name}`}
                                 </span>
                             </div>
                             <button 
@@ -10747,16 +11189,12 @@ export default function GameCanvas({
                         </div>
 
                         <div style={{ padding: '16px 20px 20px' }}>
-                        {/* Layout Grid */}
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr', gap: '20px' }}>
 
-                            
-                            {/* Left Column: Stats & Team */}
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                                {/* Stats Card */}
                                 <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '12px' }}>
                                     <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#e040fb', marginBottom: '8px', borderBottom: '1px dashed rgba(255,255,255,0.1)', paddingBottom: '4px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <span>📊 Estadísticas ({viewingProfile.name})</span>
+                                        <span>📊 {t.stats} ({viewingProfile.name})</span>
                                         {viewingProfile.isLocal && (
                                             <button
                                                 onClick={() => {
@@ -10765,27 +11203,26 @@ export default function GameCanvas({
                                                 }}
                                                 style={{ margin: 0, padding: '3px 8px', fontSize: '9px', fontWeight: 'bold', background: 'rgba(139,92,246,0.2)', border: '1px solid rgba(139,92,246,0.4)', borderRadius: '6px', color: '#c084fc', cursor: 'pointer' }}
                                             >
-                                                Editar Alias ✏️
+                                                {t.editNickname}
                                             </button>
                                         )}
                                     </div>
                                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '12px' }}>
-                                        <div><strong>Nivel:</strong> {viewingProfile.level}</div>
-                                        <div><strong>XP:</strong> {viewingProfile.xp}</div>
-                                        <div><strong>Victorias:</strong> {viewingProfile.pvpWins}</div>
-                                        <div><strong>Derrotas:</strong> {viewingProfile.pvpLosses}</div>
+                                        <div><strong>{t.level}:</strong> {viewingProfile.level}</div>
+                                        <div><strong>{t.xp}:</strong> {viewingProfile.xp}</div>
+                                        <div><strong>{t.wins}:</strong> {viewingProfile.pvpWins}</div>
+                                        <div><strong>{t.losses}:</strong> {viewingProfile.pvpLosses}</div>
                                     </div>
                                     <div style={{ fontSize: '11px', color: '#888', marginTop: '6px' }}>
-                                        Win Rate: {viewingProfile.pvpWins + viewingProfile.pvpLosses > 0 
+                                        {t.winRate}: {viewingProfile.pvpWins + viewingProfile.pvpLosses > 0 
                                             ? `${((viewingProfile.pvpWins / (viewingProfile.pvpWins + viewingProfile.pvpLosses)) * 100).toFixed(1)}%` 
                                             : '0%'}
                                     </div>
                                 </div>
 
-                                {/* Active Team */}
                                 <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '12px', flexGrow: 1 }}>
                                     <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#2979ff', marginBottom: '8px', borderBottom: '1px dashed rgba(255,255,255,0.1)', paddingBottom: '4px' }}>
-                                        ⚔️ Equipo Pokémon
+                                        {t.pokemonTeam}
                                     </div>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '180px', overflowY: 'auto' }}>
                                         {viewingProfile.team && viewingProfile.team.length > 0 ? (
@@ -10802,13 +11239,13 @@ export default function GameCanvas({
                                                          )}
                                                          <div>
                                                              <div style={{ textTransform: 'capitalize', fontSize: '11px', fontWeight: 'bold' }}>{poke.is_shiny && '✨ '}{poke.id}</div>
-                                                            <div style={{ fontSize: '9px', color: '#ccc' }}>Nvl: {poke.level} | HP: {poke.hp}/{poke.maxHp}</div>
-                                                        </div>
-                                                    </div>
-                                                );
+                                                             <div style={{ fontSize: '9px', color: '#ccc' }}>{language === 'es' ? 'Nvl' : 'Lvl'}: {poke.level} | HP: {poke.hp}/{poke.maxHp}</div>
+                                                         </div>
+                                                     </div>
+                                                 );
                                             })
                                         ) : (
-                                            <div style={{ fontSize: '11px', color: '#888', textAlign: 'center', padding: '10px' }}>Sin Pokémon activos</div>
+                                            <div style={{ fontSize: '11px', color: '#888', textAlign: 'center', padding: '10px' }}>{t.noActivePokemon}</div>
                                         )}
                                     </div>
                                 </div>
@@ -10833,15 +11270,15 @@ export default function GameCanvas({
                                             {/* Gym Medals Upgrade/Equip */}
                                             <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '12px' }}>
                                                 <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#00e676', marginBottom: '8px', borderBottom: '1px dashed rgba(255,255,255,0.1)', paddingBottom: '4px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                    <span>🏅 Medallas de Gimnasio</span>
-                                                    {viewingProfile.isLocal && <span style={{ fontSize: '9px', color: '#aaa' }}>(Equipadas: {viewingProfile.equippedMedals.length}/2)</span>}
+                                                    <span>🏅 {t.gymMedals}</span>
+                                                    {viewingProfile.isLocal && <span style={{ fontSize: '9px', color: '#aaa' }}>({t.equippedCount}: {viewingProfile.equippedMedals.length}/2)</span>}
                                                 </div>
                                                 
                                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', paddingRight: '4px' }}>
                                                     {["Medalla Roca", "Medalla Cascada", "Medalla Trueno", "Medalla Arcoiris", "Medalla Alma", "Medalla Pantano", "Medalla Volcan", "Medalla Tierra"].map((medalName) => {
                                                         const hasMedal = viewingProfile.medals.includes(medalName);
                                                         const level = viewingProfile.medalLevels[medalName] || 1;
-                                                        const levelText = level === 1 ? "🟤 Bronce" : level === 2 ? "⚪ Plata" : "🟡 Oro";
+                                                        const levelText = level === 1 ? t.bronze : level === 2 ? t.silver : t.gold;
                                                         const isEquipped = viewingProfile.equippedMedals.includes(medalName);
                                                         
                                                         // Requirements check for local evolving
@@ -10857,10 +11294,13 @@ export default function GameCanvas({
                                                                         const res = economyRef.current.evolveMedal(medalName, team);
                                                                         if (res.success) {
                                                                             saveLocalEconomy();
-                                                                            showNotification("¡Medalla Evolucionada!", `Tu ${medalName} ahora es de nivel ${nextLvl === 2 ? "Plata" : "Oro"}.`);
+                                                                            showNotification(
+                                                                                language === 'es' ? "¡Medalla Evolucionada!" : "Medal Evolved!", 
+                                                                                language === 'es' ? `Tu ${medalName} ahora es de nivel ${nextLvl === 2 ? "Plata" : "Oro"}.` : `Your ${medalName.replace('Medalla Roca', 'Boulder Medal').replace('Medalla Cascada', 'Cascade Medal').replace('Medalla Trueno', 'Thunder Medal').replace('Medalla Arcoiris', 'Rainbow Medal').replace('Medalla Alma', 'Soul Medal').replace('Medalla Pantano', 'Marsh Medal').replace('Medalla Volcan', 'Volcano Medal').replace('Medalla Tierra', 'Earth Medal')} is now ${nextLvl === 2 ? "Silver" : "Gold"} tier.`
+                                                                            );
                                                                             handleViewLocalProfile();
                                                                         } else {
-                                                                            showNotification("Requisitos no cumplidos", res.reason || "No se puede evolucionar.");
+                                                                            showNotification(t.requirementsNotMet, res.reason || t.cannotEvolve);
                                                                         }
                                                                     }}
                                                                     style={{
@@ -10877,7 +11317,7 @@ export default function GameCanvas({
                                                                         width: '100%',
                                                                     }}
                                                                 >
-                                                                    ✨ Subir ({defeatsReq}⚔️/{coinsReq}🪙)
+                                                                    ✨ {t.upgrade} ({defeatsReq}⚔️/{coinsReq}🪙)
                                                                 </button>
                                                             );
                                                         }
@@ -10925,7 +11365,7 @@ export default function GameCanvas({
                                                                 {/* Medal name */}
                                                                 <div style={{ textAlign: 'center' }}>
                                                                     <div style={{ fontSize: '9px', fontWeight: isEquipped ? 'bold' : 'normal', color: isEquipped ? '#00e676' : hasMedal ? '#e2e8f0' : '#64748b', lineHeight: 1.2 }}>
-                                                                        {medalName.replace('Medalla ', '')}
+                                                                        {language === 'es' ? medalName.replace('Medalla ', '') : medalName.replace('Medalla Roca', 'Boulder').replace('Medalla Cascada', 'Cascade').replace('Medalla Trueno', 'Thunder').replace('Medalla Arcoiris', 'Rainbow').replace('Medalla Alma', 'Soul').replace('Medalla Pantano', 'Marsh').replace('Medalla Volcan', 'Volcano').replace('Medalla Tierra', 'Earth')}
                                                                     </div>
                                                                     {hasMedal && (
                                                                         <div style={{ fontSize: '8px', color: level === 3 ? '#ffd700' : level === 2 ? '#e0e0e0' : '#cd7f32', marginTop: '2px' }}>
@@ -10933,7 +11373,7 @@ export default function GameCanvas({
                                                                         </div>
                                                                     )}
                                                                     {!hasMedal && (
-                                                                        <div style={{ fontSize: '8px', color: '#475569', marginTop: '2px' }}>Sin obtener</div>
+                                                                        <div style={{ fontSize: '8px', color: '#475569', marginTop: '2px' }}>{t.notObtained}</div>
                                                                     )}
                                                                 </div>
 
@@ -10947,7 +11387,7 @@ export default function GameCanvas({
                                                                                 let newEquipped = [...viewingProfile.equippedMedals];
                                                                                 if (e.target.checked) {
                                                                                     if (newEquipped.length >= 2) {
-                                                                                        showNotification("Límite de Medallas", "Sólo puedes equipar hasta 2 medallas.");
+                                                                                        showNotification(t.medalLimit, t.medalLimitMsg);
                                                                                         return;
                                                                                     }
                                                                                     newEquipped.push(medalName);
@@ -10960,7 +11400,7 @@ export default function GameCanvas({
                                                                             }}
                                                                             style={{ cursor: 'pointer', accentColor: '#00e676' }}
                                                                         />
-                                                                        Equipar
+                                                                        {t.equip}
                                                                     </label>
                                                                 )}
 
@@ -10973,15 +11413,15 @@ export default function GameCanvas({
 
                                             {/* Active Synergy */}
                                             {(() => {
-                                                const synergy = getMedalSynergy(viewingProfile.equippedMedals);
+                                                const synergy = getMedalSynergy(viewingProfile.equippedMedals, language);
                                                 if (!synergy) return null;
                                                 return (
                                                     <div style={{ background: 'rgba(98, 0, 234, 0.15)', border: '1px solid #6200ea', borderRadius: '8px', padding: '12px' }}>
                                                         <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#b388ff', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
-                                                            ✨ Sinergia: {synergy.name}
+                                                            ✨ {t.activeSynergy}: {synergy.name}
                                                         </div>
                                                         <div style={{ fontSize: '11px', color: '#ccc', marginBottom: '4px' }}>{synergy.description}</div>
-                                                        <div style={{ fontSize: '11px', color: '#69f0ae', fontWeight: 'bold' }}>Efecto: {synergy.combatEffect}</div>
+                                                        <div style={{ fontSize: '11px', color: '#69f0ae', fontWeight: 'bold' }}>{language === 'es' ? 'Efecto' : 'Effect'}: {synergy.combatEffect}</div>
                                                     </div>
                                                 );
                                             })()}
@@ -11001,7 +11441,7 @@ export default function GameCanvas({
                                                 return (
                                                     <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '12px' }}>
                                                         <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#ffd700', marginBottom: '10px', borderBottom: '1px dashed rgba(255,255,255,0.1)', paddingBottom: '4px' }}>
-                                                            🏆 Insignias de Torneos y Eventos
+                                                            🏆 {language === 'es' ? 'Insignias de Torneos y Eventos' : 'Tournament & Event Badges'}
                                                         </div>
                                                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
                                                             {specialBadges.map((badge, idx) => {
@@ -11023,7 +11463,9 @@ export default function GameCanvas({
                                                                                     imageRendering: 'auto',
                                                                                 }}
                                                                             />
-                                                                            <span style={{ fontSize: '9px', color: spr.border, fontWeight: 'bold', textAlign: 'center', maxWidth: '60px', lineHeight: 1.2 }}>{badge.replace('Medalla ', '')}</span>
+                                                                            <span style={{ fontSize: '9px', color: spr.border, fontWeight: 'bold', textAlign: 'center', maxWidth: '60px', lineHeight: 1.2 }}>
+                                                                                {language === 'es' ? badge.replace('Medalla ', '') : badge.replace('Medalla Campeón PvP (S1)', 'PvP Champion (S1)').replace('Medalla Tamer Pionero', 'Pioneer Tamer')}
+                                                                            </span>
                                                                         </div>
                                                                     );
                                                                 }
@@ -11062,23 +11504,23 @@ export default function GameCanvas({
                             {/* Current Streak Header */}
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'linear-gradient(135deg, rgba(251,191,36,0.15) 0%, rgba(245,158,11,0.08) 100%)', border: '1px solid rgba(251,191,36,0.3)', borderRadius: '12px', padding: '12px 16px', boxShadow: '0 0 20px rgba(251,191,36,0.1)' }}>
                                 <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left', gap: '2px' }}>
-                                    <span style={{ fontSize: '9px', fontWeight: 'bold', color: '#fbbf24', textTransform: 'uppercase', letterSpacing: '0.08em' }}>🔥 Racha Actual</span>
-                                    <span style={{ fontSize: '22px', fontWeight: 'bold', color: '#fff' }}>{economy.login_streak} {economy.login_streak === 1 ? 'Día' : 'Días'}</span>
-                                    <span style={{ fontSize: '9px', color: '#94a3b8' }}>Recompensa del día: <strong style={{ color: '#fbbf24' }}>🪙 {20 + (economy.login_streak - 1) * 10} Coins</strong></span>
+                                    <span style={{ fontSize: '9px', fontWeight: 'bold', color: '#fbbf24', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{t.currentStreak}</span>
+                                    <span style={{ fontSize: '22px', fontWeight: 'bold', color: '#fff' }}>{economy.login_streak} {economy.login_streak === 1 ? t.day : t.days}</span>
+                                    <span style={{ fontSize: '9px', color: '#94a3b8' }}>{t.dayReward}: <strong style={{ color: '#fbbf24' }}>🪙 {20 + (economy.login_streak - 1) * 10} Coins</strong></span>
                                 </div>
                                 <div style={{ textAlign: 'center' }}>
                                     <div style={{ fontSize: '36px', lineHeight: 1 }}>🔥</div>
-                                    <div style={{ fontSize: '9px', color: '#94a3b8', marginTop: '4px' }}>¡Sigue así!</div>
+                                    <div style={{ fontSize: '9px', color: '#94a3b8', marginTop: '4px' }}>{t.keepItUp}</div>
                                 </div>
                             </div>
 
                             <p style={{ fontSize: '9px', color: '#94a3b8', margin: 0, textAlign: 'left', lineHeight: '1.4', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '8px', padding: '8px 10px' }}>
-                                💡 Las recompensas escalan <strong style={{ color: '#fb923c' }}>+10 Coins por día consecutivo</strong>. Empiezas con 🪙20 el Día 1 y ganas más cada día. <strong style={{ color: '#f87171' }}>Si fallas un día, la racha vuelve a 0.</strong>
+                                {t.streakTip}
                             </p>
 
                             {/* 7-Day Dynamic Calendar */}
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                <span style={{ fontSize: '9px', fontWeight: 'bold', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Próximos 7 días:</span>
+                                <span style={{ fontSize: '9px', fontWeight: 'bold', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t.next7Days}</span>
                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
                                     {[0, 1, 2, 3, 4, 5, 6].map(offset => {
                                         const day = economy.login_streak + offset;
@@ -11102,7 +11544,7 @@ export default function GameCanvas({
                                                 borderColor: isCurrent ? '#fbbf24' : (isPast ? '#34d399' : 'rgba(255,255,255,0.1)'),
                                                 boxShadow: isCurrent ? '0 0 12px rgba(251,191,36,0.4)' : 'none',
                                             }}>
-                                                <span style={{ fontWeight: 'bold', fontSize: '7px', color: isCurrent ? '#fbbf24' : (isPast ? '#34d399' : '#64748b') }}>Día {day}</span>
+                                                <span style={{ fontWeight: 'bold', fontSize: '7px', color: isCurrent ? '#fbbf24' : (isPast ? '#34d399' : '#64748b') }}>{t.day} {day}</span>
                                                 <span style={{ fontSize: '10px', fontWeight: 'bold', color: isCurrent ? '#fff' : (isFuture ? '#94a3b8' : '#34d399') }}>🪙{reward}</span>
                                                 <div>
                                                     {isPast ? (
@@ -11119,7 +11561,9 @@ export default function GameCanvas({
                                     {/* Infinity card */}
                                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '7px 4px', borderRadius: '8px', border: '2px dashed rgba(148,163,184,0.25)', background: 'rgba(255,255,255,0.02)', fontSize: '8px', minHeight: '62px', gap: '3px' }}>
                                         <span style={{ fontSize: '14px' }}>∞</span>
-                                        <span style={{ color: '#64748b', textAlign: 'center', lineHeight: '1.2' }}>Sin<br/>límite</span>
+                                        <span style={{ color: '#64748b', textAlign: 'center', lineHeight: '1.2' }}>
+                                            {language === 'es' ? 'Sin' : 'No'}<br/>{language === 'es' ? 'límite' : 'limit'}
+                                        </span>
                                     </div>
                                 </div>
                             </div>
@@ -11134,7 +11578,7 @@ export default function GameCanvas({
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px 12px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                 <span style={{ fontSize: '18px' }}>🏆</span>
-                                <span style={{ color: '#e2e8f0', fontWeight: 'bold', fontSize: '14px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Misiones de Entrenador</span>
+                                <span style={{ color: '#e2e8f0', fontWeight: 'bold', fontSize: '14px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>{t.trainerMissions}</span>
                             </div>
                             <button onClick={() => setShowMissions(false)} style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: '#94a3b8', cursor: 'pointer', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', fontWeight: 'bold' }}>&times;</button>
                         </div>
@@ -11159,7 +11603,7 @@ export default function GameCanvas({
                                     margin: 0
                                 }}
                             >
-                                📅 Diarias
+                                {t.daily}
                             </button>
                             <button
                                 onClick={() => setMissionTab('weekly')}
@@ -11179,7 +11623,7 @@ export default function GameCanvas({
                                     margin: 0
                                 }}
                             >
-                                ⚔️ Semanales
+                                {t.weekly}
                             </button>
                         </div>
 
@@ -11192,7 +11636,7 @@ export default function GameCanvas({
                                 return (
                                     <div key={m.id} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                            <span style={{ fontSize: '12px', color: '#e2e8f0', fontWeight: 'bold' }}>{m.description}</span>
+                                            <span style={{ fontSize: '12px', color: '#e2e8f0', fontWeight: 'bold' }}>{getMissionDescription(m, language)}</span>
                                             <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 'bold' }}>{prog}/{m.target}</span>
                                         </div>
                                         <div style={{ background: 'rgba(255,255,255,0.1)', borderRadius: '4px', height: '6px', overflow: 'hidden' }}>
@@ -11202,12 +11646,12 @@ export default function GameCanvas({
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                                                 {m.reward_coins > 0 && (
                                                     <div style={{ fontSize: '10px', color: '#fbbf24', fontWeight: 'bold' }}>
-                                                        Recompensa: 🪙 {m.reward_coins} Coins
+                                                        {t.reward}: 🪙 {m.reward_coins} Coins
                                                     </div>
                                                 )}
                                                 {m.reward_item && (
                                                     <div style={{ fontSize: '10px', color: '#38bdf8', fontWeight: 'bold' }}>
-                                                        Objeto: {m.reward_item_quantity ?? 1}x {inventoryRef.current.getItemInfo(m.reward_item)?.name || m.reward_item}
+                                                        {t.item}: {m.reward_item_quantity ?? 1}x {translateItemName(inventoryRef.current.getItemInfo(m.reward_item)?.name || m.reward_item, language)}
                                                     </div>
                                                 )}
                                             </div>
@@ -11233,12 +11677,12 @@ export default function GameCanvas({
                                                         e.currentTarget.style.background = 'rgba(16,185,129,0.25)';
                                                     }}
                                                 >
-                                                    🎁 Reclamar
+                                                    {t.claimReward}
                                                 </button>
                                             )}
                                             {isCompleted && isClaimed && (
                                                 <span style={{ fontSize: '10px', color: '#6ee7b7', fontWeight: 'bold' }}>
-                                                    ✅ Reclamada
+                                                    ✅ {t.claimed}
                                                 </span>
                                             )}
                                         </div>
@@ -11409,7 +11853,7 @@ export default function GameCanvas({
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px 12px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                 <span style={{ fontSize: '18px' }}>🎒</span>
-                                <span style={{ color: '#e2e8f0', fontWeight: 'bold', fontSize: '14px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Mochila</span>
+                                <span style={{ color: '#e2e8f0', fontWeight: 'bold', fontSize: '14px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>{t.bag}</span>
                             </div>
                             <button onClick={() => {
                                 setShowInventoryModal(false);
@@ -11422,7 +11866,7 @@ export default function GameCanvas({
                               (economy.repel_expires && economy.repel_expires > Date.now())) && (
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', background: 'rgba(251,191,36,0.1)', border: '1px solid rgba(251,191,36,0.25)', borderRadius: '10px', padding: '10px 12px', marginBottom: '8px' }}>
                                     <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#fbbf24', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                        ⚡ Efectos Activos:
+                                        ⚡ {t.activeEffects}:
                                     </div>
                                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '4px' }}>
                                         {economy.gold_incense_expires && economy.gold_incense_expires > Date.now() && (
@@ -11432,7 +11876,7 @@ export default function GameCanvas({
                                         )}
                                         {economy.repel_expires && economy.repel_expires > Date.now() && (
                                             <div style={{ fontSize: '10px', color: '#fca5a5', background: 'rgba(252,165,165,0.15)', border: '1px solid rgba(252,165,165,0.3)', borderRadius: '6px', padding: '3px 8px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                🌫️ Repelente ({Math.ceil((economy.repel_expires - Date.now()) / 60000)} min)
+                                                🌫️ {t.repel} ({Math.ceil((economy.repel_expires - Date.now()) / 60000)} min)
                                             </div>
                                         )}
                                     </div>
@@ -11450,7 +11894,7 @@ export default function GameCanvas({
                                             color: activeInventoryTab === 'balls' ? '#f87171' : '#94a3b8'
                                         }}
                                     >
-                                        🔴 Esferas
+                                        {t.balls}
                                     </button>
                                     <button
                                         onClick={() => setActiveInventoryTab('potions')}
@@ -11461,7 +11905,7 @@ export default function GameCanvas({
                                             color: activeInventoryTab === 'potions' ? '#34d399' : '#94a3b8'
                                         }}
                                     >
-                                        🧪 Pociones
+                                        {t.potions}
                                     </button>
                                     <button
                                         onClick={() => setActiveInventoryTab('boosters')}
@@ -11472,7 +11916,7 @@ export default function GameCanvas({
                                             color: activeInventoryTab === 'boosters' ? '#fbbf24' : '#94a3b8'
                                         }}
                                     >
-                                        ⚡ Especiales
+                                        {t.boosters}
                                     </button>
                                     <button
                                         onClick={() => setActiveInventoryTab('mounts')}
@@ -11483,7 +11927,7 @@ export default function GameCanvas({
                                             color: activeInventoryTab === 'mounts' ? '#a78bfa' : '#94a3b8'
                                         }}
                                     >
-                                        🐉 Monturas
+                                        {t.mounts}
                                     </button>
                                 </div>
                             )}
@@ -11491,7 +11935,7 @@ export default function GameCanvas({
                             {usingItem ? (
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                                     <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#94a3b8', marginBottom: '4px', textAlign: 'center' }}>
-                                        Usar {usingItem.name || usingItem.id} en:
+                                        {t.useItemOn} {translateItemName(usingItem.name || usingItem.id, language)}:
                                     </div>
                                     {team.map((p: any, idx: number) => {
                                         const pct = Math.round((p.hp / getPokeMaxHp(p)) * 100);
@@ -11514,7 +11958,7 @@ export default function GameCanvas({
                                             >
                                                 <div style={{ textAlign: 'left' }}>
                                                     <span style={{ textTransform: 'capitalize', fontWeight: 'bold', color: '#c084fc' }}>{p.id}</span>
-                                                    <span style={{ fontSize: '10px', marginLeft: '6px', color: '#94a3b8' }}>Nvl. {p.level ?? 5}</span>
+                                                    <span style={{ fontSize: '10px', marginLeft: '6px', color: '#94a3b8' }}>{language === 'es' ? 'Nvl.' : 'Lvl.'} {p.level ?? 5}</span>
                                                 </div>
                                                 <div style={{ fontSize: '11px', color: p.hp === 0 ? '#f87171' : '#34d399', fontWeight: 'bold' }}>
                                                     HP: {p.hp}/{getPokeMaxHp(p)} ({pct}%)
@@ -11526,11 +11970,11 @@ export default function GameCanvas({
                                         onClick={() => setUsingItem(null)}
                                         style={{ margin: 0, marginTop: '4px', padding: '9px 14px', fontSize: '12px', fontWeight: 'bold', width: '100%', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: '8px', color: '#f87171', cursor: 'pointer' }}
                                     >
-                                        Cancelar
+                                        {t.cancel}
                                     </button>
                                 </div>
                             ) : inventory.getAllItems().length === 0 ? (
-                                <div style={{ textAlign: 'center', padding: '20px', color: '#64748b', fontStyle: 'italic', fontSize: '12px' }}>Tu mochila está vacía.</div>
+                                <div style={{ textAlign: 'center', padding: '20px', color: '#64748b', fontStyle: 'italic', fontSize: '12px' }}>{language === 'es' ? 'Tu mochila está vacía.' : 'Your bag is empty.'}</div>
                             ) : (
                                 (() => {
                                     const getItemCategory = (itemId: string): 'balls' | 'potions' | 'boosters' | 'mounts' => {
@@ -11544,10 +11988,13 @@ export default function GameCanvas({
                                     });
 
                                     if (filteredItems.length === 0) {
-                                        const labels = { balls: 'esferas', potions: 'pociones', boosters: 'objetos especiales', mounts: 'monturas' };
+                                        const labelsES = { balls: 'esferas', potions: 'pociones', boosters: 'objetos especiales', mounts: 'monturas' };
+                                        const labelsEN = { balls: 'balls', potions: 'potions', boosters: 'special items', mounts: 'mounts' };
                                         return (
                                             <div style={{ textAlign: 'center', padding: '30px 20px', color: '#64748b', fontStyle: 'italic', fontSize: '12px' }}>
-                                                No tienes {labels[activeInventoryTab]} en tu mochila.
+                                                {language === 'es' 
+                                                    ? `No tienes ${labelsES[activeInventoryTab]} en tu mochila.` 
+                                                    : `You have no ${labelsEN[activeInventoryTab]} in your bag.`}
                                             </div>
                                         );
                                     }
@@ -11563,10 +12010,10 @@ export default function GameCanvas({
                                                     <img src={iconUrl} alt={item.name} style={{ width: '30px', height: '30px', objectFit: 'contain', imageRendering: 'pixelated' }} />
                                                     <div style={{ flex: 1 }}>
                                                         <div style={{ fontWeight: 'bold', fontSize: '12px', color: '#e2e8f0', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                            {item.name || item.id}
+                                                            {translateItemName(item.name || item.id, language)}
                                                             <span style={{ fontSize: '10px', color: '#fbbf24', background: 'rgba(251,191,36,0.15)', border: '1px solid rgba(251,191,36,0.3)', borderRadius: '4px', padding: '1px 5px' }}>x{item.quantity}</span>
                                                         </div>
-                                                        <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '2px' }}>{item.description}</div>
+                                                        <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '2px' }}>{translateItemDesc(item.description, language)}</div>
                                                     </div>
                                                 </div>
                                                 {isUsable && (
@@ -11582,7 +12029,7 @@ export default function GameCanvas({
                                                         }}
                                                         style={{ margin: 0, marginLeft: '12px', padding: '5px 12px', fontSize: '10px', fontWeight: 'bold', background: 'rgba(16,185,129,0.2)', border: '1px solid rgba(16,185,129,0.4)', borderRadius: '8px', color: '#6ee7b7', cursor: 'pointer', whiteSpace: 'nowrap' }}
                                                     >
-                                                        Usar
+                                                        {language === 'es' ? 'Usar' : 'Use'}
                                                     </button>
                                                 )}
                                             </div>
@@ -11603,14 +12050,14 @@ export default function GameCanvas({
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px 12px', borderBottom: '1px solid rgba(192,132,252,0.12)' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                 <span style={{ fontSize: '18px' }}>🛠️</span>
-                                <span style={{ color: '#c084fc', fontWeight: 'bold', fontSize: '14px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Taller de Alquimia</span>
+                                <span style={{ color: '#c084fc', fontWeight: 'bold', fontSize: '14px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>{t.alchemyWorkshop}</span>
                             </div>
                             <button onClick={() => setShowCraftingModal(false)} style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: '#c084fc', cursor: 'pointer', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', fontWeight: 'bold' }}>&times;</button>
                         </div>
 
                         {/* Materials Quick Bar */}
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', padding: '12px 16px', background: 'rgba(192,132,252,0.03)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                            <div style={{ fontSize: '9px', fontWeight: 'bold', color: '#94a3b8', width: '100%', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '2px' }}>Tus Materiales:</div>
+                            <div style={{ fontSize: '9px', fontWeight: 'bold', color: '#94a3b8', width: '100%', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '2px' }}>{t.yourMaterials}:</div>
                             {[
                                 { id: 'magic_dust', emoji: '✨' },
                                 { id: 'iron_ore', emoji: '🪨' },
@@ -11628,8 +12075,8 @@ export default function GameCanvas({
                                 const qty = inventory.getQuantity(mat.id);
                                 const info = inventory.getItemInfo(mat.id);
                                 return (
-                                    <div key={mat.id} title={info.name || mat.id} style={{ fontSize: '10px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '6px', padding: '3px 8px', display: 'flex', alignItems: 'center', gap: '4px', color: qty > 0 ? '#e2e8f0' : '#64748b' }}>
-                                        <img src={getItemIconUrl(mat.id)} alt={info.name} style={{ width: '12px', height: '12px', objectFit: 'contain', imageRendering: 'pixelated' }} /> {qty}
+                                    <div key={mat.id} title={translateItemName(info.name || mat.id, language)} style={{ fontSize: '10px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '6px', padding: '3px 8px', display: 'flex', alignItems: 'center', gap: '4px', color: qty > 0 ? '#e2e8f0' : '#64748b' }}>
+                                        <img src={getItemIconUrl(mat.id)} alt={translateItemName(info.name || mat.id, language)} style={{ width: '12px', height: '12px', objectFit: 'contain', imageRendering: 'pixelated' }} /> {qty}
                                     </div>
                                 );
                             })}
@@ -11637,18 +12084,21 @@ export default function GameCanvas({
 
                         {/* Coins / Balance status */}
                         <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 16px', background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: '11px' }}>
-                            <span style={{ color: '#aaa' }}>Tus Coins: <strong style={{ color: '#fbbf24' }}>{economy.coins}</strong></span>
-                            <span style={{ color: '#aaa' }}>Saldo RMT: <strong style={{ color: '#34d399' }}>{economy.pusdt.toFixed(2)} pUSDT</strong></span>
+                            <span style={{ color: '#aaa' }}>{t.yourCoins}: <strong style={{ color: '#fbbf24' }}>{economy.coins}</strong></span>
+                            <span style={{ color: '#aaa' }}>{t.rmtBalance}: <strong style={{ color: '#34d399' }}>{economy.pusdt.toFixed(2)} pUSDT</strong></span>
                         </div>
 
                         {/* Referral Link Copy */}
                         <div style={{ padding: '8px 16px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(192,132,252,0.02)' }}>
-                            <span style={{ fontSize: '10px', color: '#a78bfa' }}>🔗 Gana Fragmentos Dorados invitando amigos:</span>
+                            <span style={{ fontSize: '10px', color: '#a78bfa' }}>{t.inviteTip}</span>
                             <button
                                 onClick={() => {
                                     const inviteLink = `${window.location.origin}/?ref=${walletAddress || ''}`;
                                     navigator.clipboard.writeText(inviteLink);
-                                    showNotification("¡Enlace Copiado! 📢", "¡Enlace de referido copiado al portapapeles! Recibirás 500 Coins y 1 Fragmento Dorado cuando un amigo use tu link para registrarse.");
+                                    showNotification(
+                                        language === 'es' ? "¡Enlace Copiado! 📢" : "Link Copied! 📢", 
+                                        language === 'es' ? "¡Enlace de referido copiado al portapapeles! Recibirás 500 Coins y 1 Fragmento Dorado cuando un amigo use tu link para registrarse." : "Referral link copied to clipboard! You will receive 500 Coins and 1 Golden Shard when a friend registers using your link."
+                                    );
                                 }}
                                 style={{
                                     margin: 0, padding: '4px 8px', fontSize: '9px', background: 'rgba(167,139,250,0.15)',
@@ -11656,7 +12106,7 @@ export default function GameCanvas({
                                     fontWeight: 'bold', cursor: 'pointer'
                                 }}
                             >
-                                📋 Copiar Link
+                                {t.copyLink}
                             </button>
                         </div>
 
@@ -11664,14 +12114,14 @@ export default function GameCanvas({
                         {inventory.getQuantity('gold_ticket') > 0 && (
                             <div style={{ margin: '12px 16px', padding: '12px', background: 'rgba(52,211,153,0.08)', border: '1px solid rgba(52,211,153,0.3)', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', fontWeight: 'bold', color: '#34d399' }}>
-                                    🎫 ¡Tienes Tiques de Oro para Canjear! (x{inventory.getQuantity('gold_ticket')})
+                                    🎫 {t.goldTicketsRedeem} (x{inventory.getQuantity('gold_ticket')})
                                 </div>
                                 <button 
                                     onClick={handleRedeemGoldTicket}
                                     className="pokemon-button success animate-hover" 
                                     style={{ margin: 0, padding: '6px 12px', fontSize: '11px', width: '100%', background: '#10b981', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold' }}
                                 >
-                                    Canjear 1 Tique por 1.00 pUSDT 💸
+                                    {t.redeemTicketMsg}
                                 </button>
                             </div>
                         )}
@@ -11688,7 +12138,7 @@ export default function GameCanvas({
                                         color: activeCraftingTab === 2 ? '#c084fc' : '#94a3b8'
                                     }}
                                 >
-                                    🔧 Tier 2 (Útiles)
+                                    {t.tier2Tools}
                                 </button>
                                 <button
                                     onClick={() => setActiveCraftingTab(3)}
@@ -11699,7 +12149,7 @@ export default function GameCanvas({
                                         color: activeCraftingTab === 3 ? '#fbbf24' : '#94a3b8'
                                     }}
                                 >
-                                    👑 Tier 3 (Maestría)
+                                    {t.tier3Mastery}
                                 </button>
                             </div>
                         </div>
@@ -11714,10 +12164,10 @@ export default function GameCanvas({
                                         <div key={recipe.id} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', padding: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                                                    <img src={getItemIconUrl(recipe.yieldsId || recipe.id)} alt={recipe.name} style={{ width: '24px', height: '24px', objectFit: 'contain', imageRendering: 'pixelated' }} />
+                                                    <img src={getItemIconUrl(recipe.yieldsId || recipe.id)} alt={translateItemName(recipe.name, language)} style={{ width: '24px', height: '24px', objectFit: 'contain', imageRendering: 'pixelated' }} />
                                                     <div style={{ textAlign: 'left' }}>
-                                                        <div style={{ fontWeight: 'bold', fontSize: '12px', color: '#e2e8f0' }}>{recipe.name}</div>
-                                                        <div style={{ fontSize: '9px', color: '#94a3b8', marginTop: '1px' }}>{recipe.description}</div>
+                                                        <div style={{ fontWeight: 'bold', fontSize: '12px', color: '#e2e8f0' }}>{translateItemName(recipe.name, language)}</div>
+                                                        <div style={{ fontSize: '9px', color: '#94a3b8', marginTop: '1px' }}>{translateItemDesc(recipe.description, language)}</div>
                                                     </div>
                                                 </div>
                                                 <div style={{ fontSize: '10px', color: economy.coins >= recipe.cost ? '#fbbf24' : '#f87171', fontWeight: 'bold', background: 'rgba(0,0,0,0.2)', padding: '2px 6px', borderRadius: '4px' }}>
@@ -11734,8 +12184,8 @@ export default function GameCanvas({
                                                     const hasEnough = owned >= req.quantity;
                                                     return (
                                                         <div key={req.id} style={{ fontSize: '9px', color: hasEnough ? '#34d399' : '#f87171', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                            <img src={getItemIconUrl(req.id)} alt={name} style={{ width: '11px', height: '11px', objectFit: 'contain', imageRendering: 'pixelated' }} />
-                                                            <span>{name}: <strong style={{ textDecoration: !hasEnough ? 'underline' : 'none' }}>{owned}/{req.quantity}</strong></span>
+                                                            <img src={getItemIconUrl(req.id)} alt={translateItemName(name, language)} style={{ width: '11px', height: '11px', objectFit: 'contain', imageRendering: 'pixelated' }} />
+                                                            <span>{translateItemName(name, language)}: <strong style={{ textDecoration: !hasEnough ? 'underline' : 'none' }}>{owned}/{req.quantity}</strong></span>
                                                         </div>
                                                     );
                                                 })}
@@ -11747,7 +12197,7 @@ export default function GameCanvas({
                                                 className={`pokemon-button ${canCraftThis ? 'success' : 'disabled'}`}
                                                 style={{ margin: 0, padding: '5px 12px', fontSize: '11px', fontWeight: 'bold', opacity: canCraftThis ? 1 : 0.4 }}
                                             >
-                                                Fabricar {recipe.emoji}
+                                                {t.craft} {recipe.emoji}
                                             </button>
                                         </div>
                                     );
@@ -11763,7 +12213,7 @@ export default function GameCanvas({
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px 12px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                 <span style={{ fontSize: '18px' }}>💻</span>
-                                <span style={{ color: '#e2e8f0', fontWeight: 'bold', fontSize: '14px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>PC Storage</span>
+                                <span style={{ color: '#e2e8f0', fontWeight: 'bold', fontSize: '14px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>{t.pcStorage}</span>
                             </div>
                             <button onClick={() => setShowPcModal(false)} style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: '#94a3b8', cursor: 'pointer', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', fontWeight: 'bold' }}>&times;</button>
                         </div>
@@ -11771,7 +12221,7 @@ export default function GameCanvas({
                             {/* Team Section */}
                             <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '12px' }}>
                                 <h4 style={{ fontWeight: 'bold', fontSize: '12px', margin: '0 0 10px 0', color: '#60a5fa', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '6px' }}>
-                                    Tu Equipo ({team.length}/6)
+                                    {t.team} ({team.length}/6)
                                 </h4>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '180px', overflowY: 'auto', paddingRight: '4px' }}>
                                     {team.map((p: any, idx: number) => {
@@ -11785,10 +12235,10 @@ export default function GameCanvas({
                                                 {sprite && <img src={sprite} alt={p.id} style={{ width: '36px', height: '36px', imageRendering: 'pixelated' }} />}
                                                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                                                     <span style={{ textTransform: 'capitalize', fontWeight: 'bold', fontSize: '12px', color: '#e2e8f0' }}>
-                                                        {p.is_shiny && '✨ '}{p.id} <span style={{ fontSize: '9px', color: '#c084fc', fontWeight: 'normal' }}>(Nvl. {p.level ?? 5})</span>
+                                                        {p.is_shiny && '✨ '}{p.id} <span style={{ fontSize: '9px', color: '#c084fc', fontWeight: 'normal' }}>({language === 'es' ? 'Nvl.' : 'Lvl.'} {p.level ?? 5})</span>
                                                     </span>
                                                     <span style={{ fontSize: '10px', color: '#34d399' }}>
-                                                        +{dailyIncome} Coins/Día
+                                                        +{dailyIncome} Coins/{language === 'es' ? 'Día' : 'Day'}
                                                     </span>
                                                 </div>
                                                 <div style={{ display: 'flex', gap: '4px' }}>
@@ -11796,14 +12246,14 @@ export default function GameCanvas({
                                                         onClick={() => setSelectedInfoPoke(p)}
                                                         style={{ padding: '4px 8px', fontSize: '10px', background: 'rgba(96,165,250,0.15)', border: '1px solid rgba(96,165,250,0.35)', borderRadius: '6px', color: '#60a5fa', cursor: 'pointer', margin: 0 }}
                                                     >
-                                                        Info
+                                                        {t.info}
                                                     </button>
                                                     <button
                                                         onClick={() => handleMoveToPc(idx)}
                                                         disabled={team.length <= 1}
                                                         style={{ padding: '4px 8px', fontSize: '10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: '#94a3b8', cursor: team.length <= 1 ? 'not-allowed' : 'pointer', opacity: team.length <= 1 ? 0.5 : 1, margin: 0 }}
                                                     >
-                                                        Mover a PC
+                                                        {t.moveToPc}
                                                     </button>
                                                 </div>
                                             </div>
@@ -11815,11 +12265,11 @@ export default function GameCanvas({
                             {/* PC Section */}
                             <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '12px' }}>
                                 <h4 style={{ fontWeight: 'bold', fontSize: '12px', margin: '0 0 10px 0', color: '#c084fc', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '6px' }}>
-                                    Almacenamiento PC ({pcPokemon.length})
+                                    {language === 'es' ? 'Almacenamiento PC' : 'PC Storage'} ({pcPokemon.length})
                                 </h4>
                                 {pcPokemon.length === 0 ? (
                                     <div style={{ textAlign: 'center', padding: '16px', fontSize: '12px', color: '#64748b', fontStyle: 'italic' }}>
-                                        No tienes Pokémon en la PC.
+                                        {t.pcNoPokemon}
                                     </div>
                                 ) : (
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '180px', overflowY: 'auto', paddingRight: '4px' }}>
@@ -11834,10 +12284,10 @@ export default function GameCanvas({
                                                     {sprite && <img src={sprite} alt={p.id} style={{ width: '36px', height: '36px', imageRendering: 'pixelated' }} />}
                                                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                                                         <span style={{ textTransform: 'capitalize', fontWeight: 'bold', fontSize: '12px', color: '#e2e8f0' }}>
-                                                            {p.is_shiny && '✨ '}{p.id} <span style={{ fontSize: '9px', color: '#c084fc', fontWeight: 'normal' }}>(Nvl. {p.level ?? 5})</span>
+                                                            {p.is_shiny && '✨ '}{p.id} <span style={{ fontSize: '9px', color: '#c084fc', fontWeight: 'normal' }}>({language === 'es' ? 'Nvl.' : 'Lvl.'} {p.level ?? 5})</span>
                                                         </span>
                                                         <span style={{ fontSize: '10px', color: '#34d399' }}>
-                                                            +{dailyIncome} Coins/Día
+                                                            +{dailyIncome} Coins/{language === 'es' ? 'Día' : 'Day'}
                                                         </span>
                                                     </div>
                                                     <div style={{ display: 'flex', gap: '4px' }}>
@@ -11845,14 +12295,14 @@ export default function GameCanvas({
                                                             onClick={() => setSelectedInfoPoke(p)}
                                                             style={{ padding: '4px 8px', fontSize: '10px', background: 'rgba(96,165,250,0.15)', border: '1px solid rgba(96,165,250,0.35)', borderRadius: '6px', color: '#60a5fa', cursor: 'pointer', margin: 0 }}
                                                         >
-                                                            Info
+                                                            {t.info}
                                                         </button>
                                                         <button
                                                             onClick={() => handleMoveToTeam(idx)}
                                                             disabled={team.length >= 6}
                                                             style={{ padding: '4px 8px', fontSize: '10px', background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.35)', borderRadius: '6px', color: '#34d399', cursor: team.length >= 6 ? 'not-allowed' : 'pointer', opacity: team.length >= 6 ? 0.5 : 1, margin: 0 }}
                                                         >
-                                                            Mover a Equipo
+                                                            {t.moveToTeam}
                                                         </button>
                                                         <button
                                                             onClick={() => {
@@ -11861,7 +12311,7 @@ export default function GameCanvas({
                                                             }}
                                                             style={{ padding: '4px 8px', fontSize: '10px', background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.35)', borderRadius: '6px', color: '#f87171', cursor: 'pointer', margin: 0 }}
                                                         >
-                                                            Liberar
+                                                            {t.release}
                                                         </button>
                                                     </div>
                                                 </div>
@@ -11876,7 +12326,7 @@ export default function GameCanvas({
                                 onClick={() => setShowPcModal(false)}
                                 style={{ margin: 0, padding: '9px 14px', fontSize: '12px', fontWeight: 'bold', width: '100%', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: '8px', color: '#f87171', cursor: 'pointer' }}
                             >
-                                Cerrar
+                                {t.close}
                             </button>
                         </div>
                     </div>
@@ -11905,7 +12355,7 @@ export default function GameCanvas({
                         }}>
                             <div style={{ fontSize: '32px', marginBottom: '8px' }}>⚠️</div>
                             <h3 style={{ margin: '0 0 12px 0', fontSize: '16px', fontWeight: 'bold', color: '#f87171', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                                ¿Liberar Pokémon?
+                                {language === 'es' ? '¿Liberar Pokémon?' : 'Release Pokémon?'}
                             </h3>
                             
                             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '12px', marginBottom: '16px' }}>
@@ -11914,17 +12364,19 @@ export default function GameCanvas({
                                     {pokeToRelease.is_shiny && '✨ '}{pokeToRelease.id}
                                 </span>
                                 <span style={{ fontSize: '11px', color: '#c084fc', marginTop: '2px' }}>
-                                    Nivel {pokeToRelease.level ?? 5}
+                                    {t.level} {pokeToRelease.level ?? 5}
                                 </span>
                                 {pokeToRelease.is_shiny && (
                                     <span style={{ fontSize: '10px', color: '#fbbf24', fontWeight: 'bold', marginTop: '6px', background: 'rgba(251, 191, 36, 0.15)', border: '1px solid rgba(251, 191, 36, 0.3)', padding: '2px 8px', borderRadius: '20px' }}>
-                                        ¡ATENCIÓN: ES SHINY! ✨
+                                        {language === 'es' ? '¡ATENCIÓN: ES SHINY! ✨' : 'ATTENTION: IT IS SHINY! ✨'}
                                     </span>
                                 )}
                             </div>
 
                             <p style={{ fontSize: '12px', color: '#94a3b8', margin: '0 0 20px 0', lineHeight: '1.5' }}>
-                                ¿Estás seguro de que quieres liberar a este Pokémon? Esta acción es irreversible y no podrás recuperarlo.
+                                {language === 'es' 
+                                    ? '¿Estás seguro de que quieres liberar a este Pokémon? Esta acción es irreversible y no podrás recuperarlo.' 
+                                    : 'Are you sure you want to release this Pokémon? This action is irreversible and you will not be able to recover it.'}
                             </p>
 
                             <div style={{ display: 'flex', gap: '8px' }}>
@@ -11935,13 +12387,13 @@ export default function GameCanvas({
                                     }}
                                     style={{ flex: 1, margin: 0, padding: '10px 14px', fontSize: '12px', fontWeight: 'bold', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: '#94a3b8', cursor: 'pointer' }}
                                 >
-                                    Cancelar
+                                    {t.cancel}
                                 </button>
                                 <button
                                     onClick={handleReleasePokemon}
                                     style={{ flex: 1, margin: 0, padding: '10px 14px', fontSize: '12px', fontWeight: 'bold', background: 'rgba(239,68,68,0.2)', border: '1px solid rgba(239,68,68,0.5)', borderRadius: '8px', color: '#f87171', cursor: 'pointer' }}
                                 >
-                                    Sí, Liberar
+                                    {language === 'es' ? 'Sí, Liberar' : 'Yes, Release'}
                                 </button>
                             </div>
                         </div>
@@ -11973,8 +12425,8 @@ export default function GameCanvas({
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                     <span style={{ fontSize: '20px' }}>🛍️</span>
                                     <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                        <span style={{ color: '#e2e8f0', fontWeight: 'bold', fontSize: '14px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Mercado Global</span>
-                                        <span style={{ fontSize: '9px', color: '#c084fc' }}>Comercio Seguro P2P • Saldo: {economyRef.current.coins} Coins</span>
+                                        <span style={{ color: '#e2e8f0', fontWeight: 'bold', fontSize: '14px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>{t.globalMarketplace}</span>
+                                        <span style={{ fontSize: '9px', color: '#c084fc' }}>{t.p2pTrading} • {t.balance}: {economyRef.current.coins} Coins</span>
                                     </div>
                                 </div>
                                 <button onClick={() => { setShowMarketplaceModal(false); setSelectedProductForDetail(null); }} style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: '#94a3b8', cursor: 'pointer', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', fontWeight: 'bold' }}>&times;</button>
@@ -11983,16 +12435,16 @@ export default function GameCanvas({
                             {/* Tabs */}
                             <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(0,0,0,0.15)' }}>
                                 {[
-                                    { id: 'buy', label: '🛍️ Comprar' },
-                                    { id: 'sell', label: '➕ Publicar' },
-                                    { id: 'my_listings', label: '📂 Mis Ventas' },
-                                    { id: 'history', label: '📜 Historial' }
-                                ].map(t => {
-                                    const isActive = marketTab === t.id;
+                                    { id: 'buy', label: `🛍️ ${language === 'es' ? 'Comprar' : 'Buy'}` },
+                                    { id: 'sell', label: `➕ ${language === 'es' ? 'Publicar' : 'Sell'}` },
+                                    { id: 'my_listings', label: `📂 ${language === 'es' ? 'Mis Ventas' : 'My Listings'}` },
+                                    { id: 'history', label: `📜 ${language === 'es' ? 'Historial' : 'History'}` }
+                                ].map(tTab => {
+                                    const isActive = marketTab === tTab.id;
                                     return (
                                         <button
-                                            key={t.id}
-                                            onClick={() => { setMarketTab(t.id as any); setSelectedProductForDetail(null); }}
+                                            key={tTab.id}
+                                            onClick={() => { setMarketTab(tTab.id as any); setSelectedProductForDetail(null); }}
                                             style={{
                                                 flex: 1,
                                                 padding: '10px 4px',
@@ -12007,7 +12459,7 @@ export default function GameCanvas({
                                                 transition: 'all 0.2s'
                                             }}
                                         >
-                                            {t.label}
+                                            {tTab.label}
                                         </button>
                                     );
                                 })}
@@ -12067,7 +12519,7 @@ export default function GameCanvas({
                                          p.assignedSeller = lowestListings[assignedIdx]?.seller_name || 'N/A';
                                      });
 
-                                     const sortedGroupedItems = Object.values(groupedItems).sort((a, b) => a.name.localeCompare(b.name));
+                                     const sortedGroupedItems = Object.values(groupedItems).sort((a, b) => translateItemName(a.name, language).localeCompare(translateItemName(b.name, language)));
 
                                     // Filter active Pokémon listings
                                     const activePokemonListings = marketListings.filter(l => {
@@ -12082,9 +12534,9 @@ export default function GameCanvas({
                                     const getItemTags = (assetId: string) => {
                                         const lower = assetId.toLowerCase();
                                         if (lower.includes('ball')) return ['POKÉBALL', 'MATERIAL'];
-                                        if (lower.includes('potion') || lower.includes('candy') || lower.includes('egg') || lower.includes('heal')) return ['MEDICINA', 'CONSUMIBLE'];
-                                        if (lower.includes('elixir') || lower.includes('incense') || lower.includes('repel')) return ['BOOST', 'TEMPORAL'];
-                                        return ['RARO', 'MATERIAL'];
+                                        if (lower.includes('potion') || lower.includes('candy') || lower.includes('egg') || lower.includes('heal')) return [language === 'es' ? 'MEDICINA' : 'MEDICINE', language === 'es' ? 'CONSUMIBLE' : 'CONSUMABLE'];
+                                        if (lower.includes('elixir') || lower.includes('incense') || lower.includes('repel')) return ['BOOST', language === 'es' ? 'TEMPORAL' : 'TEMPORARY'];
+                                        return [language === 'es' ? 'RARO' : 'RARE', 'MATERIAL'];
                                     };
 
                                     // Render detailed product sub-modal if selectedProductForDetail is set
@@ -12160,7 +12612,7 @@ export default function GameCanvas({
                                                         justifyContent: 'center'
                                                     }}>
                                                         {p.sprite ? (
-                                                            <img src={p.sprite} alt={p.name} style={{ width: '64px', height: '64px', imageRendering: 'pixelated', filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.3))' }} />
+                                                            <img src={p.sprite} alt={translateItemName(p.name, language)} style={{ width: '64px', height: '64px', imageRendering: 'pixelated', filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.3))' }} />
                                                         ) : (
                                                             <span style={{ fontSize: '32px' }}>📦</span>
                                                         )}
@@ -12175,7 +12627,7 @@ export default function GameCanvas({
                                                         textShadow: '0 0 8px rgba(99,102,241,0.5)',
                                                         textAlign: 'center'
                                                     }}>
-                                                        {p.name}
+                                                        {translateItemName(p.name, language)}
                                                     </span>
 
                                                     {/* Tags */}
@@ -12213,14 +12665,14 @@ export default function GameCanvas({
                                                         maxWidth: '320px',
                                                         lineHeight: '1.4'
                                                     }}>
-                                                        "{p.description || 'Ingrediente o consumible del juego.'}"
+                                                        "{translateItemDesc(p.description, language) || (language === 'es' ? 'Ingrediente o consumible del juego.' : 'In-game ingredient or consumable.')}"
                                                     </span>
                                                 </div>
 
                                                 {/* OTRAS OFERTAS */}
                                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                                     <span style={{ color: '#fbbf24', fontWeight: 'bold', fontSize: '9px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-                                                        📂 Otras Ofertas
+                                                        📂 {language === 'es' ? 'Otras Ofertas' : 'Other Offers'}
                                                     </span>
                                                     <div style={{
                                                         background: 'rgba(0,0,0,0.25)',
@@ -12241,7 +12693,7 @@ export default function GameCanvas({
                                                         {higherPriceStock > 0 && (
                                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(255,255,255,0.04)', paddingTop: '6px' }}>
                                                                 <span style={{ color: '#94a3b8' }}>
-                                                                    {lowestPrice + 1} o más
+                                                                    {lowestPrice + 1} {language === 'es' ? 'o más' : 'or more'}
                                                                 </span>
                                                                 <span style={{ color: '#94a3b8' }}>×{higherPriceStock}</span>
                                                             </div>
@@ -12252,7 +12704,7 @@ export default function GameCanvas({
                                                 {/* CANTIDAD */}
                                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                                     <span style={{ color: '#fbbf24', fontWeight: 'bold', fontSize: '9px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-                                                        📦 Cantidad
+                                                        📦 {t.quantity}
                                                     </span>
                                                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '6px', padding: '2px 8px' }}>
@@ -12273,7 +12725,7 @@ export default function GameCanvas({
                                                             </button>
                                                         </div>
                                                         <span style={{ fontSize: '11px', color: '#64748b' }}>
-                                                            / {p.totalStock} disponibles
+                                                            / {p.totalStock} {language === 'es' ? 'disponibles' : 'available'}
                                                         </span>
                                                     </div>
 
@@ -12323,7 +12775,7 @@ export default function GameCanvas({
                                                                 margin: 0
                                                             }}
                                                         >
-                                                            Máx
+                                                            {language === 'es' ? 'Máx' : 'Max'}
                                                         </button>
                                                     </div>
                                                 </div>
@@ -12339,17 +12791,17 @@ export default function GameCanvas({
                                                     gap: '8px'
                                                 }}>
                                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                        <span style={{ fontSize: '11px', color: '#c7d2fe', fontWeight: 'bold' }}>PRECIO TOTAL</span>
+                                                        <span style={{ fontSize: '11px', color: '#c7d2fe', fontWeight: 'bold' }}>{language === 'es' ? 'PRECIO TOTAL' : 'TOTAL PRICE'}</span>
                                                         <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#fbbf24', display: 'flex', alignItems: 'center', gap: '3px' }}>
                                                             🪙 {totalPrice}
                                                         </span>
                                                     </div>
                                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px dashed rgba(99,102,241,0.15)', paddingTop: '6px', fontSize: '10px', color: '#94a3b8' }}>
-                                                        <span>Tus gemas (Coins):</span>
+                                                        <span>{language === 'es' ? 'Tus gemas (Coins):' : 'Your gems (Coins):'}</span>
                                                         <span style={{ color: '#fff' }}>{economyRef.current.coins}</span>
                                                     </div>
                                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '10px', color: '#94a3b8' }}>
-                                                        <span>Vendedor asignado:</span>
+                                                        <span>{language === 'es' ? 'Vendedor asignado:' : 'Assigned seller:'}</span>
                                                         <span style={{ color: '#f472b6', fontWeight: 'bold' }}>{assignedSeller}</span>
                                                     </div>
                                                 </div>
@@ -12371,7 +12823,7 @@ export default function GameCanvas({
                                                         margin: 0
                                                     }}
                                                 >
-                                                    {isPurchasing ? 'Procesando...' : economyRef.current.coins < totalPrice ? 'FONDOS INSUFICIENTES' : 'COMPRAR AHORA'}
+                                                    {isPurchasing ? (language === 'es' ? 'Procesando...' : 'Processing...') : economyRef.current.coins < totalPrice ? (language === 'es' ? 'FONDOS INSUFICIENTES' : 'INSUFFICIENT FUNDS') : (language === 'es' ? 'COMPRAR AHORA' : 'BUY NOW')}
                                                 </button>
                                             </div>
                                         );
@@ -12386,7 +12838,7 @@ export default function GameCanvas({
                                             <div style={{ display: 'flex', gap: '8px' }}>
                                                 <input
                                                     type="text"
-                                                    placeholder="Buscar por nombre o vendedor..."
+                                                    placeholder={language === 'es' ? 'Buscar por nombre o vendedor...' : 'Search by name or seller...'}
                                                     value={marketSearch}
                                                     onChange={e => setMarketSearch(e.target.value)}
                                                     style={{ flex: 1, padding: '8px 12px', fontSize: '12px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', color: '#fff', outline: 'none' }}
@@ -12396,8 +12848,8 @@ export default function GameCanvas({
                                                     onChange={e => setMarketFilterType(e.target.value as any)}
                                                     style={{ padding: '8px', fontSize: '12px', background: '#1e293b', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', color: '#fff', outline: 'none' }}
                                                 >
-                                                    <option value="all">Todos</option>
-                                                    <option value="item">Objetos</option>
+                                                    <option value="all">{language === 'es' ? 'Todos' : 'All'}</option>
+                                                    <option value="item">{t.items}</option>
                                                     <option value="pokemon">Pokémon</option>
                                                 </select>
                                             </div>
@@ -12409,11 +12861,11 @@ export default function GameCanvas({
                                                 {showItems && (
                                                     <>
                                                         {marketFilterType === 'all' && sortedGroupedItems.length > 0 && (
-                                                            <div style={{ fontSize: '9px', color: '#c084fc', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 'bold', marginBottom: '2px' }}>Objetos en Venta</div>
+                                                            <div style={{ fontSize: '9px', color: '#c084fc', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 'bold', marginBottom: '2px' }}>{language === 'es' ? 'Objetos en Venta' : 'Items for Sale'}</div>
                                                         )}
                                                         {sortedGroupedItems.length === 0 && marketFilterType === 'item' ? (
                                                             <div style={{ textAlign: 'center', padding: '20px', color: '#64748b', fontSize: '12px', fontStyle: 'italic' }}>
-                                                                No hay objetos en venta en este momento.
+                                                                {language === 'es' ? 'No hay objetos en venta en este momento.' : 'There are no items for sale at this moment.'}
                                                             </div>
                                                         ) : (
                                                             sortedGroupedItems.map(p => {
@@ -12423,7 +12875,7 @@ export default function GameCanvas({
                                                                         {/* Sprite */}
                                                                         <div style={{ width: '40px', height: '40px', background: 'rgba(0,0,0,0.2)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
                                                                             {p.sprite ? (
-                                                                                <img src={p.sprite} alt={p.name} style={{ width: '36px', height: '36px', imageRendering: 'pixelated' }} />
+                                                                                <img src={p.sprite} alt={translateItemName(p.name, language)} style={{ width: '36px', height: '36px', imageRendering: 'pixelated' }} />
                                                                             ) : (
                                                                                 <span style={{ fontSize: '18px' }}>📦</span>
                                                                             )}
@@ -12432,14 +12884,14 @@ export default function GameCanvas({
                                                                         {/* Details */}
                                                                         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '2px' }}>
                                                                             <span style={{ textTransform: 'capitalize', fontWeight: 'bold', fontSize: '12px', color: '#e2e8f0' }}>
-                                                                                {p.name}
+                                                                                {translateItemName(p.name, language)}
                                                                             </span>
                                                                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                                                                                 <span style={{ fontSize: '8px', padding: '1px 4px', background: 'rgba(255,255,255,0.06)', borderRadius: '3px', color: '#94a3b8' }}>
                                                                                     {tags[0]}
                                                                                 </span>
                                                                                 <span style={{ fontSize: '10px', color: '#cbd5e1' }}>
-                                                                                    Stock: <strong style={{ color: '#34d399' }}>{p.totalStock}</strong> • Vendedor: <strong style={{ color: '#f472b6' }}>{p.assignedSeller}</strong>
+                                                                                    Stock: <strong style={{ color: '#34d399' }}>{p.totalStock}</strong> • {language === 'es' ? 'Vendedor' : 'Seller'}: <strong style={{ color: '#f472b6' }}>{p.assignedSeller}</strong>
                                                                                 </span>
                                                                             </div>
                                                                         </div>
@@ -12447,7 +12899,7 @@ export default function GameCanvas({
                                                                         {/* Price & Action */}
                                                                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                                                             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                                                                                <span style={{ fontSize: '8px', color: '#94a3b8' }}>Desde</span>
+                                                                                <span style={{ fontSize: '8px', color: '#94a3b8' }}>{language === 'es' ? 'Desde' : 'From'}</span>
                                                                                 <span style={{ color: '#fbbf24', fontWeight: 'bold', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '2px' }}>
                                                                                     🪙 {p.lowestPrice}
                                                                                 </span>
@@ -12471,7 +12923,7 @@ export default function GameCanvas({
                                                                                     margin: 0
                                                                                 }}
                                                                             >
-                                                                                Comprar
+                                                                                {language === 'es' ? 'Comprar' : 'Buy'}
                                                                             </button>
                                                                         </div>
                                                                     </div>
@@ -12485,11 +12937,11 @@ export default function GameCanvas({
                                                 {showPokemon && (
                                                     <>
                                                         {marketFilterType === 'all' && activePokemonListings.length > 0 && (
-                                                            <div style={{ fontSize: '9px', color: '#c084fc', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 'bold', marginTop: '6px', marginBottom: '2px' }}>Pokémon en Venta</div>
+                                                            <div style={{ fontSize: '9px', color: '#c084fc', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 'bold', marginTop: '6px', marginBottom: '2px' }}>{language === 'es' ? 'Pokémon en Venta' : 'Pokémon for Sale'}</div>
                                                         )}
                                                         {activePokemonListings.length === 0 && marketFilterType === 'pokemon' ? (
                                                             <div style={{ textAlign: 'center', padding: '20px', color: '#64748b', fontSize: '12px', fontStyle: 'italic' }}>
-                                                                No hay Pokémon en venta en este momento.
+                                                                {language === 'es' ? 'No hay Pokémon en venta en este momento.' : 'There are no Pokémon for sale at this moment.'}
                                                             </div>
                                                         ) : (
                                                             activePokemonListings.map((l: any) => {
@@ -12524,7 +12976,7 @@ export default function GameCanvas({
                                                                                 {nameLabel}
                                                                             </span>
                                                                             <span style={{ fontSize: '10px', color: '#94a3b8' }}>
-                                                                                Nivel: {l.pokemon_data?.level || 1} • Vendedor: {l.seller_name}
+                                                                                {t.level}: {l.pokemon_data?.level || 1} • {language === 'es' ? 'Vendedor' : 'Seller'}: {l.seller_name}
                                                                             </span>
                                                                             {(() => {
                                                                                 const ivs = l.pokemon_data?.ivs || { hp: 15, attack: 15, defense: 15, speed: 15 };
@@ -12546,7 +12998,7 @@ export default function GameCanvas({
                                                                                     🪙 {l.price}
                                                                                 </span>
                                                                                 <span style={{ fontSize: '8px', color: '#34d399' }}>
-                                                                                    +{l.pokemon_data?.is_evolved ? Math.floor((pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === l.asset_id.toLowerCase())?.gold_per_hour || 5) * 24 * 1.25) : ((pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === l.asset_id.toLowerCase())?.gold_per_hour || 5) * 24)} Coins/Día
+                                                                                    +{l.pokemon_data?.is_evolved ? Math.floor((pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === l.asset_id.toLowerCase())?.gold_per_hour || 5) * 24 * 1.25) : ((pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === l.asset_id.toLowerCase())?.gold_per_hour || 5) * 24)} Coins/{language === 'es' ? 'Día' : 'Day'}
                                                                                 </span>
                                                                             </div>
 
@@ -12564,7 +13016,7 @@ export default function GameCanvas({
                                                                                     margin: 0
                                                                                 }}
                                                                             >
-                                                                                Comprar
+                                                                                {language === 'es' ? 'Comprar' : 'Buy'}
                                                                             </button>
                                                                         </div>
                                                                     </div>
@@ -12577,7 +13029,7 @@ export default function GameCanvas({
                                                 {/* Global empty state if nothing listed at all */}
                                                 {showItems && sortedGroupedItems.length === 0 && showPokemon && activePokemonListings.length === 0 && (
                                                     <div style={{ textAlign: 'center', padding: '30px', color: '#64748b', fontSize: '12px', fontStyle: 'italic' }}>
-                                                        No hay ofertas activas en el mercado.
+                                                        {language === 'es' ? 'No hay ofertas activas en el mercado.' : 'No active listings in the market.'}
                                                     </div>
                                                 )}
 
@@ -12604,7 +13056,7 @@ export default function GameCanvas({
                                                     cursor: 'pointer'
                                                 }}
                                             >
-                                                📦 Vender Objeto
+                                                {language === 'es' ? '📦 Vender Objeto' : '📦 Sell Item'}
                                             </button>
                                             <button
                                                 onClick={() => { setSelectedPokeToListIdx(null); setSelectedItemToList(''); setSellTabType('pokemon'); }}
@@ -12619,23 +13071,23 @@ export default function GameCanvas({
                                                     cursor: 'pointer'
                                                 }}
                                             >
-                                                👾 Vender Pokémon (de PC)
+                                                {language === 'es' ? '👾 Vender Pokémon (de PC)' : '👾 Sell Pokémon (from PC)'}
                                             </button>
                                         </div>
 
                                         {/* Sell Item Form */}
                                         {sellTabType === 'item' && (
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '12px', padding: '14px' }}>
-                                                <label style={{ fontSize: '11px', color: '#c084fc', textTransform: 'uppercase', fontWeight: 'bold' }}>1. Selecciona el Objeto</label>
+                                                <label style={{ fontSize: '11px', color: '#c084fc', textTransform: 'uppercase', fontWeight: 'bold' }}>{language === 'es' ? '1. Selecciona el Objeto' : '1. Select the Item'}</label>
                                                 <select
                                                     value={selectedItemToList}
                                                     onChange={e => { setSelectedItemToList(e.target.value); setListQuantity(1); }}
                                                     style={{ padding: '10px', fontSize: '12px', background: '#1e293b', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', color: '#fff', outline: 'none' }}
                                                 >
-                                                    <option value="">-- Elige un Objeto --</option>
+                                                    <option value="">{language === 'es' ? '-- Elige un Objeto --' : '-- Choose an Item --'}</option>
                                                     {listableItems.map(i => (
                                                         <option key={i.id} value={i.id}>
-                                                            {i.emoji || '📦'} {i.name || i.id} (Disponibles: {i.quantity})
+                                                            {i.emoji || '📦'} {translateItemName(i.name || i.id, language)} ({language === 'es' ? 'Disponibles' : 'Available'}: {i.quantity})
                                                         </option>
                                                     ))}
                                                 </select>
@@ -12644,7 +13096,7 @@ export default function GameCanvas({
                                                     <>
                                                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                                                <label style={{ fontSize: '10px', color: '#94a3b8' }}>Cantidad a Vender</label>
+                                                                <label style={{ fontSize: '10px', color: '#94a3b8' }}>{language === 'es' ? 'Cantidad a Vender' : 'Quantity to Sell'}</label>
                                                                 <input
                                                                     type="number"
                                                                     min={1}
@@ -12655,7 +13107,7 @@ export default function GameCanvas({
                                                                 />
                                                             </div>
                                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                                                <label style={{ fontSize: '10px', color: '#94a3b8' }}>Precio Total (Coins)</label>
+                                                                <label style={{ fontSize: '10px', color: '#94a3b8' }}>{language === 'es' ? 'Precio Total (Coins)' : 'Total Price (Coins)'}</label>
                                                                 <input
                                                                     type="number"
                                                                     min={1}
@@ -12666,13 +13118,15 @@ export default function GameCanvas({
                                                             </div>
                                                         </div>
                                                         <div style={{ fontSize: '10px', color: '#ef4444', fontStyle: 'italic', marginTop: '4px' }}>
-                                                            * Comisión del Mercado (5%): Se retendrán {Math.floor(listPrice * 0.05)} Coins al concretarse la venta. Recibirás {listPrice - Math.floor(listPrice * 0.05)} Coins.
+                                                            {language === 'es' 
+                                                                ? `* Comisión del Mercado (5%): Se retendrán ${Math.floor(listPrice * 0.05)} Coins al concretarse la venta. Recibirás ${listPrice - Math.floor(listPrice * 0.05)} Coins.` 
+                                                                : `* Market Fee (5%): ${Math.floor(listPrice * 0.05)} Coins will be retained upon sale. You will receive ${listPrice - Math.floor(listPrice * 0.05)} Coins.`}
                                                         </div>
                                                         <button
                                                             onClick={() => handleCreateListing('item')}
                                                             style={{ marginTop: '8px', padding: '10px', fontSize: '12px', fontWeight: 'bold', background: 'rgba(168,85,247,0.2)', border: '1px solid rgba(168,85,247,0.5)', borderRadius: '8px', color: '#c084fc', cursor: 'pointer' }}
                                                         >
-                                                            🚀 Publicar Oferta de Venta
+                                                            {language === 'es' ? '🚀 Publicar Oferta de Venta' : '🚀 Publish Sale Offer'}
                                                         </button>
                                                     </>
                                                 )}
@@ -12682,10 +13136,10 @@ export default function GameCanvas({
                                         {/* Sell Pokemon Form */}
                                         {sellTabType === 'pokemon' && (
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '12px', padding: '14px' }}>
-                                                <label style={{ fontSize: '11px', color: '#c084fc', textTransform: 'uppercase', fontWeight: 'bold' }}>1. Selecciona el Pokémon (desde PC)</label>
+                                                <label style={{ fontSize: '11px', color: '#c084fc', textTransform: 'uppercase', fontWeight: 'bold' }}>{language === 'es' ? '1. Selecciona el Pokémon (desde PC)' : '1. Select the Pokémon (from PC)'}</label>
                                                 {listablePokemon.length === 0 ? (
                                                     <div style={{ fontSize: '11px', color: '#64748b', fontStyle: 'italic', textAlign: 'center', padding: '10px' }}>
-                                                        No tienes Pokémon disponibles en el PC para vender. Mueve uno de tu equipo al PC primero.
+                                                        {language === 'es' ? 'No tienes Pokémon disponibles en el PC para vender. Mueve uno de tu equipo al PC primero.' : 'You do not have Pokémon available in the PC to sell. Move one from your team to the PC first.'}
                                                     </div>
                                                 ) : (
                                                     <>
@@ -12694,10 +13148,10 @@ export default function GameCanvas({
                                                             onChange={e => setSelectedPokeToListIdx(e.target.value !== '' ? parseInt(e.target.value) : null)}
                                                             style={{ padding: '10px', fontSize: '12px', background: '#1e293b', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', color: '#fff', outline: 'none' }}
                                                         >
-                                                            <option value="">-- Elige un Pokémon --</option>
+                                                            <option value="">{language === 'es' ? '-- Elige un Pokémon --' : '-- Choose a Pokémon --'}</option>
                                                             {listablePokemon.map((p, idx) => (
                                                                 <option key={idx} value={idx}>
-                                                                    {p.is_shiny ? '✨ ' : ''}{p.id} (Nvl. {p.level || 5})
+                                                                    {p.is_shiny ? '✨ ' : ''}{p.id} ({t.level}: {p.level || 5})
                                                                 </option>
                                                             ))}
                                                         </select>
@@ -12705,7 +13159,7 @@ export default function GameCanvas({
                                                         {selectedPokeToListIdx !== null && (
                                                             <>
                                                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                                                    <label style={{ fontSize: '10px', color: '#94a3b8' }}>Precio Solicitado (Coins)</label>
+                                                                    <label style={{ fontSize: '10px', color: '#94a3b8' }}>{language === 'es' ? 'Precio Solicitado (Coins)' : 'Requested Price (Coins)'}</label>
                                                                     <input
                                                                         type="number"
                                                                         min={1}
@@ -12715,13 +13169,15 @@ export default function GameCanvas({
                                                                     />
                                                                 </div>
                                                                 <div style={{ fontSize: '10px', color: '#ef4444', fontStyle: 'italic', marginTop: '4px' }}>
-                                                                    * Comisión del Mercado (5%): Se retendrán {Math.floor(listPrice * 0.05)} Coins al concretarse la venta. Recibirás {listPrice - Math.floor(listPrice * 0.05)} Coins.
+                                                                    {language === 'es' 
+                                                                        ? `* Comisión del Mercado (5%): Se retendrán ${Math.floor(listPrice * 0.05)} Coins al concretarse la venta. Recibirás ${listPrice - Math.floor(listPrice * 0.05)} Coins.` 
+                                                                        : `* Market Fee (5%): ${Math.floor(listPrice * 0.05)} Coins will be retained upon sale. You will receive ${listPrice - Math.floor(listPrice * 0.05)} Coins.`}
                                                                 </div>
                                                                 <button
                                                                     onClick={() => handleCreateListing('pokemon')}
                                                                     style={{ marginTop: '8px', padding: '10px', fontSize: '12px', fontWeight: 'bold', background: 'rgba(168,85,247,0.2)', border: '1px solid rgba(168,85,247,0.5)', borderRadius: '8px', color: '#c084fc', cursor: 'pointer' }}
                                                                 >
-                                                                    🚀 Publicar Oferta de Venta
+                                                                    {language === 'es' ? '🚀 Publicar Oferta de Venta' : '🚀 Publish Sale Offer'}
                                                                 </button>
                                                             </>
                                                         )}
@@ -12738,7 +13194,7 @@ export default function GameCanvas({
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '380px', overflowY: 'auto', paddingRight: '4px' }}>
                                             {marketListings.filter(l => l.seller_address === walletAddress && l.status === 'active').length === 0 ? (
                                                 <div style={{ textAlign: 'center', padding: '30px', color: '#64748b', fontSize: '12px', fontStyle: 'italic' }}>
-                                                    No tienes ofertas de venta activas en este momento.
+                                                    {language === 'es' ? 'No tienes ofertas de venta activas en este momento.' : 'You have no active sale offers at this moment.'}
                                                 </div>
                                             ) : (
                                                 marketListings.filter(l => l.seller_address === walletAddress && l.status === 'active').map((l: any) => {
@@ -12748,6 +13204,7 @@ export default function GameCanvas({
                                                     if (l.type === 'item') {
                                                         const info = inventoryRef.current.getItemInfo(l.asset_id);
                                                         spriteUrl = getItemIconUrl(l.asset_id);
+                                                        nameLabel = translateItemName(info.name || l.asset_id, language);
                                                     } else {
                                                         const species = pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === l.asset_id.toLowerCase());
                                                         if (species) {
@@ -12773,7 +13230,7 @@ export default function GameCanvas({
                                                                     {nameLabel}
                                                                 </span>
                                                                 <span style={{ fontSize: '10px', color: '#94a3b8' }}>
-                                                                    {l.type === 'item' ? `Cantidad: ${l.quantity}` : `Nivel: ${l.pokemon_data?.level || 1}`} • Precio: 🪙 {l.price} Coins
+                                                                    {l.type === 'item' ? `${language === 'es' ? 'Cantidad' : 'Quantity'}: ${l.quantity}` : `${t.level}: ${l.pokemon_data?.level || 1}`} • {language === 'es' ? 'Precio' : 'Price'}: 🪙 {l.price} Coins
                                                                 </span>
                                                                 {l.type === 'pokemon' && (() => {
                                                                     const ivs = l.pokemon_data?.ivs || { hp: 15, attack: 15, defense: 15, speed: 15 };
@@ -12802,7 +13259,7 @@ export default function GameCanvas({
                                                                     margin: 0
                                                                 }}
                                                             >
-                                                                Retirar
+                                                                {language === 'es' ? 'Retirar' : 'Cancel'}
                                                             </button>
                                                         </div>
                                                     );
@@ -12818,7 +13275,7 @@ export default function GameCanvas({
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '380px', overflowY: 'auto', paddingRight: '4px' }}>
                                             {marketHistory.length === 0 ? (
                                                 <div style={{ textAlign: 'center', padding: '30px', color: '#64748b', fontSize: '12px', fontStyle: 'italic' }}>
-                                                    No se registran transacciones recientes en el mercado.
+                                                    {language === 'es' ? 'No se registran transacciones recientes en el mercado.' : 'No recent transactions recorded in the market.'}
                                                 </div>
                                             ) : (
                                                 marketHistory.map((h: any) => {
@@ -12826,10 +13283,14 @@ export default function GameCanvas({
                                                     return (
                                                         <div key={h.id} style={{ padding: '8px 10px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '8px', fontSize: '11px', lineHeight: '1.4' }}>
                                                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                                                                <span style={{ color: '#a855f7', fontWeight: 'bold' }}>🛍️ Venta Realizada</span>
+                                                                 <span style={{ color: '#a855f7', fontWeight: 'bold' }}>{language === 'es' ? '🛍️ Venta Realizada' : '🛍️ Sale Completed'}</span>
                                                                 <span style={{ color: '#64748b', fontSize: '9px' }}>{dateStr}</span>
                                                             </div>
-                                                            <span style={{ color: '#60a5fa', fontWeight: 'bold' }}>{h.buyer_name}</span> compró <span style={{ textTransform: 'capitalize', color: '#fff', fontWeight: 'bold' }}>{h.quantity}x {h.asset_id}</span> de <span style={{ color: '#f472b6', fontWeight: 'bold' }}>{h.seller_name}</span> por <span style={{ color: '#fbbf24', fontWeight: 'bold' }}>🪙 {h.price} Coins</span>.
+                                                            {language === 'es' ? (
+                                                                <><span style={{ color: '#60a5fa', fontWeight: 'bold' }}>{h.buyer_name}</span> compró <span style={{ textTransform: 'capitalize', color: '#fff', fontWeight: 'bold' }}>{h.quantity}x {translateItemName(h.asset_id, language)}</span> de <span style={{ color: '#f472b6', fontWeight: 'bold' }}>{h.seller_name}</span> por <span style={{ color: '#fbbf24', fontWeight: 'bold' }}>🪙 {h.price} Coins</span>.</>
+                                                            ) : (
+                                                                <><span style={{ color: '#60a5fa', fontWeight: 'bold' }}>{h.buyer_name}</span> bought <span style={{ textTransform: 'capitalize', color: '#fff', fontWeight: 'bold' }}>{h.quantity}x {translateItemName(h.asset_id, language)}</span> from <span style={{ color: '#f472b6', fontWeight: 'bold' }}>{h.seller_name}</span> for <span style={{ color: '#fbbf24', fontWeight: 'bold' }}>🪙 {h.price} Coins</span>.</>
+                                                            )}
                                                         </div>
                                                     );
                                                 })
@@ -12846,7 +13307,7 @@ export default function GameCanvas({
                                     onClick={() => setShowMarketplaceModal(false)}
                                     style={{ margin: 0, padding: '9px 14px', fontSize: '12px', fontWeight: 'bold', width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '8px', color: '#94a3b8', cursor: 'pointer' }}
                                 >
-                                    Cerrar Mercado
+                                    {language === 'es' ? 'Cerrar Mercado' : 'Close Market'}
                                 </button>
                             </div>
                         </div>
@@ -12875,7 +13336,7 @@ export default function GameCanvas({
                         }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                 <span style={{ fontSize: '18px' }}>🗺️</span>
-                                <span style={{ color: '#e2e8f0', fontWeight: 'bold', fontSize: '14px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Viaje Rápido</span>
+                                <span style={{ color: '#e2e8f0', fontWeight: 'bold', fontSize: '14px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>{t.fastTravel}</span>
                             </div>
                             <button
                                 onClick={() => setShowTravelModal(false)}
@@ -12892,19 +13353,19 @@ export default function GameCanvas({
                         {/* Content */}
                         <div style={{ padding: '16px 16px 20px', color: '#e2e8f0', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                             <div style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.2)', borderRadius: '10px', padding: '10px 12px', fontSize: '11px', color: '#93c5fd', lineHeight: '1.4' }}>
-                                💡 Puedes teletransportarte instantáneamente a cualquier ciudad que ya hayas visitado. Para viajar, debes ver un anuncio publicitario.
+                                {t.travelTip}
                             </div>
 
                             {isTravelling ? (
                                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyItems: 'center', padding: '40px 20px', gap: '12px' }}>
                                     <div className="spinner" style={{ border: '4px solid rgba(255, 255, 255, 0.1)', width: '36px', height: '36px', borderRadius: '50%', borderLeftColor: '#3b82f6', animation: 'spin 1s linear infinite' }}></div>
-                                    <span style={{ fontSize: '12px', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Cargando anuncio de viaje...</span>
+                                    <span style={{ fontSize: '12px', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t.loadingTravelAd}</span>
                                 </div>
                             ) : (
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '320px', overflowY: 'auto', paddingRight: '4px' }}>
                                     {economy.visited_settlements && economy.visited_settlements.length > 0 ? (
                                         economy.visited_settlements.map((mapPath: string, idx: number) => {
-                                            const name = getMapDisplayName(mapPath);
+                                            const name = getMapDisplayName(mapPath, language);
                                             const isCurrent = currentMapPath.toLowerCase() === mapPath.toLowerCase();
                                             
                                             return (
@@ -12926,7 +13387,7 @@ export default function GameCanvas({
                                                             {name}
                                                         </span>
                                                         <span style={{ fontSize: '10px', color: '#94a3b8' }}>
-                                                            {isCurrent ? '📍 Estás aquí actualmente' : 'Coste: 1 Anuncio'}
+                                                            {isCurrent ? t.youAreHere : t.travelAdCost}
                                                         </span>
                                                     </div>
 
@@ -12944,7 +13405,7 @@ export default function GameCanvas({
                                                                 boxShadow: '0 2px 4px rgba(37,99,235,0.3)'
                                                             }}
                                                         >
-                                                            Viajar 🌌
+                                                            {t.travel}
                                                         </button>
                                                     )}
                                                 </div>
@@ -12952,7 +13413,7 @@ export default function GameCanvas({
                                         })
                                     ) : (
                                         <div style={{ textAlign: 'center', padding: '24px', color: '#64748b', fontSize: '12px', fontStyle: 'italic' }}>
-                                            No se han registrado ciudades visitadas.
+                                            {language === 'es' ? 'No se han registrado ciudades visitadas.' : 'No visited cities registered.'}
                                         </div>
                                     )}
                                 </div>
@@ -12965,7 +13426,7 @@ export default function GameCanvas({
                                 disabled={isTravelling}
                                 style={{ margin: 0, padding: '9px 14px', fontSize: '12px', fontWeight: 'bold', width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#94a3b8', cursor: isTravelling ? 'not-allowed' : 'pointer' }}
                             >
-                                Cancelar
+                                {t.cancel}
                             </button>
                         </div>
                     </div>
@@ -13152,7 +13613,7 @@ export default function GameCanvas({
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                 <span style={{ fontSize: '18px' }}>📖</span>
                                 <span style={{ color: '#f472b6', fontWeight: 'bold', fontSize: '14px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-                                    Pokédex Kanto
+                                    {t.pokedexKanto}
                                 </span>
                             </div>
                             <button 
@@ -13192,11 +13653,11 @@ export default function GameCanvas({
                             fontSize: '11px'
                         }}>
                             <div>
-                                <div style={{ color: '#94a3b8' }}>Total Kanto</div>
+                                <div style={{ color: '#94a3b8' }}>{t.pokedexTotal}</div>
                                 <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#f8fafc' }}>151</div>
                             </div>
                             <div>
-                                <div style={{ color: '#34d399' }}>🟢 Capturados</div>
+                                <div style={{ color: '#34d399' }}>{t.pokedexCaptured}</div>
                                 <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#34d399' }}>
                                     {pokemonSpeciesList.filter((s: any) => s.id <= 151 && (
                                         team.some((p: any) => p.id.toLowerCase() === s.name.toLowerCase()) ||
@@ -13205,7 +13666,7 @@ export default function GameCanvas({
                                 </div>
                             </div>
                             <div>
-                                <div style={{ color: '#60a5fa' }}>🔵 Vistos</div>
+                                <div style={{ color: '#60a5fa' }}>{t.pokedexSeen}</div>
                                 <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#60a5fa' }}>
                                     {pokemonSpeciesList.filter((s: any) => s.id <= 151 && seenPokemon.includes(s.name.toLowerCase())).length}
                                 </div>
@@ -13216,7 +13677,7 @@ export default function GameCanvas({
                         <div style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: '8px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
                             <input
                                 type="text"
-                                placeholder="Buscar por nombre, número o tipo..."
+                                placeholder={t.pokedexSearchPlaceholder}
                                 value={pokedexSearch}
                                 onChange={(e) => setPokedexSearch(e.target.value)}
                                 style={{
@@ -13235,10 +13696,10 @@ export default function GameCanvas({
                             <div style={{ display: 'flex', gap: '4px', overflowX: 'auto', paddingBottom: '2px' }}>
                                 {['all', 'captured', 'seen', 'missing'].map((f) => {
                                     const labels: Record<string, string> = {
-                                        all: 'Todos',
-                                        captured: 'Capturados',
-                                        seen: 'Vistos',
-                                        missing: 'Por encontrar'
+                                        all: t.pokedexFilterAll,
+                                        captured: t.pokedexFilterCaptured,
+                                        seen: t.pokedexFilterSeen,
+                                        missing: t.pokedexFilterMissing
                                     };
                                     const isActive = pokedexFilter === f;
                                     return (
@@ -13322,17 +13783,17 @@ export default function GameCanvas({
                                         {status !== 'unknown' ? (
                                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', fontSize: '11px', marginTop: '4px', background: 'rgba(0,0,0,0.15)', padding: '8px', borderRadius: '8px' }}>
                                                 <div>❤️ HP: <strong>{s.hp}</strong></div>
-                                                <div>⚔️ Ataque: <strong>{s.attack}</strong></div>
-                                                <div>🛡️ Defensa: <strong>{s.defense}</strong></div>
-                                                <div>⚡ Velocidad: <strong>{s.speed}</strong></div>
+                                                <div>⚔️ {t.attack}: <strong>{s.attack}</strong></div>
+                                                <div>🛡️ {t.defense}: <strong>{s.defense}</strong></div>
+                                                <div>⚡ {t.speed}: <strong>{s.speed}</strong></div>
                                                 <div style={{ gridColumn: 'span 2', display: 'flex', justifyContent: 'space-between', marginTop: '2px', paddingTop: '2px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-                                                    <span>Rareza: <strong style={{ color: s.rarity === 'LEGENDARY' ? '#fbbf24' : s.rarity === 'EPIC' ? '#a855f7' : s.rarity === 'RARE' ? '#3b82f6' : '#cbd5e1' }}>{s.rarity}</strong></span>
-                                                    <span>Ingreso pasivo: <strong>{s.gold_per_hour}💰/h</strong></span>
+                                                    <span>{t.pokedexRarity}: <strong style={{ color: s.rarity === 'LEGENDARY' ? '#fbbf24' : s.rarity === 'EPIC' ? '#a855f7' : s.rarity === 'RARE' ? '#3b82f6' : '#cbd5e1' }}>{s.rarity}</strong></span>
+                                                    <span>{t.pokedexPassive}: <strong>{s.gold_per_hour}💰/h</strong></span>
                                                 </div>
                                             </div>
                                         ) : (
                                             <div style={{ fontSize: '11px', color: '#64748b', fontStyle: 'italic', padding: '6px', textAlign: 'center' }}>
-                                                No hay datos disponibles. ¡Encuentra o captura este Pokémon para desbloquear su información!
+                                                {t.pokedexNoData}
                                             </div>
                                         )}
                                     </div>
@@ -13404,10 +13865,10 @@ export default function GameCanvas({
                                             >
                                                 {/* Status indicators */}
                                                 {status === 'captured' && (
-                                                    <span style={{ position: 'absolute', top: '4px', right: '4px', fontSize: '10px' }} title="Capturado">🔴</span>
+                                                    <span style={{ position: 'absolute', top: '4px', right: '4px', fontSize: '10px' }} title={language === 'es' ? 'Capturado' : 'Captured'}>🔴</span>
                                                 )}
                                                 {status === 'seen' && (
-                                                    <span style={{ position: 'absolute', top: '4px', right: '4px', fontSize: '10px' }} title="Avistado">👁️</span>
+                                                    <span style={{ position: 'absolute', top: '4px', right: '4px', fontSize: '10px' }} title={language === 'es' ? 'Avistado' : 'Seen'}>👁️</span>
                                                 )}
 
                                                 <div style={{ fontSize: '8px', color: '#64748b', fontWeight: 'bold', width: '100%', textAlign: 'left' }}>
@@ -13446,7 +13907,7 @@ export default function GameCanvas({
                             color: '#64748b',
                             textAlign: 'center'
                         }}>
-                            ¡Completa la Pokédex de 151 Pokémon de Kanto!
+                            {t.pokedexFooter}
                         </div>
                     </div>
                 </div>
@@ -13462,14 +13923,14 @@ export default function GameCanvas({
                 const currentStats = getPokemonStats(p.id, p.level ?? 5, p.ivs, true, economy);
                 const allMoves = getPokemonAllMovesInfo(p.id);
                 const currentMoves = (p.moves && p.moves.length > 0) ? p.moves : getPokemonMoves(p.id, p.level ?? 5);
-                const evolutionMsg = getPokemonEvolutionInfo(p.id);
+                const evolutionMsg = getPokemonEvolutionInfo(p.id, language);
                 const pct = Math.round((p.hp / getPokeMaxHp(p)) * 100);
 
                 return (
                     <div className="modal-overlay" style={{ zIndex: 9999 }}>
                         <div className="modal-card pokemon-panel" style={{ maxWidth: '420px', width: '90%', border: p.is_shiny ? '3px solid #fbbf24' : '3px solid #3e2723', boxShadow: p.is_shiny ? '0 0 20px rgba(251, 191, 36, 0.4)' : 'none' }}>
                             <div className="modal-header">
-                                <h3 className="modal-title" style={{ textTransform: 'capitalize' }}>ℹ️ Info: {p.is_shiny && '✨ '}{p.id}</h3>
+                                <h3 className="modal-title" style={{ textTransform: 'capitalize' }}>{t.pokemonInfo}: {p.is_shiny && '✨ '}{p.id}</h3>
                                 <button onClick={() => setSelectedInfoPoke(null)} className="modal-close-btn">&times;</button>
                             </div>
                             <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -13493,7 +13954,7 @@ export default function GameCanvas({
                                             {p.id}
                                         </div>
                                         <div style={{ fontSize: '12px', color: '#795548', fontWeight: 'bold' }}>
-                                            Nivel {p.level ?? 5} (XP: {p.xp ?? 0}/{ (p.level ?? 5) * 100 })
+                                            {t.level} {p.level ?? 5} (XP: {p.xp ?? 0}/{ (p.level ?? 5) * 100 })
                                         </div>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
                                             <span style={{ fontSize: '11px', fontWeight: 'bold' }}>HP: {p.hp}/{p.maxHp}</span>
@@ -13512,8 +13973,8 @@ export default function GameCanvas({
                                 
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '4px', background: 'rgba(0,0,0,0.02)', padding: '8px 10px', borderRadius: '10px', border: '1px solid rgba(0,0,0,0.05)' }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <div style={{ fontWeight: 'bold', fontSize: '11px', color: '#5d4037' }}>Objetos Equipados (Slots):</div>
-                                        <div style={{ fontSize: '9px', color: '#94a3b8' }}>Desbloqueados: {p.unlocked_slots || 2}/4</div>
+                                        <div style={{ fontWeight: 'bold', fontSize: '11px', color: '#5d4037' }}>{language === 'es' ? 'Objetos Equipados (Slots):' : 'Equipped Items (Slots):'}</div>
+                                        <div style={{ fontSize: '9px', color: '#94a3b8' }}>{t.unlockedSlots}: {p.unlocked_slots || 2}/4</div>
                                     </div>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                         {(() => {
@@ -13534,7 +13995,7 @@ export default function GameCanvas({
                                                             return (
                                                                 <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 8px', background: 'rgba(0,0,0,0.03)', border: '1px dashed #cbd5e1', borderRadius: '8px', fontSize: '10px', color: '#64748b', textAlign: 'left' }}>
                                                                     <span>Slot {idx + 1} 📦</span>
-                                                                    <div style={{ flex: 1 }}>Slot libre</div>
+                                                                    <div style={{ flex: 1 }}>{t.emptySlot}</div>
                                                                 </div>
                                                             );
                                                         }
@@ -13545,13 +14006,13 @@ export default function GameCanvas({
                                                                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                                                                         <span style={{ fontSize: '11px' }}>Slot {idx + 1} 📦</span>
                                                                         <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#0284c7' }}>
-                                                                            {itemInfo?.name || item.id}
+                                                                            {translateItemName(itemInfo?.name || item.id, language)}
                                                                         </span>
                                                                     </div>
                                                                 </div>
                                                                 {item.expires && (
                                                                     <div style={{ fontSize: '9px', color: '#64748b', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
-                                                                        ⏳ Tiempo restante: <span style={{ color: '#0284c7', fontWeight: 'bold' }}>{getHeldItemRemainingTimeStr(item.expires)}</span>
+                                                                        {language === 'es' ? '⏳ Tiempo restante: ' : '⏳ Remaining time: '}<span style={{ color: '#0284c7', fontWeight: 'bold' }}>{getHeldItemRemainingTimeStr(item.expires, language)}</span>
                                                                     </div>
                                                                 )}
                                                             </div>
@@ -13560,7 +14021,7 @@ export default function GameCanvas({
                                                         return (
                                                             <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 8px', background: 'rgba(0,0,0,0.02)', border: '1px dashed #cbd5e1', borderRadius: '8px', fontSize: '10px', color: '#64748b', textAlign: 'left' }}>
                                                                 <span>Slot {idx + 1} 📦</span>
-                                                                <div style={{ flex: 1 }}>Slot libre</div>
+                                                                <div style={{ flex: 1 }}>{t.emptySlot}</div>
                                                             </div>
                                                         );
                                                     }
@@ -13570,17 +14031,17 @@ export default function GameCanvas({
                                                         <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 8px', background: 'rgba(241,245,249,0.5)', border: '1px dashed #e2e8f0', borderRadius: '8px', fontSize: '10px', color: '#94a3b8', textAlign: 'left' }}>
                                                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                                                                 <span>Slot {idx + 1} 🔒</span>
-                                                                <span>Slot Bloqueado</span>
+                                                                <span>{t.lockedSlot}</span>
                                                             </div>
                                                             {isNextToUnlock ? (
                                                                 <button
                                                                     onClick={() => handleUnlockHeldItemSlot(p)}
                                                                     style={{ margin: 0, padding: '3px 8px', fontSize: '9px', fontWeight: 'bold', background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', border: 'none', borderRadius: '5px', color: 'white', cursor: 'pointer', boxShadow: '0 2px 4px rgba(16,185,129,0.2)' }}
                                                                 >
-                                                                    Desbloquear (5 PUSDT)
+                                                                    {t.unlockSlot}
                                                                 </button>
                                                             ) : (
-                                                                <span style={{ fontSize: '9px', color: '#cbd5e1' }}>(Desbloquea el anterior)</span>
+                                                                <span style={{ fontSize: '9px', color: '#cbd5e1' }}>{t.unlockPrev}</span>
                                                             )}
                                                         </div>
                                                     );
@@ -13591,33 +14052,33 @@ export default function GameCanvas({
                                 </div>
 
                                 <div style={{ borderBottom: '1px solid #efebe9', paddingBottom: '12px' }}>
-                                    <div style={{ fontWeight: 'bold', fontSize: '12px', color: '#5d4037', marginBottom: '6px' }}>Estadísticas Actuales:</div>
+                                    <div style={{ fontWeight: 'bold', fontSize: '12px', color: '#5d4037', marginBottom: '6px' }}>{t.currentStats}:</div>
                                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', fontSize: '11px' }}>
                                         {(() => {
                                             const statsConfig = [
                                                 {
-                                                    name: "PS Máx",
+                                                    name: t.maxHp,
                                                     val: currentStats.maxHp,
                                                     iv: p.ivs?.hp !== undefined ? p.ivs.hp : 15,
                                                     bg: "#efe5fd",
                                                     fg: "#5e35b1"
                                                 },
                                                 {
-                                                    name: "Ataque",
+                                                    name: t.attack,
                                                     val: currentStats.attack,
                                                     iv: p.ivs?.attack !== undefined ? p.ivs.attack : 15,
                                                     bg: "#ffebee",
                                                     fg: "#c62828"
                                                 },
                                                 {
-                                                    name: "Defensa",
+                                                    name: t.defense,
                                                     val: currentStats.defense,
                                                     iv: p.ivs?.defense !== undefined ? p.ivs.defense : 15,
                                                     bg: "#e8f5e9",
                                                     fg: "#2e7d32"
                                                 },
                                                 {
-                                                    name: "Velocidad",
+                                                    name: t.speed,
                                                     val: currentStats.speed,
                                                     iv: p.ivs?.speed !== undefined ? p.ivs.speed : 15,
                                                     bg: "#fff9c4",
@@ -13656,7 +14117,7 @@ export default function GameCanvas({
                                                             color: isPerfect ? '#b45309' : '#6b7280', 
                                                             fontWeight: isPerfect ? 'bold' : 'normal' 
                                                         }}>
-                                                            <span>Genética (IV):</span>
+                                                            <span>{t.geneticsIv}:</span>
                                                             <span>{ivText}</span>
                                                         </div>
                                                     </div>
@@ -13667,7 +14128,7 @@ export default function GameCanvas({
                                 </div>
 
                                 <div style={{ borderBottom: '1px solid #efebe9', paddingBottom: '12px' }}>
-                                    <div style={{ fontWeight: 'bold', fontSize: '12px', color: '#5d4037', marginBottom: '6px' }}>Ataques Disponibles (por Nivel):</div>
+                                    <div style={{ fontWeight: 'bold', fontSize: '12px', color: '#5d4037', marginBottom: '6px' }}>{t.availableMoves}:</div>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', maxHeight: '120px', overflowY: 'auto' }}>
                                         {allMoves.map((mInfo) => {
                                             const m = MOVES_DATABASE[mInfo.moveId] || { name: mInfo.moveId, type: 'normal', power: 40 };
@@ -13693,11 +14154,11 @@ export default function GameCanvas({
                                                             {m.type}
                                                         </span>
                                                         <span style={{ fontSize: '9px', marginLeft: '6px', color: '#757575' }}>
-                                                            Poder: {m.power}
+                                                            {t.power}: {m.power}
                                                         </span>
                                                     </div>
                                                     <div style={{ fontWeight: 'bold', color: isKnown ? '#2e7d32' : '#757575' }}>
-                                                        {isKnown ? 'Conocido' : `Nvl. ${mInfo.levelReq}`}
+                                                        {isKnown ? t.known : `${language === 'es' ? 'Nvl.' : 'Lvl.'} ${mInfo.levelReq}`}
                                                     </div>
                                                 </div>
                                             );
@@ -13706,7 +14167,7 @@ export default function GameCanvas({
                                 </div>
 
                                 <div style={{ padding: '8px', background: '#fff3e0', border: '1px solid #ffe0b2', borderRadius: '6px' }}>
-                                    <div style={{ fontWeight: 'bold', fontSize: '12px', color: '#e65100', marginBottom: '2px' }}>Evolución:</div>
+                                    <div style={{ fontWeight: 'bold', fontSize: '12px', color: '#e65100', marginBottom: '2px' }}>{t.evolution}:</div>
                                     <div style={{ fontSize: '11px', color: '#5d4037', fontWeight: 'bold' }}>
                                         ✨ {evolutionMsg}
                                     </div>
@@ -13717,7 +14178,7 @@ export default function GameCanvas({
                                     className="pokemon-button danger"
                                     style={{ marginTop: '8px' }}
                                 >
-                                    Cerrar
+                                    {t.close}
                                 </button>
                             </div>
                         </div>
@@ -13734,15 +14195,15 @@ export default function GameCanvas({
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                 <span style={{ fontSize: '20px' }}>💰</span>
                                 <div>
-                                    <div style={{ color: '#e2e8f0', fontWeight: 'bold', fontSize: '14px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Generación Pasiva</div>
-                                    <div style={{ color: '#64748b', fontSize: '9px' }}>Coins automáticos cada 24 horas</div>
+                                    <div style={{ color: '#e2e8f0', fontWeight: 'bold', fontSize: '14px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>{t.passiveGeneration}</div>
+                                    <div style={{ color: '#64748b', fontSize: '9px' }}>{t.passiveCoins24h}</div>
                                 </div>
                             </div>
                             <button onClick={() => setShowPassiveModal(false)} style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: '#94a3b8', cursor: 'pointer', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', fontWeight: 'bold' }}>&times;</button>
                         </div>
                         <div style={{ padding: '16px 16px 20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
                             <p style={{ fontSize: '10px', color: '#94a3b8', margin: 0, lineHeight: 1.5, background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: '8px', padding: '8px 10px' }}>
-                                🌟 Tus Pokémon generan Coins pasivos automáticamente cada 24 horas. Los Pokémon evolucionados generan <strong style={{ color: '#34d399' }}>+25% extra</strong>.
+                                {t.passiveTip}
                             </p>
 
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
@@ -13771,7 +14232,7 @@ export default function GameCanvas({
                                             </div>
                                             <div style={{ textAlign: 'right' }}>
                                                 <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#fbbf24' }}>🪙 +{finalRate}</div>
-                                                <div style={{ fontSize: '8px', color: '#64748b' }}>{hourlyRate}/hora</div>
+                                                <div style={{ fontSize: '8px', color: '#64748b' }}>{hourlyRate}/{t.hour}</div>
                                             </div>
                                         </div>
                                     );
@@ -13780,13 +14241,13 @@ export default function GameCanvas({
 
                             <div style={{ background: 'rgba(251,191,36,0.1)', border: '1.5px solid rgba(251,191,36,0.25)', borderRadius: '10px', padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <div>
-                                    <div style={{ fontSize: '9px', color: '#94a3b8', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Total Diario</div>
+                                    <div style={{ fontSize: '9px', color: '#94a3b8', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{t.dailyTotal}</div>
                                     <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#fbbf24' }}>🪙 {economy.calculatePassiveIncome(team).toLocaleString()}</div>
                                 </div>
                                 <div style={{ textAlign: 'right' }}>
-                                    <div style={{ fontSize: '9px', color: '#94a3b8', marginBottom: '2px' }}>Estado</div>
+                                    <div style={{ fontSize: '9px', color: '#94a3b8', marginBottom: '2px' }}>{t.status}</div>
                                     <div style={{ fontSize: '10px', fontWeight: 'bold', color: economy.getPassiveTimeRemaining() <= 0 ? '#34d399' : '#f87171' }}>
-                                        {economy.getPassiveTimeRemaining() <= 0 ? '✅ ¡Disponible!' : `⏳ ${formatTimeRemaining(economy.getPassiveTimeRemaining())}`}
+                                        {economy.getPassiveTimeRemaining() <= 0 ? `✅ ${t.available}` : `⏳ ${formatTimeRemaining(economy.getPassiveTimeRemaining())}`}
                                     </div>
                                 </div>
                             </div>
@@ -13811,12 +14272,12 @@ export default function GameCanvas({
                                     transition: 'all 0.2s'
                                 }}
                             >
-                                💰 Reclamar Coins Pasivos
+                                {t.claimPassive}
                             </button>
                         </div>
                     </div>
                 </div>
-            )}
+
 
 
 
