@@ -226,7 +226,7 @@ export default function Home() {
                 const isPermissionError = dbError.code === '42501' || dbError.message?.toLowerCase().includes('permission') || dbError.message?.toLowerCase().includes('policy');
                 if (!isPermissionError) {
                     console.error("Database query error:", dbError);
-                    setError("Error al conectar con la base de datos de guardado en la nube.");
+                    setError("Error connecting to the cloud save database.");
                     setIsConnecting(false);
                     return;
                 }
@@ -382,7 +382,7 @@ export default function Home() {
             }
         } catch (err) {
             console.error("Login flow error:", err);
-            setError("Ocurrió un error inesperado al cargar tu progreso.");
+            setError("An unexpected error occurred while loading your progress.");
         } finally {
             setIsConnecting(false);
         }
@@ -483,7 +483,7 @@ export default function Home() {
 
                 if (insertError) {
                     console.error("Failed to initialize save state in database:", insertError);
-                    setError("No se pudo iniciar la partida en el servidor.");
+                    setError("Could not start game on server.");
                     setIsConnecting(false);
                     return;
                 }
@@ -523,7 +523,7 @@ export default function Home() {
 
                 if (monsterError) {
                     console.error("Failed to save starter in captured_monsters:", monsterError);
-                    setError("No se pudo registrar tu Pokémon inicial.");
+                    setError("Could not register your starter Pokémon.");
                     setIsConnecting(false);
                     return;
                 }
@@ -549,7 +549,7 @@ export default function Home() {
             setStartedPlaying(true);
         } catch (err) {
             console.error("Failed to save starter selection:", err);
-            setError("Ocurrió un error inesperado al iniciar tu partida.");
+            setError("An unexpected error occurred while starting your game.");
         } finally {
             setIsConnecting(false);
         }
@@ -569,7 +569,7 @@ export default function Home() {
             }
         } catch (err: any) {
             console.error("Solana connection error:", err);
-            setError(err.message || "Error al conectar con Solana Wallet.");
+            setError(err.message || "Error connecting with Solana Wallet.");
         } finally {
             setIsConnecting(false);
         }
@@ -593,7 +593,7 @@ export default function Home() {
         try {
             const { MiniKit } = await import('@worldcoin/minikit-js');
             if (!MiniKit.isInstalled()) {
-                setError("MiniKit no está instalado. Si estás probando en navegador local, utiliza la caja de abajo.");
+                setError("MiniKit is not installed. Please connect your Solana Wallet or try Free Play.");
                 setIsConnecting(false);
                 return;
             }
@@ -601,12 +601,12 @@ export default function Home() {
             // Trigger SIWE request
             const result = await MiniKit.walletAuth({
                 nonce: Math.random().toString(36).substring(2, 15),
-                statement: "Inicia sesión en Pixel Tamer",
+                statement: "Log in to Pixel Tamer",
                 expirationTime: new Date(Date.now() + 1000 * 60 * 60 * 24),
             });
 
             if (result.executedWith === "fallback") {
-                setError("La autenticación de la billetera fue cancelada.");
+                setError("Wallet authentication was cancelled.");
                 setIsConnecting(false);
                 return;
             }
@@ -614,11 +614,11 @@ export default function Home() {
             if (result.data && result.data.address) {
                 await handleLoginWithWallet(result.data.address, undefined, true);
             } else {
-                setError("No se pudo obtener la dirección de billetera de la respuesta.");
+                setError("Could not retrieve wallet address from response.");
             }
         } catch (err) {
             console.error("World App Auth Error:", err);
-            setError("Error al conectar con World App.");
+            setError("Error connecting with World App.");
         } finally {
             setIsConnecting(false);
         }
@@ -651,7 +651,7 @@ export default function Home() {
                     <h1 className="landing-title retro-title">Pixel Tamer</h1>
                     <div className="saves-list-empty glass-panel" style={{ display: 'inline-block', padding: '24px' }}>
                         <div className="spinner" style={{ border: '4px solid rgba(0, 0, 0, 0.1)', width: '36px', height: '36px', borderRadius: '50%', borderLeftColor: '#3e2723', animation: 'spin 1s linear infinite', margin: '0 auto 12px auto' }}></div>
-                        Iniciando juego...
+                        Starting game...
                     </div>
                 </div>
             </div>
@@ -705,9 +705,9 @@ export default function Home() {
         return (
             <div className="landing-container">
                 <div className="landing-wrapper fade-in" style={{ maxWidth: '560px' }}>
-                    <h1 className="landing-title retro-title" style={{ fontSize: '20px', marginBottom: '8px' }}>Elige tu Inicial</h1>
+                    <h1 className="landing-title retro-title" style={{ fontSize: '20px', marginBottom: '8px' }}>Choose Your Starter</h1>
                     <p style={{ color: '#5d4037', fontSize: '11px', textAlign: 'center', margin: '0 0 20px 0', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                        ¡Bienvenido, Entrenador! Selecciona a tu primer compañero de aventuras:
+                        Welcome, Trainer! Select your first companion for your adventures:
                     </p>
 
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', width: '100%', marginBottom: '20px' }}>
@@ -747,7 +747,7 @@ export default function Home() {
                     {selectedStarter && (
                         <div className="pokemon-panel fade-in" style={{ padding: '12px', width: '100%', boxSizing: 'border-box', marginBottom: '20px', minHeight: '80px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                             <p style={{ fontSize: '10px', color: '#5d4037', margin: '0 0 4px 0', textTransform: 'uppercase', fontWeight: 'bold' }}>
-                                Descripción de {selectedStarter}:
+                                Description of {selectedStarter}:
                             </p>
                             <p style={{ fontSize: '11px', color: '#3e2723', margin: 0, fontStyle: 'italic', lineHeight: '1.4' }}>
                                 "{STARTERS.find(s => s.name === selectedStarter)?.description}"
@@ -766,7 +766,7 @@ export default function Home() {
                             className="btn-secondary"
                             style={{ flex: 1, fontSize: '11px', padding: '10px' }}
                         >
-                            Cancelar
+                            Cancel
                         </button>
                         <button
                             onClick={handleConfirmStarter}
@@ -774,7 +774,7 @@ export default function Home() {
                             className="pokemon-button success"
                             style={{ flex: 2, fontSize: '11px', padding: '10px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
                         >
-                            {isConnecting ? "Registrando..." : "Comenzar Aventura"}
+                            {isConnecting ? "Registering..." : "Start Adventure"}
                         </button>
                     </div>
                 </div>
@@ -802,7 +802,7 @@ export default function Home() {
                     <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/20 to-black/80"></div>
                 </div>
                 {/* Title Overlay */}
-                <div className="relative z-10 text-center px-4 flex flex-col items-center w-full max-w-[420px] mx-auto">
+                <div className="relative z-10 text-center px-4 flex flex-col items-center w-full max-w-[450px] mx-auto">
                     <h1 
                         onClick={() => {
                             setDevClickCount(prev => {
@@ -821,19 +821,19 @@ export default function Home() {
                     </h1>
 
                     {/* Badge: Lanzamiento Liga Tamer */}
-                    <div className="bg-[#9945FF]/20 backdrop-blur-md px-4 py-2 border-2 border-[#14F195] rounded-lg shadow-[0_0_15px_rgba(20,241,149,0.3)] mb-4 w-full">
-                        <p className="text-[#14F195] text-[10px] md:text-xs font-bold tracking-[0.1em] uppercase font-sans">
-                            🏆 Lanzamiento Liga Tamer
+                    <div className="bg-gradient-to-r from-[#9945FF]/25 via-black/45 to-[#14F195]/25 backdrop-blur-md px-6 py-3 border-2 border-[#9945FF] rounded-lg shadow-[0_0_20px_rgba(153,69,255,0.4)] mb-4 w-full">
+                        <p className="text-[#14F195] text-xs font-bold tracking-[0.15em] uppercase font-sans">
+                            🏆 Tamer League Launch
                         </p>
-                        <p className="text-white text-[9px] font-semibold uppercase tracking-[0.05em] mt-0.5">
-                            Explora, compite e intercambia
+                        <p className="text-white text-[10px] font-extrabold uppercase tracking-[0.1em] mt-0.5">
+                            Explore, Compete & Trade
                         </p>
                     </div>
 
                     {/* Hook Text: Sé el Mejor Entrenador de la Web3 */}
                     <div className="mb-6">
                         <p className="pixel-font text-yellow-400 text-[10px] tracking-widest uppercase text-shadow-sm animate-pulse">
-                            Sé el Mejor Entrenador de la Web3
+                            Be the Best Web3 Trainer
                         </p>
                     </div>
 
@@ -843,7 +843,7 @@ export default function Home() {
                         <button 
                             onClick={handleConnectSolana}
                             disabled={isConnecting}
-                            className="bg-gradient-to-r from-[#9945FF] to-[#14F195] text-black font-extrabold pixel-border px-6 py-4.5 rounded-md transition-all hover:scale-105 active:scale-98 cursor-pointer flex items-center justify-center gap-3 w-full shadow-[0_0_20px_rgba(153,69,255,0.6)]"
+                            className="solana-pulse bg-gradient-to-r from-[#9945FF] to-[#14F195] text-black font-extrabold pixel-border px-6 py-4.5 rounded-md transition-all hover:scale-105 active:scale-98 cursor-pointer flex items-center justify-center gap-3 w-full"
                         >
                             <img 
                                 src="https://cryptologos.cc/logos/solana-sol-logo.png" 
@@ -851,13 +851,13 @@ export default function Home() {
                                 className="w-5 h-5 object-contain"
                             />
                             <span className="pixel-font text-xs uppercase tracking-wider text-black">
-                                {isConnecting ? "CONECTANDO..." : "CONECTAR SOLANA WALLET"}
+                                {isConnecting ? "CONNECTING..." : "CONNECT Solana Wallet"}
                             </span>
                         </button>
 
                         <div className="flex items-center justify-between w-full px-2 my-1">
                             <span className="h-0.5 bg-white/20 flex-1"></span>
-                            <span className="text-white/60 text-[9px] font-bold uppercase mx-3 tracking-widest">o inicia sesión con</span>
+                            <span className="text-white/60 text-[9px] font-bold uppercase mx-3 tracking-widest">or log in with</span>
                             <span className="h-0.5 bg-white/20 flex-1"></span>
                         </div>
 
@@ -879,7 +879,7 @@ export default function Home() {
                                     alt="Worldcoin" 
                                     className="w-4 h-4 rounded-full"
                                 />
-                                <span className="pixel-font text-[9px] uppercase tracking-wider">Jugar desde World App</span>
+                                <span className="pixel-font text-[9px] uppercase tracking-wider">Play via World App</span>
                             </button>
 
                             <button
@@ -898,7 +898,7 @@ export default function Home() {
                                     <path d="m22 2-7 20-4-9-9-4Z"/>
                                     <path d="M22 2 11 13"/>
                                 </svg>
-                                <span className="pixel-font text-[9px] uppercase tracking-wider">Jugar desde Telegram</span>
+                                <span className="pixel-font text-[9px] uppercase tracking-wider">Play via Telegram</span>
                             </button>
                         </div>
 
@@ -908,10 +908,10 @@ export default function Home() {
                                 onClick={handlePlayFree}
                                 className="text-yellow-400 hover:text-yellow-300 underline font-medium transition-colors text-xs flex items-center gap-1.5 cursor-pointer"
                             >
-                                🎮 Prueba el juego de manera free
+                                🎮 Try the game for free
                             </button>
                             <p className="text-white/60 text-[8px] leading-normal mt-2 text-center max-w-[280px]">
-                                * El progreso se guardará localmente en la pestaña del navegador y se perderá por completo al cerrarlo, a menos que conectes una wallet.
+                                * Progress will be saved locally in the browser tab and will be completely lost when closed, unless you connect a wallet.
                             </p>
                         </div>
                     </div>
@@ -919,20 +919,20 @@ export default function Home() {
                     {/* Subtle status indicators for auto-login */}
                     {isConnecting && (
                         <p className="text-white text-[10px] font-bold mt-4 animate-pulse uppercase tracking-widest bg-black/60 px-3 py-1.5 rounded pixel-border-sm">
-                            Conectando con el servidor...
+                            Connecting to server...
                         </p>
                     )}
                     
                     {walletAddress && activeSave && !isConnecting && (
                         <div className="mt-4 bg-black/60 p-2.5 rounded pixel-border-sm w-full flex flex-col items-center">
                             <p className="text-green-400 text-[9px] font-bold uppercase tracking-widest">
-                                Sesión lista como: {activeSave.name}
+                                Session ready as: {activeSave.name}
                             </p>
                             <button
                                 onClick={() => setStartedPlaying(true)}
                                 className="mt-2 bg-[#2d5a27] hover:bg-[#3d7a35] text-white pixel-border-sm px-4 py-2 text-[9px] pixel-font w-full uppercase"
                             >
-                                Reanudar Partida
+                                Resume Game
                             </button>
                         </div>
                     )}
@@ -954,7 +954,7 @@ export default function Home() {
 
                 <div className="max-w-6xl mx-auto relative z-10">
                     <div className="text-center mb-16">
-                        <h2 className="pixel-font text-lg md:text-xl tracking-tight uppercase text-gray-900 mb-4">Destacados del Mundo</h2>
+                        <h2 className="pixel-font text-lg md:text-xl tracking-tight uppercase text-gray-900 mb-4">World Highlights</h2>
                         <div className="h-1.5 w-32 bg-[#2d5a27] mx-auto pixel-border-sm shadow-none border-none"></div>
                     </div>
                     <div className="grid grid-cols-1 gap-12">
@@ -966,8 +966,8 @@ export default function Home() {
                                     <img alt="Capture Icon" className="absolute w-[300%] h-[200%] top-0 left-0" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCfbFhNeCx06vB-QHOGt7f-MyeA0eWdkrFhf9FOzHiGs1AfnzfON81LY-LLP4q3GfzDCGGihwJqWgSOjkastxt-ODqyexJ3xr-R6LbVUa3pSqPDb4WfBtn2JUi_cb1DNgAH3VYpvNFlb9BEsjzIN3NPsYnn7B8p1Ma98s3IxElggIWmeO8tjNy3WVfnd6975NpADZAbKZWLIPh01DMicfooWnRYhmO_qRHb6DLH-24BWLoJ_WyjEUXUifFCo8xNRWmTEq86RRvtlg6h" />
                                 </div>
                             </div>
-                            <h3 className="pixel-font text-sm mb-3 text-[#2d5a27]">CAPTURA, COMBATE Y EXPLORA</h3>
-                            <p className="text-gray-800 font-medium leading-relaxed text-xs">Domestica criaturas salvajes, enfréntate a otros domadores en duelos estratégicos por turnos y descubre vastos mundos pixelados llenos de secretos.</p>
+                            <h3 className="pixel-font text-sm mb-3 text-[#2d5a27]">CAPTURE, BATTLE & EXPLORE</h3>
+                            <p className="text-gray-800 font-medium leading-relaxed text-xs">Tame wild creatures, face other tamers in strategic turn-based duels, and discover vast pixelated worlds full of secrets.</p>
                         </div>
                         
                         {/* Feature 2: Train, Collect & Sell */}
@@ -978,8 +978,8 @@ export default function Home() {
                                     <img alt="Train Icon" className="absolute w-[300%] h-[200%] top-[-100%] left-0" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCfbFhNeCx06vB-QHOGt7f-MyeA0eWdkrFhf9FOzHiGs1AfnzfON81LY-LLP4q3GfzDCGGihwJqWgSOjkastxt-ODqyexJ3xr-R6LbVUa3pSqPDb4WfBtn2JUi_cb1DNgAH3VYpvNFlb9BEsjzIN3NPsYnn7B8p1Ma98s3IxElggIWmeO8tjNy3WVfnd6975NpADZAbKZWLIPh01DMicfooWnRYhmO_qRHb6DLH-24BWLoJ_WyjEUXUifFCo8xNRWmTEq86RRvtlg6h" />
                                 </div>
                             </div>
-                            <h3 className="pixel-font text-sm mb-3 text-[#2d5a27]">ENTRENA, COLECCIONA Y VENDE</h3>
-                            <p className="text-gray-800 font-medium leading-relaxed text-xs">Mejora las habilidades de tus aliados para desbloquear su evolución, completa tu Pixel-Dex con especies legendarias y comercia en el mercado global.</p>
+                            <h3 className="pixel-font text-sm mb-3 text-[#2d5a27]">TRAIN, COLLECT & SELL</h3>
+                            <p className="text-gray-800 font-medium leading-relaxed text-xs">Upgrade your allies' skills to unlock their evolution, complete your Pixel-Dex with legendary species, and trade in the global marketplace.</p>
                         </div>
                     </div>
                 </div>
@@ -994,19 +994,19 @@ export default function Home() {
                 </div>
                 <div className="max-w-4xl mx-auto relative z-10 text-center flex flex-col items-center">
                     <div className="inline-block bg-yellow-400 text-black px-6 py-2 pixel-border-sm mb-8 font-bold uppercase text-[9px] pixel-font">
-                        Evento Global
+                        Global Event
                     </div>
                     <h2 className="pixel-font text-white text-xl md:text-2xl leading-tight mb-10 text-shadow-pixel uppercase">
-                        TORNEOS PVP CON PREMIOS REALES
+                        PVP TOURNAMENTS WITH REAL PRIZES
                     </h2>
                     <button 
                         onClick={handleStartJourney}
                         className="bg-[#e11d48] hover:bg-[#fb7185] text-white pixel-border px-10 py-5 transition-all active:scale-95 group cursor-pointer"
                     >
-                        <span className="pixel-font text-xs md:text-sm">¡ÚNETE AHORA!</span>
+                        <span className="pixel-font text-xs md:text-sm">JOIN NOW!</span>
                     </button>
                     <p className="mt-10 text-white text-base font-bold italic drop-shadow-md">
-                        ¿Tienes lo necesario para ser el campeón mundial?
+                        Do you have what it takes to be the world champion?
                     </p>
                     
                     <a
@@ -1019,7 +1019,7 @@ export default function Home() {
                             <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.724-1.455L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.825 1.451 5.436 0 9.86-4.37 9.864-9.799.002-2.623-1.023-5.086-2.884-6.948C16.636 2.002 14.17 1.01 11.55 1.01c-5.44 0-9.866 4.372-9.87 9.802 0 1.96.512 3.878 1.483 5.581L2.126 20.4l4.52-1.246z"/>
                             <path d="M17.18 14.072c-.282-.14-.1.666-.35-.826-.226-.453-.68-.748-1.127-.923-.448-.175-1.63-.673-1.848-.76-.217-.087-.375-.13-.532.11-.157.24-.608.76-.745.92-.138.156-.275.175-.558.035-.282-.14-1.192-.44-2.27-1.402-.838-.748-1.405-1.67-1.57-1.95-.164-.28-.018-.433.123-.572.127-.125.282-.33.424-.495.143-.165.19-.28.285-.468.096-.188.048-.352-.024-.495-.072-.14-.608-1.464-.83-1.996-.217-.523-.473-.447-.648-.456-.17-.008-.363-.01-.557-.01-.193 0-.508.073-.775.362-.266.29-1.018.995-1.018 2.428 0 1.433 1.04 2.818 1.185 3.01.144.193 2.05 3.13 4.965 4.387.694.3 1.235.478 1.657.612.697.22 1.332.19 1.833.115.558-.083 1.713-.7 1.955-1.378.243-.677.243-1.258.17-1.377-.072-.116-.265-.187-.547-.327z"/>
                         </svg>
-                        <span className="pixel-font text-[9px] uppercase ml-1">Unirse a WhatsApp</span>
+                        <span className="pixel-font text-[9px] uppercase ml-1">Join WhatsApp</span>
                     </a>
                 </div>
             </section>
@@ -1036,16 +1036,16 @@ export default function Home() {
                             &times;
                         </button>
                         <h2 className="pixel-font text-[#9945FF] text-xs md:text-sm uppercase mb-4 text-center">
-                            Conectar Solana Wallet
+                            Connect Solana Wallet
                         </h2>
                         <p className="text-gray-700 text-[10px] leading-relaxed mb-6 text-center">
-                            No detectamos una billetera de Solana (como Phantom) en tu navegador. Puedes instalar la extensión o ingresar tu dirección públicamente para cargar tu progreso:
+                            We did not detect a Solana wallet (like Phantom) in your browser. You can install the extension or enter your address publicly to load your progress:
                         </p>
                         
                         <div className="flex flex-col gap-4">
                             <input 
                                 type="text"
-                                placeholder="Dirección pública de Solana (Base58)"
+                                placeholder="Solana Public Address (Base58)"
                                 value={manualSolanaAddress}
                                 onChange={(e) => setManualSolanaAddress(e.target.value)}
                                 className="w-full px-3 py-2 text-xs border-2 border-black rounded focus:outline-none focus:border-[#9945FF]"
@@ -1055,10 +1055,10 @@ export default function Home() {
                                 onClick={handleManualSolanaLogin}
                                 className="bg-[#9945FF] hover:bg-[#803bd4] text-white pixel-border-sm px-6 py-3 text-center transition-all flex items-center justify-center gap-2 active:scale-95"
                             >
-                                <span className="pixel-font text-[9px] uppercase">Cargar Dirección</span>
+                                <span className="pixel-font text-[9px] uppercase">Load Address</span>
                             </button>
 
-                            <div className="text-center text-[9px] font-bold text-gray-400 uppercase">ó</div>
+                            <div className="text-center text-[9px] font-bold text-gray-400 uppercase">or</div>
 
                             <a
                                 href="https://phantom.app/"
@@ -1066,7 +1066,7 @@ export default function Home() {
                                 rel="noopener noreferrer"
                                 className="bg-black hover:bg-gray-900 text-white pixel-border-sm px-6 py-3 text-center transition-all flex items-center justify-center gap-2 active:scale-95"
                             >
-                                <span className="pixel-font text-[9px] uppercase">Descargar Phantom Wallet</span>
+                                <span className="pixel-font text-[9px] uppercase">Download Phantom Wallet</span>
                             </a>
                         </div>
                     </div>
@@ -1080,7 +1080,7 @@ export default function Home() {
                 <div className="modal-overlay" style={{ zIndex: 100 }}>
                     <div className="modal-card pokemon-panel" style={{ maxWidth: '360px' }}>
                         <div className="modal-header">
-                            <h3 className="modal-title">Alerta</h3>
+                            <h3 className="modal-title">Alert</h3>
                             <button onClick={() => setError(null)} className="modal-close-btn">&times;</button>
                         </div>
                         <div className="modal-body" style={{ color: '#3e2723' }}>
@@ -1129,6 +1129,14 @@ export default function Home() {
                 @keyframes spin {
                     0% { transform: rotate(0deg); }
                     100% { transform: rotate(360deg); }
+                }
+                @keyframes solana-glow {
+                    0% { box-shadow: 0 0 15px rgba(153,69,255,0.6), 4px 4px 0px #000; }
+                    50% { box-shadow: 0 0 25px rgba(20,241,149,0.8), 4px 4px 0px #000; }
+                    100% { box-shadow: 0 0 15px rgba(153,69,255,0.6), 4px 4px 0px #000; }
+                }
+                .solana-pulse {
+                    animation: solana-glow 2s infinite ease-in-out;
                 }
             `}</style>
         </div>

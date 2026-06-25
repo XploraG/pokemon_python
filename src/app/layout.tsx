@@ -17,6 +17,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Pixel Tamer",
   description: "Pixel Tamer - Web RPG game with premium economy",
+  icons: {
+    icon: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png",
+  }
 };
 
 export default function RootLayout({
