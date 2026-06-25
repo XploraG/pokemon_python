@@ -6420,7 +6420,6 @@ export default function GameCanvas({
         } else if (walletAddress?.startsWith('free_local_')) {
             setCloudSaveStatus('synced');
         }
-        }
     };
 
     const handleMoveToPc = (index: number) => {
