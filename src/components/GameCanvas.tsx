@@ -1558,6 +1558,20 @@ export default function GameCanvas({
     const [showInventoryModal, setShowInventoryModal] = useState(false);
     const [showMenuModal, setShowMenuModal] = useState(false);
     const [menuSection, setMenuSection] = useState<'main' | 'perfil' | 'economia' | 'social'>('main');
+    const [language, setLanguage] = useState<'es' | 'en'>(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('game_language');
+            if (saved === 'en' || saved === 'es') return saved;
+        }
+        return 'es';
+    });
+
+    const handleLanguageChange = (lang: 'es' | 'en') => {
+        setLanguage(lang);
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('game_language', lang);
+        }
+    };
     const [showReferralsModal, setShowReferralsModal] = useState(false);
     const [invitedFriends, setInvitedFriends] = useState<any[]>([]);
     const [loadingFriends, setLoadingFriends] = useState<boolean>(false);
@@ -9508,8 +9522,8 @@ export default function GameCanvas({
                                 <span style={{ fontSize: '18px' }}>🎮</span>
                                 <span style={{ color: '#e2e8f0', fontWeight: 'bold', fontSize: '14px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
                                     {menuSection === 'main' ? 'PIXEL TAMER' : 
-                                     menuSection === 'perfil' ? 'MI PERFIL' :
-                                     menuSection === 'economia' ? 'ECONOMÍA' : 'SOCIAL'}
+                                     menuSection === 'perfil' ? (language === 'es' ? 'MI PERFIL' : 'MY PROFILE') :
+                                     menuSection === 'economia' ? (language === 'es' ? 'ECONOMÍA' : 'ECONOMY') : 'SOCIAL'}
                                 </span>
                             </div>
                             <button onClick={() => setShowMenuModal(false)} style={{
@@ -9537,8 +9551,8 @@ export default function GameCanvas({
                                     >
                                         <div style={{ fontSize: '32px', lineHeight: 1 }}>👤</div>
                                         <div style={{ flex: 1 }}>
-                                            <div style={{ color: '#c4b5fd', fontWeight: 'bold', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Mi Perfil</div>
-                                            <div style={{ color: '#cbd5e1', fontSize: '10px', marginTop: '2px' }}>{playerName} • Nvl. {economy.level}</div>
+                                            <div style={{ color: '#c4b5fd', fontWeight: 'bold', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{language === 'es' ? 'Mi Perfil' : 'My Profile'}</div>
+                                            <div style={{ color: '#cbd5e1', fontSize: '10px', marginTop: '2px' }}>{playerName} • {language === 'es' ? 'Nvl.' : 'Lvl.'} {economy.level}</div>
                                         </div>
                                         <div style={{ color: '#8b5cf6', fontSize: '16px' }}>❯</div>
                                     </button>
@@ -9557,8 +9571,8 @@ export default function GameCanvas({
                                             }}
                                         >
                                             <div style={{ fontSize: '32px', lineHeight: 1 }}>💰</div>
-                                            <div style={{ color: '#6ee7b7', fontWeight: 'bold', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Economía</div>
-                                            <div style={{ color: '#94a3b8', fontSize: '9px', lineHeight: '1.2' }}>Pasivos, Streak, Misiones</div>
+                                            <div style={{ color: '#6ee7b7', fontWeight: 'bold', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{language === 'es' ? 'Economía' : 'Economy'}</div>
+                                            <div style={{ color: '#94a3b8', fontSize: '9px', lineHeight: '1.2' }}>{language === 'es' ? 'Pasivos, Streak, Misiones' : 'Passive, Streak, Missions'}</div>
                                         </button>
 
                                         {/* Social Card */}
@@ -9574,12 +9588,57 @@ export default function GameCanvas({
                                         >
                                             <div style={{ fontSize: '32px', lineHeight: 1 }}>🤝</div>
                                             <div style={{ color: '#c084fc', fontWeight: 'bold', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Social</div>
-                                            <div style={{ color: '#94a3b8', fontSize: '9px', lineHeight: '1.2' }}>Mercado, Taller, Viajes, Referidos</div>
+                                            <div style={{ color: '#94a3b8', fontSize: '9px', lineHeight: '1.2' }}>{language === 'es' ? 'Mercado, Taller, Viajes, Referidos' : 'Market, Workshop, Travel, Referrals'}</div>
                                         </button>
                                     </div>
 
                                     {/* Divider */}
                                     <div style={{ height: '1px', background: 'rgba(255,255,255,0.07)', marginBottom: '12px' }} />
+
+                                    {/* LANGUAGE SELECTOR */}
+                                    <div style={{
+                                        marginBottom: '12px',
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'center',
+                                        background: 'rgba(255,255,255,0.03)',
+                                        border: '1px solid rgba(255,255,255,0.08)',
+                                        borderRadius: '10px',
+                                        padding: '10px 14px'
+                                    }}>
+                                        <div style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '8px'
+                                        }}>
+                                            <span style={{ fontSize: '18px' }}>🌐</span>
+                                            <span style={{
+                                                color: '#cbd5e1',
+                                                fontSize: '12px',
+                                                fontWeight: 'bold'
+                                            }}>
+                                                {language === 'es' ? 'Idioma' : 'Language'}
+                                            </span>
+                                        </div>
+                                        <select
+                                            value={language}
+                                            onChange={(e) => handleLanguageChange(e.target.value as 'es' | 'en')}
+                                            style={{
+                                                background: '#1a1a2e',
+                                                border: '1px solid rgba(255,255,255,0.15)',
+                                                borderRadius: '6px',
+                                                color: '#cbd5e1',
+                                                padding: '4px 8px',
+                                                fontSize: '12px',
+                                                cursor: 'pointer',
+                                                outline: 'none',
+                                                fontFamily: 'inherit'
+                                            }}
+                                        >
+                                            <option value="es">🇪🇸 Español</option>
+                                            <option value="en">🇺🇸 English</option>
+                                        </select>
+                                    </div>
 
                                     {/* LOGOUT */}
                                     <button onClick={() => { saveLocalEconomy(); onBackToMenu(); }} style={{
@@ -9592,7 +9651,7 @@ export default function GameCanvas({
                                         onMouseEnter={e => (e.currentTarget.style.background = 'rgba(239,68,68,0.2)')}
                                         onMouseLeave={e => (e.currentTarget.style.background = 'rgba(239,68,68,0.1)')}
                                     >
-                                        <span>🚪</span> Cerrar Sesión
+                                        <span>🚪</span> {language === 'es' ? 'Cerrar Sesión' : 'Log Out'}
                                     </button>
                                 </>
                             ) : (
@@ -9607,7 +9666,7 @@ export default function GameCanvas({
                                             display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '8px', margin: '0 0 8px 0'
                                         }}
                                     >
-                                        ◀ Volver
+                                        {language === 'es' ? '◀ Volver' : '◀ Back'}
                                     </button>
 
                                     {/* Perfil Submenu */}
@@ -9621,8 +9680,8 @@ export default function GameCanvas({
                                             }}>
                                                 <span style={{ fontSize: '20px' }}>👤</span>
                                                 <div>
-                                                    <div style={{ fontWeight: 'bold', fontSize: '11px' }}>Mi Perfil</div>
-                                                    <div style={{ fontSize: '8px', color: '#64748b' }}>Estadísticas y datos de entrenador</div>
+                                                    <div style={{ fontWeight: 'bold', fontSize: '11px' }}>{language === 'es' ? 'Mi Perfil' : 'My Profile'}</div>
+                                                    <div style={{ fontSize: '8px', color: '#64748b' }}>{language === 'es' ? 'Estadísticas y datos de entrenador' : 'Trainer stats and data'}</div>
                                                 </div>
                                             </button>
 
@@ -9634,8 +9693,8 @@ export default function GameCanvas({
                                             }}>
                                                 <span style={{ fontSize: '20px' }}>🎴</span>
                                                 <div>
-                                                    <div style={{ fontWeight: 'bold', fontSize: '11px' }}>Mis Pokémon</div>
-                                                    <div style={{ fontSize: '8px', color: '#64748b' }}>Equipo y almacenamiento PC</div>
+                                                    <div style={{ fontWeight: 'bold', fontSize: '11px' }}>{language === 'es' ? 'Mis Pokémon' : 'My Pokémon'}</div>
+                                                    <div style={{ fontSize: '8px', color: '#64748b' }}>{language === 'es' ? 'Equipo y almacenamiento PC' : 'Team and PC storage'}</div>
                                                 </div>
                                             </button>
 
@@ -9648,7 +9707,7 @@ export default function GameCanvas({
                                                 <span style={{ fontSize: '20px' }}>📖</span>
                                                 <div>
                                                     <div style={{ fontWeight: 'bold', fontSize: '11px' }}>Pokédex</div>
-                                                    <div style={{ fontSize: '8px', color: '#64748b' }}>Progreso de registro de Pokémon</div>
+                                                    <div style={{ fontSize: '8px', color: '#64748b' }}>{language === 'es' ? 'Progreso de registro de Pokémon' : 'Pokémon registration progress'}</div>
                                                 </div>
                                             </button>
 
@@ -9660,8 +9719,8 @@ export default function GameCanvas({
                                             }}>
                                                 <span style={{ fontSize: '20px' }}>🏆</span>
                                                 <div>
-                                                    <div style={{ fontWeight: 'bold', fontSize: '11px' }}>Misiones</div>
-                                                    <div style={{ fontSize: '8px', color: '#64748b' }}>Desafíos diarios y semanales</div>
+                                                    <div style={{ fontWeight: 'bold', fontSize: '11px' }}>{language === 'es' ? 'Misiones' : 'Missions'}</div>
+                                                    <div style={{ fontSize: '8px', color: '#64748b' }}>{language === 'es' ? 'Desafíos diarios y semanales' : 'Daily and weekly challenges'}</div>
                                                 </div>
                                             </button>
 
@@ -9673,8 +9732,8 @@ export default function GameCanvas({
                                             }}>
                                                 <span style={{ fontSize: '20px' }}>🎒</span>
                                                 <div>
-                                                    <div style={{ fontWeight: 'bold', fontSize: '11px' }}>Mochila</div>
-                                                    <div style={{ fontSize: '8px', color: '#64748b' }}>Inventario de objetos y esferas</div>
+                                                    <div style={{ fontWeight: 'bold', fontSize: '11px' }}>{language === 'es' ? 'Mochila' : 'Bag'}</div>
+                                                    <div style={{ fontSize: '8px', color: '#64748b' }}>{language === 'es' ? 'Inventario de objetos y esferas' : 'Items and spheres inventory'}</div>
                                                 </div>
                                             </button>
                                         </>
@@ -9691,8 +9750,8 @@ export default function GameCanvas({
                                             }}>
                                                 <span style={{ fontSize: '20px' }}>💸</span>
                                                 <div>
-                                                    <div style={{ fontWeight: 'bold', fontSize: '11px' }}>Ingresos Pasivos</div>
-                                                    <div style={{ fontSize: '8px', color: '#64748b' }}>Reclama monedas acumuladas pasivamente</div>
+                                                    <div style={{ fontWeight: 'bold', fontSize: '11px' }}>{language === 'es' ? 'Ingresos Pasivos' : 'Passive Income'}</div>
+                                                    <div style={{ fontSize: '8px', color: '#64748b' }}>{language === 'es' ? 'Reclama monedas acumuladas pasivamente' : 'Claim passively accumulated coins'}</div>
                                                 </div>
                                             </button>
 
@@ -9715,7 +9774,7 @@ export default function GameCanvas({
                                                 <span style={{ fontSize: '20px' }}>🔥</span>
                                                 <div>
                                                     <div style={{ fontWeight: 'bold', fontSize: '11px' }}>Login Streak</div>
-                                                    <div style={{ fontSize: '8px', color: '#64748b' }}>Racha diaria de ingresos (Día {economy.login_streak ?? 0})</div>
+                                                    <div style={{ fontSize: '8px', color: '#64748b' }}>{language === 'es' ? 'Racha diaria de ingresos' : 'Daily income streak'} ({language === 'es' ? 'Día' : 'Day'} {economy.login_streak ?? 0})</div>
                                                 </div>
                                             </button>
 
@@ -9727,8 +9786,8 @@ export default function GameCanvas({
                                             }}>
                                                 <span style={{ fontSize: '20px' }}>🏆</span>
                                                 <div>
-                                                    <div style={{ fontWeight: 'bold', fontSize: '11px' }}>Misiones</div>
-                                                    <div style={{ fontSize: '8px', color: '#64748b' }}>Gana recompensas completando tareas diarias</div>
+                                                    <div style={{ fontWeight: 'bold', fontSize: '11px' }}>{language === 'es' ? 'Misiones' : 'Missions'}</div>
+                                                    <div style={{ fontSize: '8px', color: '#64748b' }}>{language === 'es' ? 'Gana recompensas completando tareas diarias' : 'Earn rewards by completing daily tasks'}</div>
                                                 </div>
                                             </button>
                                         </>
@@ -9740,7 +9799,7 @@ export default function GameCanvas({
                                             {/* Mercado Global */}
                                             <button onClick={() => {
                                                 if (economy.level < 2) {
-                                                    showNotification("Mercado", "El Mercado Global se desbloquea al alcanzar el Nivel de Entrenador 2. ¡Derrota a algunos entrenadores en las rutas para subir de nivel!");
+                                                    showNotification("Mercado", language === 'es' ? "El Mercado Global se desbloquea al alcanzar el Nivel de Entrenador 2. ¡Derrota a algunos entrenadores en las rutas para subir de nivel!" : "The Global Marketplace unlocks at Trainer Level 2. Defeat some trainers on the routes to level up!");
                                                     return;
                                                 }
                                                 setShowMarketplaceModal(true);
@@ -9752,8 +9811,8 @@ export default function GameCanvas({
                                             }}>
                                                 <span style={{ fontSize: '20px' }}>🛍️</span>
                                                 <div>
-                                                    <div style={{ fontWeight: 'bold', fontSize: '11px' }}>Mercado Global</div>
-                                                    <div style={{ fontSize: '8px', color: '#64748b' }}>Intercambia objetos o Pokémon con otros domadores</div>
+                                                    <div style={{ fontWeight: 'bold', fontSize: '11px' }}>{language === 'es' ? 'Mercado Global' : 'Global Marketplace'}</div>
+                                                    <div style={{ fontSize: '8px', color: '#64748b' }}>{language === 'es' ? 'Intercambia objetos o Pokémon con otros domadores' : 'Trade items or Pokémon with other tamers'}</div>
                                                 </div>
                                             </button>
 
@@ -9765,8 +9824,8 @@ export default function GameCanvas({
                                             }}>
                                                 <span style={{ fontSize: '20px' }}>🛠️</span>
                                                 <div>
-                                                    <div style={{ fontWeight: 'bold', fontSize: '11px' }}>Taller de Alquimia</div>
-                                                    <div style={{ fontSize: '8px', color: '#64748b' }}>Crea esferas y objetos raros a partir de materiales</div>
+                                                    <div style={{ fontWeight: 'bold', fontSize: '11px' }}>{language === 'es' ? 'Taller de Alquimia' : 'Alchemy Workshop'}</div>
+                                                    <div style={{ fontSize: '8px', color: '#64748b' }}>{language === 'es' ? 'Crea esferas y objetos raros a partir de materiales' : 'Craft spheres and rare items from materials'}</div>
                                                 </div>
                                             </button>
 
@@ -9778,8 +9837,8 @@ export default function GameCanvas({
                                             }}>
                                                 <span style={{ fontSize: '20px' }}>🗺️</span>
                                                 <div>
-                                                    <div style={{ fontWeight: 'bold', fontSize: '11px' }}>Viajes Rápidos</div>
-                                                    <div style={{ fontSize: '8px', color: '#64748b' }}>Desplázate al instante entre ubicaciones</div>
+                                                    <div style={{ fontWeight: 'bold', fontSize: '11px' }}>{language === 'es' ? 'Viajes Rápidos' : 'Fast Travel'}</div>
+                                                    <div style={{ fontSize: '8px', color: '#64748b' }}>{language === 'es' ? 'Desplázate al instante entre ubicaciones' : 'Instantly travel between locations'}</div>
                                                 </div>
                                             </button>
 
@@ -9791,8 +9850,8 @@ export default function GameCanvas({
                                             }}>
                                                 <span style={{ fontSize: '20px' }}>🔗</span>
                                                 <div>
-                                                    <div style={{ fontWeight: 'bold', fontSize: '11px' }}>Referidos</div>
-                                                    <div style={{ fontSize: '8px', color: '#64748b' }}>Invita amigos y reclama premios exclusivos</div>
+                                                    <div style={{ fontWeight: 'bold', fontSize: '11px' }}>{language === 'es' ? 'Referidos' : 'Referrals'}</div>
+                                                    <div style={{ fontSize: '8px', color: '#64748b' }}>{language === 'es' ? 'Invita amigos y reclama premios exclusivos' : 'Invite friends and claim exclusive rewards'}</div>
                                                 </div>
                                             </button>
                                         </>
