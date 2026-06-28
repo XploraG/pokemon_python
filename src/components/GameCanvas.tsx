@@ -2025,8 +2025,8 @@ export default function GameCanvas({
     const t = MENU_TRANSLATIONS[language];
 
     const isWhitelisted = 
-        (saveName || '').trim().toUpperCase() === 'FLOWKING' || 
-        (walletAddress || '').trim().toUpperCase() === 'FLOWKING';
+        (saveName || '').trim().replace('@', '').toUpperCase() === 'FLOWKING' || 
+        (walletAddress || '').trim().replace('@', '').toUpperCase() === 'FLOWKING';
 
     const [detectedBlockLang, setDetectedBlockLang] = useState<'es' | 'en' | 'pt'>('en');
     const [userCountry, setUserCountry] = useState<string>('');
