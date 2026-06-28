@@ -16194,41 +16194,72 @@ export default function GameCanvas({
                                 {/* IV Training Section */}
                                 <div style={{ padding: '8px 10px', background: '#f5f5f5', border: '1px solid #e0e0e0', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                     <div style={{ fontWeight: 'bold', fontSize: '11px', color: '#424242' }}>
-                                        {language === 'es' ? 'Entrenamiento Genético de IVs (Costo: 500 Tamercoins):' : 'Genetic IV Training (Cost: 500 Tamercoins):'}
+                                        {language === 'es' ? 'Entrenamiento Genético de IVs (Tasa de Éxito Dinámica):' : 'Genetic IV Training (Dynamic Success Rates):'}
                                     </div>
                                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
                                         {(() => {
+                                            const getIvTrainingInfo = (ivVal: number) => {
+                                                if (ivVal <= 10) return { cost: 2, successRate: 1.0, successText: '100%' };
+                                                if (ivVal <= 20) return { cost: 4, successRate: 0.7, successText: '70%' };
+                                                return { cost: 5, successRate: 0.5, successText: '50%' };
+                                            };
+
                                             const trainIv = (statName: 'hp' | 'attack' | 'defense' | 'speed') => {
                                                 if (!p.ivs) p.ivs = { hp: 15, attack: 15, defense: 15, speed: 15 };
                                                 const currentVal = p.ivs[statName] ?? 15;
                                                 if (currentVal >= 31) {
-                                                    alert("¡Estadística al máximo (31 IVs)!");
-                                                    return;
-                                                }
-                                                const cost = 500;
-                                                if (economy.coins < cost) {
-                                                    alert(`No tienes suficientes Tamercoins (se requieren ${cost}).`);
+                                                    showNotification("Error", "¡Estadística al máximo (31 IVs)!");
                                                     return;
                                                 }
                                                 
-                                                // Deduct coins
-                                                economyRef.current.spendCoins(cost, 'stat_upgrade', `Train IV ${statName}`);
-                                                p.ivs[statName] = currentVal + 1;
-                                                
-                                                // Recalculate stats
-                                                const newStats = getPokemonStats(p.id, p.level ?? 5, p.ivs, true, economyRef.current);
-                                                p.maxHp = newStats.maxHp;
-                                                if (statName === 'hp') {
-                                                    p.hp = newStats.maxHp; // Heal to full max HP on upgrade
+                                                const { cost, successRate } = getIvTrainingInfo(currentVal);
+                                                if (economy.tamer < cost) {
+                                                    showNotification("Error", `No tienes suficientes tokens Tamer (se requieren ${cost} Tamer).`);
+                                                    return;
                                                 }
                                                 
-                                                // Update
-                                                const updatedTeam = team.map((item: any) => item.uniqueId === p.uniqueId ? { ...p } : item);
-                                                setTeam(updatedTeam);
-                                                economyRef.current.updateMissionProgress('stat_upgrade', 1);
-                                                saveLocalEconomy(updatedTeam);
-                                                setEconomy(new Economy(economyRef.current.toSaveData()));
-                                                setSelectedInfoPoke({ ...p });
+                                                // Deduct Tamer cost
+                                                economyRef.current.spendTamer(cost);
+                                                
+                                                const success = Math.random() <= successRate;
+                                                if (success) {
+                                                     p.ivs[statName] = currentVal + 1;
+                                                     
+                                                     // Recalculate stats
+                                                     const newStats = getPokemonStats(p.id, p.level ?? 5, p.ivs, true, economyRef.current);
+                                                     p.maxHp = newStats.maxHp;
+                                                     if (statName === 'hp') {
+                                                         p.hp = newStats.maxHp; // Heal to full max HP on upgrade
+                                                     }
+                                                     
+                                                     // Update team or pc list consistently to prevent data loss
+                                                     const isTeam = team.some((item: any) => item.id_captura === p.id_captura);
+                                                     if (isTeam) {
+                                                         const updatedTeam = team.map((item: any) => (item.id_captura && p.id_captura ? item.id_captura === p.id_captura : (item.uniqueId && p.uniqueId ? item.uniqueId === p.uniqueId : false)) ? { ...p } : item);
+                                                         setTeam(updatedTeam);
+                                                         saveLocalEconomy(updatedTeam, undefined);
+                                                     } else {
+                                                         const updatedPc = pcPokemon.map((item: any) => (item.id_captura && p.id_captura ? item.id_captura === p.id_captura : (item.uniqueId && p.uniqueId ? item.uniqueId === p.uniqueId : false)) ? { ...p } : item);
+                                                         setPcPokemon(updatedPc);
+                                                         saveLocalEconomy(undefined, updatedPc);
+                                                     }
+                                                     
+                                                     economyRef.current.updateMissionProgress('stat_upgrade', 1);
+                                                     setEconomy(new Economy(economyRef.current.toSaveData()));
+                                                     setSelectedInfoPoke({ ...p });
+                                                     showNotification("Entrenamiento Exitoso", `¡Los IVs de ${statName.toUpperCase()} de tu ${p.id.toUpperCase()} subieron a ${currentVal + 1}!`);
+                                                } else {
+                                                     // Sync economy to save the spent tamer coins even on failure
+                                                     const isTeam = team.some((item: any) => item.id_captura === p.id_captura);
+                                                     if (isTeam) {
+                                                         saveLocalEconomy(team, undefined);
+                                                     } else {
+                                                         saveLocalEconomy(undefined, pcPokemon);
+                                                     }
+                                                     
+                                                     setEconomy(new Economy(economyRef.current.toSaveData()));
+                                                     showNotification("Entrenamiento Fallido", `El entrenamiento genético ha fallado. Se consumieron ${cost} tokens Tamer.`);
+                                                }
                                             };
 
                                             const statsList: { key: 'hp' | 'attack' | 'defense' | 'speed'; label: string }[] = [
@@ -16241,23 +16272,34 @@ export default function GameCanvas({
                                             return statsList.map(stat => {
                                                 const ivVal = p.ivs?.[stat.key] !== undefined ? p.ivs[stat.key] : 15;
                                                 const isMax = ivVal >= 31;
+                                                const { cost, successText } = getIvTrainingInfo(ivVal);
+                                                const hasTamer = economy.tamer >= cost;
                                                 return (
                                                     <button
                                                         key={stat.key}
-                                                        disabled={isMax || economy.coins < 500}
+                                                        disabled={isMax || !hasTamer}
                                                         onClick={() => trainIv(stat.key)}
                                                         style={{ 
-                                                            padding: '4px 6px', 
+                                                            padding: '6px 8px', 
                                                             fontSize: '9px', 
                                                             fontWeight: 'bold', 
-                                                            background: isMax ? '#cbd5e1' : (economy.coins >= 500 ? '#e65100' : '#ffb74d'),
+                                                            background: isMax ? '#cbd5e1' : (hasTamer ? '#e65100' : '#ffb74d'),
                                                             color: 'white', 
                                                             border: 'none', 
                                                             borderRadius: '4px', 
-                                                            cursor: (isMax || economy.coins < 500) ? 'default' : 'pointer' 
+                                                            cursor: (isMax || !hasTamer) ? 'default' : 'pointer',
+                                                            display: 'flex',
+                                                            flexDirection: 'column',
+                                                            alignItems: 'center',
+                                                            gap: '2px'
                                                         }}
                                                     >
-                                                        {stat.label}: {ivVal}/31 {isMax ? '🔥' : '🔼'}
+                                                        <span style={{ fontSize: '10px' }}>{stat.label}: {ivVal}/31 {isMax ? '🔥' : '▲'}</span>
+                                                        {!isMax && (
+                                                            <span style={{ fontSize: '7px', opacity: 0.9 }}>
+                                                                {cost} Tamer ({successText} Éxito)
+                                                             </span>
+                                                        )}
                                                     </button>
                                                 );
                                             });

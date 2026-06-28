@@ -249,15 +249,28 @@ export default function Home() {
                 }
 
                 if (dbMonsters && dbMonsters.length > 0) {
+                    const foodExpiresMap = saveState.pokemon_food_expires || {};
                     // Split into team and PC
                     const teamMonsters = dbMonsters
                         .filter((m: any) => m.is_team)
                         .sort((a: any, b: any) => a.team_order - b.team_order)
-                        .map(mapDbToPoke);
+                        .map((m: any) => {
+                            const poke = mapDbToPoke(m) as any;
+                            if (m.id_captura && foodExpiresMap[m.id_captura]) {
+                                poke.food_expires = foodExpiresMap[m.id_captura];
+                            }
+                            return poke;
+                        });
                     const pcMonsters = dbMonsters
                         .filter((m: any) => !m.is_team)
                         .sort((a: any, b: any) => a.team_order - b.team_order)
-                        .map(mapDbToPoke);
+                        .map((m: any) => {
+                            const poke = mapDbToPoke(m) as any;
+                            if (m.id_captura && foodExpiresMap[m.id_captura]) {
+                                poke.food_expires = foodExpiresMap[m.id_captura];
+                            }
+                            return poke;
+                        });
 
                     saveState.team_data = teamMonsters;
                     saveState.pc_pokemon = pcMonsters;
