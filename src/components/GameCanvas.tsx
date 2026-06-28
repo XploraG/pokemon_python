@@ -2025,8 +2025,8 @@ export default function GameCanvas({
     const t = MENU_TRANSLATIONS[language];
 
     const isWhitelisted = 
-        (saveName || '').trim().toLowerCase() === 'flowking' || 
-        (walletAddress || '').trim().toLowerCase() === 'flowking';
+        (saveName || '').trim().toUpperCase() === 'FLOWKING' || 
+        (walletAddress || '').trim().toUpperCase() === 'FLOWKING';
 
     const [detectedBlockLang, setDetectedBlockLang] = useState<'es' | 'en' | 'pt'>('en');
     const [userCountry, setUserCountry] = useState<string>('');
@@ -2096,6 +2096,15 @@ export default function GameCanvas({
     const [assignedSeller, setAssignedSeller] = useState<string>('');
     const [showPokedexModal, setShowPokedexModal] = useState(false);
     const [showTravelModal, setShowTravelModal] = useState(false);
+    const [showTournamentView, setShowTournamentView] = useState(false);
+    const [spectatingMatch, setSpectatingMatch] = useState<any | null>(null);
+    const [insideTournamentBuilding, setInsideTournamentBuilding] = useState(false);
+    const [activeTournamentTab, setActiveTournamentTab] = useState<'brackets' | 'lobby'>('brackets');
+    const [isInTournamentQueue, setIsInTournamentQueue] = useState(false);
+    const [specBattleTurn, setSpecBattleTurn] = useState(0);
+    const [specHp1, setSpecHp1] = useState(100);
+    const [specHp2, setSpecHp2] = useState(100);
+    const [specLogs, setSpecLogs] = useState<string[]>([]);
     const [isTravelling, setIsTravelling] = useState(false);
     const [pokedexFilter, setPokedexFilter] = useState<'all' | 'captured' | 'seen' | 'missing'>('all');
     const [pokedexSearch, setPokedexSearch] = useState('');
@@ -3282,6 +3291,61 @@ export default function GameCanvas({
             return () => clearTimeout(timer);
         }
     }, [pendingPvPInvite]);
+
+    // Tournament Battle Spectator Auto-Simulation Effect
+    useEffect(() => {
+        if (!spectatingMatch) return;
+        
+        // Reset battle simulation state
+        setSpecBattleTurn(0);
+        setSpecHp1(100);
+        setSpecHp2(100);
+        
+        const logs = [
+            `🏟️ ¡Bienvenidos al Estadio de la Torre de Batalla!`,
+            `👥 La multitud ruge con emoción. Espectadores en vivo: ${Math.floor(Math.random() * 50) + 12}.`,
+            `👉 ¡El combate entre ${spectatingMatch.p1} y ${spectatingMatch.p2} ha comenzado!`,
+            `✨ ${spectatingMatch.p1} envía a Gengar (Nvl. 99) 🔮`,
+            `💥 ${spectatingMatch.p2} envía a Onix variocolor (Nvl. 85) ✨🪨`,
+            `⚡ [Turno 1] ¡Gengar es más rápido y usa Bola Sombra!`,
+            `💥 ¡Golpe crítico! El Onix de ${spectatingMatch.p2} recibe un fuerte impacto.`,
+            `🪨 Onix responde usando Terremoto. ¡El suelo tiembla violentamente!`,
+            `⚡ [Turno 2] Gengar usa Infortunio potenciado por el estado.`,
+            `💥 ¡Onix de ${spectatingMatch.p2} está contra las cuerdas! Le queda poca energía.`,
+            `🪨 Onix intenta usar Avalancha pero falla debido a la velocidad de Gengar.`,
+            `⚡ [Turno 3] Gengar lanza un fulminante Rayo Confuso.`,
+            `🏆 ¡El Onix de ${spectatingMatch.p2} se ha debilitado!`,
+            `👑 ¡Ganador del encuentro: ${spectatingMatch.p1}! ¡Avanza en el torneo!`
+        ];
+        
+        setSpecLogs([logs[0]]);
+        
+        const interval = setInterval(() => {
+            setSpecBattleTurn(prev => {
+                const next = prev + 1;
+                if (next < logs.length) {
+                    setSpecLogs(l => [...l, logs[next]]);
+                    
+                    // Update HP bars dynamically based on turn
+                    if (next === 6) {
+                        setSpecHp2(60);
+                    } else if (next === 7) {
+                        setSpecHp1(70);
+                    } else if (next === 9) {
+                        setSpecHp2(20);
+                    } else if (next === 12) {
+                        setSpecHp2(0);
+                    }
+                    return next;
+                } else {
+                    clearInterval(interval);
+                    return prev;
+                }
+            });
+        }, 2200); // Progress turn every 2.2s
+        
+        return () => clearInterval(interval);
+    }, [spectatingMatch]);
 
     // Timer: Receiver Waiting to Accept (30s auto-reject)
     useEffect(() => {
@@ -10045,26 +10109,641 @@ export default function GameCanvas({
                             </p>
 
                             {/* Additional Info Box */}
-                            <div style={{
-                                background: 'rgba(251, 191, 36, 0.05)',
-                                border: '1px solid rgba(251, 191, 36, 0.15)',
-                                borderRadius: '12px',
-                                padding: '12px 16px',
-                                fontSize: '12px',
-                                color: '#fef08a',
-                                fontWeight: '600',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '8px',
-                                marginTop: '10px'
-                            }}>
+                            <a 
+                                href="https://t.me/TamerTrainer/1"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{
+                                    background: 'rgba(251, 191, 36, 0.1)',
+                                    border: '1.5px solid rgba(251, 191, 36, 0.3)',
+                                    borderRadius: '12px',
+                                    padding: '12px 20px',
+                                    fontSize: '12px',
+                                    color: '#fef08a',
+                                    fontWeight: '700',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '8px',
+                                    marginTop: '10px',
+                                    textDecoration: 'none',
+                                    cursor: 'pointer',
+                                    boxShadow: '0 4px 15px rgba(251, 191, 36, 0.15)',
+                                    transition: 'all 0.2s ease-in-out'
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.background = 'rgba(251, 191, 36, 0.2)';
+                                    e.currentTarget.style.transform = 'scale(1.05)';
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.background = 'rgba(251, 191, 36, 0.1)';
+                                    e.currentTarget.style.transform = 'scale(1)';
+                                }}
+                            >
                                 <span>📢</span>
                                 <span>{dict.status}</span>
-                            </div>
+                            </a>
                         </div>
                     </div>
                 );
             })()}
+
+            {/* Tournament / Battle Frontier View */}
+            {showTournamentView && (() => {
+                // If spectator is active, render spectating view
+                if (spectatingMatch) {
+                    return (
+                        <div style={{
+                            position: 'absolute',
+                            top: 0, left: 0, right: 0, bottom: 0,
+                            zIndex: 300,
+                            background: '#020617',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontFamily: "'Press Start 2P', monospace",
+                            padding: '16px',
+                            color: '#ffffff',
+                            boxSizing: 'border-box'
+                        }}>
+                            <div style={{ maxWidth: '600px', width: '100%', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                <button 
+                                    onClick={() => setSpectatingMatch(null)} 
+                                    style={{
+                                        alignSelf: 'flex-start',
+                                        background: 'rgba(255,255,255,0.08)',
+                                        border: '1px solid rgba(255,255,255,0.2)',
+                                        borderRadius: '8px',
+                                        color: '#cbd5e1',
+                                        padding: '8px 16px',
+                                        fontSize: '9px',
+                                        cursor: 'pointer',
+                                        fontWeight: 'bold',
+                                        textTransform: 'uppercase',
+                                        margin: 0
+                                    }}
+                                >
+                                    ← {language === 'es' ? 'Volver a los Brackets' : 'Back to Brackets'}
+                                </button>
+
+                                {/* Arena UI Wrapper */}
+                                <div style={{
+                                    border: '4px solid #1e293b',
+                                    borderRadius: '12px',
+                                    overflow: 'hidden',
+                                    background: '#000000',
+                                    boxShadow: '0 15px 30px rgba(0,0,0,0.6)'
+                                }}>
+                                    {/* Spectator count header */}
+                                    <div style={{
+                                        background: '#0f172a',
+                                        padding: '10px 14px',
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'center',
+                                        borderBottom: '2px solid #1e293b',
+                                        fontSize: '8px',
+                                        color: '#94a3b8'
+                                    }}>
+                                        <span style={{ textTransform: 'uppercase', color: '#38bdf8' }}>
+                                            🏟️ {spectatingMatch.p1} vs {spectatingMatch.p2}
+                                        </span>
+                                        <span style={{ color: '#fbbf24', fontWeight: 'bold', animation: 'pulseGeo 1.5s infinite alternate' }}>
+                                            👁️ {language === 'es' ? 'Espectadores' : 'Spectators'}: {12 + specBattleTurn * 2}
+                                        </span>
+                                    </div>
+
+                                    {/* Battle Screen */}
+                                    <div style={{
+                                        height: '240px',
+                                        position: 'relative',
+                                        backgroundImage: "url('https://play.pokemonshowdown.com/fx/bg-stadium.png')",
+                                        backgroundSize: 'cover',
+                                        backgroundPosition: 'bottom',
+                                        imageRendering: 'pixelated',
+                                        overflow: 'hidden'
+                                    }}>
+                                        {/* P2: Opponent Pokémon (Top Right) */}
+                                        <div style={{
+                                            position: 'absolute',
+                                            top: '16px',
+                                            right: '16px',
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            alignItems: 'flex-end',
+                                            zIndex: 2
+                                        }}>
+                                            {/* Status Box */}
+                                            <div style={{
+                                                background: '#f8fafc',
+                                                border: '2px solid #1e293b',
+                                                color: '#0f172a',
+                                                padding: '6px 10px',
+                                                borderRadius: '0px 0px 0px 8px',
+                                                minWidth: '140px',
+                                                fontSize: '8px',
+                                                fontFamily: 'monospace',
+                                                fontWeight: 'bold',
+                                                boxShadow: '0 4px 6px rgba(0,0,0,0.15)'
+                                            }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                                                    <span style={{ textTransform: 'uppercase' }}>ONIX ✨</span>
+                                                    <span>Lv85</span>
+                                                </div>
+                                                {/* Health Bar */}
+                                                <div style={{ width: '100%', background: '#cbd5e1', height: '6px', borderRadius: '3px', border: '1px solid #94a3b8', overflow: 'hidden' }}>
+                                                    <div style={{
+                                                        background: specHp2 > 50 ? '#22c55e' : specHp2 > 20 ? '#eab308' : '#ef4444',
+                                                        height: '100%',
+                                                        width: `${specHp2}%`,
+                                                        transition: 'width 0.5s ease-in-out'
+                                                    }} />
+                                                </div>
+                                            </div>
+                                            {/* Animated Front Sprite */}
+                                            <img 
+                                                src="https://play.pokemonshowdown.com/sprites/ani/onix.gif"
+                                                alt="Onix"
+                                                style={{ width: '100px', height: '100px', objectFit: 'contain', marginTop: '4px', filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.3))' }}
+                                            />
+                                        </div>
+
+                                        {/* P1: Ally Pokémon (Bottom Left) */}
+                                        <div style={{
+                                            position: 'absolute',
+                                            bottom: '16px',
+                                            left: '16px',
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            alignItems: 'flex-start',
+                                            zIndex: 2
+                                        }}>
+                                            {/* Animated Back Sprite */}
+                                            <img 
+                                                src="https://play.pokemonshowdown.com/sprites/ani-back/gengar.gif"
+                                                alt="Gengar"
+                                                style={{ width: '120px', height: '120px', objectFit: 'contain', marginBottom: '4px', filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.3))' }}
+                                            />
+                                            {/* Status Box */}
+                                            <div style={{
+                                                background: '#f8fafc',
+                                                border: '2px solid #1e293b',
+                                                color: '#0f172a',
+                                                padding: '6px 10px',
+                                                borderRadius: '0px 8px 0px 0px',
+                                                minWidth: '140px',
+                                                fontSize: '8px',
+                                                fontFamily: 'monospace',
+                                                fontWeight: 'bold',
+                                                boxShadow: '0 4px 6px rgba(0,0,0,0.15)'
+                                            }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                                                    <span style={{ textTransform: 'uppercase' }}>GENGAR</span>
+                                                    <span>Lv99</span>
+                                                </div>
+                                                {/* Health Bar */}
+                                                <div style={{ width: '100%', background: '#cbd5e1', height: '6px', borderRadius: '3px', border: '1px solid #94a3b8', overflow: 'hidden' }}>
+                                                    <div style={{
+                                                        background: specHp1 > 50 ? '#22c55e' : specHp1 > 20 ? '#eab308' : '#ef4444',
+                                                        height: '100%',
+                                                        width: `${specHp1}%`,
+                                                        transition: 'width 0.5s ease-in-out'
+                                                    }} />
+                                                </div>
+                                                <div style={{ textAlign: 'right', fontSize: '6px', color: '#64748b', marginTop: '2px' }}>
+                                                    {Math.floor(250 * (specHp1 / 100))} / 250 HP
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Scrolling logs text box */}
+                                    <div style={{
+                                        background: '#1e293b',
+                                        borderTop: '4px solid #334155',
+                                        padding: '16px',
+                                        height: '100px',
+                                        overflowY: 'auto',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: '6px',
+                                        fontSize: '9px',
+                                        lineHeight: '1.5',
+                                        color: '#f1f5f9',
+                                        scrollBehavior: 'smooth'
+                                    }}>
+                                        {specLogs.map((logText, idx) => (
+                                            <div key={idx} style={{
+                                                color: logText.startsWith('🏆') || logText.startsWith('👑') ? '#fbbf24' : logText.startsWith('⚡') ? '#38bdf8' : '#f1f5f9'
+                                            }}>
+                                                {logText}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    );
+                }
+
+                // If not spectating, render the main tournament overworld or interior
+                return (
+                    <div style={{
+                        position: 'absolute',
+                        top: 0, left: 0, right: 0, bottom: 0,
+                        zIndex: 250,
+                        background: 'radial-gradient(circle at center, #0f0b29 0%, #030208 100%)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        color: '#f8fafc',
+                        padding: '24px 16px',
+                        boxSizing: 'border-box',
+                        overflowY: 'auto'
+                    }}>
+                        {/* EXTERIOR OVERWORLD OF THE BATTLE FRONTIER */}
+                        {!insideTournamentBuilding ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '80vh', textAlign: 'center', gap: '20px' }}>
+                                <h1 style={{
+                                    fontFamily: "'Press Start 2P', monospace",
+                                    fontSize: '18px',
+                                    color: '#fbbf24',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.05em',
+                                    margin: '0 0 10px',
+                                    textShadow: '0 4px 10px rgba(251, 191, 36, 0.3)'
+                                }}>
+                                    🏆 {language === 'es' ? 'FRONTERA DE BATALLA' : 'BATTLE FRONTIER'}
+                                </h1>
+                                
+                                <p style={{ fontSize: '11px', color: '#a78bfa', maxWidth: '400px', lineHeight: '1.6', margin: '0 0 20px', textTransform: 'uppercase', fontFamily: "'Press Start 2P', monospace" }}>
+                                    {language === 'es' ? '¡El Torneo de Campeones está listo!' : 'The Tournament of Champions is ready!'}
+                                </p>
+
+                                {/* Battle Tower GBA Sprite Card */}
+                                <div 
+                                    onClick={() => setInsideTournamentBuilding(true)}
+                                    style={{
+                                        width: '200px',
+                                        height: '200px',
+                                        backgroundImage: "url('https://images.wikia.com/es.pokemon/images/d/d4/Torre_Batalla_E.png')",
+                                        backgroundSize: 'contain',
+                                        backgroundRepeat: 'no-repeat',
+                                        backgroundPosition: 'center',
+                                        imageRendering: 'pixelated',
+                                        cursor: 'pointer',
+                                        transition: 'transform 0.2s',
+                                        filter: 'drop-shadow(0 15px 25px rgba(139,92,246,0.3))'
+                                    }}
+                                    onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+                                    onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                                />
+
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '20px', width: '100%', maxWidth: '280px' }}>
+                                    <button 
+                                        onClick={() => setInsideTournamentBuilding(true)}
+                                        style={{
+                                            background: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)',
+                                            border: 'none',
+                                            borderRadius: '8px',
+                                            padding: '12px',
+                                            color: '#fff',
+                                            fontSize: '9px',
+                                            fontWeight: 'bold',
+                                            textTransform: 'uppercase',
+                                            fontFamily: "'Press Start 2P', monospace",
+                                            cursor: 'pointer',
+                                            boxShadow: '0 4px 10px rgba(124,58,237,0.3)',
+                                            margin: 0
+                                        }}
+                                    >
+                                        🚪 {language === 'es' ? 'Entrar a la Torre' : 'Enter Battle Tower'}
+                                    </button>
+                                    <button 
+                                        onClick={() => setShowTournamentView(false)}
+                                        style={{
+                                            background: 'rgba(255,255,255,0.05)',
+                                            border: '1px solid rgba(255,255,255,0.15)',
+                                            borderRadius: '8px',
+                                            padding: '10px',
+                                            color: '#cbd5e1',
+                                            fontSize: '8px',
+                                            fontWeight: 'bold',
+                                            textTransform: 'uppercase',
+                                            fontFamily: "'Press Start 2P', monospace",
+                                            cursor: 'pointer',
+                                            margin: 0
+                                        }}
+                                    >
+                                        🦅 {language === 'es' ? 'Volver a la Aventura' : 'Back to Adventure'}
+                                    </button>
+                                </div>
+                            </div>
+                        ) : (
+                            /* INTERIOR VIEW: BRACKETS & LOBBY */
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', width: '100%', maxWidth: '640px', margin: '0 auto' }}>
+                                {/* Exit header */}
+                                <button 
+                                    onClick={() => setInsideTournamentBuilding(false)}
+                                    style={{
+                                        alignSelf: 'flex-start',
+                                        background: 'rgba(255,255,255,0.05)',
+                                        border: '1px solid rgba(255,255,255,0.15)',
+                                        borderRadius: '6px',
+                                        color: '#cbd5e1',
+                                        padding: '8px 12px',
+                                        fontSize: '8px',
+                                        cursor: 'pointer',
+                                        fontFamily: "'Press Start 2P', monospace",
+                                        textTransform: 'uppercase',
+                                        margin: 0
+                                    }}
+                                >
+                                    ← {language === 'es' ? 'Salir al Exterior' : 'Exit to Overworld'}
+                                </button>
+
+                                <h2 style={{
+                                    fontFamily: "'Press Start 2P', monospace",
+                                    fontSize: '13px',
+                                    color: '#fbbf24',
+                                    textAlign: 'center',
+                                    textTransform: 'uppercase',
+                                    margin: '0 0 10px'
+                                }}>
+                                    🏟️ {language === 'es' ? 'INTERIOR DE LA TORRE' : 'BATTLE TOWER STADIUM'}
+                                </h2>
+
+                                {/* Custom tabs selector */}
+                                <div style={{ display: 'flex', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', padding: '4px' }}>
+                                    <button 
+                                        onClick={() => setActiveTournamentTab('brackets')}
+                                        style={{
+                                            flex: 1,
+                                            background: activeTournamentTab === 'brackets' ? 'rgba(251,191,36,0.15)' : 'transparent',
+                                            border: activeTournamentTab === 'brackets' ? '1px solid rgba(251,191,36,0.3)' : 'none',
+                                            borderRadius: '8px',
+                                            color: activeTournamentTab === 'brackets' ? '#fbbf24' : '#94a3b8',
+                                            padding: '10px',
+                                            fontSize: '8px',
+                                            fontFamily: "'Press Start 2P', monospace",
+                                            cursor: 'pointer',
+                                            textTransform: 'uppercase',
+                                            margin: 0
+                                        }}
+                                    >
+                                        🏆 {language === 'es' ? 'Brackets' : 'Brackets'}
+                                    </button>
+                                    <button 
+                                        onClick={() => setActiveTournamentTab('lobby')}
+                                        style={{
+                                            flex: 1,
+                                            background: activeTournamentTab === 'lobby' ? 'rgba(139,92,246,0.15)' : 'transparent',
+                                            border: activeTournamentTab === 'lobby' ? '1px solid rgba(139,92,246,0.3)' : 'none',
+                                            borderRadius: '8px',
+                                            color: activeTournamentTab === 'lobby' ? '#c084fc' : '#94a3b8',
+                                            padding: '10px',
+                                            fontSize: '8px',
+                                            fontFamily: "'Press Start 2P', monospace",
+                                            cursor: 'pointer',
+                                            textTransform: 'uppercase',
+                                            margin: 0
+                                        }}
+                                    >
+                                        👥 {language === 'es' ? 'Lobby / Match' : 'Lobby / Match'}
+                                    </button>
+                                </div>
+
+                                {/* TAB 1: BRACKETS */}
+                                {activeTournamentTab === 'brackets' && (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '10px' }}>
+                                        <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '16px' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'flex-start', gap: '10px', flexWrap: 'wrap' }}>
+                                                {/* Quarter-finals Column */}
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '220px' }}>
+                                                    <span style={{ fontSize: '7px', color: '#94a3b8', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '4px', textTransform: 'uppercase', display: 'block', textAlign: 'center', marginBottom: '6px' }}>
+                                                        {language === 'es' ? 'Cuartos' : 'Quarter-Finals'}
+                                                    </span>
+                                                    
+                                                    {/* Match 1 */}
+                                                    <div style={{ background: '#1e1b4b', border: '1.5px solid #4338ca', padding: '8px', borderRadius: '8px', position: 'relative' }}>
+                                                        <div style={{ fontSize: '8px', color: '#10b981', fontWeight: 'bold' }}>FLOWKING</div>
+                                                        <div style={{ height: '1px', background: 'rgba(255,255,255,0.1)', margin: '4px 0' }} />
+                                                        <div style={{ fontSize: '8px', color: '#cbd5e1' }}>PokeMaster</div>
+                                                    </div>
+
+                                                    {/* Match 2 */}
+                                                    <div style={{ background: '#1e293b', border: '1.5px solid #475569', padding: '8px', borderRadius: '8px', position: 'relative' }}>
+                                                        <div style={{ fontSize: '8px', color: '#cbd5e1' }}>EJCC</div>
+                                                        <div style={{ height: '1px', background: 'rgba(255,255,255,0.1)', margin: '4px 0' }} />
+                                                        <div style={{ fontSize: '8px', color: '#cbd5e1' }}>Tamer_Elite</div>
+                                                        {/* LIVE BADGE */}
+                                                        <button 
+                                                            onClick={() => setSpectatingMatch({ id: "m2", p1: "EJCC", p2: "Tamer_Elite" })}
+                                                            style={{
+                                                                position: 'absolute',
+                                                                right: '-6px',
+                                                                top: '-6px',
+                                                                background: '#ef4444',
+                                                                border: '1.5px solid #fff',
+                                                                color: '#fff',
+                                                                fontSize: '6px',
+                                                                padding: '3px 6px',
+                                                                borderRadius: '10px',
+                                                                cursor: 'pointer',
+                                                                fontWeight: 'bold',
+                                                                fontFamily: "'Press Start 2P', monospace",
+                                                                boxShadow: '0 0 10px rgba(239,68,68,0.5)',
+                                                                margin: 0
+                                                            }}
+                                                        >
+                                                            👁️ LIVE
+                                                        </button>
+                                                    </div>
+
+                                                    {/* Match 3 */}
+                                                    <div style={{ background: '#1e293b', border: '1.5px solid #475569', padding: '8px', borderRadius: '8px', position: 'relative' }}>
+                                                        <div style={{ fontSize: '8px', color: '#cbd5e1' }}>Kruschev</div>
+                                                        <div style={{ height: '1px', background: 'rgba(255,255,255,0.1)', margin: '4px 0' }} />
+                                                        <div style={{ fontSize: '8px', color: '#cbd5e1' }}>CryptoTamer</div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Separator arrow */}
+                                                <div style={{ display: 'flex', alignItems: 'center', height: '100%', color: '#475569', fontSize: '16px', alignSelf: 'center' }}>→</div>
+
+                                                {/* Semi-finals Column */}
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', width: '220px', justifyContent: 'center' }}>
+                                                    <span style={{ fontSize: '7px', color: '#94a3b8', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '4px', textTransform: 'uppercase', display: 'block', textAlign: 'center', marginBottom: '6px' }}>
+                                                        {language === 'es' ? 'Semifinal' : 'Semi-Finals'}
+                                                    </span>
+
+                                                    {/* Semi 1 */}
+                                                    <div style={{ background: 'rgba(255,255,255,0.03)', border: '1.5px dashed rgba(255,255,255,0.2)', padding: '10px', borderRadius: '8px' }}>
+                                                        <div style={{ fontSize: '8px', color: '#a78bfa' }}>FLOWKING</div>
+                                                        <div style={{ height: '1px', background: 'rgba(255,255,255,0.08)', margin: '4px 0' }} />
+                                                        <div style={{ fontSize: '8px', color: '#cbd5e1' }}>{language === 'es' ? 'Ganador Duelo 2' : 'Winner Match 2'}</div>
+                                                    </div>
+
+                                                    {/* Semi 2 */}
+                                                    <div style={{ background: 'rgba(255,255,255,0.03)', border: '1.5px dashed rgba(255,255,255,0.2)', padding: '10px', borderRadius: '8px' }}>
+                                                        <div style={{ fontSize: '8px', color: '#cbd5e1' }}>Kruschev</div>
+                                                        <div style={{ height: '1px', background: 'rgba(255,255,255,0.08)', margin: '4px 0' }} />
+                                                        <div style={{ fontSize: '8px', color: '#cbd5e1' }}>ElíasCastillo</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* TAB 2: LOBBY & MATCHMAKING */}
+                                {activeTournamentTab === 'lobby' && (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginTop: '10px' }}>
+                                        {/* Matchmaking trigger */}
+                                        <div style={{
+                                            background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(59, 130, 246, 0.05) 100%)',
+                                            border: '1.5px solid rgba(139, 92, 246, 0.35)',
+                                            borderRadius: '12px',
+                                            padding: '16px',
+                                            textAlign: 'center',
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            alignItems: 'center',
+                                            gap: '12px'
+                                        }}>
+                                            <span style={{ fontSize: '20px' }}>🎮</span>
+                                            <div>
+                                                <div style={{ fontSize: '10px', color: '#c084fc', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                                    {language === 'es' ? 'Buscador de Combate Automático' : 'Auto Matchmaking Queue'}
+                                                </div>
+                                                <div style={{ fontSize: '7px', color: '#94a3b8', marginTop: '6px', textTransform: 'uppercase' }}>
+                                                    {language === 'es' ? 'Enfréntate a los mejores Tamers activos en el estadio' : 'Fight the best active Tamers in the stadium'}
+                                                </div>
+                                            </div>
+
+                                            {isInTournamentQueue ? (
+                                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', marginTop: '6px' }}>
+                                                    <span style={{ fontSize: '7px', color: '#fbbf24', animation: 'pulseGeo 1.2s infinite alternate', textTransform: 'uppercase' }}>
+                                                        ⏳ {language === 'es' ? 'Buscando Oponente...' : 'Finding Opponent...'}
+                                                    </span>
+                                                    <button 
+                                                        onClick={() => setIsInTournamentQueue(false)}
+                                                        style={{
+                                                            background: '#ef4444',
+                                                            border: 'none',
+                                                            borderRadius: '6px',
+                                                            color: '#fff',
+                                                            padding: '6px 12px',
+                                                            fontSize: '7px',
+                                                            fontFamily: "'Press Start 2P', monospace",
+                                                            cursor: 'pointer',
+                                                            margin: 0
+                                                        }}
+                                                    >
+                                                        {language === 'es' ? 'Cancelar' : 'Cancel'}
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <button 
+                                                    onClick={() => {
+                                                        setIsInTournamentQueue(true);
+                                                        setTimeout(() => {
+                                                            setIsInTournamentQueue(false);
+                                                            // Match with Kruschev automatically!
+                                                            setSpectatingMatch({
+                                                                id: "m_match_" + Date.now(),
+                                                                p1: playerName || "FLOWKING",
+                                                                p2: "Kruschev"
+                                                            });
+                                                            showNotification("¡Combate Encontrado!", "Entrando al estadio contra Kruschev.");
+                                                        }, 3000);
+                                                    }}
+                                                    style={{
+                                                        background: 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)',
+                                                        border: 'none',
+                                                        borderRadius: '8px',
+                                                        color: '#fff',
+                                                        padding: '10px 20px',
+                                                        fontSize: '8px',
+                                                        fontFamily: "'Press Start 2P', monospace",
+                                                        cursor: 'pointer',
+                                                        boxShadow: '0 4px 12px rgba(99,102,241,0.3)',
+                                                        textTransform: 'uppercase',
+                                                        margin: 0
+                                                    }}
+                                                >
+                                                    {language === 'es' ? 'Registrarse al Torneo' : 'Join Matchmaking'}
+                                                </button>
+                                            )}
+                                        </div>
+
+                                        {/* Player list */}
+                                        <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '16px' }}>
+                                            <h3 style={{ fontSize: '8px', color: '#a78bfa', textTransform: 'uppercase', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '6px', margin: '0 0 10px' }}>
+                                                👥 {language === 'es' ? 'Entrenadores en la Arena' : 'Tamers in Arena'} (6)
+                                            </h3>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                                {[
+                                                    { name: (playerName || "FLOWKING") + " (Tú)", online: true, isMe: true },
+                                                    { name: "Kruschev", online: true },
+                                                    { name: "EJCC", online: true },
+                                                    { name: "ElíasCastillo", online: true },
+                                                    { name: "CryptoTamer", online: true },
+                                                    { name: "PokeMaster", online: true }
+                                                ].map((tamer, idx) => (
+                                                    <div 
+                                                        key={idx}
+                                                        style={{
+                                                            display: 'flex',
+                                                            justifyContent: 'space-between',
+                                                            alignItems: 'center',
+                                                            padding: '8px 10px',
+                                                            background: 'rgba(255,255,255,0.03)',
+                                                            borderRadius: '6px',
+                                                            fontSize: '8px'
+                                                        }}
+                                                    >
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                            <span style={{ width: '6px', height: '6px', background: '#10b981', borderRadius: '50%' }} />
+                                                            <span style={{ color: tamer.isMe ? '#fbbf24' : '#cbd5e1' }}>{tamer.name}</span>
+                                                        </div>
+                                                        {!tamer.isMe && (
+                                                            <button 
+                                                                onClick={() => {
+                                                                    setSpectatingMatch({
+                                                                        id: "m_challenge_" + Date.now(),
+                                                                        p1: playerName || "FLOWKING",
+                                                                        p2: tamer.name
+                                                                    });
+                                                                    showNotification("¡Reto Aceptado!", `Combatiendo vs ${tamer.name}.`);
+                                                                }}
+                                                                style={{
+                                                                    background: 'rgba(139,92,246,0.15)',
+                                                                    border: '1px solid rgba(139,92,246,0.3)',
+                                                                    color: '#c084fc',
+                                                                    padding: '4px 8px',
+                                                                    borderRadius: '4px',
+                                                                    fontSize: '6px',
+                                                                    fontFamily: "'Press Start 2P', monospace",
+                                                                    cursor: 'pointer',
+                                                                    textTransform: 'uppercase',
+                                                                    margin: 0
+                                                                }}
+                                                            >
+                                                                {language === 'es' ? 'Retar' : 'Challenge'}
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                );
+            })()}
+
             {/* Tournament Beta Popup */}
             {showTournamentPopup && (
                 <div className="absolute inset-0 z-[9999] flex flex-col items-center justify-center bg-black/85 backdrop-blur-sm p-4 fade-in">
@@ -14582,6 +15261,58 @@ export default function GameCanvas({
                                 </div>
                             ) : (
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '320px', overflowY: 'auto', paddingRight: '4px' }}>
+                                    {/* Dedicated Battle Frontier fly option */}
+                                    <div
+                                        style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'space-between',
+                                            padding: '10px 12px',
+                                            background: 'linear-gradient(135deg, rgba(251, 191, 36, 0.12) 0%, rgba(139, 92, 246, 0.08) 100%)',
+                                            border: '1px solid rgba(251, 191, 36, 0.35)',
+                                            borderRadius: '8px',
+                                            boxShadow: '0 2px 8px rgba(251, 191, 36, 0.1)',
+                                            marginBottom: '4px'
+                                        }}
+                                    >
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                            <span style={{ fontWeight: 'bold', fontSize: '12px', color: '#fbbf24', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                                🏆 {language === 'es' ? 'Frontera de Batalla' : 'Battle Frontier'}
+                                            </span>
+                                            <span style={{ fontSize: '9px', color: '#a78bfa' }}>
+                                                {language === 'es' ? 'Estadio en vivo • Espectadores • Matchmaking' : 'Live Stadium • Spectators • Matchmaking'}
+                                            </span>
+                                        </div>
+                                        <button
+                                            onClick={() => {
+                                                setShowTravelModal(false);
+                                                setIsTravelling(true);
+                                                setTimeout(() => {
+                                                    setIsTravelling(false);
+                                                    setShowTournamentView(true);
+                                                    showNotification(
+                                                        language === 'es' ? "¡Vuelo Completado!" : "Flight Completed!",
+                                                        language === 'es' ? "Has llegado a la Frontera de Batalla." : "You have arrived at the Battle Frontier."
+                                                    );
+                                                }, 1200);
+                                            }}
+                                            className="pokemon-button success"
+                                            style={{
+                                                margin: 0,
+                                                padding: '5px 12px',
+                                                fontSize: '10px',
+                                                fontWeight: 'bold',
+                                                background: 'linear-gradient(135deg, #fbbf24 0%, #d97706 100%)',
+                                                border: 'none',
+                                                color: 'black',
+                                                boxShadow: '0 2px 6px rgba(251, 191, 36, 0.4)',
+                                                cursor: 'pointer'
+                                            }}
+                                        >
+                                            {language === 'es' ? 'Volar' : 'Fly'}
+                                        </button>
+                                    </div>
+
                                     {economy.visited_settlements && economy.visited_settlements.length > 0 ? (
                                         economy.visited_settlements.map((mapPath: string, idx: number) => {
                                             const name = getMapDisplayName(mapPath, language);
