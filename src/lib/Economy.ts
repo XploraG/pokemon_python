@@ -6,10 +6,12 @@ import loginRewards from '../../public/assets/economy/login_rewards.json';
 import dailyMissions from '../../public/assets/economy/daily_missions.json';
 import weeklyMissions from '../../public/assets/economy/weekly_missions.json';
 import pokemonSpeciesList from '../../public/assets/economy/pokemon_species.json';
+import battlePassConfig from '../../public/assets/economy/battle_pass.json';
 
 export interface EconomySaveData {
     coins?: number;
     pusdt?: number;
+    tamer?: number;
     medals?: string[];
     login_streak?: number;
     last_login_date?: string;
@@ -48,6 +50,13 @@ export interface EconomySaveData {
     defeated_trainers?: Record<string, boolean>;
     referred_by?: string;
     claimed_referrals?: string[];
+    daily_missions_level?: Record<string, number>;
+    battle_pass_xp?: number;
+    battle_pass_level?: number;
+    battle_pass_premium?: boolean;
+    claimed_bp_free?: Record<string, boolean>;
+    claimed_bp_premium?: Record<string, boolean>;
+    mysterious_egg_steps?: number;
 }
 
 export interface CoinTransaction {
@@ -61,6 +70,7 @@ export interface CoinTransaction {
 export class Economy {
     public coins: number = 500;
     public pusdt: number = 0.0;
+    public tamer: number = 0.0;
     public medals: string[] = [];
     public login_streak: number = 0;
     public last_login_date: string = '';
@@ -99,6 +109,13 @@ export class Economy {
     public defeated_trainers: Record<string, boolean> = {};
     public referred_by: string = '';
     public claimed_referrals: string[] = [];
+    public daily_missions_level: Record<string, number> = {};
+    public battle_pass_xp: number = 0;
+    public battle_pass_level: number = 1;
+    public battle_pass_premium: boolean = false;
+    public claimed_bp_free: Record<string, boolean> = {};
+    public claimed_bp_premium: Record<string, boolean> = {};
+    public mysterious_egg_steps: number = 0;
 
     constructor(saveData?: EconomySaveData) {
         if (saveData) {
@@ -111,6 +128,7 @@ export class Economy {
     private initializeDefaults(): void {
         this.coins = economyConfig.starting_coins ?? 500;
         this.pusdt = 0.0;
+        this.tamer = 0.0;
         this.medals = [];
         this.login_streak = 0;
         this.last_login_date = '';
@@ -147,11 +165,19 @@ export class Economy {
         this.defeated_trainers = {};
         this.referred_by = '';
         this.claimed_referrals = [];
+        this.daily_missions_level = {};
+        this.battle_pass_xp = 0;
+        this.battle_pass_level = 1;
+        this.battle_pass_premium = false;
+        this.claimed_bp_free = {};
+        this.claimed_bp_premium = {};
+        this.mysterious_egg_steps = 0;
     }
 
     private loadFromSave(data: EconomySaveData): void {
         this.coins = data.coins ?? economyConfig.starting_coins ?? 500;
         this.pusdt = data.pusdt ?? 0.0;
+        this.tamer = data.tamer ?? 0.0;
         this.medals = data.medals ?? [];
         this.login_streak = data.login_streak ?? 0;
         this.last_login_date = data.last_login_date ?? '';
@@ -190,6 +216,13 @@ export class Economy {
         this.defeated_trainers = data.defeated_trainers ?? {};
         this.referred_by = data.referred_by ?? '';
         this.claimed_referrals = data.claimed_referrals ?? [];
+        this.daily_missions_level = data.daily_missions_level ?? {};
+        this.battle_pass_xp = data.battle_pass_xp ?? 0;
+        this.battle_pass_level = data.battle_pass_level ?? 1;
+        this.battle_pass_premium = data.battle_pass_premium ?? false;
+        this.claimed_bp_free = data.claimed_bp_free ?? {};
+        this.claimed_bp_premium = data.claimed_bp_premium ?? {};
+        this.mysterious_egg_steps = data.mysterious_egg_steps ?? 0;
         for (const medal of this.medals) {
             if (!this.medal_levels[medal]) {
                 this.medal_levels[medal] = 1;
@@ -201,6 +234,7 @@ export class Economy {
         return {
             coins: this.coins,
             pusdt: this.pusdt,
+            tamer: this.tamer,
             medals: this.medals,
             login_streak: this.login_streak,
             last_login_date: this.last_login_date,
@@ -238,7 +272,14 @@ export class Economy {
             visited_settlements: this.visited_settlements,
             defeated_trainers: this.defeated_trainers,
             referred_by: this.referred_by,
-            claimed_referrals: this.claimed_referrals
+            claimed_referrals: this.claimed_referrals,
+            daily_missions_level: this.daily_missions_level,
+            battle_pass_xp: this.battle_pass_xp,
+            battle_pass_level: this.battle_pass_level,
+            battle_pass_premium: this.battle_pass_premium,
+            claimed_bp_free: this.claimed_bp_free,
+            claimed_bp_premium: this.claimed_bp_premium,
+            mysterious_egg_steps: this.mysterious_egg_steps
         };
     }
 
@@ -314,6 +355,14 @@ export class Economy {
         if (this.transaction_history.length > 200) {
             this.transaction_history.shift();
         }
+    }
+
+    public spendTamer(amount: number): boolean {
+        if (this.tamer >= amount) {
+            this.tamer -= amount;
+            return true;
+        }
+        return false;
     }
 
     public spendPusdt(amount: number): boolean {
@@ -559,6 +608,10 @@ export class Economy {
 
         let total = 0;
         for (const pokemon of teamToCalc) {
+            // Check food expiration: if not fed, produces 0 coins
+            if (!pokemon.food_expires || Date.now() >= pokemon.food_expires) {
+                continue;
+            }
             const nameLower = (pokemon.id || '').toLowerCase();
             const species = pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === nameLower);
             const goldPerHour = species ? species.gold_per_hour : 5;
@@ -709,6 +762,7 @@ export class Economy {
 
         // New day! Reset daily missions progress and claimed status
         this.daily_missions_progress = {};
+        this.daily_missions_level = {};
         this.claimed_missions = {};
 
         // Weekly Reset check
@@ -764,8 +818,13 @@ export class Economy {
         for (const mission of dailyMissions.missions) {
             if (mission.type === missionType) {
                 const mid = mission.id;
+                const currentLevel = this.daily_missions_level[mid] ?? 1;
+                if (currentLevel > 10) continue; // Completed all levels for the day
+                const lvlConfig = mission.levels.find((l: any) => l.level === currentLevel);
+                if (!lvlConfig) continue;
+
                 const current = this.daily_missions_progress[mid] ?? 0;
-                if (current < mission.target) {
+                if (current < lvlConfig.target) {
                     this.daily_missions_progress[mid] = current + amount;
                 }
             }
@@ -798,33 +857,158 @@ export class Economy {
 
             if (this.claimed_weekly_missions[missionId]) return false;
 
-            if (mission.reward_coins && mission.reward_coins > 0) {
-                this.addCoins(mission.reward_coins, 'mission_reward', `Completed weekly: ${missionId}`);
+            if (mission.reward_tamercoins && mission.reward_tamercoins > 0) {
+                this.addCoins(mission.reward_tamercoins, 'mission_reward', `Completed weekly: ${missionId}`);
             }
-            this.addTrainerXp(500);
+            this.addBattlePassXp(mission.reward_exp);
             this.claimed_weekly_missions[missionId] = true;
 
             return true;
         } else {
-            if (!this.claimed_missions) {
-                this.claimed_missions = {};
-            }
             const mission = dailyMissions.missions.find((m: any) => m.id === missionId);
             if (!mission) return false;
 
+            const currentLevel = this.daily_missions_level[missionId] ?? 1;
+            if (currentLevel > 10) return false; // Already finished level 10
+
+            const lvlConfig = mission.levels.find((l: any) => l.level === currentLevel);
+            if (!lvlConfig) return false;
+
             const prog = this.daily_missions_progress[missionId] ?? 0;
-            if (prog < mission.target) return false;
+            if (prog < lvlConfig.target) return false;
 
-            if (this.claimed_missions[missionId]) return false;
-
-            if (mission.reward_coins && mission.reward_coins > 0) {
-                this.addCoins(mission.reward_coins, 'mission_reward', `Completed daily: ${missionId}`);
+            // Grant rewards
+            if (lvlConfig.reward_tamercoins && lvlConfig.reward_tamercoins > 0) {
+                this.addCoins(lvlConfig.reward_tamercoins, 'mission_reward', `Completed daily: ${missionId} Lvl ${currentLevel}`);
             }
-            this.addTrainerXp(200);
-            this.claimed_missions[missionId] = true;
+            if (lvlConfig.reward_pusdt && lvlConfig.reward_pusdt > 0) {
+                this.pusdt += lvlConfig.reward_pusdt;
+            }
+            this.addBattlePassXp(lvlConfig.reward_exp);
+
+            // Increment mission level and reset progress
+            this.daily_missions_level[missionId] = currentLevel + 1;
+            this.daily_missions_progress[missionId] = 0;
 
             return true;
         }
+    }
+
+    // ---- BATTLE PASS SYSTEM ----
+
+    public addBattlePassXp(amount: number): { leveledUp: boolean; oldLevel: number; newLevel: number; xpGained: number } {
+        const oldLevel = this.battle_pass_level;
+        this.battle_pass_xp += amount;
+        let leveledUp = false;
+
+        // Cumulative XP progression curve
+        while (this.battle_pass_level < 50) {
+            const nextLevelConfig = battlePassConfig.rewards_pool.find((r: any) => r.level === this.battle_pass_level);
+            const reqXp = nextLevelConfig ? nextLevelConfig.exp_required : this.battle_pass_level * 1000;
+            if (this.battle_pass_xp >= reqXp) {
+                this.battle_pass_level += 1;
+                leveledUp = true;
+            } else {
+                break;
+            }
+        }
+
+        return {
+            leveledUp,
+            oldLevel,
+            newLevel: this.battle_pass_level,
+            xpGained: amount
+        };
+    }
+
+    public getBattlePassProgress(): { currentLevelXp: number; nextLevelXp: number; progressPercent: number; xpInCurrentLevel: number; xpNeededForNextLevel: number } {
+        const L = this.battle_pass_level;
+        const currentReq = L > 1 ? (battlePassConfig.rewards_pool.find((r: any) => r.level === L - 1)?.exp_required ?? 0) : 0;
+        const nextReq = battlePassConfig.rewards_pool.find((r: any) => r.level === L)?.exp_required ?? (L * 1000);
+
+        const xpInCurrentLevel = Math.max(0, this.battle_pass_xp - currentReq);
+        const xpNeededForNextLevel = Math.max(1, nextReq - currentReq);
+        const progressPercent = Math.min(100, Math.round((xpInCurrentLevel / xpNeededForNextLevel) * 100));
+
+        return {
+            currentLevelXp: currentReq,
+            nextLevelXp: nextReq,
+            progressPercent,
+            xpInCurrentLevel,
+            xpNeededForNextLevel
+        };
+    }
+
+    public buyBattlePassPremium(): { success: boolean; reason?: string } {
+        const cost = 5.00; // Price 5 Tamer
+        if (this.battle_pass_premium) {
+            return { success: false, reason: "Ya tienes el Pase de Batalla Premium." };
+        }
+        if (this.tamer < cost) {
+            return { success: false, reason: `No tienes suficientes tokens Tamer (se requieren ${cost.toFixed(2)} Tamer).` };
+        }
+
+        this.tamer -= cost;
+        this.battle_pass_premium = true;
+        return { success: true };
+    }
+
+    public claimBattlePassReward(level: number, isPremium: boolean, inventory: any): { success: boolean; rewardName?: string; reason?: string } {
+        if (level >= this.battle_pass_level) {
+            return { success: false, reason: "Nivel bloqueado. Sube tu nivel de Pase de Batalla." };
+        }
+
+        if (isPremium) {
+            if (!this.battle_pass_premium) {
+                return { success: false, reason: "Requiere Pase de Batalla Premium." };
+            }
+            if (this.claimed_bp_premium[String(level)]) {
+                return { success: false, reason: "Recompensa ya reclamada." };
+            }
+        } else {
+            if (this.claimed_bp_free[String(level)]) {
+                return { success: false, reason: "Recompensa ya reclamada." };
+            }
+        }
+
+        // Find the reward details
+        const reward = battlePassConfig.rewards_pool.find((r: any) => r.level === level && r.is_premium === isPremium);
+        if (!reward) {
+            return { success: false, reason: "Recompensa no encontrada en este nivel." };
+        }
+
+        // Grant reward
+        if (reward.reward_type === 'currency') {
+            this.addCoins(reward.reward_quantity, 'battle_pass', `Reward level ${level}`);
+        } else if (reward.reward_type === 'premium_currency') {
+            this.pusdt += reward.reward_quantity;
+        } else if (reward.reward_type === 'item') {
+            inventory.addItem(reward.reward_item_id, reward.reward_quantity);
+        } else if (reward.reward_type === 'cosmetic' && reward.reward_item_id) {
+            if (!this.medals.includes(reward.reward_item_id)) {
+                this.medals.push(reward.reward_item_id);
+                this.medal_levels[reward.reward_item_id] = 1;
+            }
+        }
+
+        // Mark as claimed
+        if (isPremium) {
+            this.claimed_bp_premium[String(level)] = true;
+        } else {
+            this.claimed_bp_free[String(level)] = true;
+        }
+
+        return { success: true, rewardName: reward.reward_name };
+    }
+
+    // ---- EGG & STEPS HELPERS ----
+
+    public addEggSteps(amount: number): void {
+        this.mysterious_egg_steps += amount;
+    }
+
+    public hatchEggReset(): void {
+        this.mysterious_egg_steps = 0;
     }
 
     public activateBooster(itemId: string, durationMs: number): boolean {

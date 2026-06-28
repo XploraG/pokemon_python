@@ -1,14 +1,54 @@
 {
-    "missions": [
-        {"id": "defeat_trainers_weekly_1", "description": "Derrota a 15 entrenadores o líderes esta semana", "target": 15, "reward_coins": 300, "type": "battle"},
-        {"id": "defeat_trainers_weekly_2", "description": "Derrota a 40 entrenadores o líderes esta semana", "target": 40, "reward_coins": 600, "type": "battle"},
-        {"id": "capture_pokemon_weekly_1", "description": "Captura 15 Pokémon esta semana", "target": 15, "reward_coins": 300, "type": "capture"},
-        {"id": "capture_pokemon_weekly_2", "description": "Captura 35 Pokémon esta semana", "target": 35, "reward_coins": 500, "reward_item": "super_ball", "reward_item_quantity": 1, "type": "capture"},
-        {"id": "visit_pokecenter_weekly", "description": "Visita el Centro Pokémon 25 veces esta semana", "target": 25, "reward_coins": 150, "type": "visit"},
-        {"id": "spend_coins_5000", "description": "Gasta 5,000 monedas en la tienda esta semana", "target": 5000, "reward_coins": 0, "reward_item": "super_potion", "reward_item_quantity": 1, "type": "spend"},
-        {"id": "spend_coins_10000", "description": "Gasta 10,000 monedas en la tienda esta semana", "target": 10000, "reward_coins": 0, "reward_item": "hyper_potion", "reward_item_quantity": 1, "type": "spend"},
-        {"id": "spend_coins_20000", "description": "Gasta 20,000 monedas en la tienda esta semana", "target": 20000, "reward_coins": 0, "reward_item": "ultra_ball", "reward_item_quantity": 1, "type": "spend"},
-        {"id": "defeat_trainers_weekly_master", "description": "Derrota a 100 entrenadores o líderes esta semana", "target": 100, "reward_coins": 1000, "reward_item": "gold_incense", "reward_item_quantity": 1, "type": "battle"},
-        {"id": "capture_pokemon_weekly_master", "description": "Captura 80 Pokémon esta semana", "target": 80, "reward_coins": 800, "reward_item": "evolution_stone", "reward_item_quantity": 1, "type": "capture"}
-    ]
+  "missions": [
+    {
+      "id": "WEEKLY_01",
+      "name": "Evolución Suprema",
+      "description": "Evoluciona 3 Pokémon usando piedras elementales en el laboratorio",
+      "target": 3,
+      "reward_exp": 1500,
+      "reward_tamercoins": 500,
+      "reward_items": ["1x Incubadora Rápida"],
+      "type": "stone_evolve"
+    },
+    {
+      "id": "WEEKLY_02",
+      "name": "Dominación de Gimnasios",
+      "description": "Derrota a 5 Líderes de Gimnasio o Jefes de Zona en el mapa PVE",
+      "target": 5,
+      "reward_exp": 2000,
+      "reward_tamercoins": 750,
+      "reward_items": ["1x Huevo Pokémon Misterioso"],
+      "type": "gym_defeat"
+    },
+    {
+      "id": "WEEKLY_03",
+      "name": "Invicto de la Semana",
+      "description": "Gana 15 partidas clasificatorias en la Arena de Batalla PVP",
+      "target": 15,
+      "reward_exp": 2500,
+      "reward_tamercoins": 1000,
+      "reward_items": ["3x Ultraballs", "1x Poción Máxima"],
+      "type": "pvp_win"
+    },
+    {
+      "id": "WEEKLY_04",
+      "name": "Granero al Máximo",
+      "description": "Genera un acumulado de 15,000 Tamercoins a través del sistema de producción pasiva",
+      "target": 15000,
+      "reward_exp": 1800,
+      "reward_tamercoins": 400,
+      "reward_items": ["10x Super Alimento Energético"],
+      "type": "passive_gain"
+    },
+    {
+      "id": "WEEKLY_05",
+      "name": "Perfeccionamiento Genético",
+      "description": "Sube el nivel de cualquier habilidad o estadística individual (IV) de un Pokémon 20 veces",
+      "target": 20,
+      "reward_exp": 2200,
+      "reward_tamercoins": 800,
+      "reward_items": ["2x Caramelos Raros (Grandes)"],
+      "type": "stat_upgrade"
+    }
+  ]
 }

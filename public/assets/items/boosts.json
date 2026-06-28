@@ -87,5 +87,40 @@
         "effect": "ground_mount",
         "description": "¡Aspecto legendario para viajar por tierra! (Skin de Dragonite).",
         "sprite": "src/assets/items/sprites/dragonite_mount.png"
+    },
+    "food_common": {
+        "name": "Baya de Alimento Común",
+        "price": 100,
+        "effect": "food",
+        "description": "Alimento común para Pokémon. Activa producción por 4.8 horas.",
+        "sprite": "src/assets/items/sprites/food_common.png"
+    },
+    "food_advanced": {
+        "name": "Baya de Alimento Avanzado",
+        "price": 250,
+        "effect": "food",
+        "description": "Alimento avanzado para Pokémon. Activa producción por 12 horas.",
+        "sprite": "src/assets/items/sprites/food_advanced.png"
+    },
+    "food_super": {
+        "name": "Super Alimento Energético",
+        "price": 600,
+        "effect": "food",
+        "description": "Alimento súper potente para Pokémon. Activa producción por 48 horas.",
+        "sprite": "src/assets/items/sprites/food_super.png"
+    },
+    "incubator_fast": {
+        "name": "Incubadora Rápida",
+        "price": 2000,
+        "effect": "incubator",
+        "description": "Objeto pasivo en mochila. Reduce pasos de eclosión a solo 200.",
+        "sprite": "src/assets/items/sprites/incubator_fast.png"
+    },
+    "mysterious_egg": {
+        "name": "Huevo Pokémon Misterioso",
+        "price": 1500,
+        "effect": "egg",
+        "description": "Huevo misterioso que eclosiona al caminar (1000 pasos / 200 con Incubadora).",
+        "sprite": "src/assets/items/sprites/mysterious_egg.png"
     }
 }

@@ -1,14 +1,184 @@
 {
-    "missions": [
-        {"id": "defeat_trainers_daily", "description": "Derrota a 2 entrenadores o líderes hoy", "target": 2, "reward_coins": 100, "type": "battle"},
-        {"id": "capture_pokemon_daily", "description": "Captura 1 Pokémon hoy", "target": 1, "reward_coins": 100, "type": "capture"},
-        {"id": "visit_pokecenter_daily", "description": "Visita el Centro Pokémon hoy", "target": 1, "reward_coins": 50, "type": "visit"},
-        {"id": "spend_coins_1000", "description": "Gasta 1,000 monedas en la tienda", "target": 1000, "reward_coins": 0, "reward_item": "potion", "reward_item_quantity": 1, "type": "spend"},
-        {"id": "defeat_trainers_daily_hard", "description": "Derrota a 5 entrenadores o líderes hoy", "target": 5, "reward_coins": 180, "type": "battle"},
-        {"id": "capture_pokemon_daily_hard", "description": "Captura 3 Pokémon hoy", "target": 3, "reward_coins": 150, "type": "capture"},
-        {"id": "visit_pokecenter_daily_hard", "description": "Visita el Centro Pokémon 3 veces hoy", "target": 3, "reward_coins": 80, "type": "visit"},
-        {"id": "spend_coins_2500", "description": "Gasta 2,500 monedas en la tienda", "target": 2500, "reward_coins": 0, "reward_item": "super_potion", "reward_item_quantity": 1, "type": "spend"},
-        {"id": "battle_enthusiast_daily", "description": "Derrota a 8 entrenadores o líderes hoy", "target": 8, "reward_coins": 250, "type": "battle"},
-        {"id": "elite_collector_daily", "description": "Captura 5 Pokémon hoy", "target": 5, "reward_coins": 200, "type": "capture"}
-    ]
+  "missions": [
+    {
+      "id": "DAILY_01",
+      "base_name": "Cazador de Criaturas",
+      "description": "Captura Pokémon salvajes en el mapa",
+      "type": "capture",
+      "levels": [
+        {"level": 1, "target": 1, "reward_exp": 50, "reward_tamercoins": 10, "reward_pusdt": 0.0},
+        {"level": 2, "target": 3, "reward_exp": 60, "reward_tamercoins": 15, "reward_pusdt": 0.0},
+        {"level": 3, "target": 5, "reward_exp": 70, "reward_tamercoins": 20, "reward_pusdt": 0.0},
+        {"level": 4, "target": 8, "reward_exp": 80, "reward_tamercoins": 25, "reward_pusdt": 0.0},
+        {"level": 5, "target": 12, "reward_exp": 90, "reward_tamercoins": 30, "reward_pusdt": 0.1},
+        {"level": 6, "target": 16, "reward_exp": 100, "reward_tamercoins": 40, "reward_pusdt": 0.0},
+        {"level": 7, "target": 20, "reward_exp": 120, "reward_tamercoins": 50, "reward_pusdt": 0.0},
+        {"level": 8, "target": 25, "reward_exp": 140, "reward_tamercoins": 60, "reward_pusdt": 0.2},
+        {"level": 9, "target": 30, "reward_exp": 160, "reward_tamercoins": 75, "reward_pusdt": 0.3},
+        {"level": 10, "target": 40, "reward_exp": 200, "reward_tamercoins": 100, "reward_pusdt": 0.5}
+      ]
+    },
+    {
+      "id": "DAILY_02",
+      "base_name": "Entrenamiento Diario",
+      "description": "Gana batallas PVE contra entrenadores o salvajes",
+      "type": "battle",
+      "levels": [
+        {"level": 1, "target": 1, "reward_exp": 40, "reward_tamercoins": 8, "reward_pusdt": 0.0},
+        {"level": 2, "target": 2, "reward_exp": 50, "reward_tamercoins": 12, "reward_pusdt": 0.0},
+        {"level": 3, "target": 4, "reward_exp": 60, "reward_tamercoins": 18, "reward_pusdt": 0.0},
+        {"level": 4, "target": 6, "reward_exp": 70, "reward_tamercoins": 24, "reward_pusdt": 0.0},
+        {"level": 5, "target": 9, "reward_exp": 85, "reward_tamercoins": 32, "reward_pusdt": 0.1},
+        {"level": 6, "target": 12, "reward_exp": 100, "reward_tamercoins": 42, "reward_pusdt": 0.0},
+        {"level": 7, "target": 15, "reward_exp": 115, "reward_tamercoins": 55, "reward_pusdt": 0.0},
+        {"level": 8, "target": 20, "reward_exp": 135, "reward_tamercoins": 70, "reward_pusdt": 0.2},
+        {"level": 9, "target": 25, "reward_exp": 160, "reward_tamercoins": 90, "reward_pusdt": 0.3},
+        {"level": 10, "target": 35, "reward_exp": 210, "reward_tamercoins": 120, "reward_pusdt": 0.5}
+      ]
+    },
+    {
+      "id": "DAILY_03",
+      "base_name": "Nutrición Animal",
+      "description": "Alimenta a tus Pokémon en el equipo de producción",
+      "type": "feed",
+      "levels": [
+        {"level": 1, "target": 1, "reward_exp": 30, "reward_tamercoins": 5, "reward_pusdt": 0.0},
+        {"level": 2, "target": 3, "reward_exp": 40, "reward_tamercoins": 10, "reward_pusdt": 0.0},
+        {"level": 3, "target": 6, "reward_exp": 50, "reward_tamercoins": 15, "reward_pusdt": 0.0},
+        {"level": 4, "target": 10, "reward_exp": 65, "reward_tamercoins": 22, "reward_pusdt": 0.0},
+        {"level": 5, "target": 15, "reward_exp": 80, "reward_tamercoins": 30, "reward_pusdt": 0.1},
+        {"level": 6, "target": 20, "reward_exp": 95, "reward_tamercoins": 40, "reward_pusdt": 0.0},
+        {"level": 7, "target": 26, "reward_exp": 110, "reward_tamercoins": 52, "reward_pusdt": 0.0},
+        {"level": 8, "target": 32, "reward_exp": 130, "reward_tamercoins": 68, "reward_pusdt": 0.2},
+        {"level": 9, "target": 40, "reward_exp": 155, "reward_tamercoins": 85, "reward_pusdt": 0.3},
+        {"level": 10, "target": 50, "reward_exp": 190, "reward_tamercoins": 110, "reward_pusdt": 0.5}
+      ]
+    },
+    {
+      "id": "DAILY_04",
+      "base_name": "Gladiador de Arena",
+      "description": "Participa en combates competitivos Arena PVP",
+      "type": "pvp",
+      "levels": [
+        {"level": 1, "target": 1, "reward_exp": 60, "reward_tamercoins": 15, "reward_pusdt": 0.0},
+        {"level": 2, "target": 2, "reward_exp": 70, "reward_tamercoins": 20, "reward_pusdt": 0.0},
+        {"level": 3, "target": 3, "reward_exp": 80, "reward_tamercoins": 30, "reward_pusdt": 0.0},
+        {"level": 4, "target": 5, "reward_exp": 95, "reward_tamercoins": 42, "reward_pusdt": 0.0},
+        {"level": 5, "target": 7, "reward_exp": 110, "reward_tamercoins": 55, "reward_pusdt": 0.1},
+        {"level": 6, "target": 10, "reward_exp": 130, "reward_tamercoins": 75, "reward_pusdt": 0.0},
+        {"level": 7, "target": 13, "reward_exp": 150, "reward_tamercoins": 95, "reward_pusdt": 0.0},
+        {"level": 8, "target": 16, "reward_exp": 175, "reward_tamercoins": 120, "reward_pusdt": 0.2},
+        {"level": 9, "target": 20, "reward_exp": 205, "reward_tamercoins": 150, "reward_pusdt": 0.3},
+        {"level": 10, "target": 25, "reward_exp": 250, "reward_tamercoins": 200, "reward_pusdt": 0.5}
+      ]
+    },
+    {
+      "id": "DAILY_05",
+      "base_name": "Inversión en Suministros",
+      "description": "Gasta Tamercoins en la tienda interna (comida/esferas)",
+      "type": "spend",
+      "levels": [
+        {"level": 1, "target": 50, "reward_exp": 30, "reward_tamercoins": 5, "reward_pusdt": 0.0},
+        {"level": 2, "target": 150, "reward_exp": 40, "reward_tamercoins": 10, "reward_pusdt": 0.0},
+        {"level": 3, "target": 300, "reward_exp": 50, "reward_tamercoins": 15, "reward_pusdt": 0.0},
+        {"level": 4, "target": 500, "reward_exp": 65, "reward_tamercoins": 25, "reward_pusdt": 0.0},
+        {"level": 5, "target": 800, "reward_exp": 80, "reward_tamercoins": 35, "reward_pusdt": 0.1},
+        {"level": 6, "target": 1200, "reward_exp": 100, "reward_tamercoins": 50, "reward_pusdt": 0.0},
+        {"level": 7, "target": 1800, "reward_exp": 120, "reward_tamercoins": 70, "reward_pusdt": 0.0},
+        {"level": 8, "target": 2500, "reward_exp": 145, "reward_tamercoins": 95, "reward_pusdt": 0.2},
+        {"level": 9, "target": 3500, "reward_exp": 175, "reward_tamercoins": 130, "reward_pusdt": 0.3},
+        {"level": 10, "target": 5000, "reward_exp": 220, "reward_tamercoins": 180, "reward_pusdt": 0.5}
+      ]
+    },
+    {
+      "id": "DAILY_06",
+      "base_name": "Esfuerzo en Clínicas",
+      "description": "Cura la salud de tus Pokémon debilitados",
+      "type": "heal",
+      "levels": [
+        {"level": 1, "target": 1, "reward_exp": 25, "reward_tamercoins": 5, "reward_pusdt": 0.0},
+        {"level": 2, "target": 3, "reward_exp": 35, "reward_tamercoins": 8, "reward_pusdt": 0.0},
+        {"level": 3, "target": 5, "reward_exp": 45, "reward_tamercoins": 12, "reward_pusdt": 0.0},
+        {"level": 4, "target": 8, "reward_exp": 55, "reward_tamercoins": 18, "reward_pusdt": 0.0},
+        {"level": 5, "target": 12, "reward_exp": 70, "reward_tamercoins": 25, "reward_pusdt": 0.1},
+        {"level": 6, "target": 16, "reward_exp": 85, "reward_tamercoins": 35, "reward_pusdt": 0.0},
+        {"level": 7, "target": 20, "reward_exp": 100, "reward_tamercoins": 45, "reward_pusdt": 0.0},
+        {"level": 8, "target": 25, "reward_exp": 120, "reward_tamercoins": 60, "reward_pusdt": 0.2},
+        {"level": 9, "target": 30, "reward_exp": 145, "reward_tamercoins": 80, "reward_pusdt": 0.3},
+        {"level": 10, "target": 40, "reward_exp": 180, "reward_tamercoins": 100, "reward_pusdt": 0.5}
+      ]
+    },
+    {
+      "id": "DAILY_07",
+      "base_name": "Recolector de Bayas",
+      "description": "Consigue ítems de alimento ganando batallas",
+      "type": "loot_food",
+      "levels": [
+        {"level": 1, "target": 2, "reward_exp": 35, "reward_tamercoins": 6, "reward_pusdt": 0.0},
+        {"level": 2, "target": 5, "reward_exp": 45, "reward_tamercoins": 10, "reward_pusdt": 0.0},
+        {"level": 3, "target": 9, "reward_exp": 55, "reward_tamercoins": 16, "reward_pusdt": 0.0},
+        {"level": 4, "target": 14, "reward_exp": 70, "reward_tamercoins": 24, "reward_pusdt": 0.0},
+        {"level": 5, "target": 20, "reward_exp": 85, "reward_tamercoins": 34, "reward_pusdt": 0.1},
+        {"level": 6, "target": 28, "reward_exp": 105, "reward_tamercoins": 46, "reward_pusdt": 0.0},
+        {"level": 7, "target": 38, "reward_exp": 125, "reward_tamercoins": 62, "reward_pusdt": 0.0},
+        {"level": 8, "target": 50, "reward_exp": 150, "reward_tamercoins": 82, "reward_pusdt": 0.2},
+        {"level": 9, "target": 65, "reward_exp": 180, "reward_tamercoins": 110, "reward_pusdt": 0.3},
+        {"level": 10, "target": 80, "reward_exp": 220, "reward_tamercoins": 140, "reward_pusdt": 0.5}
+      ]
+    },
+    {
+      "id": "DAILY_08",
+      "base_name": "Victoria Estratégica",
+      "description": "Derrota criaturas de un elemento específico (no Normal)",
+      "type": "defeat_element",
+      "levels": [
+        {"level": 1, "target": 1, "reward_exp": 45, "reward_tamercoins": 10, "reward_pusdt": 0.0},
+        {"level": 2, "target": 2, "reward_exp": 55, "reward_tamercoins": 14, "reward_pusdt": 0.0},
+        {"level": 3, "target": 4, "reward_exp": 65, "reward_tamercoins": 20, "reward_pusdt": 0.0},
+        {"level": 4, "target": 6, "reward_exp": 80, "reward_tamercoins": 28, "reward_pusdt": 0.0},
+        {"level": 5, "target": 9, "reward_exp": 95, "reward_tamercoins": 38, "reward_pusdt": 0.1},
+        {"level": 6, "target": 12, "reward_exp": 115, "reward_tamercoins": 50, "reward_pusdt": 0.0},
+        {"level": 7, "target": 15, "reward_exp": 135, "reward_tamercoins": 66, "reward_pusdt": 0.0},
+        {"level": 8, "target": 20, "reward_exp": 160, "reward_tamercoins": 86, "reward_pusdt": 0.2},
+        {"level": 9, "target": 25, "reward_exp": 190, "reward_tamercoins": 110, "reward_pusdt": 0.3},
+        {"level": 10, "target": 35, "reward_exp": 235, "reward_tamercoins": 145, "reward_pusdt": 0.5}
+      ]
+    },
+    {
+      "id": "DAILY_09",
+      "base_name": "Poder de Crítica",
+      "description": "Consigue asestar golpes críticos en cualquier batalla",
+      "type": "critical",
+      "levels": [
+        {"level": 1, "target": 3, "reward_exp": 40, "reward_tamercoins": 8, "reward_pusdt": 0.0},
+        {"level": 2, "target": 6, "reward_exp": 50, "reward_tamercoins": 12, "reward_pusdt": 0.0},
+        {"level": 3, "target": 10, "reward_exp": 60, "reward_tamercoins": 18, "reward_pusdt": 0.0},
+        {"level": 4, "target": 15, "reward_exp": 75, "reward_tamercoins": 26, "reward_pusdt": 0.0},
+        {"level": 5, "target": 22, "reward_exp": 90, "reward_tamercoins": 36, "reward_pusdt": 0.1},
+        {"level": 6, "target": 30, "reward_exp": 110, "reward_tamercoins": 48, "reward_pusdt": 0.0},
+        {"level": 7, "target": 40, "reward_exp": 130, "reward_tamercoins": 64, "reward_pusdt": 0.0},
+        {"level": 8, "target": 52, "reward_exp": 155, "reward_tamercoins": 84, "reward_pusdt": 0.2},
+        {"level": 9, "target": 66, "reward_exp": 185, "reward_tamercoins": 110, "reward_pusdt": 0.3},
+        {"level": 10, "target": 85, "reward_exp": 225, "reward_tamercoins": 140, "reward_pusdt": 0.5}
+      ]
+    },
+    {
+      "id": "DAILY_10",
+      "base_name": "Constancia Tamer",
+      "description": "Mantén sesiones de juego activas (minutos en línea)",
+      "type": "online_time",
+      "levels": [
+        {"level": 1, "target": 10, "reward_exp": 30, "reward_tamercoins": 5, "reward_pusdt": 0.0},
+        {"level": 2, "target": 20, "reward_exp": 40, "reward_tamercoins": 10, "reward_pusdt": 0.0},
+        {"level": 3, "target": 40, "reward_exp": 50, "reward_tamercoins": 15, "reward_pusdt": 0.0},
+        {"level": 4, "target": 60, "reward_exp": 65, "reward_tamercoins": 22, "reward_pusdt": 0.0},
+        {"level": 5, "target": 90, "reward_exp": 80, "reward_tamercoins": 30, "reward_pusdt": 0.1},
+        {"level": 6, "target": 120, "reward_exp": 100, "reward_tamercoins": 42, "reward_pusdt": 0.0},
+        {"level": 7, "target": 150, "reward_exp": 120, "reward_tamercoins": 56, "reward_pusdt": 0.0},
+        {"level": 8, "target": 180, "reward_exp": 145, "reward_tamercoins": 74, "reward_pusdt": 0.2},
+        {"level": 9, "target": 240, "reward_exp": 175, "reward_tamercoins": 96, "reward_pusdt": 0.3},
+        {"level": 10, "target": 300, "reward_exp": 220, "reward_tamercoins": 130, "reward_pusdt": 0.5}
+      ]
+    }
+  ]
 }

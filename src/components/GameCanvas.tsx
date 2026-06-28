@@ -7,6 +7,7 @@ import dailyMissions from '../../public/assets/economy/daily_missions.json';
 import weeklyMissions from '../../public/assets/economy/weekly_missions.json';
 import passiveRates from '../../public/assets/economy/passive_rates.json';
 import pokemonSpeciesList from '../../public/assets/economy/pokemon_species.json';
+import battlePassConfig from '../../public/assets/economy/battle_pass.json';
 import economyConfig from '../../public/assets/economy/config.json';
 import { supabase } from '../lib/supabase';
 import AdManager from '../lib/AdManager';
@@ -112,7 +113,7 @@ const MENU_TRANSLATIONS = {
         unlockedSlots: "Desbloqueados",
         emptySlot: "Slot libre",
         lockedSlot: "Slot Bloqueado",
-        unlockSlot: "Desbloquear (5 PUSDT)",
+        unlockSlot: "Desbloquear (5 TAMER)",
         unlockPrev: "(Desbloquea el anterior)",
         currentStats: "Estadísticas Actuales",
         maxHp: "PS Máx",
@@ -281,7 +282,7 @@ const MENU_TRANSLATIONS = {
         unlockedSlots: "Unlocked",
         emptySlot: "Empty slot",
         lockedSlot: "Locked slot",
-        unlockSlot: "Unlock (5 PUSDT)",
+        unlockSlot: "Unlock (5 TAMER)",
         unlockPrev: "(Unlock previous slot)",
         currentStats: "Current Stats",
         maxHp: "Max HP",
@@ -737,34 +738,34 @@ const isTmCompatible = (pokemonId: string, tmId: string): boolean => {
 const TAMERBALLS_SHOP = [
     { id: 'tamer_ball', name: 'Tamer Ball', desc: 'Esfera básica de captura (30% éxito)', coins: 300, icon: '🔴' },
     { id: 'super_ball', name: 'Super Ball', desc: 'Mayor ratio de captura (50% éxito)', coins: 500, icon: '🔵' },
-    { id: 'ultra_ball', name: 'Ultra Ball', desc: 'Ratio de captura muy alto (75% éxito)', pusdt: 1.00, icon: '🟡' },
-    { id: 'master_ball', name: 'Master Ball', desc: 'Captura garantizada (100% éxito)', pusdt: 3.00, icon: '🟣' }
+    { id: 'ultra_ball', name: 'Ultra Ball', desc: 'Ratio de captura muy alto (75% éxito)', tamer: 1.00, icon: '🟡' },
+    { id: 'master_ball', name: 'Master Ball', desc: 'Captura garantizada (100% éxito)', tamer: 3.00, icon: '🟣' }
 ];
 
 const ITEMS_SHOP = [
-    { id: 'potion', name: 'Poción', desc: 'Restaura 20 PS', coins: 150, pusdt: 0.20, icon: '🧪' },
-    { id: 'super_potion', name: 'Superpoción', desc: 'Restaura 50 PS', coins: 250, pusdt: 0.50, icon: '🧪' },
-    { id: 'hyper_potion', name: 'Hiperpoción', desc: 'Restaura 120 PS', coins: 600, pusdt: 1.00, icon: '🧪' },
-    { id: 'revive', name: 'Revivir', desc: 'Revive a un Pokémon con 50% PS', coins: 1000, pusdt: 0.70, icon: '✨' },
-    { id: 'full_heal', name: 'Cura Total', desc: 'Cura todos los estados alterados', coins: 600, pusdt: 0.50, icon: '💊' },
-    { id: 'evolution_stone', name: 'Piedra Evolución', desc: 'Evoluciona de forma genérica (Eevee al azar)', coins: 2000, pusdt: 1.50, icon: '🪨' },
-    { id: 'thunder_stone', name: 'Piedra Trueno', desc: 'Evolución exacta Eléctrico (Pikachu, Eevee->Jolteon)', coins: 2000, pusdt: 1.50, icon: '⚡' },
-    { id: 'water_stone', name: 'Piedra Agua', desc: 'Evolución exacta Agua (Poliwhirl, Eevee->Vaporeon)', coins: 2000, pusdt: 1.50, icon: '💧' },
-    { id: 'fire_stone', name: 'Piedra Fuego', desc: 'Evolución exacta Fuego (Growlithe, Eevee->Flareon)', coins: 2000, pusdt: 1.50, icon: '🔥' },
-    { id: 'leaf_stone', name: 'Piedra Hoja', desc: 'Evolución exacta Planta (Gloom, Weepinbell)', coins: 2000, pusdt: 1.50, icon: '🍃' },
-    { id: 'moon_stone', name: 'Piedra Lunar', desc: 'Evolución exacta Hada/Luna (Clefairy, Jigglypuff)', coins: 2000, pusdt: 1.50, icon: '🌙' },
-    { id: 'random_material_pack', name: 'Pack Materiales Random', desc: 'Contiene 5 materiales Tier 1 aleatorios al azar', pusdt: 3.00, icon: '📦' }
+    { id: 'potion', name: 'Poción', desc: 'Restaura 20 PS', coins: 150, tamer: 0.20, icon: '🧪' },
+    { id: 'super_potion', name: 'Superpoción', desc: 'Restaura 50 PS', coins: 250, tamer: 0.50, icon: '🧪' },
+    { id: 'hyper_potion', name: 'Hiperpoción', desc: 'Restaura 120 PS', coins: 600, tamer: 1.00, icon: '🧪' },
+    { id: 'revive', name: 'Revivir', desc: 'Revive a un Pokémon con 50% PS', coins: 1000, tamer: 0.70, icon: '✨' },
+    { id: 'full_heal', name: 'Cura Total', desc: 'Cura todos los estados alterados', coins: 600, tamer: 0.50, icon: '💊' },
+    { id: 'evolution_stone', name: 'Piedra Evolución', desc: 'Evoluciona de forma genérica (Eevee al azar)', coins: 2000, tamer: 1.50, icon: '🪨' },
+    { id: 'thunder_stone', name: 'Piedra Trueno', desc: 'Evolución exacta Eléctrico (Pikachu, Eevee->Jolteon)', coins: 2000, tamer: 1.50, icon: '⚡' },
+    { id: 'water_stone', name: 'Piedra Agua', desc: 'Evolución exacta Agua (Poliwhirl, Eevee->Vaporeon)', coins: 2000, tamer: 1.50, icon: '💧' },
+    { id: 'fire_stone', name: 'Piedra Fuego', desc: 'Evolución exacta Fuego (Growlithe, Eevee->Flareon)', coins: 2000, tamer: 1.50, icon: '🔥' },
+    { id: 'leaf_stone', name: 'Piedra Hoja', desc: 'Evolución exacta Planta (Gloom, Weepinbell)', coins: 2000, tamer: 1.50, icon: '🍃' },
+    { id: 'moon_stone', name: 'Piedra Lunar', desc: 'Evolución exacta Hada/Luna (Clefairy, Jigglypuff)', coins: 2000, tamer: 1.50, icon: '🌙' },
+    { id: 'random_material_pack', name: 'Pack Materiales Random', desc: 'Contiene 5 materiales Tier 1 aleatorios al azar', tamer: 3.00, icon: '📦' }
 ];
 
 const TMS_SHOP = [
-    { id: 'thunder_wave', name: 'TM01 Onda Trueno', desc: 'Paraliza al rival (reduce velocidad/prob. ataque)', pusdt: 5.00, rarity: 'Rara', type: 'electric' },
-    { id: 'sleep_powder', name: 'TM02 Somnífero', desc: 'Pone a dormir al rival (lo inhabilita por turnos)', pusdt: 7.00, rarity: 'Rara', type: 'grass' },
-    { id: 'toxic', name: 'TM03 Tóxico', desc: 'Envenena gravemente (daño creciente cada turno)', pusdt: 15.00, rarity: 'Épica', type: 'poison' },
-    { id: 'confuse_ray', name: 'TM04 Rayo Confuso', desc: 'Confunde al rival (50% prob. de autodaño)', pusdt: 8.00, rarity: 'Rara', type: 'ghost' },
-    { id: 'will_o_wisp', name: 'TM05 Fuego Fatuo', desc: 'Quema al rival (daño pasivo + reduce 50% ataque físico)', pusdt: 10.00, rarity: 'Rara', type: 'fire' },
-    { id: 'leech_seed', name: 'TM06 Drenadoras', desc: 'Roba vida al oponente y te cura cada turno', pusdt: 10.00, rarity: 'Épica', type: 'grass' },
-    { id: 'recover', name: 'TM07 Recuperación', desc: 'Recupera instantáneamente el 50% de PS máximos', pusdt: 10.00, rarity: 'Legendaria', type: 'normal' },
-    { id: 'reflect', name: 'TM08 Reflejo', desc: 'Escudo físico (reduce 50% daño físico por 3 turnos)', pusdt: 5.00, rarity: 'Rara', type: 'psychic' }
+    { id: 'thunder_wave', name: 'TM01 Onda Trueno', desc: 'Paraliza al rival (reduce velocidad/prob. ataque)', tamer: 5.00, rarity: 'Rara', type: 'electric' },
+    { id: 'sleep_powder', name: 'TM02 Somnífero', desc: 'Pone a dormir al rival (lo inhabilita por turnos)', tamer: 7.00, rarity: 'Rara', type: 'grass' },
+    { id: 'toxic', name: 'TM03 Tóxico', desc: 'Envenena gravemente (daño creciente cada turno)', tamer: 15.00, rarity: 'Épica', type: 'poison' },
+    { id: 'confuse_ray', name: 'TM04 Rayo Confuso', desc: 'Confunde al rival (50% prob. de autodaño)', tamer: 8.00, rarity: 'Rara', type: 'ghost' },
+    { id: 'will_o_wisp', name: 'TM05 Fuego Fatuo', desc: 'Quema al rival (daño pasivo + reduce 50% ataque físico)', tamer: 10.00, rarity: 'Rara', type: 'fire' },
+    { id: 'leech_seed', name: 'TM06 Drenadoras', desc: 'Roba vida al oponente y te cura cada turno', tamer: 10.00, rarity: 'Épica', type: 'grass' },
+    { id: 'recover', name: 'TM07 Recuperación', desc: 'Recupera instantáneamente el 50% de PS máximos', tamer: 10.00, rarity: 'Legendaria', type: 'normal' },
+    { id: 'reflect', name: 'TM08 Reflejo', desc: 'Escudo físico (reduce 50% daño físico por 3 turnos)', tamer: 5.00, rarity: 'Rara', type: 'psychic' }
 ];
 
 const getPokemonAllMovesInfo = (speciesName: string): { moveId: string; levelReq: number }[] => {
@@ -1996,9 +1997,17 @@ export default function GameCanvas({
     const [showDaily, setShowDaily] = useState(false);
     const [showMissions, setShowMissions] = useState(false);
     const [missionTab, setMissionTab] = useState<'daily' | 'weekly'>('daily');
+    const [showBattlePassModal, setShowBattlePassModal] = useState(false);
     const [showInventoryModal, setShowInventoryModal] = useState(false);
     const [showMenuModal, setShowMenuModal] = useState(false);
-    const [menuSection, setMenuSection] = useState<'main' | 'perfil' | 'economia' | 'social'>('main');
+    const [menuSection, setMenuSection] = useState<'main' | 'perfil' | 'economia' | 'social' | 'billetera'>('main');
+    const [connectedWallet, setConnectedWallet] = useState<'solana' | 'ton' | 'worldapp' | null>(null);
+    const [web3WalletAddress, setWeb3WalletAddress] = useState<string>('');
+    const [isConnectingWallet, setIsConnectingWallet] = useState<boolean>(false);
+    const [depositAmount, setDepositAmount] = useState<string>('');
+    const [withdrawAmount, setWithdrawAmount] = useState<string>('');
+    const [withdrawNetwork, setWithdrawNetwork] = useState<'solana' | 'ton' | 'worldapp'>('solana');
+    const [isWalletActionLoading, setIsWalletActionLoading] = useState<boolean>(false);
     const [language, setLanguage] = useState<'es' | 'en'>(() => {
         if (typeof window !== 'undefined') {
             const saved = localStorage.getItem('game_language');
@@ -2014,6 +2023,54 @@ export default function GameCanvas({
         }
     };
     const t = MENU_TRANSLATIONS[language];
+
+    const isWhitelisted = 
+        (saveName || '').trim().toLowerCase() === 'flowking' || 
+        (walletAddress || '').trim().toLowerCase() === 'flowking';
+
+    const [detectedBlockLang, setDetectedBlockLang] = useState<'es' | 'en' | 'pt'>('en');
+    const [userCountry, setUserCountry] = useState<string>('');
+
+    useEffect(() => {
+        let isMounted = true;
+        fetch('https://ipapi.co/json/')
+            .then(res => res.json())
+            .then(data => {
+                if (!isMounted) return;
+                if (data && data.country_code) {
+                    const code = data.country_code.toUpperCase();
+                    setUserCountry(code);
+                    if (code === 'BR') {
+                        setDetectedBlockLang('pt');
+                    } else if (['PE', 'AR', 'MX', 'ES', 'CO', 'VE', 'CL', 'EC', 'BO', 'PY', 'UY', 'GT', 'HN', 'SV', 'NI', 'CR', 'PA', 'DO', 'PR'].includes(code)) {
+                        setDetectedBlockLang('es');
+                    } else {
+                        setDetectedBlockLang('en');
+                    }
+                } else {
+                    detectFallback();
+                }
+            })
+            .catch(() => {
+                if (isMounted) detectFallback();
+            });
+
+        function detectFallback() {
+            const browserLang = navigator.language || (navigator as any).userLanguage || 'en';
+            const langCode = browserLang.toLowerCase().split('-')[0];
+            if (langCode === 'es') {
+                setDetectedBlockLang('es');
+            } else if (langCode === 'pt') {
+                setDetectedBlockLang('pt');
+            } else {
+                setDetectedBlockLang('en');
+            }
+        }
+
+        return () => {
+            isMounted = false;
+        };
+    }, []);
     const [showReferralsModal, setShowReferralsModal] = useState(false);
     const [invitedFriends, setInvitedFriends] = useState<any[]>([]);
     const [loadingFriends, setLoadingFriends] = useState<boolean>(false);
@@ -2080,6 +2137,11 @@ export default function GameCanvas({
     const [catchBallState, setCatchBallState] = useState<'throw' | 'shake' | 'success' | 'fail' | null>(null);
     const [usingItem, setUsingItem] = useState<any | null>(null);
     const [selectedInfoPoke, setSelectedInfoPoke] = useState<any | null>(null);
+    const [showBattlePass, setShowBattlePass] = useState(false);
+    const [triggerEggHatch, setTriggerEggHatch] = useState(false);
+    const [isHatchingAnimation, setIsHatchingAnimation] = useState(false);
+    const [hatchedPokemon, setHatchedPokemon] = useState<any | null>(null);
+    const [hatchStep, setHatchStep] = useState<number>(0);
     const [activeEvolution, setActiveEvolution] = useState<{
         pokemonId: string;
         targetId: string;
@@ -2506,6 +2568,14 @@ export default function GameCanvas({
     useEffect(() => { inventoryRef.current = inventory; }, [inventory]);
     useEffect(() => { teamRef.current = team; }, [team]);
     useEffect(() => { pcPokemonRef.current = pcPokemon; }, [pcPokemon]);
+
+    // Online time tracker for DAILY_10
+    useEffect(() => {
+        const interval = setInterval(() => {
+            economyRef.current.updateMissionProgress('online_time', 1);
+        }, 60000);
+        return () => clearInterval(interval);
+    }, []);
 
     // Sync captured Pokémon into seen list automatically
     useEffect(() => {
@@ -4495,6 +4565,16 @@ export default function GameCanvas({
                 player.isMoving = false;
                 player.animFrame = 0;
                 
+                // Step taken! If player has a mysterious_egg, count steps
+                if (inventoryRef.current.hasItem('mysterious_egg')) {
+                    const hasIncubator = inventoryRef.current.hasItem('incubator_fast');
+                    economyRef.current.addEggSteps(1);
+                    const targetSteps = hasIncubator ? 200 : 1000;
+                    if (economyRef.current.mysterious_egg_steps >= targetSteps) {
+                        setTriggerEggHatch(true);
+                    }
+                }
+                
                 // Automatically check if player stepped onto a door tile
                 const isWarped = checkAutoDoorEntry(player.x, player.y);
                 if (!isWarped) {
@@ -4567,6 +4647,8 @@ export default function GameCanvas({
         } else {
             // Block input and movement if any modal is active, dialog is open, or in PvP interactions
             if (
+                triggerEggHatch ||
+                showBattlePassModal ||
                 showMenuModal || 
                 showNurseJoyModal || 
                 showDrFosilModal || 
@@ -7376,12 +7458,21 @@ export default function GameCanvas({
                 // Classic Damage Formula
                 let baseDmg = (((2 * playerLevel / 5 + 2) * move.power * (playerAtk / opponentDef)) / 50) + 2;
                 
+                // 10% Critical Hit Chance
+                const isCrit = Math.random() < 0.10;
+                let critMultiplier = 1.0;
+                if (isCrit) {
+                    critMultiplier = 1.5;
+                    economyRef.current.updateMissionProgress('critical', 1);
+                }
+
                 // Add random variance (0.85 to 1.0)
-                baseDmg = baseDmg * (Math.random() * 0.15 + 0.85);
+                baseDmg = baseDmg * (Math.random() * 0.15 + 0.85) * critMultiplier;
 
                 playerDmg = Math.max(1, Math.floor(baseDmg * mult)); // Minimum 1 damage on hit
                 
                 pMsg = `¡Tu ${activePoke.id} usó ${move.name} e infligió ${playerDmg} de daño!`;
+                if (isCrit) pMsg = `¡GOLPE CRÍTICO! ` + pMsg;
                 if (mult > 1.5) pMsg += " ¡Es súper efectivo!";
                 else if (mult < 0.6 && mult > 0.0) pMsg += " No es muy efectivo...";
                 else if (mult === 0.0) pMsg += " ¡No tiene ningún efecto!";
@@ -7702,6 +7793,19 @@ export default function GameCanvas({
                         economyRef.current.addCoins(coinsEarned, 'trainer_victory', activeTrainerIdRef.current || 'unknown');
                         economyRef.current.updateMissionProgress('battle');
                         
+                        // Check if opponent has type (other than Normal) for DAILY_08
+                        const opponentSpecies = pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === activeWildBattle.name.toLowerCase());
+                        const opponentTypes = opponentSpecies?.types || ['normal'];
+                        const hasElement = opponentTypes.some((t: string) => t !== 'normal');
+                        if (hasElement) {
+                            economyRef.current.updateMissionProgress('defeat_element', 1);
+                        }
+
+                        // Gym leader defeat for WEEKLY_02
+                        if (isGymBattle) {
+                            economyRef.current.updateMissionProgress('gym_defeat', 1);
+                        }
+                        
                         const trainerXpEarned = (activeWildBattle.level ?? 1) * 15;
                         const xpResult = economyRef.current.addTrainerXp(trainerXpEarned);
                         let trainerMsg = `\nGanaste ${trainerXpEarned} XP de Entrenador.`;
@@ -7717,6 +7821,23 @@ export default function GameCanvas({
                             0,
                             inventoryRef.current
                         );
+                        
+                        // Roll food drops (50% chance to get 1 food item)
+                        if (Math.random() < 0.50) {
+                            const foodPool = ['food_common', 'food_advanced', 'food_super'];
+                            const rand = Math.random();
+                            const selectedFood = rand < 0.70 ? 'food_common' : (rand < 0.95 ? 'food_advanced' : 'food_super');
+                            const qty = 1;
+                            inventoryRef.current.addItem(selectedFood, qty);
+                            const foodInfo = inventoryRef.current.getItemInfo(selectedFood);
+                            rolledDrops.push({
+                                id: selectedFood,
+                                name: foodInfo.name || selectedFood,
+                                quantity: qty
+                            });
+                            economyRef.current.updateMissionProgress('loot_food', qty);
+                        }
+                        
                         setRecentMaterialDrops(rolledDrops);
                         let dropMsg = "";
                         if (rolledDrops.length > 0) {
@@ -7805,6 +7926,23 @@ export default function GameCanvas({
                             gymIndex,
                             inventoryRef.current
                         );
+                        
+                        // Roll food drops (50% chance to get 1 food item)
+                        if (!result.isOverleveled && Math.random() < 0.50) {
+                            const foodPool = ['food_common', 'food_advanced', 'food_super'];
+                            const rand = Math.random();
+                            const selectedFood = rand < 0.70 ? 'food_common' : (rand < 0.95 ? 'food_advanced' : 'food_super');
+                            const qty = 1;
+                            inventoryRef.current.addItem(selectedFood, qty);
+                            const foodInfo = inventoryRef.current.getItemInfo(selectedFood);
+                            rolledDrops.push({
+                                id: selectedFood,
+                                name: foodInfo.name || selectedFood,
+                                quantity: qty
+                            });
+                            economyRef.current.updateMissionProgress('loot_food', qty);
+                        }
+                        
                         setRecentMaterialDrops(rolledDrops);
                         let dropMsg = "";
                         if (rolledDrops.length > 0) {
@@ -7823,6 +7961,18 @@ export default function GameCanvas({
                             notificationMsg = `¡Derrotaste al ${boss.name.toUpperCase()} de ${boss.leader}! Buen combate.\n${overleveledMsg}${dropMsg}\n${msg}`;
                         } else if (result.coins > 0) {
                             economyRef.current.updateMissionProgress('battle');
+                            
+                            // Check elements
+                            const opponentSpecies = pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === boss.name.toLowerCase());
+                            const opponentTypes = opponentSpecies?.types || ['normal'];
+                            const hasElement = opponentTypes.some((t: string) => t !== 'normal');
+                            if (hasElement) {
+                                economyRef.current.updateMissionProgress('defeat_element', 1);
+                            }
+                            
+                            // Gym victory
+                            economyRef.current.updateMissionProgress('gym_defeat', 1);
+                            
                             setDoubleRewardCoins(result.coins);
                             setDoubleRewardType('gym');
                             
@@ -7890,6 +8040,14 @@ export default function GameCanvas({
                     economyRef.current.addCoins(coinsEarned, 'wild_victory', activeWildBattle.name);
                     economyRef.current.updateMissionProgress('battle');
                     
+                    // Check if opponent has type (other than Normal) for DAILY_08
+                    const opponentSpecies = pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === activeWildBattle.name.toLowerCase());
+                    const opponentTypes = opponentSpecies?.types || ['normal'];
+                    const hasElement = opponentTypes.some((t: string) => t !== 'normal');
+                    if (hasElement) {
+                        economyRef.current.updateMissionProgress('defeat_element', 1);
+                    }
+                    
                     const wildTrainerXp = (activeWildBattle.level ?? 1) * 10;
                     const xpResult = economyRef.current.addTrainerXp(wildTrainerXp);
                     let trainerMsg = `\nGanaste ${wildTrainerXp} XP de Entrenador.`;
@@ -7905,6 +8063,23 @@ export default function GameCanvas({
                         0,
                         inventoryRef.current
                     );
+                    
+                    // Roll food drops (50% chance to get 1 food item)
+                    if (Math.random() < 0.50) {
+                        const foodPool = ['food_common', 'food_advanced', 'food_super'];
+                        const rand = Math.random();
+                        const selectedFood = rand < 0.70 ? 'food_common' : (rand < 0.95 ? 'food_advanced' : 'food_super');
+                        const qty = 1;
+                        inventoryRef.current.addItem(selectedFood, qty);
+                        const foodInfo = inventoryRef.current.getItemInfo(selectedFood);
+                        rolledDrops.push({
+                            id: selectedFood,
+                            name: foodInfo.name || selectedFood,
+                            quantity: qty
+                        });
+                        economyRef.current.updateMissionProgress('loot_food', qty);
+                    }
+                    
                     setRecentMaterialDrops(rolledDrops);
                     let dropMsg = "";
                     if (rolledDrops.length > 0) {
@@ -8234,8 +8409,8 @@ export default function GameCanvas({
         }
 
         const cost = 5.0;
-        if (!economyRef.current.spendPusdt(cost)) {
-            showNotification("Fondos Insuficientes", "¡No tienes suficientes PUSDT! Necesitas 5.00 PUSDT para desbloquear un slot.");
+        if (!economyRef.current.spendTamer(cost)) {
+            showNotification("Fondos Insuficientes", "¡No tienes suficientes tokens Tamer! Necesitas 5.00 Tamer para desbloquear un slot.");
             return;
         }
 
@@ -8283,7 +8458,7 @@ export default function GameCanvas({
 
         showNotification(
             "Slot Desbloqueado", 
-            `¡Has desbloqueado el Slot ${currentUnlocked + 1} de tu ${targetPoke.id.toUpperCase()} por 5 PUSDT!`
+            `¡Has desbloqueado el Slot ${currentUnlocked + 1} de tu ${targetPoke.id.toUpperCase()} por 5 TAMER!`
         );
     };
 
@@ -8425,7 +8600,7 @@ export default function GameCanvas({
             if (freeSlotIdx === -1) {
                 showNotification(
                     "Slots Ocupados",
-                    `¡Todos los ${unlockedCount} slots desbloqueados de ${target.id.toUpperCase()} están ocupados! Desbloquea un slot adicional por 5 PUSDT en la info del Pokémon o espera a que expire un objeto.`
+                    `¡Todos los ${unlockedCount} slots desbloqueados de ${target.id.toUpperCase()} están ocupados! Desbloquea un slot adicional por 5 TAMER en la info del Pokémon o espera a que expire un objeto.`
                 );
                 return;
             }
@@ -9401,12 +9576,25 @@ export default function GameCanvas({
     const handleClaimMission = (missionId: string, isWeekly: boolean = false) => {
         const success = economyRef.current.claimMissionReward(missionId, isWeekly);
         if (success) {
-            const mission = (isWeekly ? weeklyMissions : dailyMissions).missions.find((m: any) => m.id === missionId);
+            const mission = (isWeekly ? weeklyMissions : dailyMissions).missions.find((m: any) => m.id === missionId) as any;
             
-            // If the mission rewards an item, add it to inventory
-            if (mission?.reward_item) {
+            // If weekly, parse and add item rewards
+            if (isWeekly && mission?.reward_items) {
                 const newInv = new Inventory(inventoryRef.current.toSaveData());
-                newInv.addItem(mission.reward_item, mission.reward_item_quantity ?? 1);
+                for (const itemStr of mission.reward_items) {
+                    const parts = itemStr.split('x ');
+                    const qty = parseInt(parts[0], 10) || 1;
+                    const itemLabel = parts[1];
+                    let itemId = itemLabel;
+                    if (itemLabel === 'Incubadora Rápida') itemId = 'incubator_fast';
+                    else if (itemLabel === 'Huevo Pokémon Misterioso') itemId = 'mysterious_egg';
+                    else if (itemLabel === 'Super Alimento Energético') itemId = 'food_super';
+                    else if (itemLabel === 'Ultraballs') itemId = 'ultra_ball';
+                    else if (itemLabel === 'Poción Máxima') itemId = 'hyper_potion';
+                    else if (itemLabel === 'Caramelos Raros (Grandes)') itemId = 'mega_candy';
+                    
+                    newInv.addItem(itemId, qty);
+                }
                 inventoryRef.current = newInv;
                 setInventory(newInv);
                 saveLocalEconomy(undefined, undefined, undefined, true, newInv);
@@ -9416,10 +9604,116 @@ export default function GameCanvas({
 
             setEconomy(new Economy(economyRef.current.toSaveData()));
             
-            const coinsRewardText = mission?.reward_coins && mission.reward_coins > 0 ? ` de ${mission.reward_coins} Coins` : '';
-            const itemRewardText = mission?.reward_item ? ` y ${mission.reward_item_quantity ?? 1}x ${inventoryRef.current.getItemInfo(mission.reward_item)?.name || mission.reward_item}` : '';
-            showNotification("Misión Reclamada", `¡Reclamaste con éxito la recompensa${coinsRewardText}${itemRewardText}!`);
+            if (isWeekly) {
+                showNotification("Misión Reclamada", `¡Completaste con éxito la misión semanal ${mission?.name || missionId}!`);
+            } else {
+                showNotification("Misión Reclamada", `¡Reclamaste la recompensa y avanzaste de nivel en la misión diaria!`);
+            }
         }
+    };
+
+    const handleClaimBattlePassReward = (level: number, isPremium: boolean) => {
+        const newInv = new Inventory(inventoryRef.current.toSaveData());
+        const result = economyRef.current.claimBattlePassReward(level, isPremium, newInv);
+        
+        if (result.success) {
+            inventoryRef.current = newInv;
+            setInventory(newInv);
+            saveLocalEconomy(undefined, undefined, undefined, true, newInv);
+            setEconomy(new Economy(economyRef.current.toSaveData()));
+            showNotification("Recompensa Reclamada", `¡Reclamaste con éxito: ${result.rewardName || 'Recompensa'}!`);
+        } else {
+            alert(result.reason || "No se pudo reclamar la recompensa.");
+        }
+    };
+
+    const handleHatchEgg = () => {
+        const eligible = pokemonSpeciesList.filter((s: any) => {
+            const r = s.rarity.toLowerCase();
+            return r === 'common' || r === 'uncommon' || r === 'rare';
+        });
+        if (eligible.length === 0) {
+            alert("Error: No se encontraron especies elegibles para eclosionar.");
+            setTriggerEggHatch(false);
+            return;
+        }
+        const chosen = eligible[Math.floor(Math.random() * eligible.length)];
+        
+        const ivs = {
+            hp: Math.floor(Math.random() * 32),
+            attack: Math.floor(Math.random() * 32),
+            defense: Math.floor(Math.random() * 32),
+            speed: Math.floor(Math.random() * 32)
+        };
+        
+        const specName = chosen.name.toLowerCase();
+        const stats = getPokemonStats(specName, 1, ivs);
+        const moves = getPokemonMoves(specName, 1).slice(0, 4);
+        const isShiny = Math.random() < 0.04; // 4% shiny chance from eggs! Extra exciting!
+        
+        const newPoke = {
+            id: specName,
+            id_captura: generateUUID(),
+            especie_id: chosen.id,
+            rarity: chosen.rarity.toLowerCase(),
+            is_evolved: false,
+            level: 1,
+            xp: 0,
+            hp: stats.maxHp,
+            maxHp: stats.maxHp,
+            moves: moves,
+            is_shiny: isShiny,
+            ivs: ivs,
+            unlocked_slots: 2,
+            held_items: [null, null, null, null]
+        };
+        
+        const newInv = new Inventory(inventoryRef.current.toSaveData());
+        newInv.removeItem('mysterious_egg', 1);
+        inventoryRef.current = newInv;
+        setInventory(newInv);
+        
+        economyRef.current.mysterious_egg_steps = 0;
+        
+        let updatedTeam = [...team];
+        let updatedPc = [...pcPokemon];
+        let addedToTeam = false;
+        
+        if (team.length < 6) {
+            updatedTeam.push(newPoke);
+            setTeam(updatedTeam);
+            addedToTeam = true;
+        } else {
+            updatedPc.push(newPoke);
+            setPcPokemon(updatedPc);
+        }
+        
+        saveLocalEconomy(updatedTeam, updatedPc, undefined, true, newInv);
+        setEconomy(new Economy(economyRef.current.toSaveData()));
+        
+        setHatchedPokemon({
+            poke: newPoke,
+            species: chosen,
+            addedToTeam
+        });
+        
+        // Start animation stages
+        setHatchStep(0);
+        setIsHatchingAnimation(true);
+        setTriggerEggHatch(false); // Close initial prompt modal
+        
+        setTimeout(() => {
+            setHatchStep(1); // Shake faster
+            setTimeout(() => {
+                setHatchStep(2); // Shake violently + crack
+                setTimeout(() => {
+                    setHatchStep(3); // Bright flash
+                    setTimeout(() => {
+                        setHatchStep(4); // Hatched result!
+                    }, 800);
+                }, 800);
+            }, 800);
+        }, 800);
     };
 
     const renderTeamHpList = () => {
@@ -9610,6 +9904,167 @@ export default function GameCanvas({
 
     return (
         <div className="game-container">
+            {/* Demo Finished / Tournament Info Blocking Modal */}
+            {!isWhitelisted && (() => {
+                const dict = {
+                    es: {
+                        title: "PRUEBA DEMO TERMINADA",
+                        message: "Pronto lanzaremos información del torneo inaugural.",
+                        subtitle: "¡Gracias por participar!",
+                        status: "Información del Torneo"
+                    },
+                    en: {
+                        title: "DEMO TEST COMPLETED",
+                        message: "We will soon release information about the inaugural tournament.",
+                        subtitle: "Thank you for participating!",
+                        status: "Tournament Information"
+                    },
+                    pt: {
+                        title: "TESTE DA DEMO CONCLUÍDO",
+                        message: "Em breve lançaremos informações sobre o torneio inaugural.",
+                        subtitle: "Obrigado por participar!",
+                        status: "Informações do Torneio"
+                    }
+                }[detectedBlockLang];
+                return (
+                    <div style={{
+                        position: 'absolute',
+                        top: 0, left: 0, right: 0, bottom: 0,
+                        zIndex: 100000,
+                        background: 'radial-gradient(circle at center, #1e1136 0%, #0d061a 100%)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: '24px',
+                        textAlign: 'center',
+                        fontFamily: "'Inter', sans-serif"
+                    }}>
+                        <style>{`
+                            @keyframes pulseGeo {
+                                from { transform: translate(-50%, -50%) scale(0.95); opacity: 0.4; }
+                                to { transform: translate(-50%, -50%) scale(1.05); opacity: 0.7; }
+                            }
+                            @keyframes bounceGeo {
+                                0%, 100% { transform: translateY(0); }
+                                50% { transform: translateY(-8px); }
+                            }
+                        `}</style>
+                        {/* Animated background particles / glows */}
+                        <div style={{
+                            position: 'absolute',
+                            top: '50%',
+                            left: '50%',
+                            transform: 'translate(-50%, -50%)',
+                            width: '300px',
+                            height: '300px',
+                            background: 'radial-gradient(circle, rgba(139, 92, 246, 0.2) 0%, transparent 70%)',
+                            filter: 'blur(30px)',
+                            animation: 'pulseGeo 3s infinite alternate',
+                            pointerEvents: 'none'
+                        }} />
+
+                        {/* Content Box */}
+                        <div style={{
+                            background: 'rgba(255, 255, 255, 0.03)',
+                            border: '1.5px solid rgba(255, 255, 255, 0.08)',
+                            borderRadius: '24px',
+                            padding: '40px 32px',
+                            maxWidth: '480px',
+                            width: '100%',
+                            boxShadow: '0 20px 50px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+                            backdropFilter: 'blur(16px)',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            gap: '20px',
+                            position: 'relative'
+                        }}>
+                            {/* Cup / Tournament Trophy Emoji with Pulsing Glow */}
+                            <div style={{
+                                fontSize: '64px',
+                                background: 'rgba(251, 191, 36, 0.1)',
+                                border: '2px solid rgba(251, 191, 36, 0.3)',
+                                borderRadius: '50%',
+                                width: '110px',
+                                height: '110px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                marginBottom: '10px',
+                                boxShadow: '0 0 20px rgba(251, 191, 36, 0.2)',
+                                animation: 'bounceGeo 2s infinite'
+                            }}>
+                                🏆
+                            </div>
+
+                            {/* Title */}
+                            <h2 style={{
+                                fontSize: '22px',
+                                fontWeight: '800',
+                                color: '#ffffff',
+                                margin: 0,
+                                letterSpacing: '0.05em',
+                                textTransform: 'uppercase',
+                                background: 'linear-gradient(90deg, #fef08a 0%, #fbbf24 50%, #fef08a 100%)',
+                                WebkitBackgroundClip: 'text',
+                                WebkitTextFillColor: 'transparent',
+                                textShadow: '0 4px 12px rgba(251, 191, 36, 0.15)'
+                            }}>
+                                {dict.title}
+                            </h2>
+
+                            {/* Subtitle */}
+                            <div style={{
+                                fontSize: '11px',
+                                fontWeight: '600',
+                                color: '#a78bfa',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.1em'
+                            }}>
+                                {dict.subtitle}
+                            </div>
+
+                            {/* Divider */}
+                            <div style={{
+                                width: '60px',
+                                height: '2px',
+                                background: 'rgba(255, 255, 255, 0.1)',
+                                borderRadius: '1px'
+                            }} />
+
+                            {/* Main Message */}
+                            <p style={{
+                                fontSize: '14px',
+                                color: '#cbd5e1',
+                                margin: 0,
+                                lineHeight: '1.6',
+                                fontWeight: '400'
+                            }}>
+                                {dict.message}
+                            </p>
+
+                            {/* Additional Info Box */}
+                            <div style={{
+                                background: 'rgba(251, 191, 36, 0.05)',
+                                border: '1px solid rgba(251, 191, 36, 0.15)',
+                                borderRadius: '12px',
+                                padding: '12px 16px',
+                                fontSize: '12px',
+                                color: '#fef08a',
+                                fontWeight: '600',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                marginTop: '10px'
+                            }}>
+                                <span>📢</span>
+                                <span>{dict.status}</span>
+                            </div>
+                        </div>
+                    </div>
+                );
+            })()}
             {/* Tournament Beta Popup */}
             {showTournamentPopup && (
                 <div className="absolute inset-0 z-[9999] flex flex-col items-center justify-center bg-black/85 backdrop-blur-sm p-4 fade-in">
@@ -9825,9 +10280,13 @@ export default function GameCanvas({
                                     <span>Coins:</span>
                                     <span>{economy.getFormattedCoins()}</span>
                                 </div>
+                                <div className="hud-row pusdt" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '4px' }}>
+                                    <span>TAMER:</span>
+                                    <span style={{ color: '#fbbf24', fontWeight: 'bold' }}>💎 {economy.tamer.toFixed(2)}</span>
+                                </div>
                                 <div className="hud-row pusdt">
                                     <span>PUSDT:</span>
-                                    <span>{economy.getFormattedPusdt()}</span>
+                                    <span style={{ color: '#10b981', fontWeight: 'bold' }}>💲 {economy.getFormattedPusdt()}</span>
                                 </div>
                                 <div className="hud-row level" style={{ color: '#63b3ed', flexDirection: 'column', alignItems: 'flex-start', gap: '4px' }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
@@ -9965,7 +10424,8 @@ export default function GameCanvas({
                                 <span style={{ color: '#e2e8f0', fontWeight: 'bold', fontSize: '14px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
                                     {menuSection === 'main' ? 'PIXEL TAMER' : 
                                      menuSection === 'perfil' ? (language === 'es' ? 'MI PERFIL' : 'MY PROFILE') :
-                                     menuSection === 'economia' ? (language === 'es' ? 'ECONOMÍA' : 'ECONOMY') : 'SOCIAL'}
+                                     menuSection === 'economia' ? (language === 'es' ? 'ECONOMÍA' : 'ECONOMY') : 
+                                     menuSection === 'billetera' ? (language === 'es' ? 'BILLETERA' : 'WALLET') : 'SOCIAL'}
                                 </span>
                             </div>
                             <button onClick={() => setShowMenuModal(false)} style={{
@@ -10033,6 +10493,28 @@ export default function GameCanvas({
                                             <div style={{ color: '#94a3b8', fontSize: '9px', lineHeight: '1.2' }}>{language === 'es' ? 'Mercado, Taller, Viajes, Referidos' : 'Market, Workshop, Travel, Referrals'}</div>
                                         </button>
                                     </div>
+
+                                    {/* Billetera Card */}
+                                    <button
+                                        onClick={() => setMenuSection('billetera')}
+                                        style={{
+                                            width: '100%',
+                                            background: 'linear-gradient(135deg, rgba(234,179,8,0.12) 0%, rgba(249,115,22,0.15) 100%)',
+                                            border: '1px solid rgba(234,179,8,0.3)',
+                                            borderRadius: '12px', padding: '12px 14px', cursor: 'pointer',
+                                            display: 'flex', alignItems: 'center', gap: '14px',
+                                            textAlign: 'left', transition: 'all 0.2s', marginBottom: '12px', margin: '0 0 12px 0'
+                                        }}
+                                    >
+                                        <div style={{ fontSize: '32px', lineHeight: 1 }}>👛</div>
+                                        <div style={{ flex: 1 }}>
+                                            <div style={{ color: '#fef08a', fontWeight: 'bold', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{language === 'es' ? 'Mi Billetera (Web3)' : 'My Wallet (Web3)'}</div>
+                                            <div style={{ color: '#cbd5e1', fontSize: '9px', marginTop: '2px', lineHeight: '1.2' }}>
+                                                {language === 'es' ? 'Depositar Solana/Telegram/Worldcoin y Retirar PUSDT' : 'Deposit Solana/Telegram/Worldcoin and Withdraw PUSDT'}
+                                            </div>
+                                        </div>
+                                        <div style={{ color: '#eab308', fontSize: '16px' }}>❯</div>
+                                    </button>
 
                                     {/* Divider */}
                                     <div style={{ height: '1px', background: 'rgba(255,255,255,0.07)', marginBottom: '12px' }} />
@@ -10166,6 +10648,19 @@ export default function GameCanvas({
                                                 </div>
                                             </button>
 
+                                            {/* Pase de Batalla */}
+                                            <button onClick={() => { setShowBattlePassModal(true); setShowMenuModal(false); }} style={{
+                                                background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
+                                                borderRadius: '10px', padding: '12px 14px', cursor: 'pointer', color: '#e2e8f0',
+                                                display: 'flex', alignItems: 'center', gap: '10px', textAlign: 'left', margin: 0
+                                            }}>
+                                                <span style={{ fontSize: '20px' }}>⚡</span>
+                                                <div>
+                                                    <div style={{ fontWeight: 'bold', fontSize: '11px' }}>{language === 'es' ? 'Pase de Batalla' : 'Battle Pass'}</div>
+                                                    <div style={{ fontSize: '8px', color: '#64748b' }}>{language === 'es' ? 'Desbloquea 50 niveles de recompensas' : 'Unlock 50 reward levels'} (Nvl. {economy.battle_pass_level ?? 1})</div>
+                                                </div>
+                                            </button>
+
                                             {/* Mochila */}
                                             <button onClick={() => { setShowInventoryModal(true); setShowMenuModal(false); }} style={{
                                                 background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
@@ -10230,6 +10725,19 @@ export default function GameCanvas({
                                                 <div>
                                                     <div style={{ fontWeight: 'bold', fontSize: '11px' }}>{language === 'es' ? 'Misiones' : 'Missions'}</div>
                                                     <div style={{ fontSize: '8px', color: '#64748b' }}>{language === 'es' ? 'Gana recompensas completando tareas diarias' : 'Earn rewards by completing daily tasks'}</div>
+                                                </div>
+                                            </button>
+
+                                            {/* Pase de Batalla */}
+                                            <button onClick={() => { setShowBattlePassModal(true); setShowMenuModal(false); }} style={{
+                                                background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
+                                                borderRadius: '10px', padding: '12px 14px', cursor: 'pointer', color: '#e2e8f0',
+                                                display: 'flex', alignItems: 'center', gap: '10px', textAlign: 'left', margin: 0
+                                            }}>
+                                                <span style={{ fontSize: '20px' }}>⚡</span>
+                                                <div>
+                                                    <div style={{ fontWeight: 'bold', fontSize: '11px' }}>{language === 'es' ? 'Pase de Batalla' : 'Battle Pass'}</div>
+                                                    <div style={{ fontSize: '8px', color: '#64748b' }}>{language === 'es' ? 'Desbloquea 50 niveles de recompensas' : 'Unlock 50 reward levels'} (Nvl. {economy.battle_pass_level ?? 1})</div>
                                                 </div>
                                             </button>
                                         </>
@@ -10297,6 +10805,228 @@ export default function GameCanvas({
                                                 </div>
                                             </button>
                                         </>
+                                    )}
+                                    {/* Billetera Submenu */}
+                                    {menuSection === 'billetera' && (
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                            {/* Saldo info card */}
+                                            <div style={{
+                                                background: 'linear-gradient(135deg, rgba(30,41,59,0.5) 0%, rgba(15,23,42,0.6) 100%)',
+                                                border: '1.5px solid rgba(255,255,255,0.08)',
+                                                borderRadius: '12px',
+                                                padding: '12px 14px',
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                gap: '6px'
+                                            }}>
+                                                <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                                    {language === 'es' ? 'Saldos Disponibles' : 'Available Balances'}
+                                                </span>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '4px' }}>
+                                                    <span style={{ fontSize: '11px', color: '#cbd5e1' }}>{language === 'es' ? 'Premium (TAMER):' : 'Premium (TAMER):'}</span>
+                                                    <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#fbbf24' }}>💎 {economy.tamer.toFixed(2)} TAMER</span>
+                                                </div>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                    <span style={{ fontSize: '11px', color: '#cbd5e1' }}>{language === 'es' ? 'Retirable (PUSDT):' : 'Withdrawable (PUSDT):'}</span>
+                                                    <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#10b981' }}>💲 {economy.pusdt.toFixed(2)} PUSDT</span>
+                                                </div>
+                                            </div>
+
+                                            {/* Wallet connection status */}
+                                            {!connectedWallet ? (
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', background: 'rgba(255,255,255,0.02)', padding: '12px', borderRadius: '12px', border: '1px dashed rgba(255,255,255,0.1)' }}>
+                                                    <span style={{ fontSize: '11px', fontWeight: 'bold', color: '#f1f5f9', textAlign: 'center' }}>
+                                                        {language === 'es' ? 'Conecta tu Billetera para Depositar y Retirar' : 'Connect your Wallet to Deposit & Withdraw'}
+                                                    </span>
+                                                    {isConnectingWallet ? (
+                                                        <div style={{ display: 'flex', justifyContent: 'center', padding: '10px' }}>
+                                                            <span style={{ fontSize: '10px', color: '#94a3b8' }}>⏳ {language === 'es' ? 'Conectando...' : 'Connecting...'}</span>
+                                                        </div>
+                                                    ) : (
+                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                                            <button
+                                                                onClick={() => {
+                                                                    setIsConnectingWallet(true);
+                                                                    setTimeout(() => {
+                                                                        setConnectedWallet('solana');
+                                                                        setWeb3WalletAddress('71C...89Phantom');
+                                                                        setIsConnectingWallet(false);
+                                                                        showNotification("Billetera Conectada", "Se ha conectado tu Phantom Wallet (Solana)");
+                                                                    }, 800);
+                                                                }}
+                                                                style={{ background: 'linear-gradient(90deg, #14f195, #9945ff)', color: 'black', border: 'none', borderRadius: '8px', padding: '8px', fontSize: '10px', fontWeight: 'bold', cursor: 'pointer', margin: 0 }}
+                                                            >
+                                                                🟣 {language === 'es' ? 'Conectar Solana (Phantom/Solflare)' : 'Connect Solana (Phantom/Solflare)'}
+                                                            </button>
+                                                            <button
+                                                                onClick={() => {
+                                                                    setIsConnectingWallet(true);
+                                                                    setTimeout(() => {
+                                                                        setConnectedWallet('ton');
+                                                                        setWeb3WalletAddress('EQA1...e6Telegram');
+                                                                        setIsConnectingWallet(false);
+                                                                        showNotification("Billetera Conectada", "Se ha conectado tu Telegram Wallet (TON)");
+                                                                    }, 800);
+                                                                }}
+                                                                style={{ background: '#0098ea', color: 'white', border: 'none', borderRadius: '8px', padding: '8px', fontSize: '10px', fontWeight: 'bold', cursor: 'pointer', margin: 0 }}
+                                                            >
+                                                                🔵 {language === 'es' ? 'Conectar Telegram (TON Wallet/Tonkeeper)' : 'Connect Telegram (TON Wallet/Tonkeeper)'}
+                                                            </button>
+                                                            <button
+                                                                onClick={() => {
+                                                                    setIsConnectingWallet(true);
+                                                                    setTimeout(() => {
+                                                                        setConnectedWallet('worldapp');
+                                                                        setWeb3WalletAddress('0x71C...89WLD');
+                                                                        setIsConnectingWallet(false);
+                                                                        showNotification("Billetera Conectada", "Se ha conectado tu World App Wallet");
+                                                                    }, 800);
+                                                                }}
+                                                                style={{ background: '#111111', color: '#ffffff', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '8px', padding: '8px', fontSize: '10px', fontWeight: 'bold', cursor: 'pointer', margin: 0 }}
+                                                            >
+                                                                🟢 {language === 'es' ? 'Conectar World App (World ID)' : 'Connect World App (World ID)'}
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ) : (
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                                    {/* Connected Info */}
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: '10px', padding: '8px 12px' }}>
+                                                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                            <span style={{ fontSize: '8px', color: '#10b981', fontWeight: 'bold', textTransform: 'uppercase' }}>
+                                                                {language === 'es' ? 'Conectado a' : 'Connected to'} {connectedWallet === 'solana' ? 'Solana' : connectedWallet === 'ton' ? 'TON' : 'World App'}
+                                                            </span>
+                                                            <span style={{ fontSize: '10px', color: '#cbd5e1', fontFamily: 'monospace' }}>{web3WalletAddress}</span>
+                                                        </div>
+                                                        <button
+                                                            onClick={() => {
+                                                                setConnectedWallet(null);
+                                                                setWeb3WalletAddress('');
+                                                                showNotification("Billetera Desconectada", "Se ha desconectado tu wallet");
+                                                            }}
+                                                            style={{ background: 'transparent', border: 'none', color: '#ef4444', fontSize: '10px', fontWeight: 'bold', cursor: 'pointer', textDecoration: 'underline', padding: 0, margin: 0 }}
+                                                        >
+                                                            {language === 'es' ? 'Desconectar' : 'Disconnect'}
+                                                        </button>
+                                                    </div>
+
+                                                    {/* Deposit Action */}
+                                                    <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '12px' }}>
+                                                        <span style={{ fontSize: '11px', fontWeight: 'bold', color: '#fbbf24', display: 'block', marginBottom: '8px' }}>
+                                                            📥 {language === 'es' ? 'Realizar Depósito' : 'Make a Deposit'}
+                                                        </span>
+                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                                            <div style={{ fontSize: '9px', color: '#94a3b8', lineHeight: '1.2', marginBottom: '4px' }}>
+                                                                {connectedWallet === 'solana' && (language === 'es' ? 'Deposita Tamercoin desde tu billetera Solana. 1 Tamercoin = 1 TAMER.' : 'Deposit Tamercoin from your Solana wallet. 1 Tamercoin = 1 TAMER.')}
+                                                                {connectedWallet === 'ton' && (language === 'es' ? 'Deposita Gram desde tu billetera de Telegram. 1 Gram = 1 TAMER.' : 'Deposit Gram from your Telegram wallet. 1 Gram = 1 TAMER.')}
+                                                                {connectedWallet === 'worldapp' && (language === 'es' ? 'Deposita ATW (Token aliado) desde tu World App. 1 ATW = 1 TAMER.' : 'Deposit ATW (Allied token) from your World App. 1 ATW = 1 TAMER.')}
+                                                            </div>
+                                                            <div style={{ display: 'flex', gap: '8px' }}>
+                                                                <input
+                                                                    type="number"
+                                                                    value={depositAmount}
+                                                                    onChange={(e) => setDepositAmount(e.target.value)}
+                                                                    placeholder={language === 'es' ? 'Cant. de tokens' : 'Token qty'}
+                                                                    style={{ flex: 1, background: '#1a1a2e', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: '#fff', fontSize: '11px', padding: '6px 8px', outline: 'none' }}
+                                                                />
+                                                                <button
+                                                                    onClick={() => {
+                                                                        const amount = parseFloat(depositAmount);
+                                                                        if (isNaN(amount) || amount <= 0) {
+                                                                            alert(language === 'es' ? "Ingresa una cantidad válida." : "Enter a valid amount.");
+                                                                            return;
+                                                                        }
+                                                                        setIsWalletActionLoading(true);
+                                                                        setTimeout(() => {
+                                                                            setIsWalletActionLoading(false);
+                                                                            economyRef.current.tamer += amount;
+                                                                            saveLocalEconomy();
+                                                                            setEconomy(new Economy(economyRef.current.toSaveData()));
+                                                                            setDepositAmount('');
+                                                                            const tokenName = connectedWallet === 'solana' ? 'Tamercoin' : connectedWallet === 'ton' ? 'Gram' : 'ATW';
+                                                                            showNotification("Depósito Exitoso", language === 'es' ? `¡Se acreditaron ${amount} TAMER tras recibir ${amount} ${tokenName}!` : `Credited ${amount} TAMER from ${amount} ${tokenName}!`);
+                                                                        }, 1500);
+                                                                    }}
+                                                                    disabled={isWalletActionLoading}
+                                                                    style={{ background: '#fbbf24', border: 'none', color: '#1a1a2e', borderRadius: '6px', padding: '6px 12px', fontSize: '11px', fontWeight: 'bold', cursor: isWalletActionLoading ? 'not-allowed' : 'pointer', margin: 0 }}
+                                                                >
+                                                                    {isWalletActionLoading ? (language === 'es' ? 'Confirmando...' : 'Confirming...') : (language === 'es' ? 'Depositar' : 'Deposit')}
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Withdraw Action */}
+                                                    <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '12px' }}>
+                                                        <span style={{ fontSize: '11px', fontWeight: 'bold', color: '#10b981', display: 'block', marginBottom: '8px' }}>
+                                                            📤 {language === 'es' ? 'Realizar Retiro' : 'Make a Withdrawal'}
+                                                        </span>
+                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                                            <div style={{ fontSize: '9px', color: '#94a3b8', lineHeight: '1.2', marginBottom: '4px' }}>
+                                                                {language === 'es' ? 'Retira tu PUSDT acumulado. Se enviará equivalente en USD 1 a 1 a la red que selecciones.' : 'Withdraw your accumulated PUSDT. Will send USD equivalent 1-to-1 to your selected network.'}
+                                                            </div>
+                                                            <div style={{ display: 'flex', gap: '6px', marginBottom: '4px' }}>
+                                                                <button
+                                                                    onClick={() => setWithdrawNetwork('solana')}
+                                                                    style={{ flex: 1, background: withdrawNetwork === 'solana' ? '#10b981' : 'rgba(255,255,255,0.05)', color: withdrawNetwork === 'solana' ? 'white' : '#94a3b8', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', padding: '4px', fontSize: '9px', fontWeight: 'bold', cursor: 'pointer', margin: 0 }}
+                                                                >
+                                                                    Solana
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => setWithdrawNetwork('ton')}
+                                                                    style={{ flex: 1, background: withdrawNetwork === 'ton' ? '#10b981' : 'rgba(255,255,255,0.05)', color: withdrawNetwork === 'ton' ? 'white' : '#94a3b8', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', padding: '4px', fontSize: '9px', fontWeight: 'bold', cursor: 'pointer', margin: 0 }}
+                                                                >
+                                                                    TON
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => setWithdrawNetwork('worldapp')}
+                                                                    style={{ flex: 1, background: withdrawNetwork === 'worldapp' ? '#10b981' : 'rgba(255,255,255,0.05)', color: withdrawNetwork === 'worldapp' ? 'white' : '#94a3b8', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', padding: '4px', fontSize: '9px', fontWeight: 'bold', cursor: 'pointer', margin: 0 }}
+                                                                >
+                                                                    World App
+                                                                </button>
+                                                            </div>
+                                                            <div style={{ display: 'flex', gap: '8px' }}>
+                                                                <input
+                                                                    type="number"
+                                                                    value={withdrawAmount}
+                                                                    onChange={(e) => setWithdrawAmount(e.target.value)}
+                                                                    placeholder={language === 'es' ? 'Cant. de PUSDT' : 'PUSDT qty'}
+                                                                    style={{ flex: 1, background: '#1a1a2e', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: '#fff', fontSize: '11px', padding: '6px 8px', outline: 'none' }}
+                                                                />
+                                                                <button
+                                                                    onClick={() => {
+                                                                        const amount = parseFloat(withdrawAmount);
+                                                                        if (isNaN(amount) || amount <= 0) {
+                                                                            alert(language === 'es' ? "Ingresa una cantidad válida." : "Enter a valid amount.");
+                                                                            return;
+                                                                        }
+                                                                        if (economy.pusdt < amount) {
+                                                                            alert(language === 'es' ? "No tienes suficiente saldo PUSDT." : "Insufficient PUSDT balance.");
+                                                                            return;
+                                                                        }
+                                                                        setIsWalletActionLoading(true);
+                                                                        setTimeout(() => {
+                                                                            setIsWalletActionLoading(false);
+                                                                            economyRef.current.pusdt -= amount;
+                                                                            saveLocalEconomy();
+                                                                            setEconomy(new Economy(economyRef.current.toSaveData()));
+                                                                            setWithdrawAmount('');
+                                                                            const netName = withdrawNetwork === 'solana' ? 'Solana' : withdrawNetwork === 'ton' ? 'TON' : 'World App';
+                                                                            showNotification("Retiro Procesado", language === 'es' ? `¡Se enviaron ${amount.toFixed(2)} USD 1 a 1 a tu wallet de ${netName}!` : `Sent ${amount.toFixed(2)} USD 1-to-1 to your ${netName} wallet!`);
+                                                                        }, 1500);
+                                                                    }}
+                                                                    disabled={isWalletActionLoading}
+                                                                    style={{ background: '#10b981', border: 'none', color: 'white', borderRadius: '6px', padding: '6px 12px', fontSize: '11px', fontWeight: 'bold', cursor: isWalletActionLoading ? 'not-allowed' : 'pointer', margin: 0 }}
+                                                                >
+                                                                    {isWalletActionLoading ? (language === 'es' ? 'Procesando...' : 'Processing...') : (language === 'es' ? 'Retirar' : 'Withdraw')}
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
                                     )}
                                 </div>
                             )}
@@ -10644,12 +11374,19 @@ export default function GameCanvas({
                                 }}>
                                     🪙 {economy.getFormattedCoins()}
                                 </div>
+                                <div className="shop-balance-pill tamer" title="Tu saldo TAMER" style={{
+                                    background: 'rgba(234,179,8,0.1)',
+                                    border: '1px solid rgba(234,179,8,0.35)',
+                                    color: '#fef08a'
+                                }}>
+                                    💎 {economy.tamer.toFixed(2)} TAMER
+                                </div>
                                 <div className="shop-balance-pill pusdt" title="Tu saldo PUSDT" style={{
                                     background: 'rgba(16,185,129,0.1)',
                                     border: '1px solid rgba(16,185,129,0.35)',
                                     color: '#34d399'
                                 }}>
-                                    💲 {economy.getFormattedPusdt()} PUSD
+                                    💲 {economy.getFormattedPusdt()} PUSDT
                                 </div>
                             </div>
 
@@ -10717,7 +11454,7 @@ export default function GameCanvas({
                                 {shopTab === 'balls' && (
                                     <div className="shop-grid">
                                         {TAMERBALLS_SHOP.map(item => {
-                                            const isPusdtOnly = item.pusdt !== undefined;
+                                            const isTamerOnly = item.tamer !== undefined;
                                             const isCoinsOnly = item.coins !== undefined;
                                             
                                             // Assign rarity style
@@ -10770,11 +11507,11 @@ export default function GameCanvas({
                                                                 🪙 {item.coins}
                                                             </button>
                                                         )}
-                                                        {isPusdtOnly && (
+                                                        {isTamerOnly && (
                                                             <button 
                                                                 onClick={() => {
-                                                                    const cost = item.pusdt!;
-                                                                    if (economy.spendPusdt(cost)) {
+                                                                    const cost = item.tamer!;
+                                                                    if (economy.spendTamer(cost)) {
                                                                         const newInv = new Inventory(inventoryRef.current.toSaveData());
                                                                         newInv.addItem(item.id);
                                                                         setInventory(newInv);
@@ -10782,12 +11519,12 @@ export default function GameCanvas({
                                                                         setEconomy(new Economy(economy.toSaveData()));
                                                                         showNotification("Compra Exitosa", `¡Compraste 1 ${item.name} con éxito!`);
                                                                     } else {
-                                                                        showNotification("Fondos Insuficientes", "¡No tienes suficientes PUSDT!");
+                                                                        showNotification("Fondos Insuficientes", "¡No tienes suficientes tokens Tamer!");
                                                                     }
                                                                 }}
                                                                 className="btn-premium-buy btn-dark-buy-pusdt"
                                                             >
-                                                                💲 {item.pusdt!.toFixed(2)} PUSD
+                                                                💎 {item.tamer!.toFixed(2)} TAMER
                                                             </button>
                                                         )}
                                                     </div>
@@ -10851,11 +11588,11 @@ export default function GameCanvas({
                                                                 🪙 {item.coins}
                                                             </button>
                                                         )}
-                                                        {item.pusdt !== undefined && (
+                                                        {item.tamer !== undefined && (
                                                             <button 
                                                                 onClick={() => {
-                                                                    const cost = item.pusdt!;
-                                                                    if (economy.spendPusdt(cost)) {
+                                                                    const cost = item.tamer!;
+                                                                    if (economy.spendTamer(cost)) {
                                                                         const newInv = new Inventory(inventoryRef.current.toSaveData());
                                                                         if (item.id === 'random_material_pack') {
                                                                             const tier1Mats = [
@@ -10884,12 +11621,12 @@ export default function GameCanvas({
                                                                             showNotification("Compra Exitosa", `¡Compraste 1 ${item.name} con éxito!`);
                                                                         }
                                                                     } else {
-                                                                        showNotification("Fondos Insuficientes", "¡No tienes suficientes PUSDT!");
+                                                                        showNotification("Fondos Insuficientes", "¡No tienes suficientes tokens Tamer!");
                                                                     }
                                                                 }}
                                                                 className="btn-premium-buy btn-dark-buy-pusdt"
                                                             >
-                                                                💲 {item.pusdt.toFixed(2)} PUSD
+                                                                💎 {item.tamer.toFixed(2)} TAMER
                                                             </button>
                                                         )}
                                                     </div>
@@ -10923,8 +11660,8 @@ export default function GameCanvas({
                                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                                         <button 
                                                             onClick={() => {
-                                                                const cost = item.pusdt;
-                                                                if (economy.spendPusdt(cost)) {
+                                                                const cost = item.tamer;
+                                                                if (economy.spendTamer(cost)) {
                                                                     saveLocalEconomy();
                                                                     setEconomy(new Economy(economy.toSaveData()));
                                                                     setTutorMoveToLearn(item.id);
@@ -10932,12 +11669,12 @@ export default function GameCanvas({
                                                                     setShowShop(false);
                                                                     showNotification("¡TM Adquirida!", `Has adquirido ${item.name}. Selecciona a quién enseñársela.`);
                                                                 } else {
-                                                                    showNotification("Fondos Insuficientes", "¡No tienes suficientes PUSDT para comprar este movimiento!");
+                                                                    showNotification("Fondos Insuficientes", "¡No tienes suficientes tokens Tamer para comprar este movimiento!");
                                                                 }
                                                             }}
                                                             className="btn-premium-buy btn-dark-buy-pusdt"
                                                         >
-                                                            💲 {item.pusdt.toFixed(2)} PUSD
+                                                            💎 {item.tamer.toFixed(2)} TAMER
                                                         </button>
                                                     </div>
                                                 </div>
@@ -11628,71 +12365,552 @@ export default function GameCanvas({
                         </div>
 
                         <div style={{ padding: '16px 16px 20px', color: '#e2e8f0', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                            {(missionTab === 'daily' ? dailyMissions.missions : weeklyMissions.missions).map((m: any) => {
-                                const prog = (missionTab === 'daily' ? economy.daily_missions_progress : (economy.weekly_missions_progress || {}))[m.id] ?? 0;
-                                const pct = Math.min(100, (prog / m.target) * 100);
-                                const isCompleted = prog >= m.target;
-                                const isClaimed = (missionTab === 'daily' ? economy.claimed_missions : (economy.claimed_weekly_missions || {}))[m.id] === true;
-                                return (
-                                    <div key={m.id} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                            <span style={{ fontSize: '12px', color: '#e2e8f0', fontWeight: 'bold' }}>{getMissionDescription(m, language)}</span>
-                                            <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 'bold' }}>{prog}/{m.target}</span>
-                                        </div>
-                                        <div style={{ background: 'rgba(255,255,255,0.1)', borderRadius: '4px', height: '6px', overflow: 'hidden' }}>
-                                            <div style={{ width: `${pct}%`, height: '100%', background: 'linear-gradient(90deg,#6366f1,#8b5cf6)', borderRadius: '4px', transition: 'width 0.3s ease' }}></div>
-                                        </div>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '2px' }}>
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                                                {m.reward_coins > 0 && (
-                                                    <div style={{ fontSize: '10px', color: '#fbbf24', fontWeight: 'bold' }}>
-                                                        {t.reward}: 🪙 {m.reward_coins} Coins
+                            {missionTab === 'daily' ? (
+                                dailyMissions.missions.map((m: any) => {
+                                    const currentLevel = economy.daily_missions_level[m.id] ?? 1;
+                                    const isMaxed = currentLevel > 10;
+                                    
+                                    let target = 0;
+                                    let rewardCoins = 0;
+                                    let rewardPUsdt = 0;
+                                    let rewardBpExp = 0;
+                                    let prog = economy.daily_missions_progress[m.id] ?? 0;
+                                    
+                                    if (isMaxed) {
+                                        const maxLvlConfig = m.levels[m.levels.length - 1];
+                                        target = maxLvlConfig.target;
+                                        prog = target;
+                                    } else {
+                                        const lvlConfig = m.levels.find((l: any) => l.level === currentLevel) || m.levels[0];
+                                        target = lvlConfig.target;
+                                        rewardCoins = lvlConfig.reward_tamercoins;
+                                        rewardPUsdt = lvlConfig.reward_pusdt;
+                                        rewardBpExp = lvlConfig.reward_exp;
+                                    }
+                                    
+                                    const pct = Math.min(100, (prog / target) * 100);
+                                    const isCompleted = prog >= target && !isMaxed;
+                                    
+                                    return (
+                                        <div key={m.id} style={{ background: 'rgba(255,255,255,0.05)', border: isMaxed ? '1px solid rgba(16,185,129,0.3)' : '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                    <span style={{ fontSize: '12px', color: '#e2e8f0', fontWeight: 'bold' }}>
+                                                        {getMissionDescription(m, language)}
+                                                    </span>
+                                                    <span style={{ fontSize: '9px', color: isMaxed ? '#34d399' : '#818cf8', fontWeight: 'bold', textTransform: 'uppercase', marginTop: '1px' }}>
+                                                        {isMaxed ? '🏆 COMPLETADA (Nivel Máx)' : `Nivel ${currentLevel} / 10`}
+                                                    </span>
+                                                </div>
+                                                <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 'bold' }}>{prog}/{target}</span>
+                                            </div>
+                                            <div style={{ background: 'rgba(255,255,255,0.1)', borderRadius: '4px', height: '6px', overflow: 'hidden' }}>
+                                                <div style={{ width: `${pct}%`, height: '100%', background: isMaxed ? 'linear-gradient(90deg,#10b981,#34d399)' : 'linear-gradient(90deg,#6366f1,#8b5cf6)', borderRadius: '4px', transition: 'width 0.3s ease' }}></div>
+                                            </div>
+                                            {!isMaxed && (
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '2px' }}>
+                                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                                        {rewardCoins > 0 && (
+                                                            <div style={{ fontSize: '9px', color: '#fbbf24', fontWeight: 'bold' }}>
+                                                                🪙 {rewardCoins} Coins
+                                                            </div>
+                                                        )}
+                                                        {rewardPUsdt > 0 && (
+                                                            <div style={{ fontSize: '9px', color: '#10b981', fontWeight: 'bold' }}>
+                                                                💎 {rewardPUsdt} TAMER
+                                                            </div>
+                                                        )}
+                                                        {rewardBpExp > 0 && (
+                                                            <div style={{ fontSize: '9px', color: '#a78bfa', fontWeight: 'bold' }}>
+                                                                ⚡ {rewardBpExp} BP XP
+                                                            </div>
+                                                        )}
                                                     </div>
+                                                    {isCompleted && (
+                                                        <button
+                                                            onClick={() => handleClaimMission(m.id, false)}
+                                                            style={{
+                                                                background: 'rgba(16,185,129,0.25)',
+                                                                border: '1px solid rgba(16,185,129,0.5)',
+                                                                borderRadius: '6px',
+                                                                color: '#34d399',
+                                                                fontSize: '10px',
+                                                                fontWeight: 'bold',
+                                                                cursor: 'pointer',
+                                                                padding: '4px 10px',
+                                                                margin: 0,
+                                                                transition: 'all 0.2s'
+                                                            }}
+                                                        >
+                                                            Subir Nivel
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })
+                            ) : (
+                                weeklyMissions.missions.map((m: any) => {
+                                    const prog = (economy.weekly_missions_progress || {})[m.id] ?? 0;
+                                    const pct = Math.min(100, (prog / m.target) * 100);
+                                    const isCompleted = prog >= m.target;
+                                    const isClaimed = (economy.claimed_weekly_missions || {})[m.id] === true;
+                                    return (
+                                        <div key={m.id} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                <span style={{ fontSize: '12px', color: '#e2e8f0', fontWeight: 'bold' }}>{getMissionDescription(m, language)}</span>
+                                                <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 'bold' }}>{prog}/{m.target}</span>
+                                            </div>
+                                            <div style={{ background: 'rgba(255,255,255,0.1)', borderRadius: '4px', height: '6px', overflow: 'hidden' }}>
+                                                <div style={{ width: `${pct}%`, height: '100%', background: 'linear-gradient(90deg,#6366f1,#8b5cf6)', borderRadius: '4px', transition: 'width 0.3s ease' }}></div>
+                                            </div>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '2px' }}>
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                                    {m.reward_coins > 0 && (
+                                                        <div style={{ fontSize: '10px', color: '#fbbf24', fontWeight: 'bold' }}>
+                                                            {t.reward}: 🪙 {m.reward_coins} Coins
+                                                        </div>
+                                                    )}
+                                                    {m.reward_items && m.reward_items.length > 0 && (
+                                                        <div style={{ fontSize: '10px', color: '#38bdf8', fontWeight: 'bold' }}>
+                                                            {t.item}: {m.reward_items.map((i: string) => translateItemName(i, language)).join(', ')}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                {isCompleted && !isClaimed && (
+                                                    <button
+                                                        onClick={() => handleClaimMission(m.id, true)}
+                                                        style={{
+                                                            background: 'rgba(16,185,129,0.25)',
+                                                            border: '1px solid rgba(16,185,129,0.5)',
+                                                            borderRadius: '6px',
+                                                            color: '#34d399',
+                                                            fontSize: '10px',
+                                                            fontWeight: 'bold',
+                                                            cursor: 'pointer',
+                                                            padding: '4px 10px',
+                                                            margin: 0,
+                                                            transition: 'all 0.2s'
+                                                        }}
+                                                    >
+                                                        {t.claimReward}
+                                                    </button>
                                                 )}
-                                                {m.reward_item && (
-                                                    <div style={{ fontSize: '10px', color: '#38bdf8', fontWeight: 'bold' }}>
-                                                        {t.item}: {m.reward_item_quantity ?? 1}x {translateItemName(inventoryRef.current.getItemInfo(m.reward_item)?.name || m.reward_item, language)}
-                                                    </div>
+                                                {isCompleted && isClaimed && (
+                                                    <span style={{ fontSize: '10px', color: '#6ee7b7', fontWeight: 'bold' }}>
+                                                        ✅ {t.claimed}
+                                                    </span>
                                                 )}
                                             </div>
-                                            {isCompleted && !isClaimed && (
-                                                <button
-                                                    onClick={() => handleClaimMission(m.id, missionTab === 'weekly')}
-                                                    style={{
-                                                        background: 'rgba(16,185,129,0.25)',
-                                                        border: '1px solid rgba(16,185,129,0.5)',
-                                                        borderRadius: '6px',
-                                                        color: '#34d399',
-                                                        fontSize: '10px',
-                                                        fontWeight: 'bold',
-                                                        cursor: 'pointer',
-                                                        padding: '4px 10px',
-                                                        margin: 0,
-                                                        transition: 'all 0.2s'
-                                                    }}
-                                                    onMouseEnter={e => {
-                                                        e.currentTarget.style.background = 'rgba(16,185,129,0.4)';
-                                                    }}
-                                                    onMouseLeave={e => {
-                                                        e.currentTarget.style.background = 'rgba(16,185,129,0.25)';
-                                                    }}
-                                                >
-                                                    {t.claimReward}
-                                                </button>
-                                            )}
-                                            {isCompleted && isClaimed && (
-                                                <span style={{ fontSize: '10px', color: '#6ee7b7', fontWeight: 'bold' }}>
-                                                    ✅ {t.claimed}
-                                                </span>
-                                            )}
                                         </div>
-                                    </div>
-                                );
-                            })}
+                                    );
+                                })
+                            )}
                         </div>
                     </div>
                 </div>
             )}
+
+
+            {/* --- Battle Pass Modal --- */}
+            {showBattlePassModal && (
+                <div className="modal-overlay" style={{ zIndex: 9999 }}>
+                    <div style={{ background: 'linear-gradient(160deg,#0f172a 0%,#1e1b4b 50%,#311042 100%)', border: '2px solid rgba(255,255,255,0.12)', borderRadius: '16px', width: '95%', maxWidth: '480px', maxHeight: '88vh', overflowY: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 24px 60px rgba(0,0,0,0.7),inset 0 1px 0 rgba(255,255,255,0.1)', fontFamily: "'Segoe UI',monospace" }}>
+                        
+                        {/* Header */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px 12px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span style={{ fontSize: '20px' }}>⚡</span>
+                                <div>
+                                    <div style={{ color: '#e2e8f0', fontWeight: 'bold', fontSize: '14px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>PASE DE BATALLA</div>
+                                    <div style={{ color: '#94a3b8', fontSize: '9px' }}>Temporada 1: El Despertar del Domador</div>
+                                </div>
+                            </div>
+                            <button onClick={() => setShowBattlePassModal(false)} style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: '#94a3b8', cursor: 'pointer', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', fontWeight: 'bold' }}>&times;</button>
+                        </div>
+                        
+                        {/* Scrollable Container */}
+                        <div style={{ padding: '16px 16px 20px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                            
+                            {/* Premium Status Card */}
+                            <div style={{ background: 'linear-gradient(135deg, rgba(234,179,8,0.15) 0%, rgba(249,115,22,0.15) 100%)', border: '1.5px solid rgba(234,179,8,0.4)', borderRadius: '12px', padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                        <span style={{ fontSize: '16px' }}>🌟</span>
+                                        <span style={{ fontSize: '12px', fontWeight: 'bold', color: '#fbbf24', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                            {economy.battle_pass_premium ? 'PASE PREMIUM ACTIVADO' : 'PASE GRATUITO'}
+                                        </span>
+                                    </div>
+                                    {!economy.battle_pass_premium && (
+                                        <button
+                                            onClick={() => {
+                                                if (economy.tamer < 5) {
+                                                    alert("No tienes suficientes tokens Tamer. Se requieren 5.");
+                                                    return;
+                                                }
+                                                if (confirm("¿Confirmas que deseas desbloquear el Pase de Batalla Premium por 5 tokens Tamer?")) {
+                                                    const res = economyRef.current.buyBattlePassPremium();
+                                                    if (res.success) {
+                                                        saveLocalEconomy();
+                                                        setEconomy(new Economy(economyRef.current.toSaveData()));
+                                                        showNotification("Premium Activado", "¡Felicidades! Has desbloqueado el Pase Premium.");
+                                                    } else {
+                                                        alert(res.reason || "Error al comprar.");
+                                                    }
+                                                }
+                                            }}
+                                            style={{
+                                                background: 'linear-gradient(135deg, #fbbf24 0%, #f97316 100%)',
+                                                border: 'none',
+                                                borderRadius: '6px',
+                                                color: 'white',
+                                                fontWeight: 'bold',
+                                                fontSize: '10px',
+                                                padding: '6px 12px',
+                                                cursor: 'pointer',
+                                                boxShadow: '0 4px 10px rgba(249,115,22,0.3)'
+                                            }}
+                                        >
+                                            DESBLOQUEAR PREMIUM (5 TAMER)
+                                        </button>
+                                    )}
+                                </div>
+                                <div style={{ fontSize: '9px', color: '#cbd5e1', lineHeight: 1.4 }}>
+                                    {economy.battle_pass_premium 
+                                        ? '¡Acceso completo a las 50 recompensas Premium desbloqueado!' 
+                                        : 'El pase Premium te otorga acceso a recompensas exclusivas: TAMER tokens, piedras evolutivas, materiales y cosméticos.'}
+                                </div>
+                            </div>
+                            
+                            {/* XP Progress Section */}
+                            {(() => {
+                                const currentLvl = economy.battle_pass_level ?? 1;
+                                const xp = economy.battle_pass_xp ?? 0;
+                                const getRequiredForLvl = (lvl: number) => lvl * 1000 + lvl * (lvl - 1) * 50;
+                                
+                                const prevReq = currentLvl === 1 ? 0 : getRequiredForLvl(currentLvl - 1);
+                                const nextReq = getRequiredForLvl(currentLvl);
+                                
+                                const currentXpInLevel = xp - prevReq;
+                                const requiredForNext = nextReq - prevReq;
+                                const pct = currentLvl >= 50 ? 100 : Math.min(100, Math.max(0, (currentXpInLevel / requiredForNext) * 100));
+                                
+                                return (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11px', fontWeight: 'bold' }}>
+                                            <span style={{ color: '#818cf8' }}>NIVEL DEL PASE: {currentLvl} / 50</span>
+                                            <span style={{ color: '#94a3b8' }}>
+                                                {currentLvl >= 50 ? 'NIVEL MÁXIMO' : `${currentXpInLevel} / ${requiredForNext} XP`}
+                                            </span>
+                                        </div>
+                                        <div style={{ background: 'rgba(255,255,255,0.08)', borderRadius: '6px', height: '10px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)' }}>
+                                            <div style={{ width: `${pct}%`, height: '100%', background: 'linear-gradient(90deg, #818cf8 0%, #c084fc 100%)', transition: 'width 0.3s ease' }}></div>
+                                        </div>
+                                    </div>
+                                );
+                            })()}
+                            
+                            {/* Rewards Grid */}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px' }}>
+                                <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '4px' }}>
+                                    Camino de Recompensas
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '40vh', overflowY: 'auto', paddingRight: '4px' }}>
+                                    {battlePassConfig.rewards_pool.map((reward: any, idx: number) => {
+                                        const isUnlocked = (economy.battle_pass_level ?? 1) > reward.level;
+                                        
+                                        let isClaimed = false;
+                                        if (reward.is_premium) {
+                                            isClaimed = !!(economy.claimed_bp_premium && economy.claimed_bp_premium[String(reward.level)]);
+                                        } else {
+                                            isClaimed = !!(economy.claimed_bp_free && economy.claimed_bp_free[String(reward.level)]);
+                                        }
+                                        
+                                        const canClaim = isUnlocked && !isClaimed && (!reward.is_premium || economy.battle_pass_premium);
+                                        
+                                        return (
+                                            <div key={idx} style={{ 
+                                                display: 'flex', 
+                                                justifyContent: 'space-between', 
+                                                alignItems: 'center', 
+                                                background: reward.is_premium ? 'rgba(234,179,8,0.04)' : 'rgba(255,255,255,0.03)', 
+                                                border: canClaim 
+                                                    ? '1.5px solid rgba(129,140,248,0.4)' 
+                                                    : (reward.is_premium ? '1px solid rgba(234,179,8,0.15)' : '1px solid rgba(255,255,255,0.06)'), 
+                                                borderRadius: '8px', 
+                                                padding: '8px 12px',
+                                                opacity: isUnlocked ? 1 : 0.6
+                                            }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                    {/* Level indicator badge */}
+                                                    <div style={{ 
+                                                        width: '28px', 
+                                                        height: '28px', 
+                                                        borderRadius: '6px', 
+                                                        background: isUnlocked ? '#818cf8' : 'rgba(255,255,255,0.08)', 
+                                                        color: isUnlocked ? 'white' : '#94a3b8', 
+                                                        display: 'flex', 
+                                                        alignItems: 'center', 
+                                                        justifyContent: 'center', 
+                                                        fontSize: '11px', 
+                                                        fontWeight: 'bold' 
+                                                    }}>
+                                                        L{reward.level}
+                                                    </div>
+                                                    <div>
+                                                        <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#f1f5f9' }}>
+                                                            {reward.reward_name}
+                                                        </div>
+                                                        <div style={{ fontSize: '8px', color: reward.is_premium ? '#fbbf24' : '#94a3b8', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                            {reward.is_premium ? '⭐ PREMIUM' : '✉️ GRATUITO'}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                
+                                                {/* Claim Button or Status */}
+                                                <div>
+                                                    {isClaimed ? (
+                                                        <span style={{ fontSize: '10px', color: '#10b981', fontWeight: 'bold' }}>RECLAMADO</span>
+                                                    ) : !isUnlocked ? (
+                                                        <span style={{ fontSize: '9px', color: '#64748b' }}>BLOQUEADO</span>
+                                                    ) : reward.is_premium && !economy.battle_pass_premium ? (
+                                                        <span style={{ fontSize: '9px', color: '#fbbf24', fontWeight: 'bold' }}>REQUIERE PREMIUM</span>
+                                                    ) : (
+                                                        <button
+                                                            onClick={() => handleClaimBattlePassReward(reward.level, reward.is_premium)}
+                                                            style={{
+                                                                background: '#818cf8',
+                                                                border: 'none',
+                                                                borderRadius: '4px',
+                                                                color: 'white',
+                                                                fontWeight: 'bold',
+                                                                fontSize: '9px',
+                                                                padding: '4px 10px',
+                                                                cursor: 'pointer'
+                                                            }}
+                                                        >
+                                                            RECLAMAR
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                            
+                        </div>
+                    </div>
+                </div>
+            )}
+
+
+            {/* --- Egg Hatching Confirmation Modal --- */}
+            {triggerEggHatch && (
+                <div className="modal-overlay" style={{ zIndex: 10000 }}>
+                    <div style={{ background: 'linear-gradient(160deg,#1e293b 0%,#0f172a 100%)', border: '2px solid rgba(255,255,255,0.12)', borderRadius: '16px', width: '90%', maxWidth: '380px', padding: '20px', textAlign: 'center', boxShadow: '0 20px 50px rgba(0,0,0,0.6)', fontFamily: "'Segoe UI',monospace" }}>
+                        <div style={{ fontSize: '48px', marginBottom: '10px' }}>🥚</div>
+                        <h3 style={{ color: '#f1f5f9', margin: '0 0 10px 0', fontSize: '18px', fontWeight: 'bold' }}>¡Huevo Listo para Eclosionar!</h3>
+                        <p style={{ color: '#94a3b8', fontSize: '12px', lineHeight: '1.5', margin: '0 0 20px 0' }}>
+                            Tu Huevo Pokémon Misterioso ha acumulado suficientes pasos en la incubadora. ¡Se siente una fuerte vibración en su interior!
+                        </p>
+                        <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+                            <button
+                                onClick={handleHatchEgg}
+                                style={{
+                                    background: 'linear-gradient(135deg,#10b981 0%,#059669 100%)',
+                                    border: 'none',
+                                    borderRadius: '8px',
+                                    color: 'white',
+                                    fontWeight: 'bold',
+                                    fontSize: '12px',
+                                    padding: '8px 24px',
+                                    cursor: 'pointer',
+                                    boxShadow: '0 4px 12px rgba(16,185,129,0.3)',
+                                    transition: 'all 0.2s'
+                                }}
+                            >
+                                Aceptar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+
+            {/* --- Egg Hatching Animation Modal --- */}
+            {isHatchingAnimation && hatchedPokemon && (
+                <div className="modal-overlay" style={{ zIndex: 11000, background: '#090d16', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <style>{`
+                        @keyframes shake-mild {
+                            0% { transform: rotate(0deg); }
+                            25% { transform: rotate(-5deg); }
+                            75% { transform: rotate(5deg); }
+                            100% { transform: rotate(0deg); }
+                        }
+                        @keyframes shake-medium {
+                            0% { transform: rotate(0deg) scale(1.05); }
+                            25% { transform: rotate(-10deg) scale(1.05); }
+                            75% { transform: rotate(10deg) scale(1.05); }
+                            100% { transform: rotate(0deg) scale(1.05); }
+                        }
+                        @keyframes shake-violent {
+                            0% { transform: rotate(0deg) scale(1.1) translate(0px, 0px); }
+                            20% { transform: rotate(-15deg) scale(1.1) translate(-2px, 1px); }
+                            40% { transform: rotate(15deg) scale(1.1) translate(2px, -1px); }
+                            60% { transform: rotate(-15deg) scale(1.1) translate(-1px, -2px); }
+                            80% { transform: rotate(15deg) scale(1.1) translate(1px, 2px); }
+                            100% { transform: rotate(0deg) scale(1.1) translate(0px, 0px); }
+                        }
+                        @keyframes zoom-in-bounce {
+                            0% { transform: scale(0.3); opacity: 0; }
+                            50% { transform: scale(1.1); opacity: 0.8; }
+                            70% { transform: scale(0.9); opacity: 0.9; }
+                            100% { transform: scale(1); opacity: 1; }
+                        }
+                    `}</style>
+                    <div style={{ textAlign: 'center', maxWidth: '400px', width: '90%', fontFamily: "'Segoe UI',monospace" }}>
+                        
+                        {/* Animation Viewport */}
+                        <div style={{ height: '220px', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                            
+                            {/* Hatch Step 0: Small shaking egg */}
+                            {hatchStep === 0 && (
+                                <div style={{ 
+                                    fontSize: '80px', 
+                                    animation: 'shake-mild 0.5s infinite',
+                                    display: 'inline-block'
+                                }}>🥚</div>
+                            )}
+                            
+                            {/* Hatch Step 1: Faster shaking egg */}
+                            {hatchStep === 1 && (
+                                <div style={{ 
+                                    fontSize: '80px', 
+                                    animation: 'shake-medium 0.3s infinite',
+                                    display: 'inline-block'
+                                }}>🥚</div>
+                            )}
+                            
+                            {/* Hatch Step 2: Violent shake egg with crack look */}
+                            {hatchStep === 2 && (
+                                <div style={{ 
+                                    fontSize: '80px', 
+                                    animation: 'shake-violent 0.15s infinite',
+                                    display: 'inline-block',
+                                    position: 'relative'
+                                }}>
+                                    🥚
+                                    <span style={{ position: 'absolute', top: '15px', left: '20px', fontSize: '24px' }}>⚡</span>
+                                </div>
+                            )}
+                            
+                            {/* Hatch Step 3: Bright white flash */}
+                            {hatchStep === 3 && (
+                                <div style={{ 
+                                    width: '100vw', 
+                                    height: '100vh', 
+                                    background: 'white', 
+                                    position: 'fixed', 
+                                    top: 0, 
+                                    left: 0, 
+                                    zIndex: 12000,
+                                    opacity: 0.9,
+                                    transition: 'opacity 0.5s ease-out'
+                                }}></div>
+                            )}
+                            
+                            {/* Hatch Step 4: Display Hatched Pokemon with particles */}
+                            {hatchStep === 4 && (
+                                <div style={{ animation: 'zoom-in-bounce 0.8s ease-out forwards', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                                    <div style={{ position: 'relative' }}>
+                                        {/* Radial back glow */}
+                                        <div style={{
+                                            position: 'absolute',
+                                            top: '50%',
+                                            left: '50%',
+                                            transform: 'translate(-50%, -50%)',
+                                            width: '200px',
+                                            height: '200px',
+                                            background: hatchedPokemon.poke.is_shiny ? 'radial-gradient(circle, rgba(251,191,36,0.3) 0%, transparent 70%)' : 'radial-gradient(circle, rgba(99,102,241,0.2) 0%, transparent 70%)',
+                                            borderRadius: '50%',
+                                            zIndex: -1
+                                        }}></div>
+                                        
+                                        <img 
+                                            src={hatchedPokemon.poke.is_shiny 
+                                                ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/shiny/${hatchedPokemon.species.id}.png`
+                                                : (hatchedPokemon.species.sprite || `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/1.png`)
+                                            } 
+                                            alt={hatchedPokemon.species.name}
+                                            style={{ width: '160px', height: '160px', objectFit: 'contain' }}
+                                        />
+                                        
+                                        {hatchedPokemon.poke.is_shiny && (
+                                            <span style={{ position: 'absolute', top: 0, right: 0, fontSize: '24px' }}>✨</span>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                        
+                        {/* Status Message */}
+                        <div style={{ marginTop: '20px', minHeight: '60px' }}>
+                            {hatchStep < 3 && (
+                                <div style={{ color: '#94a3b8', fontSize: '14px', fontWeight: 'bold', letterSpacing: '0.05em' }}>
+                                    {hatchStep === 0 && '¡El Huevo se está moviendo!'}
+                                    {hatchStep === 1 && '¿Qué estará saliendo de él?'}
+                                    {hatchStep === 2 && '¡Está a punto de eclosionar!'}
+                                </div>
+                            )}
+                            {hatchStep === 4 && (
+                                <div style={{ animation: 'fade-in 0.5s ease-out forwards' }}>
+                                    <div style={{ fontSize: '18px', fontWeight: 'bold', color: hatchedPokemon.poke.is_shiny ? '#fbbf24' : '#f1f5f9', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                        {hatchedPokemon.poke.is_shiny ? '✨ ' : ''}¡Eclosionó un {hatchedPokemon.species.name}!{hatchedPokemon.poke.is_shiny ? ' ✨' : ''}
+                                    </div>
+                                    <div style={{ fontSize: '11px', color: '#818cf8', fontWeight: 'bold', marginTop: '4px', textTransform: 'uppercase' }}>
+                                        Rareza: {hatchedPokemon.poke.rarity} | Nvl. 1
+                                    </div>
+                                    <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '6px' }}>
+                                        {hatchedPokemon.addedToTeam 
+                                            ? 'Se ha añadido a tu equipo de batalla.' 
+                                            : 'Tu equipo estaba lleno. Ha sido enviado a tu almacenamiento PC.'}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                        
+                        {/* Close button (only on step 4) */}
+                        {hatchStep === 4 && (
+                            <button
+                                onClick={() => {
+                                    setIsHatchingAnimation(false);
+                                    setHatchedPokemon(null);
+                                }}
+                                style={{
+                                    marginTop: '24px',
+                                    background: 'rgba(255,255,255,0.08)',
+                                    border: '1.5px solid rgba(255,255,255,0.2)',
+                                    borderRadius: '8px',
+                                    color: '#e2e8f0',
+                                    fontWeight: 'bold',
+                                    fontSize: '11px',
+                                    padding: '8px 24px',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s',
+                                    textTransform: 'uppercase'
+                                }}
+                                onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.15)'}
+                                onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
+                            >
+                                ¡Genial!
+                            </button>
+                        )}
+                    </div>
+                </div>
+            )}
+
 
             {showPvpBackpack && (
                 <div className="modal-overlay" style={{ zIndex: 10000 }}>
@@ -12083,8 +13301,9 @@ export default function GameCanvas({
                         </div>
 
                         {/* Coins / Balance status */}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 16px', background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: '11px' }}>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', gap: '8px', padding: '10px 16px', background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: '11px' }}>
                             <span style={{ color: '#aaa' }}>{t.yourCoins}: <strong style={{ color: '#fbbf24' }}>{economy.coins}</strong></span>
+                            <span style={{ color: '#aaa' }}>TAMER: <strong style={{ color: '#fef08a' }}>💎 {economy.tamer.toFixed(2)}</strong></span>
                             <span style={{ color: '#aaa' }}>{t.rmtBalance}: <strong style={{ color: '#34d399' }}>{economy.pusdt.toFixed(2)} pUSDT</strong></span>
                         </div>
 
@@ -12387,7 +13606,7 @@ export default function GameCanvas({
                                     }}
                                     style={{ flex: 1, margin: 0, padding: '10px 14px', fontSize: '12px', fontWeight: 'bold', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: '#94a3b8', cursor: 'pointer' }}
                                 >
-                                    {t.cancel}
+                                    {language === 'es' ? 'Cancelar' : 'Cancel'}
                                 </button>
                                 <button
                                     onClick={handleReleasePokemon}
@@ -12425,8 +13644,8 @@ export default function GameCanvas({
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                     <span style={{ fontSize: '20px' }}>🛍️</span>
                                     <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                        <span style={{ color: '#e2e8f0', fontWeight: 'bold', fontSize: '14px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>{t.globalMarketplace}</span>
-                                        <span style={{ fontSize: '9px', color: '#c084fc' }}>{t.p2pTrading} • {t.balance}: {economyRef.current.coins} Coins</span>
+                                        <span style={{ color: '#e2e8f0', fontWeight: 'bold', fontSize: '14px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>{language === 'es' ? 'Mercado Global' : 'Global Marketplace'}</span>
+                                        <span style={{ fontSize: '9px', color: '#c084fc' }}>{language === 'es' ? 'Comercio P2P' : 'P2P Trading'} • {language === 'es' ? 'Balance' : 'Balance'}: {economyRef.current.coins} Coins</span>
                                     </div>
                                 </div>
                                 <button onClick={() => { setShowMarketplaceModal(false); setSelectedProductForDetail(null); }} style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: '#94a3b8', cursor: 'pointer', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', fontWeight: 'bold' }}>&times;</button>
@@ -12704,7 +13923,7 @@ export default function GameCanvas({
                                                 {/* CANTIDAD */}
                                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                                     <span style={{ color: '#fbbf24', fontWeight: 'bold', fontSize: '9px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-                                                        📦 {t.quantity}
+                                                        📦 {language === 'es' ? 'Cantidad' : 'Quantity'}
                                                     </span>
                                                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '6px', padding: '2px 8px' }}>
@@ -14166,6 +15385,155 @@ export default function GameCanvas({
                                     </div>
                                 </div>
 
+                                {/* Feed / Hunger Status */}
+                                <div style={{ padding: '8px 10px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <div style={{ fontWeight: 'bold', fontSize: '11px', color: '#475569' }}>
+                                            {language === 'es' ? 'Estado de Producción (Alimento):' : 'Production Status (Food):'}
+                                        </div>
+                                        <div>
+                                            {(!p.food_expires || Date.now() >= p.food_expires) ? (
+                                                <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#ef4444', background: '#fee2e2', padding: '2px 6px', borderRadius: '4px' }}>
+                                                    🔴 {language === 'es' ? 'Hambriento (0 Coins/h)' : 'Hungry (0 Coins/h)'}
+                                                </span>
+                                            ) : (
+                                                <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#10b981', background: '#d1fae5', padding: '2px 6px', borderRadius: '4px' }}>
+                                                    🟢 {language === 'es' ? 'Alimentado' : 'Fed'} ({Math.ceil((p.food_expires - Date.now()) / (60 * 60 * 1000))}h restante)
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+                                    
+                                    {/* Feed Buttons */}
+                                    <div style={{ display: 'flex', gap: '6px', marginTop: '2px' }}>
+                                        {(() => {
+                                            const commonQty = inventoryRef.current.getQuantity('food_common');
+                                            const advancedQty = inventoryRef.current.getQuantity('food_advanced');
+                                            const superQty = inventoryRef.current.getQuantity('food_super');
+                                            
+                                            const feed = (foodType: string, durationHours: number) => {
+                                                if (inventoryRef.current.getQuantity(foodType) <= 0) return;
+                                                inventoryRef.current.removeItem(foodType, 1);
+                                                
+                                                const ms = durationHours * 60 * 60 * 1000;
+                                                const baseTime = (p.food_expires && p.food_expires > Date.now()) ? p.food_expires : Date.now();
+                                                p.food_expires = baseTime + ms;
+                                                
+                                                // Update
+                                                const updatedTeam = team.map((item: any) => item.uniqueId === p.uniqueId ? { ...p } : item);
+                                                setTeam(updatedTeam);
+                                                economyRef.current.updateMissionProgress('feed', 1);
+                                                saveLocalEconomy(updatedTeam);
+                                                setEconomy(new Economy(economyRef.current.toSaveData()));
+                                                setSelectedInfoPoke({ ...p });
+                                            };
+
+                                            return (
+                                                <>
+                                                    <button 
+                                                        disabled={commonQty <= 0}
+                                                        onClick={() => feed('food_common', 4.8)}
+                                                        style={{ flex: 1, padding: '4px 6px', fontSize: '9px', fontWeight: 'bold', background: commonQty > 0 ? '#3b82f6' : '#cbd5e1', color: 'white', border: 'none', borderRadius: '4px', cursor: commonQty > 0 ? 'pointer' : 'default', display: 'flex', flexDirection: 'column', alignItems: 'center' }}
+                                                    >
+                                                        <span>Baya Común</span>
+                                                        <span style={{ fontSize: '8px', opacity: 0.8 }}>({commonQty} disp.)</span>
+                                                    </button>
+                                                    <button 
+                                                        disabled={advancedQty <= 0}
+                                                        onClick={() => feed('food_advanced', 12)}
+                                                        style={{ flex: 1, padding: '4px 6px', fontSize: '9px', fontWeight: 'bold', background: advancedQty > 0 ? '#10b981' : '#cbd5e1', color: 'white', border: 'none', borderRadius: '4px', cursor: advancedQty > 0 ? 'pointer' : 'default', display: 'flex', flexDirection: 'column', alignItems: 'center' }}
+                                                    >
+                                                        <span>Avanzada</span>
+                                                        <span style={{ fontSize: '8px', opacity: 0.8 }}>({advancedQty} disp.)</span>
+                                                    </button>
+                                                    <button 
+                                                        disabled={superQty <= 0}
+                                                        onClick={() => feed('food_super', 48)}
+                                                        style={{ flex: 1, padding: '4px 6px', fontSize: '9px', fontWeight: 'bold', background: superQty > 0 ? '#8b5cf6' : '#cbd5e1', color: 'white', border: 'none', borderRadius: '4px', cursor: superQty > 0 ? 'pointer' : 'default', display: 'flex', flexDirection: 'column', alignItems: 'center' }}
+                                                    >
+                                                        <span>Super Alim.</span>
+                                                        <span style={{ fontSize: '8px', opacity: 0.8 }}>({superQty} disp.)</span>
+                                                    </button>
+                                                </>
+                                            );
+                                        })()}
+                                    </div>
+                                </div>
+
+                                {/* IV Training Section */}
+                                <div style={{ padding: '8px 10px', background: '#f5f5f5', border: '1px solid #e0e0e0', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                    <div style={{ fontWeight: 'bold', fontSize: '11px', color: '#424242' }}>
+                                        {language === 'es' ? 'Entrenamiento Genético de IVs (Costo: 500 Tamercoins):' : 'Genetic IV Training (Cost: 500 Tamercoins):'}
+                                    </div>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+                                        {(() => {
+                                            const trainIv = (statName: 'hp' | 'attack' | 'defense' | 'speed') => {
+                                                if (!p.ivs) p.ivs = { hp: 15, attack: 15, defense: 15, speed: 15 };
+                                                const currentVal = p.ivs[statName] ?? 15;
+                                                if (currentVal >= 31) {
+                                                    alert("¡Estadística al máximo (31 IVs)!");
+                                                    return;
+                                                }
+                                                const cost = 500;
+                                                if (economy.coins < cost) {
+                                                    alert(`No tienes suficientes Tamercoins (se requieren ${cost}).`);
+                                                    return;
+                                                }
+                                                
+                                                // Deduct coins
+                                                economyRef.current.spendCoins(cost, 'stat_upgrade', `Train IV ${statName}`);
+                                                p.ivs[statName] = currentVal + 1;
+                                                
+                                                // Recalculate stats
+                                                const newStats = getPokemonStats(p.id, p.level ?? 5, p.ivs, true, economyRef.current);
+                                                p.maxHp = newStats.maxHp;
+                                                if (statName === 'hp') {
+                                                    p.hp = newStats.maxHp; // Heal to full max HP on upgrade
+                                                }
+                                                
+                                                // Update
+                                                const updatedTeam = team.map((item: any) => item.uniqueId === p.uniqueId ? { ...p } : item);
+                                                setTeam(updatedTeam);
+                                                economyRef.current.updateMissionProgress('stat_upgrade', 1);
+                                                saveLocalEconomy(updatedTeam);
+                                                setEconomy(new Economy(economyRef.current.toSaveData()));
+                                                setSelectedInfoPoke({ ...p });
+                                            };
+
+                                            const statsList: { key: 'hp' | 'attack' | 'defense' | 'speed'; label: string }[] = [
+                                                { key: 'hp', label: 'HP' },
+                                                { key: 'attack', label: 'Ataque' },
+                                                { key: 'defense', label: 'Defensa' },
+                                                { key: 'speed', label: 'Velocidad' }
+                                            ];
+
+                                            return statsList.map(stat => {
+                                                const ivVal = p.ivs?.[stat.key] !== undefined ? p.ivs[stat.key] : 15;
+                                                const isMax = ivVal >= 31;
+                                                return (
+                                                    <button
+                                                        key={stat.key}
+                                                        disabled={isMax || economy.coins < 500}
+                                                        onClick={() => trainIv(stat.key)}
+                                                        style={{ 
+                                                            padding: '4px 6px', 
+                                                            fontSize: '9px', 
+                                                            fontWeight: 'bold', 
+                                                            background: isMax ? '#cbd5e1' : (economy.coins >= 500 ? '#e65100' : '#ffb74d'),
+                                                            color: 'white', 
+                                                            border: 'none', 
+                                                            borderRadius: '4px', 
+                                                            cursor: (isMax || economy.coins < 500) ? 'default' : 'pointer' 
+                                                        }}
+                                                    >
+                                                        {stat.label}: {ivVal}/31 {isMax ? '🔥' : '🔼'}
+                                                    </button>
+                                                );
+                                            });
+                                        })()}
+                                    </div>
+                                </div>
+
                                 <div style={{ padding: '8px', background: '#fff3e0', border: '1px solid #ffe0b2', borderRadius: '6px' }}>
                                     <div style={{ fontWeight: 'bold', fontSize: '12px', color: '#e65100', marginBottom: '2px' }}>{t.evolution}:</div>
                                     <div style={{ fontSize: '11px', color: '#5d4037', fontWeight: 'bold' }}>
@@ -14212,7 +15580,8 @@ export default function GameCanvas({
                                     const rarity = p.rarity || (species ? species.rarity.toLowerCase() : 'common');
                                     const hourlyRate = species ? species.gold_per_hour : 5;
                                     const base = hourlyRate * 24;
-                                    const finalRate = p.is_evolved ? Math.floor(base * 1.25) : base;
+                                    const isFed = p.food_expires && Date.now() < p.food_expires;
+                                    const finalRate = !isFed ? 0 : (p.is_evolved ? Math.floor(base * 1.25) : base);
                                     const rarityColors: Record<string, string> = {
                                         common: '#94a3b8', uncommon: '#34d399', rare: '#60a5fa',
                                         epic: '#a78bfa', ultra_rare: '#a78bfa', legendary: '#fbbf24'
@@ -14222,17 +15591,22 @@ export default function GameCanvas({
                                     return (
                                         <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: p.is_shiny ? 'rgba(251, 191, 36, 0.04)' : 'rgba(255,255,255,0.04)', border: p.is_shiny ? '1px solid rgba(251, 191, 36, 0.4)' : '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', padding: '8px 12px' }}>
                                             <div>
-                                                <div style={{ fontWeight: 'bold', color: '#e2e8f0', fontSize: '12px', textTransform: 'capitalize' }}>
-                                                    {p.is_shiny && <span style={{ color: '#fbbf24', marginRight: '4px' }}>✨</span>}
-                                                    {p.id} 
-                                                    {p.is_shiny && <span style={{ color: '#fbbf24', fontSize: '9px', marginLeft: '4px' }}>Shiny</span>}
-                                                    {p.is_evolved && <span style={{ color: '#34d399', fontSize: '9px', marginLeft: '4px' }}>★ Evol.</span>}
+                                                <div style={{ fontWeight: 'bold', color: '#e2e8f0', fontSize: '12px', textTransform: 'capitalize', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                    {p.is_shiny && <span style={{ color: '#fbbf24' }}>✨</span>}
+                                                    <span>{p.id}</span>
+                                                    {!isFed ? (
+                                                        <span style={{ fontSize: '7px', fontWeight: 'bold', color: '#f87171', background: 'rgba(239, 68, 68, 0.15)', padding: '1px 4px', borderRadius: '3px' }}>HUNGRY</span>
+                                                    ) : (
+                                                        <span style={{ fontSize: '7px', fontWeight: 'bold', color: '#34d399', background: 'rgba(16, 185, 129, 0.15)', padding: '1px 4px', borderRadius: '3px' }}>FED</span>
+                                                    )}
+                                                    {p.is_shiny && <span style={{ color: '#fbbf24', fontSize: '9px' }}>Shiny</span>}
+                                                    {p.is_evolved && <span style={{ color: '#34d399', fontSize: '9px' }}>★ Evol.</span>}
                                                 </div>
                                                 <div style={{ fontSize: '8px', color: rarityColor, textTransform: 'uppercase', fontWeight: 'bold', letterSpacing: '0.05em' }}>{rarity}</div>
                                             </div>
                                             <div style={{ textAlign: 'right' }}>
                                                 <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#fbbf24' }}>🪙 +{finalRate}</div>
-                                                <div style={{ fontSize: '8px', color: '#64748b' }}>{hourlyRate}/{t.hour}</div>
+                                                <div style={{ fontSize: '8px', color: '#64748b' }}>{!isFed ? 0 : hourlyRate}/{t.hour}</div>
                                             </div>
                                         </div>
                                     );
@@ -14277,6 +15651,7 @@ export default function GameCanvas({
                         </div>
                     </div>
                 </div>
+            )}
 
 
 
