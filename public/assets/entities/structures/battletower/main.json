@@ -1,0 +1,17 @@
+{
+    "name": "BattleTower",
+    "img": "src/assets/entities/structures/battletower/battletower.png",
+    "scale": 0.5,
+    "type": "npc",
+    "dialog": "Torre de Batalla: ¡Entra para desafiar al Torneo!",
+    "color_to_be_erased": "transparent",
+    "valid_moves": ["down"],
+    "down": [
+        {
+            "y": 0,
+            "x": 0,
+            "w": 317,
+            "h": 337
+        }
+    ]
+}

@@ -3802,14 +3802,15 @@ export default function GameCanvas({
                                 name: entMeta.name + " Back"
                             });
                         } 
-                        // 4. Other buildings and large structures
                         else if (
                             lowerName.includes('casa') || 
                             lowerName.includes('house') || 
                             lowerName.includes('gym') ||
                             lowerName.includes('comercio') ||
                             lowerName.includes('fountain') ||
-                            lowerName.includes('greenhouse')
+                            lowerName.includes('greenhouse') ||
+                            lowerName.includes('tower') ||
+                            lowerName.includes('torre')
                         ) {
                             const baseTop = y + h * 0.45;
                             const baseBottom = y + h - 24;
@@ -4875,6 +4876,14 @@ export default function GameCanvas({
             const type = parts[0];
             const index = parseInt(parts[1] || '1', 10);
 
+            if (type === 'battle') {
+                if (dir === 'down') {
+                    transitionToMap('/assets/maps/city1/main.json', 640, 32);
+                    return true;
+                }
+                return false;
+            }
+
             if (type === 'route') {
                 if (dir === 'up') {
                     if (index === 1) {
@@ -5389,6 +5398,75 @@ export default function GameCanvas({
                 entities
             };
 
+        } else if (type === 'battle') {
+            // Battle Frontier Map
+            const cols = 40;
+            const rows = 40;
+            const grid: string[][] = Array.from({ length: rows }, () => Array(cols).fill('G1'));
+            const roadC = 20;
+
+            // Central plaza
+            const plazaSize = 10;
+            const plazaStartR = Math.floor(rows / 2) - Math.floor(plazaSize / 2);
+            const plazaStartC = roadC - Math.floor(plazaSize / 2);
+            for (let r = plazaStartR; r < plazaStartR + plazaSize; r++) {
+                for (let c = plazaStartC; c < plazaStartC + plazaSize; c++) {
+                    grid[r][c] = 'p5';
+                }
+            }
+
+            // Main vertical road
+            for (let r = 0; r < rows; r++) {
+                grid[r][roadC - 1] = 'p5';
+                grid[r][roadC]     = 'p5';
+                grid[r][roadC + 1] = 'p5';
+            }
+
+            // Tree borders
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    const isRoad = c >= roadC - 1 && c <= roadC + 1;
+                    const isBorder = r < 3 || r > rows - 4 || c < 3 || c > cols - 4;
+                    if (isBorder && !isRoad) grid[r][c] = 'T';
+                }
+            }
+
+            gridText = grid.map(line => line.join(' ')).join('\n');
+
+            const entities: any[] = [
+                {
+                    location: "src/assets/entities/structures/battletower/main.json",
+                    coordinates: { x: 560, y: 192 }
+                },
+                {
+                    location: "src/assets/entities/npcs/persons/grandmarose/main.json",
+                    coordinates: { x: (roadC + 4) * 32, y: (Math.floor(rows / 2) + 2) * 32 },
+                    dialogs: [
+                        "¡Bienvenido al Frente de Batalla!",
+                        "Al norte se alza la majestuosa Torre de Batalla.",
+                        "Entra en ella para registrarte en el torneo de brackets, desafiar a otros entrenadores o presenciar combates en vivo como espectador."
+                    ]
+                },
+                {
+                    location: "src/assets/entities/structures/sign/main.json",
+                    coordinates: { x: (roadC + 2) * 32, y: (Math.floor(rows / 2) + 4) * 32 },
+                    dialogs: [
+                        "Frontera de Batalla\n🏆 Torre de Batalla al Norte\nv Salida al Sur"
+                    ]
+                }
+            ];
+
+            mapJson = {
+                map: `${mapId.replace('.json', '')}.txt`,
+                tile_size: 32,
+                components: [
+                    { type: "G1",  size: [32, 32], image: "src/assets/maps/tutorial/imgs/grass1.png" },
+                    { type: "p5",  size: [32, 32], image: "src/assets/maps/tutorial/imgs/path/path5.png" },
+                    { type: "T",   size: [32, 32], image: "src/assets/entities/structures/tree/tree.png", isSolid: true }
+                ],
+                entities
+            };
+
         } else if (type === 'settlement') {
             const isLegendary = zoneInfo?.type === 'legendary';
             const zoneName = zoneInfo?.name || `Pueblo Semilla ${index}`;
@@ -5718,9 +5796,18 @@ export default function GameCanvas({
             const isMart = lowerLoc.includes('pokemonmarket') || lowerLoc.includes('pokemart');
             const isGym = lowerLoc.includes('gym');
             const isHouse = lowerLoc.includes('redhouse') || lowerLoc.includes('casa') || (lowerLoc.includes('house') && !lowerLoc.includes('greenhouse'));
+            const isBattleTower = lowerLoc.includes('battletower');
 
-            if (isCenter || isMart || isGym || isHouse) {
+            if (isCenter || isMart || isGym || isHouse || isBattleTower) {
                 if (isNearDoor(x, y, ent)) {
+                    if (isBattleTower) {
+                        playerRef.current.isMoving = false;
+                        keysPressed.current = {};
+                        setShowTournamentView(true);
+                        setInsideTournamentBuilding(true);
+                        showNotification("Torre de Batalla", "Entrando a la Torre de Batalla...");
+                        return true;
+                    }
                     let destMap = '';
                     let dialogTitle = '';
                     let dialogMsg = '';
@@ -10455,7 +10542,10 @@ export default function GameCanvas({
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', width: '100%', maxWidth: '640px', margin: '0 auto' }}>
                                 {/* Exit header */}
                                 <button 
-                                    onClick={() => setInsideTournamentBuilding(false)}
+                                    onClick={() => {
+                                        setInsideTournamentBuilding(false);
+                                        setShowTournamentView(false);
+                                    }}
                                     style={{
                                         alignSelf: 'flex-start',
                                         background: 'rgba(255,255,255,0.05)',
@@ -15301,7 +15391,11 @@ export default function GameCanvas({
                                                 setIsTravelling(true);
                                                 setTimeout(() => {
                                                     setIsTravelling(false);
-                                                    setShowTournamentView(true);
+                                                    setShowTournamentView(false);
+                                                    setInsideTournamentBuilding(false);
+                                                    const nextMap = 'procedural://battle_frontier';
+                                                    prepareProceduralMap(nextMap);
+                                                    transitionToMap(nextMap, 640, 960);
                                                     showNotification(
                                                         language === 'es' ? "¡Vuelo Completado!" : "Flight Completed!",
                                                         language === 'es' ? "Has llegado a la Frontera de Batalla." : "You have arrived at the Battle Frontier."
