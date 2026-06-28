@@ -6902,7 +6902,18 @@ export default function GameCanvas({
         const sanitizedTeam = sanitizeMoves(teamToSave);
         const sanitizedPc = sanitizeMoves(pcPokemonToSave);
 
-        
+        const foodExpiresMap: Record<string, number> = {};
+        sanitizedTeam.forEach((p: any) => {
+            if (p && p.id_captura && p.food_expires) {
+                foodExpiresMap[p.id_captura] = p.food_expires;
+            }
+        });
+        sanitizedPc.forEach((p: any) => {
+            if (p && p.id_captura && p.food_expires) {
+                foodExpiresMap[p.id_captura] = p.food_expires;
+            }
+        });
+
         const saveState = {
             name: activeName,
             time: 0,
@@ -6912,6 +6923,7 @@ export default function GameCanvas({
             inventory_data: inventoryData,
             team_data: sanitizedTeam,
             pc_pokemon: sanitizedPc,
+            pokemon_food_expires: foodExpiresMap,
             updated_at: new Date().toISOString()
         };
 
@@ -16150,11 +16162,18 @@ export default function GameCanvas({
                                                 const baseTime = (p.food_expires && p.food_expires > Date.now()) ? p.food_expires : Date.now();
                                                 p.food_expires = baseTime + ms;
                                                 
-                                                // Update
-                                                const updatedTeam = team.map((item: any) => item.uniqueId === p.uniqueId ? { ...p } : item);
-                                                setTeam(updatedTeam);
+                                                // Update team or pc list consistently to prevent data loss
+                                                const isTeam = team.some((item: any) => item.id_captura === p.id_captura);
+                                                if (isTeam) {
+                                                    const updatedTeam = team.map((item: any) => (item.id_captura && p.id_captura ? item.id_captura === p.id_captura : (item.uniqueId && p.uniqueId ? item.uniqueId === p.uniqueId : false)) ? { ...p } : item);
+                                                    setTeam(updatedTeam);
+                                                    saveLocalEconomy(updatedTeam, undefined);
+                                                } else {
+                                                    const updatedPc = pcPokemon.map((item: any) => (item.id_captura && p.id_captura ? item.id_captura === p.id_captura : (item.uniqueId && p.uniqueId ? item.uniqueId === p.uniqueId : false)) ? { ...p } : item);
+                                                    setPcPokemon(updatedPc);
+                                                    saveLocalEconomy(undefined, updatedPc);
+                                                }
                                                 economyRef.current.updateMissionProgress('feed', 1);
-                                                saveLocalEconomy(updatedTeam);
                                                 setEconomy(new Economy(economyRef.current.toSaveData()));
                                                 setSelectedInfoPoke({ ...p });
                                             };
