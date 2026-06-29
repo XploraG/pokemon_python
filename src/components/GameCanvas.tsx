@@ -2160,6 +2160,7 @@ export default function GameCanvas({
     const [insideTournamentBuilding, setInsideTournamentBuilding] = useState(false);
     const [activeTournamentTab, setActiveTournamentTab] = useState<'brackets' | 'lobby'>('lobby');
     const [isInTournamentQueue, setIsInTournamentQueue] = useState(false);
+    const [isBattleTowerPvP, setIsBattleTowerPvP] = useState(false);
     const [specBattleTurn, setSpecBattleTurn] = useState(0);
     const [specHp1, setSpecHp1] = useState(100);
     const [specHp2, setSpecHp2] = useState(100);
@@ -2633,6 +2634,9 @@ export default function GameCanvas({
     const [mapNamePopup, setMapNamePopup] = useState<string | null>(null);
     const [joystickPos, setJoystickPos] = useState({ x: 0, y: 0 });
     const [joystickActive, setJoystickActive] = useState(false);
+    const [joystickVisible, setJoystickVisible] = useState(false);
+    const [dynamicJoystickCenter, setDynamicJoystickCenter] = useState({ x: 0, y: 0 });
+    const pointerStartPos = useRef<{ x: number; y: number; time: number } | null>(null);
     const joystickRef = useRef<HTMLDivElement | null>(null);
 
     // Refs to keep state variables fresh inside async loop and listeners
@@ -2645,8 +2649,13 @@ export default function GameCanvas({
     const activeWildBattleRef = useRef(activeWildBattle);
     const gymLeaderTeamRef = useRef<any[]>([]);
     const gymLeaderCurrentPokeIndexRef = useRef<number>(0);
+    const isInTournamentQueueRef = useRef(false);
+    const isBattleTowerPvPRef = useRef(false);
+    const handleSkipPvPTurnRef = useRef<() => void>(() => {});
 
     useEffect(() => { currentMapPathRef.current = currentMapPath; }, [currentMapPath]);
+    useEffect(() => { isInTournamentQueueRef.current = isInTournamentQueue; }, [isInTournamentQueue]);
+    useEffect(() => { isBattleTowerPvPRef.current = isBattleTowerPvP; }, [isBattleTowerPvP]);
 
     // Track visited settlements/cities for fast travel
     useEffect(() => {
@@ -2657,6 +2666,134 @@ export default function GameCanvas({
             setEconomy(new Economy(economyRef.current.toSaveData()));
         }
     }, [currentMapPath]);
+
+    const handleMatchWithNpc = () => {
+        const opponents = ["Kruschev", "EJCC", "ElíasCastillo", "CryptoTamer", "PokeMaster"];
+        const opponentName = opponents[Math.floor(Math.random() * opponents.length)];
+        
+        const npcTeam = [];
+        const speciesPool = pokemonSpeciesList.filter((s: any) => {
+            const r = (s.rarity || "").toLowerCase();
+            const n = (s.name || "").toLowerCase();
+            return n !== "mew" && n !== "mewtwo" && r !== "legendary";
+        });
+        for (let i = 0; i < 6; i++) {
+            const spec = speciesPool[Math.floor(Math.random() * speciesPool.length)] || { name: 'pikachu' };
+            const stats = getPokemonStats(spec.name.toLowerCase(), 99);
+            npcTeam.push({
+                name: spec.name.toLowerCase(),
+                level: 99,
+                hp: stats.maxHp,
+                maxHp: stats.maxHp
+            });
+        }
+        
+        const backup = [...teamRef.current];
+        setRealTeamBackup(backup);
+        
+        const regTeamRaw = localStorage.getItem('battle_tower_registered_team');
+        const regTeam = regTeamRaw ? JSON.parse(regTeamRaw) : [];
+        const initializedRegTeam = regTeam.map((p: any) => {
+            const speciesName = p.id || p.name || 'pikachu';
+            const stats = getPokemonStats(speciesName, 99, p.ivs);
+            return {
+                id: speciesName,
+                level: 99,
+                xp: 0,
+                hp: stats.maxHp,
+                maxHp: stats.maxHp,
+                ivs: p.ivs,
+                is_shiny: p.is_shiny,
+                moves: getPokemonMoves(speciesName, 99).slice(0, 4)
+            };
+        });
+        
+        const teamToUse = initializedRegTeam.length >= 6 ? initializedRegTeam : backup;
+        setTeam(teamToUse);
+        teamRef.current = teamToUse;
+        
+        gymLeaderTeamRef.current = npcTeam;
+        gymLeaderCurrentPokeIndexRef.current = 0;
+        setPlayerAtkStage(0);
+        setPlayerDefStage(0);
+        setOpponentAtkStage(0);
+        setOpponentDefStage(0);
+        setIsBattleAnimating(false);
+        setPlayerSpriteEffect('none' as any);
+        setOpponentSpriteEffect('none' as any);
+        setFloatingDamage(null);
+        
+        setShowTournamentView(false);
+        
+        setIsTrainerBattle(true);
+        setIsGymBattle(false);
+        setIsBattleTowerBattle(true);
+        setBattleTowerOpponentName(opponentName);
+        
+        const firstPoke = npcTeam[0];
+        setBattleMessage(`¡Duelo en la Torre contra ${opponentName}! Saca a su primer Pokémon: ${firstPoke.name.toUpperCase()} (Nvl. 99)`);
+        setShowBallSelect(false);
+        setShowBagSelect(false);
+        setShowSwitchSelect(false);
+        
+        setActiveWildBattle({
+            name: firstPoke.name,
+            level: 99,
+            hp: firstPoke.maxHp,
+            maxHp: firstPoke.maxHp,
+            captureRate: 0.0
+        });
+        
+        showNotification("¡Combate Encontrado!", language === 'es' ? `Entrando al estadio contra ${opponentName} (Rival).` : `Entering stadium against ${opponentName} (Rival).`);
+    };
+
+    // Matchmaking queue status broadcast and fallback
+    useEffect(() => {
+        if (isInTournamentQueue && walletAddress) {
+            channelRef.current?.send({
+                type: 'broadcast',
+                event: 'matchmaking_queue_state',
+                payload: {
+                    address: walletAddress,
+                    name: playerNameRef.current,
+                    in_queue: true
+                }
+            });
+
+            const interval = setInterval(() => {
+                channelRef.current?.send({
+                    type: 'broadcast',
+                    event: 'matchmaking_queue_state',
+                    payload: {
+                        address: walletAddress,
+                        name: playerNameRef.current,
+                        in_queue: true
+                    }
+                });
+            }, 2000);
+
+            const fallbackTimeout = setTimeout(() => {
+                if (isInTournamentQueueRef.current) {
+                    setIsInTournamentQueue(false);
+                    handleMatchWithNpc();
+                }
+            }, 10000);
+
+            return () => {
+                clearInterval(interval);
+                clearTimeout(fallbackTimeout);
+                channelRef.current?.send({
+                    type: 'broadcast',
+                    event: 'matchmaking_queue_state',
+                    payload: {
+                        address: walletAddress,
+                        name: playerNameRef.current,
+                        in_queue: false
+                    }
+                });
+            };
+        }
+    }, [isInTournamentQueue, walletAddress]);
     useEffect(() => { activeWildBattleRef.current = activeWildBattle; }, [activeWildBattle]);
     useEffect(() => { activeDialogRef.current = activeDialog; }, [activeDialog]);
     useEffect(() => { economyRef.current = economy; }, [economy]);
@@ -2768,7 +2905,9 @@ export default function GameCanvas({
                 in_battle: inBattle,
                 is_bicycle: playerRef.current.isBicycle,
                 is_surfing: playerRef.current.isSurfing,
-                ground_mount: activeGroundMountRef.current
+                ground_mount: activeGroundMountRef.current,
+                pvp_opponent_address: activePvPBattle?.opponentAddress || null,
+                pvp_opponent_name: activePvPBattle?.opponentName || null
             }
         });
         
@@ -2941,9 +3080,18 @@ export default function GameCanvas({
                         in_battle: payload.in_battle,
                         is_bicycle: payload.is_bicycle ?? false,
                         is_surfing: payload.is_surfing ?? false,
-                        ground_mount: payload.ground_mount || 'bicycle'
+                        ground_mount: payload.ground_mount || 'bicycle',
+                        pvp_opponent_address: payload.pvp_opponent_address || null,
+                        pvp_opponent_name: payload.pvp_opponent_name || null
                     }
                 }));
+            })
+            .on('broadcast', { event: 'matchmaking_queue_state' }, ({ payload }) => {
+                if (payload.address !== walletAddress && payload.in_queue && isInTournamentQueueRef.current) {
+                    if (walletAddress.toLowerCase() < payload.address.toLowerCase()) {
+                        handleInviteBattleTowerPvP(payload.address, payload.name);
+                    }
+                }
             })
             .on('broadcast', { event: 'pvp_invite' }, ({ payload }) => {
                 if (payload.to === walletAddress) {
@@ -2957,6 +3105,11 @@ export default function GameCanvas({
                                 to: payload.from
                             }
                         });
+                        return;
+                    }
+
+                    if (payload.is_battle_tower) {
+                        handleAcceptBattleTowerPvP(payload.from, payload.fromName);
                         return;
                     }
 
@@ -3042,7 +3195,12 @@ export default function GameCanvas({
                 }
             })
             .on('broadcast', { event: 'pvp_accept' }, ({ payload }) => {
-                if (payload.to === walletAddress && pendingPvPInviteRef.current === payload.from) {
+                if (payload.to === walletAddress) {
+                    if (payload.is_battle_tower) {
+                        // The Battle Tower match is already set up and syncing, no coin bet required
+                        return;
+                    }
+                    if (pendingPvPInviteRef.current === payload.from) {
                     setPendingPvPInvite(null);
                     pendingPvPInviteRef.current = null;
                     
@@ -3094,6 +3252,7 @@ export default function GameCanvas({
                             }
                         });
                     }
+                    }
                 }
             })
             .on('broadcast', { event: 'pvp_reject' }, ({ payload }) => {
@@ -3140,6 +3299,20 @@ export default function GameCanvas({
             })
             .on('broadcast', { event: 'pvp_damage' }, ({ payload }) => {
                 if (payload.to === walletAddress) {
+                    if (payload.damage === 0) {
+                        setPvpBattleLog(prev => [
+                            ...prev,
+                            `⏳ Al oponente se le acabó el tiempo. Su turno fue saltado.`
+                        ]);
+                        setActivePvPBattle((prev: any) => {
+                            if (!prev) return prev;
+                            return {
+                                ...prev,
+                                turn: walletAddress
+                            };
+                        });
+                        return;
+                    }
                     let finalDamage = payload.damage;
                     const synergy = getMedalSynergy(economyRef.current.equipped_medals);
                     let synergyMsg = "";
@@ -3539,35 +3712,27 @@ export default function GameCanvas({
         return () => clearInterval(syncInterval);
     }, [activePvPBattle, walletAddress]);
 
-    // Timer: PvP Turn logic (45s)
+    // Timer: PvP Turn logic (40s)
     useEffect(() => {
         if (activePvPBattle && activePvPBattle.status === 'battle') {
             const timer = setInterval(() => {
                 setPvpTurnTimer(prev => {
                     if (prev <= 1) {
-                        // Time's up! If it's my turn, auto attack.
+                        // Time's up! If it's my turn, skip turn.
                         if (activePvPBattle.turn === walletAddress) {
-                            const activePoke = team.find(p => p.hp > 0);
-                            if (activePoke) {
-                                const moves = activePoke.moves && activePoke.moves.length > 0
-                                    ? activePoke.moves
-                                    : getPokemonMoves(activePoke.id, activePoke.level ?? 1);
-                                if (moves && moves.length > 0) {
-                                    handleExecutePvPMove(moves[0]);
-                                }
-                            }
+                            handleSkipPvPTurnRef.current();
                         }
-                        return 45; // Reset timer for the next turn
+                        return 40; // Reset timer for the next turn
                     }
                     return prev - 1;
                 });
             }, 1000);
             return () => {
                 clearInterval(timer);
-                setPvpTurnTimer(45);
+                setPvpTurnTimer(40);
             };
         } else {
-            setPvpTurnTimer(45);
+            setPvpTurnTimer(40);
         }
     }, [activePvPBattle?.status, activePvPBattle?.turn, team]);
 
@@ -6216,9 +6381,193 @@ export default function GameCanvas({
                 }
             });
         }
-        
-        setIncomingPvPInvite(null);
     };
+        
+    const handleInviteBattleTowerPvP = (oppAddr: string, oppName: string) => {
+        if (!channelRef.current) return;
+        
+        setIsInTournamentQueue(false);
+        setIsBattleTowerPvP(true);
+        
+        const backup = [...teamRef.current];
+        setRealTeamBackup(backup);
+        
+        const regTeamRaw = localStorage.getItem('battle_tower_registered_team');
+        const regTeam = regTeamRaw ? JSON.parse(regTeamRaw) : [];
+        const initializedRegTeam = regTeam.map((p: any) => {
+            const speciesName = p.id || p.name || 'pikachu';
+            const stats = getPokemonStats(speciesName, 99, p.ivs);
+            return {
+                id: speciesName,
+                level: 99,
+                xp: 0,
+                hp: stats.maxHp,
+                maxHp: stats.maxHp,
+                ivs: p.ivs,
+                is_shiny: p.is_shiny,
+                moves: getPokemonMoves(speciesName, 99).slice(0, 4)
+            };
+        });
+        const teamToUse = initializedRegTeam.length >= 6 ? initializedRegTeam : backup;
+        setTeam(teamToUse);
+        teamRef.current = teamToUse;
+        
+        economyRef.current.in_pvp_battle = true;
+        setEconomy(new Economy(economyRef.current.toSaveData()));
+        saveLocalEconomy(teamToUse);
+
+        channelRef.current.send({
+            type: 'broadcast',
+            event: 'pvp_invite',
+            payload: {
+                from: walletAddress,
+                fromName: playerNameRef.current || "Tamer",
+                to: oppAddr,
+                is_battle_tower: true
+            }
+        });
+        
+        const activePoke = teamToUse.find((p: any) => p.hp > 0);
+        const synergy = getMedalSynergy(economyRef.current.equipped_medals);
+        const hpMult = synergy?.name === "Duo Versátil" ? 1.05 : 1.0;
+
+        setActivePvPBattle({
+            opponentAddress: oppAddr,
+            opponentName: oppName,
+            opponentPokemon: null,
+            myHp: Math.floor((activePoke?.hp || 100) * hpMult),
+            opponentHp: 100,
+            opponentMaxHp: 100,
+            status: 'syncing',
+            turn: walletAddress,
+            isBattleTowerPvP: true
+        });
+        
+        setPvpBattleLog([
+            "¡Comienza el duelo PvP de la Torre!",
+            `¡Duelo contra ${oppName}!`,
+            "Sincronizando..."
+        ]);
+        
+        setPvpItemsUsed(0);
+        setBattleTowerOpponentName(oppName);
+    };
+
+    const handleAcceptBattleTowerPvP = (oppAddr: string, oppName: string) => {
+        if (!channelRef.current) return;
+        
+        setIsInTournamentQueue(false);
+        setIsBattleTowerPvP(true);
+        
+        const backup = [...teamRef.current];
+        setRealTeamBackup(backup);
+        
+        const regTeamRaw = localStorage.getItem('battle_tower_registered_team');
+        const regTeam = regTeamRaw ? JSON.parse(regTeamRaw) : [];
+        const initializedRegTeam = regTeam.map((p: any) => {
+            const speciesName = p.id || p.name || 'pikachu';
+            const stats = getPokemonStats(speciesName, 99, p.ivs);
+            return {
+                id: speciesName,
+                level: 99,
+                xp: 0,
+                hp: stats.maxHp,
+                maxHp: stats.maxHp,
+                ivs: p.ivs,
+                is_shiny: p.is_shiny,
+                moves: getPokemonMoves(speciesName, 99).slice(0, 4)
+            };
+        });
+        const teamToUse = initializedRegTeam.length >= 6 ? initializedRegTeam : backup;
+        setTeam(teamToUse);
+        teamRef.current = teamToUse;
+        
+        economyRef.current.in_pvp_battle = true;
+        setEconomy(new Economy(economyRef.current.toSaveData()));
+        saveLocalEconomy(teamToUse);
+
+        channelRef.current.send({
+            type: 'broadcast',
+            event: 'pvp_accept',
+            payload: {
+                from: walletAddress,
+                fromName: playerNameRef.current || "Tamer",
+                to: oppAddr,
+                is_battle_tower: true
+            }
+        });
+        
+        const activePoke = teamToUse.find((p: any) => p.hp > 0);
+        const synergy = getMedalSynergy(economyRef.current.equipped_medals);
+        const hpMult = synergy?.name === "Duo Versátil" ? 1.05 : 1.0;
+
+        setActivePvPBattle({
+            opponentAddress: oppAddr,
+            opponentName: oppName,
+            opponentPokemon: null,
+            myHp: Math.floor((activePoke?.hp || 100) * hpMult),
+            opponentHp: 100,
+            opponentMaxHp: 100,
+            status: 'syncing',
+            turn: oppAddr,
+            isBattleTowerPvP: true
+        });
+        
+        setPvpBattleLog([
+            "¡Comienza el duelo PvP de la Torre!",
+            `¡Enfréntate a ${oppName}!`,
+            "Sincronizando..."
+        ]);
+        
+        setPvpItemsUsed(0);
+        setBattleTowerOpponentName(oppName);
+        
+        if (activePoke) {
+            channelRef.current.send({
+                type: 'broadcast',
+                event: 'pvp_sync_pokemon',
+                payload: {
+                    from: walletAddress,
+                    to: oppAddr,
+                    pokemon: { 
+                        id: activePoke.id, 
+                        level: activePoke.level, 
+                        hp: Math.floor((activePoke.hp || 100) * hpMult), 
+                        maxHp: Math.floor((activePoke.maxHp || 100) * hpMult) 
+                    }
+                }
+            });
+        }
+    };
+
+    const handleSkipPvPTurn = () => {
+        if (!activePvPBattleRef.current || activePvPBattleRef.current.status !== 'battle' || isBattleAnimating) return;
+
+        setPvpBattleLog(prev => [
+            ...prev,
+            `⏳ Se te acabó el tiempo. Tu turno fue saltado.`
+        ]);
+
+        setActivePvPBattle((prev: any) => {
+            if (!prev) return prev;
+            return {
+                ...prev,
+                turn: prev.opponentAddress
+            };
+        });
+
+        channelRef.current?.send({
+            type: 'broadcast',
+            event: 'pvp_damage',
+            payload: {
+                from: walletAddress,
+                to: activePvPBattleRef.current.opponentAddress,
+                damage: 0
+            }
+        });
+    };
+    handleSkipPvPTurnRef.current = handleSkipPvPTurn;
+
 
     const handleExecutePvPMove = async (moveId: string) => {
         if (!activePvPBattle || activePvPBattle.status !== 'battle' || isBattleAnimating) return;
@@ -6318,7 +6667,7 @@ export default function GameCanvas({
         setIsBattleAnimating(false);
     };
 
-    const getPlayerUnderMouse = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const getPlayerUnderMouse = (e: any) => {
         if (!canvasRef.current || activeWildBattle || activePvPBattle || showMenuModal) return null;
         const rect = canvasRef.current.getBoundingClientRect();
         
@@ -10290,6 +10639,116 @@ export default function GameCanvas({
         );
     };
 
+    const handleCanvasPointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
+        if (!e.isPrimary) return;
+        
+        const inBattle = !!activeWildBattleRef.current || (activePvPBattleRef.current && (activePvPBattleRef.current.status === 'battle' || activePvPBattleRef.current.status === 'syncing')) || isGymBattle || isTrainerBattle;
+        if (inBattle || showMenuModal || loading) return;
+        
+        e.preventDefault();
+        e.currentTarget.setPointerCapture(e.pointerId);
+        
+        const rect = wrapperRef.current?.getBoundingClientRect();
+        if (!rect) return;
+        
+        const clientX = e.clientX;
+        const clientY = e.clientY;
+        const localX = clientX - rect.left;
+        const localY = clientY - rect.top;
+        
+        pointerStartPos.current = { x: clientX, y: clientY, time: Date.now() };
+        
+        setDynamicJoystickCenter({ x: localX, y: localY });
+        setJoystickActive(true);
+        setJoystickVisible(true);
+        setJoystickPos({ x: 0, y: 0 });
+    };
+
+    const handleCanvasPointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
+        if (!joystickActive || !pointerStartPos.current) return;
+        e.preventDefault();
+        
+        const startX = pointerStartPos.current.x;
+        const startY = pointerStartPos.current.y;
+        
+        let dx = e.clientX - startX;
+        let dy = e.clientY - startY;
+        
+        const maxRadius = 35;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        if (distance > maxRadius) {
+            dx = (dx / distance) * maxRadius;
+            dy = (dy / distance) * maxRadius;
+        }
+        
+        setJoystickPos({ x: dx, y: dy });
+        
+        const threshold = 10;
+        const absX = Math.abs(dx);
+        const absY = Math.abs(dy);
+        
+        keysPressed.current['w'] = false;
+        keysPressed.current['a'] = false;
+        keysPressed.current['s'] = false;
+        keysPressed.current['d'] = false;
+        keysPressed.current['arrowup'] = false;
+        keysPressed.current['arrowleft'] = false;
+        keysPressed.current['arrowdown'] = false;
+        keysPressed.current['arrowright'] = false;
+        
+        if (distance > threshold) {
+            if (absX > absY) {
+                if (dx > 0) {
+                    keysPressed.current['d'] = true;
+                } else {
+                    keysPressed.current['a'] = true;
+                }
+            } else {
+                if (dy > 0) {
+                    keysPressed.current['s'] = true;
+                } else {
+                    keysPressed.current['w'] = true;
+                }
+            }
+        }
+    };
+
+    const handleCanvasPointerUp = (e: React.PointerEvent<HTMLCanvasElement>) => {
+        if (!joystickActive) return;
+        e.preventDefault();
+        
+        try {
+            e.currentTarget.releasePointerCapture(e.pointerId);
+        } catch (err) {}
+        
+        setJoystickActive(false);
+        setJoystickVisible(false);
+        setJoystickPos({ x: 0, y: 0 });
+        
+        if (pointerStartPos.current) {
+            const dx = e.clientX - pointerStartPos.current.x;
+            const dy = e.clientY - pointerStartPos.current.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            const duration = Date.now() - pointerStartPos.current.time;
+            
+            if (dist < 10 && duration < 250) {
+                handleCanvasClick(e as any);
+            }
+        }
+        
+        pointerStartPos.current = null;
+        
+        keysPressed.current['w'] = false;
+        keysPressed.current['a'] = false;
+        keysPressed.current['s'] = false;
+        keysPressed.current['d'] = false;
+        keysPressed.current['arrowup'] = false;
+        keysPressed.current['arrowleft'] = false;
+        keysPressed.current['arrowdown'] = false;
+        keysPressed.current['arrowright'] = false;
+    };
+
     const handleJoystickStart = (e: React.PointerEvent<HTMLDivElement>) => {
         e.preventDefault();
         e.currentTarget.setPointerCapture(e.pointerId);
@@ -11427,67 +11886,66 @@ export default function GameCanvas({
                                                         </h3>
                                                         
                                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                                            {/* Live Match 1 */}
-                                                            <div style={{ background: 'rgba(239,68,68,0.03)', border: '1px solid rgba(239,68,68,0.2)', padding: '10px', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                                                                    <span style={{ fontSize: '8px', color: '#cbd5e1', fontWeight: 'bold' }}>EJCC</span>
-                                                                    <span style={{ fontSize: '6px', color: '#64748b' }}>vs</span>
-                                                                    <span style={{ fontSize: '8px', color: '#cbd5e1', fontWeight: 'bold' }}>Tamer_Elite</span>
-                                                                </div>
-                                                                <button 
-                                                                    onClick={() => setSpectatingMatch({
-                                                                        id: "m_live_1_" + Date.now(),
-                                                                        p1: "EJCC",
-                                                                        p2: "Tamer_Elite",
-                                                                        winner: Math.random() > 0.5 ? "EJCC" : "Tamer_Elite"
-                                                                    })}
-                                                                    style={{
-                                                                        background: '#ef4444',
-                                                                        border: 'none',
-                                                                        color: '#fff',
-                                                                        padding: '6px 12px',
-                                                                        borderRadius: '6px',
-                                                                        fontSize: '7px',
-                                                                        fontFamily: "'Press Start 2P', monospace",
-                                                                        cursor: 'pointer',
-                                                                        boxShadow: '0 0 10px rgba(239,68,68,0.4)',
-                                                                        margin: 0
-                                                                    }}
-                                                                >
-                                                                    {language === 'es' ? 'VER' : 'WATCH'}
-                                                                </button>
-                                                            </div>
+                                                            {(() => {
+                                                                const matches: Array<{ p1: string; p2: string; id: string }> = [];
+                                                                const seenPairs = new Set<string>();
 
-                                                            {/* Live Match 2 */}
-                                                            <div style={{ background: 'rgba(239,68,68,0.03)', border: '1px solid rgba(239,68,68,0.2)', padding: '10px', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                                                                    <span style={{ fontSize: '8px', color: '#cbd5e1', fontWeight: 'bold' }}>CryptoTamer</span>
-                                                                    <span style={{ fontSize: '6px', color: '#64748b' }}>vs</span>
-                                                                    <span style={{ fontSize: '8px', color: '#cbd5e1', fontWeight: 'bold' }}>PokeMaster</span>
-                                                                </div>
-                                                                <button 
-                                                                    onClick={() => setSpectatingMatch({
-                                                                        id: "m_live_2_" + Date.now(),
-                                                                        p1: "CryptoTamer",
-                                                                        p2: "PokeMaster",
-                                                                        winner: Math.random() > 0.5 ? "CryptoTamer" : "PokeMaster"
-                                                                    })}
-                                                                    style={{
-                                                                        background: '#ef4444',
-                                                                        border: 'none',
-                                                                        color: '#fff',
-                                                                        padding: '6px 12px',
-                                                                        borderRadius: '6px',
-                                                                        fontSize: '7px',
-                                                                        fontFamily: "'Press Start 2P', monospace",
-                                                                        cursor: 'pointer',
-                                                                        boxShadow: '0 0 10px rgba(239,68,68,0.4)',
-                                                                        margin: 0
-                                                                    }}
-                                                                >
-                                                                    {language === 'es' ? 'VER' : 'WATCH'}
-                                                                </button>
-                                                            </div>
+                                                                Object.entries(otherPlayers).forEach(([addr, p]: [string, any]) => {
+                                                                    if (p.in_battle && p.pvp_opponent_address && p.pvp_opponent_name) {
+                                                                        const p1 = p.name || 'Tamer';
+                                                                        const p2 = p.pvp_opponent_name;
+                                                                        const pairKey = [addr.toLowerCase(), p.pvp_opponent_address.toLowerCase()].sort().join('_');
+                                                                        if (!seenPairs.has(pairKey)) {
+                                                                            seenPairs.add(pairKey);
+                                                                            matches.push({
+                                                                                id: `live_${pairKey}`,
+                                                                                p1,
+                                                                                p2
+                                                                            });
+                                                                        }
+                                                                    }
+                                                                });
+
+                                                                if (matches.length === 0) {
+                                                                    return (
+                                                                        <div style={{ fontSize: '7px', color: '#64748b', textAlign: 'center', padding: '12px 0' }}>
+                                                                            {language === 'es' ? 'No hay duelos activos en este momento.' : 'No active duels at the moment.'}
+                                                                        </div>
+                                                                    );
+                                                                }
+
+                                                                return matches.map((m) => (
+                                                                    <div key={m.id} style={{ background: 'rgba(239,68,68,0.03)', border: '1px solid rgba(239,68,68,0.2)', padding: '10px', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                                                                            <span style={{ fontSize: '8px', color: '#cbd5e1', fontWeight: 'bold' }}>{m.p1}</span>
+                                                                            <span style={{ fontSize: '6px', color: '#64748b' }}>vs</span>
+                                                                            <span style={{ fontSize: '8px', color: '#cbd5e1', fontWeight: 'bold' }}>{m.p2}</span>
+                                                                        </div>
+                                                                        <button 
+                                                                            onClick={() => setSpectatingMatch({
+                                                                                id: m.id + "_" + Date.now(),
+                                                                                p1: m.p1,
+                                                                                p2: m.p2,
+                                                                                winner: Math.random() > 0.5 ? m.p1 : m.p2
+                                                                            })}
+                                                                            style={{
+                                                                                background: '#ef4444',
+                                                                                border: 'none',
+                                                                                color: '#fff',
+                                                                                padding: '6px 12px',
+                                                                                borderRadius: '6px',
+                                                                                fontSize: '7px',
+                                                                                fontFamily: "'Press Start 2P', monospace",
+                                                                                cursor: 'pointer',
+                                                                                boxShadow: '0 0 10px rgba(239,68,68,0.4)',
+                                                                                margin: 0
+                                                                            }}
+                                                                        >
+                                                                            {language === 'es' ? 'VER' : 'WATCH'}
+                                                                        </button>
+                                                                    </div>
+                                                                ));
+                                                            })()}
                                                         </div>
                                                     </div>
 
@@ -11592,90 +12050,6 @@ export default function GameCanvas({
                                                 <button 
                                                     onClick={() => {
                                                         setIsInTournamentQueue(true);
-                                                        setTimeout(() => {
-                                                            setIsInTournamentQueue(false);
-                                                            const opponents = ["Kruschev", "EJCC", "ElíasCastillo", "CryptoTamer", "PokeMaster"];
-                                                            const opponentName = opponents[Math.floor(Math.random() * opponents.length)];
-                                                            
-                                                            // 1. Generate NPC's 6-Pokémon team at Level 99
-                                                            const npcTeam = [];
-                                                            const speciesPool = pokemonSpeciesList.filter((s: any) => {
-                                                                const r = (s.rarity || "").toLowerCase();
-                                                                const n = (s.name || "").toLowerCase();
-                                                                return n !== "mew" && n !== "mewtwo" && r !== "legendary";
-                                                            });
-                                                            for (let i = 0; i < 6; i++) {
-                                                                const spec = speciesPool[Math.floor(Math.random() * speciesPool.length)] || { name: 'pikachu' };
-                                                                const stats = getPokemonStats(spec.name.toLowerCase(), 99);
-                                                                npcTeam.push({
-                                                                    name: spec.name.toLowerCase(),
-                                                                    level: 99,
-                                                                    hp: stats.maxHp,
-                                                                    maxHp: stats.maxHp
-                                                                });
-                                                            }
-                                                            
-                                                            // 2. Backup player's current real team
-                                                            const backup = [...team];
-                                                            setRealTeamBackup(backup);
-                                                            
-                                                            // 3. Load player's registered level 99 Battle Tower team
-                                                            const regTeamRaw = localStorage.getItem('battle_tower_registered_team');
-                                                            const regTeam = regTeamRaw ? JSON.parse(regTeamRaw) : [];
-                                                            const initializedRegTeam = regTeam.map((p: any) => {
-                                                                const speciesName = p.id || p.name || 'pikachu';
-                                                                const stats = getPokemonStats(speciesName, 99, p.ivs);
-                                                                return {
-                                                                    id: speciesName,
-                                                                    level: 99,
-                                                                    xp: 0,
-                                                                    hp: stats.maxHp,
-                                                                    maxHp: stats.maxHp,
-                                                                    ivs: p.ivs,
-                                                                    is_shiny: p.is_shiny,
-                                                                    moves: getPokemonMoves(speciesName, 99).slice(0, 4)
-                                                                };
-                                                            });
-                                                            
-                                                            const teamToUse = initializedRegTeam.length >= 6 ? initializedRegTeam : backup;
-                                                            setTeam(teamToUse);
-                                                            
-                                                            // 4. Set the trainer battle parameters
-                                                            gymLeaderTeamRef.current = npcTeam;
-                                                            gymLeaderCurrentPokeIndexRef.current = 0;
-                                                            setPlayerAtkStage(0);
-                                                            setPlayerDefStage(0);
-                                                            setOpponentAtkStage(0);
-                                                            setOpponentDefStage(0);
-                                                            setIsBattleAnimating(false);
-                                                            setPlayerSpriteEffect('none' as any);
-                                                            setOpponentSpriteEffect('none' as any);
-                                                            setFloatingDamage(null);
-                                                            
-                                                            // 5. Hide the tournament view overlay so the wild battle overlay can show
-                                                            setShowTournamentView(false);
-                                                            
-                                                            // 6. Start Trainer Battle
-                                                            setIsTrainerBattle(true);
-                                                            setIsBattleTowerBattle(true);
-                                                            setBattleTowerOpponentName(opponentName);
-                                                            
-                                                            const firstPoke = npcTeam[0];
-                                                            setBattleMessage(`¡Duelo en la Torre contra ${opponentName}! Saca a su primer Pokémon: ${firstPoke.name.toUpperCase()} (Nvl. 99)`);
-                                                            setShowBallSelect(false);
-                                                            setShowBagSelect(false);
-                                                            setShowSwitchSelect(false);
-                                                            
-                                                            setActiveWildBattle({
-                                                                name: firstPoke.name,
-                                                                level: 99,
-                                                                hp: firstPoke.maxHp,
-                                                                maxHp: firstPoke.maxHp,
-                                                                captureRate: 0.0
-                                                            });
-                                                            
-                                                            showNotification("¡Combate Encontrado!", language === 'es' ? `Entrando al estadio contra ${opponentName}.` : `Entering stadium against ${opponentName}.`);
-                                                        }, 3000);
                                                     }}
                                                     style={{
                                                         background: 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)',
@@ -11808,33 +12182,39 @@ export default function GameCanvas({
                     ref={canvasRef}
                     width={canvasSize.width}
                     height={canvasSize.height}
-                    onClick={handleCanvasClick}
+                    onPointerDown={handleCanvasPointerDown}
+                    onPointerMove={handleCanvasPointerMove}
+                    onPointerUp={handleCanvasPointerUp}
+                    onPointerCancel={handleCanvasPointerUp}
                     onMouseMove={handleCanvasMouseMove}
                     onMouseLeave={() => setHoveredPlayer(null)}
-                    style={{ cursor: hoveredPlayer ? 'pointer' : 'default' }}
+                    style={{ cursor: hoveredPlayer ? 'pointer' : 'default', touchAction: 'none' }}
                 />
 
                 {/* Mobile Touch Controls Overlay */}
                 {!loading && (
                     <div className="mobile-controls">
                         {/* Virtual Joystick */}
-                        <div className="joystick-container">
+                        {joystickVisible && (
                             <div 
-                                ref={joystickRef}
-                                className="joystick-base"
-                                onPointerDown={handleJoystickStart}
-                                onPointerMove={handleJoystickMove}
-                                onPointerUp={handleJoystickEnd}
-                                onPointerLeave={handleJoystickEnd}
+                                className="joystick-container"
+                                style={{
+                                    left: `${dynamicJoystickCenter.x - 55}px`,
+                                    top: `${dynamicJoystickCenter.y - 55}px`,
+                                    bottom: 'auto',
+                                    pointerEvents: 'none'
+                                }}
                             >
-                                <div 
-                                    className="joystick-knob"
-                                    style={{
-                                        transform: `translate(${joystickPos.x}px, ${joystickPos.y}px)`
-                                    }}
-                                />
+                                <div className="joystick-base">
+                                    <div 
+                                        className="joystick-knob"
+                                        style={{
+                                            transform: `translate(${joystickPos.x}px, ${joystickPos.y}px)`
+                                        }}
+                                    />
+                                </div>
                             </div>
-                        </div>
+                        )}
 
                         {/* Action Buttons */}
                         <div 
@@ -19077,22 +19457,38 @@ export default function GameCanvas({
                                 <button 
                                     className="pokemon-button success"
                                     onClick={() => {
-                                        if (activePvPBattle.status === 'win') {
-                                            economyRef.current.pvp_wins = (economyRef.current.pvp_wins || 0) + 1;
-                                            economyRef.current.addCoins(180, 'pvp_victory', `vs ${activePvPBattle.opponentName || activePvPBattle.opponentAddress}`);
-                                            showNotification("¡Ganaste!", "GANASTE EL DUELO TE LLEVAS 180 COINS.");
-                                        } else if (activePvPBattle.status === 'loss') {
-                                            economyRef.current.pvp_losses = (economyRef.current.pvp_losses || 0) + 1;
-                                            showNotification("Derrota", "Perdiste el duelo y tu apuesta de 100 Coins.");
-                                        } else if (activePvPBattle.status === 'flee') {
-                                            showNotification("Combate Finalizado", "Huyiste del combate. Perdiste 10 Coins.");
-                                        } else if (activePvPBattle.status === 'opponent_flee') {
-                                            economyRef.current.addCoins(100, 'pvp_opponent_flee_refund', `vs ${activePvPBattle.opponentName || activePvPBattle.opponentAddress}`);
-                                            showNotification("Combate Cancelado", "El oponente huyó de la batalla. Se te han devuelto tus 100 Coins.");
+                                        if (isBattleTowerPvP) {
+                                            if (activePvPBattle.status === 'win') {
+                                                economyRef.current.battleTowerPoints = (economyRef.current.battleTowerPoints || 0) + 1;
+                                                showNotification("¡Victoria en la Torre!", language === 'es' ? "¡Ganaste el duelo! +1 Punto en la Torre de Batalla." : "You won the duel! +1 Point in the Battle Tower.");
+                                            } else {
+                                                economyRef.current.battleTowerPoints = Math.max(0, (economyRef.current.battleTowerPoints || 0) - 1);
+                                                showNotification("Derrota en la Torre", language === 'es' ? "Perdiste el duelo. -1 Punto en la Torre de Batalla." : "You lost the duel. -1 Point in the Battle Tower.");
+                                            }
+                                            setIsBattleTowerPvP(false);
+                                            setBattleTowerOpponentName("");
+                                            if (realTeamBackup && realTeamBackup.length > 0) {
+                                                setTeam(realTeamBackup);
+                                                teamRef.current = realTeamBackup;
+                                            }
+                                        } else {
+                                            if (activePvPBattle.status === 'win') {
+                                                economyRef.current.pvp_wins = (economyRef.current.pvp_wins || 0) + 1;
+                                                economyRef.current.addCoins(180, 'pvp_victory', `vs ${activePvPBattle.opponentName || activePvPBattle.opponentAddress}`);
+                                                showNotification("¡Ganaste!", "GANASTE EL DUELO TE LLEVAS 180 COINS.");
+                                            } else if (activePvPBattle.status === 'loss') {
+                                                economyRef.current.pvp_losses = (economyRef.current.pvp_losses || 0) + 1;
+                                                showNotification("Derrota", "Perdiste el duelo y tu apuesta de 100 Coins.");
+                                            } else if (activePvPBattle.status === 'flee') {
+                                                showNotification("Combate Finalizado", "Huyiste del combate. Perdiste 10 Coins.");
+                                            } else if (activePvPBattle.status === 'opponent_flee') {
+                                                economyRef.current.addCoins(100, 'pvp_opponent_flee_refund', `vs ${activePvPBattle.opponentName || activePvPBattle.opponentAddress}`);
+                                                showNotification("Combate Cancelado", "El oponente huyó de la batalla. Se te han devuelto tus 100 Coins.");
+                                            }
                                         }
                                         economyRef.current.in_pvp_battle = false;
                                         setEconomy(new Economy(economyRef.current.toSaveData()));
-                                        saveLocalEconomy();
+                                        saveLocalEconomy(isBattleTowerPvP ? (realTeamBackup ?? undefined) : teamRef.current);
                                         setActivePvPBattle(null);
                                     }}
                                     style={{ height: '40px', fontSize: '14px', fontWeight: 'bold' }}

@@ -57,6 +57,7 @@ export interface EconomySaveData {
     claimed_bp_free?: Record<string, boolean>;
     claimed_bp_premium?: Record<string, boolean>;
     mysterious_egg_steps?: number;
+    battleTowerPoints?: number;
 }
 
 export interface CoinTransaction {
@@ -116,6 +117,7 @@ export class Economy {
     public claimed_bp_free: Record<string, boolean> = {};
     public claimed_bp_premium: Record<string, boolean> = {};
     public mysterious_egg_steps: number = 0;
+    public battleTowerPoints: number = 0;
 
     constructor(saveData?: EconomySaveData) {
         if (saveData) {
@@ -172,6 +174,7 @@ export class Economy {
         this.claimed_bp_free = {};
         this.claimed_bp_premium = {};
         this.mysterious_egg_steps = 0;
+        this.battleTowerPoints = 0;
     }
 
     private loadFromSave(data: EconomySaveData): void {
@@ -223,6 +226,7 @@ export class Economy {
         this.claimed_bp_free = data.claimed_bp_free ?? {};
         this.claimed_bp_premium = data.claimed_bp_premium ?? {};
         this.mysterious_egg_steps = data.mysterious_egg_steps ?? 0;
+        this.battleTowerPoints = data.battleTowerPoints ?? 0;
         for (const medal of this.medals) {
             if (!this.medal_levels[medal]) {
                 this.medal_levels[medal] = 1;
@@ -279,7 +283,8 @@ export class Economy {
             battle_pass_premium: this.battle_pass_premium,
             claimed_bp_free: this.claimed_bp_free,
             claimed_bp_premium: this.claimed_bp_premium,
-            mysterious_egg_steps: this.mysterious_egg_steps
+            mysterious_egg_steps: this.mysterious_egg_steps,
+            battleTowerPoints: this.battleTowerPoints
         };
     }
 
