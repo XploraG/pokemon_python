@@ -2137,6 +2137,7 @@ export default function GameCanvas({
         }
         return 4;
     });
+    const [isLandscape, setIsLandscape] = useState<boolean>(true);
     const [registrationStep, setRegistrationStep] = useState(1);
     const [selectedRegPokemon, setSelectedRegPokemon] = useState<any[]>([]);
     const [openedChests, setOpenedChests] = useState<number[]>([]);
@@ -10191,7 +10192,7 @@ export default function GameCanvas({
     useEffect(() => { currentDialogIndexRef.current = currentDialogIndex; }, [currentDialogIndex]);
 
     return (
-        <div className="game-container">
+        <div className={`game-container ${isLandscape ? 'landscape-mode' : ''}`}>
             {/* Demo Finished / Tournament Info Blocking Modal */}
             {!isWhitelisted && (() => {
                 const dict = {
@@ -10431,7 +10432,7 @@ export default function GameCanvas({
                                     animation: spec-flash 0.4s ease-in-out forwards;
                                 }
                             `}</style>
-                            <div style={{ maxWidth: '600px', width: '100%', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            <div style={{ maxWidth: isLandscape ? '850px' : '600px', width: '100%', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                                 <button 
                                     onClick={() => setSpectatingMatch(null)} 
                                     style={{
@@ -10721,7 +10722,7 @@ export default function GameCanvas({
                             </div>
                         ) : (
                             /* INTERIOR VIEW: BRACKETS & LOBBY */
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', width: '100%', maxWidth: '640px', margin: '0 auto' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', width: '100%', maxWidth: isLandscape ? '850px' : '640px', margin: '0 auto' }}>
                                 {/* Exit header */}
                                 <button 
                                     onClick={() => {
@@ -10774,13 +10775,17 @@ export default function GameCanvas({
 
                                         {/* STEP 1: CHOOSE TEAM */}
                                         {registrationStep === 1 && (() => {
-                                            const allOwned = [...team, ...pcPokemon].filter((p: any) => {
-                                                if (!p) return false;
-                                                const name = (p.id || "").toLowerCase();
-                                                return name !== "mew" && name !== "mewtwo";
-                                            });
+                                            const displayList = [...team, ...pcPokemon]
+                                                .filter((p: any) => {
+                                                    if (!p) return false;
+                                                    const name = (p.id || "").toLowerCase();
+                                                    return name !== "mew" && name !== "mewtwo";
+                                                })
+                                                .map((p: any, idx: number) => ({
+                                                    ...p,
+                                                    battleTowerUniqueId: p.id_captura || p.uniqueId || `owned_${p.id}_${idx}`
+                                                }));
 
-                                            const displayList = [...allOwned];
                                             const rentals = [
                                                 { id: 'pikachu', level: 99, is_shiny: false },
                                                 { id: 'charizard', level: 99, is_shiny: false },
@@ -10796,7 +10801,7 @@ export default function GameCanvas({
                                                     ...rent,
                                                     id: rent.id,
                                                     isRental: true,
-                                                    uniqueId: `rental_${rent.id}_${rentalIdCounter++}`
+                                                    battleTowerUniqueId: `rental_${rent.id}_${rentalIdCounter++}`
                                                 });
                                             }
 
@@ -10815,8 +10820,8 @@ export default function GameCanvas({
 
                                                     <div style={{ maxHeight: '220px', overflowY: 'auto', display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px', paddingRight: '4px' }}>
                                                         {displayList.map((p: any, idx: number) => {
-                                                            const pokemonId = p.uniqueId || p.id_captura || p.id || `poke_${idx}`;
-                                                            const isSelected = selectedRegPokemon.some(x => (x.uniqueId || x.id_captura || x.id) === pokemonId);
+                                                            const pokemonId = p.battleTowerUniqueId;
+                                                            const isSelected = selectedRegPokemon.some(x => x.battleTowerUniqueId === pokemonId);
                                                             const species = pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === p.id.toLowerCase());
                                                             const sprite = species ? (p.is_shiny ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/shiny/${species.id}.png` : species.sprite) : '';
 
@@ -10825,7 +10830,7 @@ export default function GameCanvas({
                                                                     key={idx}
                                                                     onClick={() => {
                                                                         if (isSelected) {
-                                                                            setSelectedRegPokemon(curr => curr.filter(x => (x.uniqueId || x.id_captura || x.id) !== pokemonId));
+                                                                            setSelectedRegPokemon(curr => curr.filter(x => x.battleTowerUniqueId !== pokemonId));
                                                                         } else {
                                                                             if (selectedRegPokemon.length < 6) {
                                                                                 setSelectedRegPokemon(curr => [...curr, p]);
@@ -12168,6 +12173,30 @@ export default function GameCanvas({
                                                 <div>
                                                     <div style={{ fontWeight: 'bold', fontSize: '11px' }}>{language === 'es' ? 'Mochila' : 'Bag'}</div>
                                                     <div style={{ fontSize: '8px', color: '#64748b' }}>{language === 'es' ? 'Inventario de objetos y esferas' : 'Items and spheres inventory'}</div>
+                                                </div>
+                                            </button>
+
+                                            {/* Reset Battle Tower Registration */}
+                                            <button onClick={() => {
+                                                localStorage.removeItem('battle_tower_registered');
+                                                localStorage.removeItem('battle_tower_registered_team');
+                                                localStorage.removeItem('battle_tower_won_items');
+                                                setBattleTowerRegistered(false);
+                                                setShowMenuModal(false);
+                                                setRegistrationStep(1);
+                                                setSelectedRegPokemon([]);
+                                                setOpenedChests([]);
+                                                setWonItems([]);
+                                                showNotification(language === 'es' ? "¡Registro Reiniciado!" : "Registration Reset!", language === 'es' ? "Puedes volver a registrarte en la Torre de Batalla." : "You can register in the Battle Tower again.");
+                                            }} style={{
+                                                background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)',
+                                                borderRadius: '10px', padding: '12px 14px', cursor: 'pointer', color: '#f87171',
+                                                display: 'flex', alignItems: 'center', gap: '10px', textAlign: 'left', margin: 0
+                                            }}>
+                                                <span style={{ fontSize: '20px' }}>⚡</span>
+                                                <div>
+                                                    <div style={{ fontWeight: 'bold', fontSize: '11px', textTransform: 'uppercase' }}>{language === 'es' ? 'Reiniciar Torre' : 'Reset Battle Tower'}</div>
+                                                    <div style={{ fontSize: '8px', color: '#f87171' }}>{language === 'es' ? 'Permite registrarte desde cero en el torneo' : 'Allows you to re-register from scratch'}</div>
                                                 </div>
                                             </button>
                                         </>

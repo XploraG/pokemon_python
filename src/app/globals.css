@@ -343,7 +343,7 @@ body::before {
   justify-content: flex-start;
   width: 100vw;
   height: 100vh;
-  max-width: 480px;
+  max-width: 950px;
   margin: 0 auto;
   background-color: #03020b;
   padding: 12px;
