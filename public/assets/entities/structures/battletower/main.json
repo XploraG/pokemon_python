@@ -4,7 +4,7 @@
     "scale": 1,
     "type": "npc",
     "dialog": "Torre de Batalla: ¡Entra para desafiar al Torneo!",
-    "color_to_be_erased": "transparent",
+    "color_to_be_erased": "#ffffff",
     "valid_moves": ["down"],
     "down": [
         {
