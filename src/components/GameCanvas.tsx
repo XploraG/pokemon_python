@@ -2137,12 +2137,14 @@ export default function GameCanvas({
         }
         return 4;
     });
-    const [isLandscape, setIsLandscape] = useState<boolean>(true);
+    const [isLandscape, setIsLandscape] = useState<boolean>(false);
     const [registrationStep, setRegistrationStep] = useState(1);
     const [selectedRegPokemon, setSelectedRegPokemon] = useState<any[]>([]);
     const [openedChests, setOpenedChests] = useState<number[]>([]);
     const [wonItems, setWonItems] = useState<string[]>([]);
     const [regNickname, setRegNickname] = useState('');
+    const [realTeamBackup, setRealTeamBackup] = useState<any[] | null>(null);
+    const [isBattleTowerBattle, setIsBattleTowerBattle] = useState<boolean>(false);
     const [specSpriteEffect1, setSpecSpriteEffect1] = useState<'none' | 'attack' | 'shake' | 'flash'>('none');
     const [specSpriteEffect2, setSpecSpriteEffect2] = useState<'none' | 'attack' | 'shake' | 'flash'>('none');
     const [specHitEffect1, setSpecHitEffect1] = useState<string | null>(null);
@@ -8137,6 +8139,34 @@ export default function GameCanvas({
                         setDoubleRewardType('trainer');
 
                         const finishBattle = () => {
+                            if (isBattleTowerBattle) {
+                                if (realTeamBackup) {
+                                    setTeam(realTeamBackup);
+                                    saveLocalEconomy(realTeamBackup);
+                                }
+                                const newPoints = battleTowerPoints + 1;
+                                setBattleTowerPoints(newPoints);
+                                localStorage.setItem('battle_tower_points', String(newPoints));
+                                
+                                setIsTrainerBattle(false);
+                                setIsGymBattle(false);
+                                setGymLeaderName(null);
+                                setActiveWildBattle(null);
+                                setIsBattleAnimating(false);
+                                setRealTeamBackup(null);
+                                setIsBattleTowerBattle(false);
+                                setShowTournamentView(true);
+                                setActiveTournamentTab('brackets');
+                                
+                                showNotification(
+                                    language === 'es' ? "¡Victoria en la Torre!" : "Victory in the Tower!",
+                                    language === 'es' 
+                                        ? `¡Felicidades! Derrotaste al Tamer y ganaste +1 Punto de Clasificación.`
+                                        : `Congratulations! You defeated the Tamer and earned +1 Standings Point.`
+                                );
+                                return;
+                            }
+
                             setIsTrainerBattle(false);
                             setIsGymBattle(false);
                             setGymLeaderName(null);
@@ -8498,6 +8528,34 @@ export default function GameCanvas({
                     const nextActiveIdx = updatedTeam.findIndex((p: any) => p.hp > 0);
                     if (nextActiveIdx === -1) {
                         // Entire team fainted! Blackout!
+                        if (isBattleTowerBattle) {
+                            if (realTeamBackup) {
+                                setTeam(realTeamBackup);
+                                saveLocalEconomy(realTeamBackup);
+                            }
+                            const newPoints = Math.max(0, battleTowerPoints - 1);
+                            setBattleTowerPoints(newPoints);
+                            localStorage.setItem('battle_tower_points', String(newPoints));
+                            
+                            setIsTrainerBattle(false);
+                            setIsGymBattle(false);
+                            setGymLeaderName(null);
+                            setActiveWildBattle(null);
+                            setIsBattleAnimating(false);
+                            setRealTeamBackup(null);
+                            setIsBattleTowerBattle(false);
+                            setShowTournamentView(true);
+                            setActiveTournamentTab('brackets');
+                            
+                            showNotification(
+                                language === 'es' ? "Derrota en la Torre" : "Defeat in the Tower",
+                                language === 'es'
+                                    ? `Tu equipo ha sido debilitado. Has perdido -1 Punto de Clasificación.`
+                                    : `Your team was fainted. You lost -1 Standings Point.`
+                            );
+                            return;
+                        }
+
                         showNotification(
                             "Derrota",
                             `¡Tu ${activePoke.id} se debilitó! Todo tu equipo ha sido debilitado. Fuiste llevado de urgencia al Centro Pokémon.`
@@ -9446,6 +9504,34 @@ export default function GameCanvas({
 
             if (newPokeHp <= 0 && !afterTeam.some((p: any) => p.hp > 0)) {
                 setTimeout(() => {
+                    if (isBattleTowerBattle) {
+                        if (realTeamBackup) {
+                            setTeam(realTeamBackup);
+                            saveLocalEconomy(realTeamBackup);
+                        }
+                        const newPoints = Math.max(0, battleTowerPoints - 1);
+                        setBattleTowerPoints(newPoints);
+                        localStorage.setItem('battle_tower_points', String(newPoints));
+                        
+                        setIsTrainerBattle(false);
+                        setIsGymBattle(false);
+                        setGymLeaderName(null);
+                        setActiveWildBattle(null);
+                        setIsBattleAnimating(false);
+                        setRealTeamBackup(null);
+                        setIsBattleTowerBattle(false);
+                        setShowTournamentView(true);
+                        setActiveTournamentTab('brackets');
+                        
+                        showNotification(
+                            language === 'es' ? "Derrota en la Torre" : "Defeat in the Tower",
+                            language === 'es'
+                                ? `Tu equipo ha sido debilitado. Has perdido -1 Punto de Clasificación.`
+                                : `Your team was fainted. You lost -1 Standings Point.`
+                        );
+                        return;
+                    }
+
                     showNotification("Derrota", "¡Todos tus Pokémon se debilitaron! Fuiste llevado al Centro Pokémon.");
                     const closestCenter = getClosestPokeCenter(currentMapPathRef.current, returnMapRef.current);
                     returnMapRef.current = closestCenter.map;
@@ -9512,6 +9598,34 @@ export default function GameCanvas({
 
             if (newPokeHp <= 0 && !afterTeam.some((p: any) => p.hp > 0)) {
                 setTimeout(() => {
+                    if (isBattleTowerBattle) {
+                        if (realTeamBackup) {
+                            setTeam(realTeamBackup);
+                            saveLocalEconomy(realTeamBackup);
+                        }
+                        const newPoints = Math.max(0, battleTowerPoints - 1);
+                        setBattleTowerPoints(newPoints);
+                        localStorage.setItem('battle_tower_points', String(newPoints));
+                        
+                        setIsTrainerBattle(false);
+                        setIsGymBattle(false);
+                        setGymLeaderName(null);
+                        setActiveWildBattle(null);
+                        setIsBattleAnimating(false);
+                        setRealTeamBackup(null);
+                        setIsBattleTowerBattle(false);
+                        setShowTournamentView(true);
+                        setActiveTournamentTab('brackets');
+                        
+                        showNotification(
+                            language === 'es' ? "Derrota en la Torre" : "Defeat in the Tower",
+                            language === 'es'
+                                ? `Tu equipo ha sido debilitado. Has perdido -1 Punto de Clasificación.`
+                                : `Your team was fainted. You lost -1 Standings Point.`
+                        );
+                        return;
+                    }
+
                     showNotification("Derrota", "¡Todos tus Pokémon se debilitaron! Fuiste llevado al Centro Pokémon.");
                     const closestCenter = getClosestPokeCenter(currentMapPathRef.current, returnMapRef.current);
                     returnMapRef.current = closestCenter.map;
@@ -10388,7 +10502,7 @@ export default function GameCanvas({
                             display: 'flex',
                             flexDirection: 'column',
                             alignItems: 'center',
-                            justifyContent: 'center',
+                            justifyContent: 'stretch',
                             fontFamily: "'Press Start 2P', monospace",
                             padding: '16px',
                             color: '#ffffff',
@@ -10432,7 +10546,7 @@ export default function GameCanvas({
                                     animation: spec-flash 0.4s ease-in-out forwards;
                                 }
                             `}</style>
-                            <div style={{ maxWidth: isLandscape ? '850px' : '600px', width: '100%', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            <div style={{ maxWidth: '600px', width: '100%', height: '100%', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                                 <button 
                                     onClick={() => setSpectatingMatch(null)} 
                                     style={{
@@ -10458,7 +10572,10 @@ export default function GameCanvas({
                                     borderRadius: '12px',
                                     overflow: 'hidden',
                                     background: '#000000',
-                                    boxShadow: '0 15px 30px rgba(0,0,0,0.6)'
+                                    boxShadow: '0 15px 30px rgba(0,0,0,0.6)',
+                                    flex: 1,
+                                    display: 'flex',
+                                    flexDirection: 'column'
                                 }}>
                                     {/* Spectator count header */}
                                     <div style={{
@@ -10481,7 +10598,7 @@ export default function GameCanvas({
 
                                     {/* Battle Screen */}
                                     <div style={{
-                                        height: '240px',
+                                        height: '340px',
                                         position: 'relative',
                                         backgroundImage: "url('https://play.pokemonshowdown.com/fx/bg-gen3-arena.png')",
                                         backgroundSize: 'cover',
@@ -10489,23 +10606,19 @@ export default function GameCanvas({
                                         imageRendering: 'pixelated',
                                         overflow: 'hidden'
                                     }}>
-                                        {/* P2: Opponent Pokémon (Top Right) */}
+                                        {/* P2 Status Box (Top Left) */}
                                         <div style={{
                                             position: 'absolute',
                                             top: '16px',
-                                            right: '16px',
-                                            display: 'flex',
-                                            flexDirection: 'column',
-                                            alignItems: 'flex-end',
-                                            zIndex: 2
+                                            left: '16px',
+                                            zIndex: 10
                                         }}>
-                                            {/* Status Box */}
                                             <div style={{
                                                 background: '#f8fafc',
                                                 border: '2px solid #1e293b',
                                                 color: '#0f172a',
                                                 padding: '6px 10px',
-                                                borderRadius: '0px 0px 0px 8px',
+                                                borderRadius: '0px 8px 0px 8px',
                                                 minWidth: '140px',
                                                 fontSize: '8px',
                                                 fontFamily: 'monospace',
@@ -10516,7 +10629,6 @@ export default function GameCanvas({
                                                     <span style={{ textTransform: 'uppercase' }}>ONIX ✨</span>
                                                     <span>Lv85</span>
                                                 </div>
-                                                {/* Health Bar */}
                                                 <div style={{ width: '100%', background: '#cbd5e1', height: '6px', borderRadius: '3px', border: '1px solid #94a3b8', overflow: 'hidden' }}>
                                                     <div style={{
                                                         background: specHp2 > 50 ? '#22c55e' : specHp2 > 20 ? '#eab308' : '#ef4444',
@@ -10526,13 +10638,21 @@ export default function GameCanvas({
                                                     }} />
                                                 </div>
                                             </div>
-                                            {/* Animated Front Sprite */}
+                                        </div>
+
+                                        {/* P2: Opponent Pokémon (Top Right) */}
+                                        <div style={{
+                                            position: 'absolute',
+                                            right: '65px',
+                                            top: '130px',
+                                            zIndex: 5
+                                        }}>
                                             <div style={{ position: 'relative' }}>
                                                 <img 
                                                     src="https://play.pokemonshowdown.com/sprites/ani/onix.gif"
                                                     alt="Onix"
                                                     className={onixClass}
-                                                    style={{ width: '100px', height: '100px', objectFit: 'contain', marginTop: '4px', filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.3))' }}
+                                                    style={{ width: '100px', height: '100px', objectFit: 'contain', filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.3))' }}
                                                 />
                                                 {specHitEffect2 && (
                                                     <div style={{ position: 'absolute', top: '30%', left: '30%', fontSize: '28px', zIndex: 10, animation: 'spec-hit-burst 0.4s ease-out forwards' }}>
@@ -10542,23 +10662,19 @@ export default function GameCanvas({
                                             </div>
                                         </div>
 
-                                        {/* P1: Ally Pokémon (Bottom Left) */}
+                                        {/* P1 Sprite: Ally Pokémon (Bottom Left) */}
                                         <div style={{
                                             position: 'absolute',
-                                            bottom: '16px',
-                                            left: '16px',
-                                            display: 'flex',
-                                            flexDirection: 'column',
-                                            alignItems: 'flex-start',
-                                            zIndex: 2
+                                            left: '60px',
+                                            bottom: '35px',
+                                            zIndex: 5
                                         }}>
-                                            {/* Animated Back Sprite */}
                                             <div style={{ position: 'relative' }}>
                                                 <img 
                                                     src="https://play.pokemonshowdown.com/sprites/ani-back/gengar.gif"
                                                     alt="Gengar"
                                                     className={gengarClass}
-                                                    style={{ width: '120px', height: '120px', objectFit: 'contain', marginBottom: '4px', filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.3))' }}
+                                                    style={{ width: '120px', height: '120px', objectFit: 'contain', filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.3))' }}
                                                 />
                                                 {specHitEffect1 && (
                                                     <div style={{ position: 'absolute', top: '30%', left: '30%', fontSize: '28px', zIndex: 10, animation: 'spec-hit-burst 0.4s ease-out forwards' }}>
@@ -10566,13 +10682,21 @@ export default function GameCanvas({
                                                     </div>
                                                 )}
                                             </div>
-                                            {/* Status Box */}
+                                        </div>
+
+                                        {/* P1 Status Box (Bottom Right) */}
+                                        <div style={{
+                                            position: 'absolute',
+                                            bottom: '16px',
+                                            right: '16px',
+                                            zIndex: 10
+                                        }}>
                                             <div style={{
                                                 background: '#f8fafc',
                                                 border: '2px solid #1e293b',
                                                 color: '#0f172a',
                                                 padding: '6px 10px',
-                                                borderRadius: '0px 8px 0px 0px',
+                                                borderRadius: '8px 0px 8px 0px',
                                                 minWidth: '140px',
                                                 fontSize: '8px',
                                                 fontFamily: 'monospace',
@@ -10583,7 +10707,6 @@ export default function GameCanvas({
                                                     <span style={{ textTransform: 'uppercase' }}>GENGAR</span>
                                                     <span>Lv99</span>
                                                 </div>
-                                                {/* Health Bar */}
                                                 <div style={{ width: '100%', background: '#cbd5e1', height: '6px', borderRadius: '3px', border: '1px solid #94a3b8', overflow: 'hidden' }}>
                                                     <div style={{
                                                         background: specHp1 > 50 ? '#22c55e' : specHp1 > 20 ? '#eab308' : '#ef4444',
@@ -10604,7 +10727,7 @@ export default function GameCanvas({
                                         background: '#1e293b',
                                         borderTop: '4px solid #334155',
                                         padding: '16px',
-                                        height: '100px',
+                                        flex: 1,
                                         overflowY: 'auto',
                                         display: 'flex',
                                         flexDirection: 'column',
@@ -11392,18 +11515,86 @@ export default function GameCanvas({
                                                         setIsInTournamentQueue(true);
                                                         setTimeout(() => {
                                                             setIsInTournamentQueue(false);
-                                                            const pNick = playerName || "FLOWKING";
-                                                            const opponent = "Kruschev";
-                                                            const isPlayerWinner = Math.random() > 0.5;
-                                                            const p1 = isPlayerWinner ? pNick : opponent;
-                                                            const p2 = isPlayerWinner ? opponent : pNick;
-                                                            setSpectatingMatch({
-                                                                id: "m_match_" + Date.now(),
-                                                                p1: p1,
-                                                                p2: p2,
-                                                                winner: p1
+                                                            const opponents = ["Kruschev", "EJCC", "ElíasCastillo", "CryptoTamer", "PokeMaster"];
+                                                            const opponentName = opponents[Math.floor(Math.random() * opponents.length)];
+                                                            
+                                                            // 1. Generate NPC's 6-Pokémon team at Level 99
+                                                            const npcTeam = [];
+                                                            const speciesPool = pokemonSpeciesList.filter((s: any) => {
+                                                                const r = (s.rarity || "").toLowerCase();
+                                                                const n = (s.name || "").toLowerCase();
+                                                                return n !== "mew" && n !== "mewtwo" && r !== "legendary";
                                                             });
-                                                            showNotification("¡Combate Encontrado!", language === 'es' ? `Entrando al estadio contra ${opponent}.` : `Entering stadium against ${opponent}.`);
+                                                            for (let i = 0; i < 6; i++) {
+                                                                const spec = speciesPool[Math.floor(Math.random() * speciesPool.length)] || { name: 'pikachu' };
+                                                                const stats = getPokemonStats(spec.name.toLowerCase(), 99);
+                                                                npcTeam.push({
+                                                                    name: spec.name.toLowerCase(),
+                                                                    level: 99,
+                                                                    hp: stats.maxHp,
+                                                                    maxHp: stats.maxHp
+                                                                });
+                                                            }
+                                                            
+                                                            // 2. Backup player's current real team
+                                                            const backup = [...team];
+                                                            setRealTeamBackup(backup);
+                                                            
+                                                            // 3. Load player's registered level 99 Battle Tower team
+                                                            const regTeamRaw = localStorage.getItem('battle_tower_registered_team');
+                                                            const regTeam = regTeamRaw ? JSON.parse(regTeamRaw) : [];
+                                                            const initializedRegTeam = regTeam.map((p: any) => {
+                                                                const speciesName = p.id || p.name || 'pikachu';
+                                                                const stats = getPokemonStats(speciesName, 99, p.ivs);
+                                                                return {
+                                                                    id: speciesName,
+                                                                    level: 99,
+                                                                    xp: 0,
+                                                                    hp: stats.maxHp,
+                                                                    maxHp: stats.maxHp,
+                                                                    ivs: p.ivs,
+                                                                    is_shiny: p.is_shiny,
+                                                                    moves: getPokemonMoves(speciesName, 99).slice(0, 4)
+                                                                };
+                                                            });
+                                                            
+                                                            const teamToUse = initializedRegTeam.length >= 6 ? initializedRegTeam : backup;
+                                                            setTeam(teamToUse);
+                                                            
+                                                            // 4. Set the trainer battle parameters
+                                                            gymLeaderTeamRef.current = npcTeam;
+                                                            gymLeaderCurrentPokeIndexRef.current = 0;
+                                                            setPlayerAtkStage(0);
+                                                            setPlayerDefStage(0);
+                                                            setOpponentAtkStage(0);
+                                                            setOpponentDefStage(0);
+                                                            setIsBattleAnimating(false);
+                                                            setPlayerSpriteEffect('none' as any);
+                                                            setOpponentSpriteEffect('none' as any);
+                                                            setFloatingDamage(null);
+                                                            
+                                                            // 5. Hide the tournament view overlay so the wild battle overlay can show
+                                                            setShowTournamentView(false);
+                                                            
+                                                            // 6. Start Trainer Battle
+                                                            setIsTrainerBattle(true);
+                                                            setIsBattleTowerBattle(true);
+                                                            
+                                                            const firstPoke = npcTeam[0];
+                                                            setBattleMessage(`¡Duelo en la Torre contra ${opponentName}! Saca a su primer Pokémon: ${firstPoke.name.toUpperCase()} (Nvl. 99)`);
+                                                            setShowBallSelect(false);
+                                                            setShowBagSelect(false);
+                                                            setShowSwitchSelect(false);
+                                                            
+                                                            setActiveWildBattle({
+                                                                name: firstPoke.name,
+                                                                level: 99,
+                                                                hp: firstPoke.maxHp,
+                                                                maxHp: firstPoke.maxHp,
+                                                                captureRate: 0.0
+                                                            });
+                                                            
+                                                            showNotification("¡Combate Encontrado!", language === 'es' ? `Entrando al estadio contra ${opponentName}.` : `Entering stadium against ${opponentName}.`);
                                                         }, 3000);
                                                     }}
                                                     style={{
