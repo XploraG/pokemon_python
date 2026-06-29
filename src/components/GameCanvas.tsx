@@ -3802,6 +3802,20 @@ export default function GameCanvas({
                                 name: entMeta.name + " Back"
                             });
                         } 
+                        else if (lowerName.includes('battletower')) {
+                            // Battle Tower sprite: entrance arch sits at ~80% of height
+                            // Block the base zone only — allow walking behind/above
+                            const baseTop = y + h * 0.80;
+                            const baseBottom = y + h - 4;
+                            colliders.push({
+                                x: x + w * 0.1,
+                                y: baseTop,
+                                w: w * 0.8,
+                                h: baseBottom - baseTop,
+                                dialog: entMeta.dialog,
+                                name: entMeta.name
+                            });
+                        }
                         else if (
                             lowerName.includes('casa') || 
                             lowerName.includes('house') || 
@@ -5401,7 +5415,7 @@ export default function GameCanvas({
         } else if (type === 'battle') {
             // Battle Frontier Map
             const cols = 40;
-            const rows = 40;
+            const rows = 50;
             const grid: string[][] = Array.from({ length: rows }, () => Array(cols).fill('G1'));
             const roadC = 20;
 
@@ -5436,7 +5450,9 @@ export default function GameCanvas({
             const entities: any[] = [
                 {
                     location: "src/assets/entities/structures/battletower/main.json",
-                    coordinates: { x: 560, y: 192 }
+                    // Center horizontally on road (roadC=20 → x=640), offset by half width (317/2≈158)
+                    // Place near top border (row 3 = y=96) so full height is visible above player
+                    coordinates: { x: 481, y: 96 }
                 },
                 {
                     location: "src/assets/entities/npcs/persons/grandmarose/main.json",
@@ -5789,6 +5805,13 @@ export default function GameCanvas({
             return Math.abs(px - doorX) <= xTolerance && py >= doorY - 20 && py <= doorY + 28;
         };
 
+        const isNearBattleTowerDoor = (px: number, py: number, ent: any) => {
+            // The entrance arch sits at ~87% of the sprite height
+            const doorX = ent.x + ent.w / 2;
+            const doorY = ent.y + ent.h * 0.87;
+            return Math.abs(px - doorX) <= 64 && py >= doorY - 16 && py <= doorY + 40;
+        };
+
         for (const ent of mapData.entities) {
             const lowerLoc = ent.location.toLowerCase();
             
@@ -5799,7 +5822,7 @@ export default function GameCanvas({
             const isBattleTower = lowerLoc.includes('battletower');
 
             if (isCenter || isMart || isGym || isHouse || isBattleTower) {
-                if (isNearDoor(x, y, ent)) {
+                if (isBattleTower ? isNearBattleTowerDoor(x, y, ent) : isNearDoor(x, y, ent)) {
                     if (isBattleTower) {
                         playerRef.current.isMoving = false;
                         keysPressed.current = {};
@@ -15395,7 +15418,7 @@ export default function GameCanvas({
                                                     setInsideTournamentBuilding(false);
                                                     const nextMap = 'procedural://battle_frontier';
                                                     prepareProceduralMap(nextMap);
-                                                    transitionToMap(nextMap, 640, 960);
+                                                    transitionToMap(nextMap, 640, 1300);
                                                     showNotification(
                                                         language === 'es' ? "¡Vuelo Completado!" : "Flight Completed!",
                                                         language === 'es' ? "Has llegado a la Frontera de Batalla." : "You have arrived at the Battle Frontier."
