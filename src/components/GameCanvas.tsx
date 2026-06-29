@@ -997,6 +997,57 @@ const getPokemonEvolutionInfo = (speciesName: string, lang: 'es' | 'en' = 'es'):
 
 const getPokemonMoves = (speciesName: string, level: number): string[] => {
     const name = speciesName.toLowerCase();
+    
+    // For level >= 50, assign a powerful set of up to 4 moves corresponding to their type/species
+    if (level >= 50) {
+        if (name === 'charmander' || name === 'charmeleon' || name === 'charizard') {
+            return ['fire_blast', 'flamethrower', 'wing_attack', 'body_slam'];
+        }
+        if (name === 'bulbasaur' || name === 'ivysaur' || name === 'venusaur') {
+            return ['solar_beam', 'mega_drain', 'sleep_powder', 'body_slam'];
+        }
+        if (name === 'squirtle' || name === 'wartortle' || name === 'blastoise') {
+            return ['hydro_pump', 'surf', 'recover', 'body_slam'];
+        }
+        if (name === 'pikachu' || name === 'raichu') {
+            return ['thunder', 'thunderbolt', 'quick_attack', 'thunder_wave'];
+        }
+        if (name === 'onix' || name.includes('onix')) {
+            return ['earthquake', 'rock_throw', 'body_slam', 'mud_slap'];
+        }
+        
+        const species = pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === name);
+        const primaryType = species?.types?.[0] || 'normal';
+        if (primaryType === 'fire') {
+            return ['fire_blast', 'flamethrower', 'will_o_wisp', 'body_slam'];
+        }
+        if (primaryType === 'water') {
+            return ['hydro_pump', 'surf', 'recover', 'body_slam'];
+        }
+        if (primaryType === 'grass') {
+            return ['solar_beam', 'mega_drain', 'sleep_powder', 'body_slam'];
+        }
+        if (primaryType === 'electric') {
+            return ['thunder', 'thunderbolt', 'thunder_wave', 'quick_attack'];
+        }
+        if (primaryType === 'flying') {
+            return ['wing_attack', 'gust', 'body_slam', 'quick_attack'];
+        }
+        if (primaryType === 'ground' || primaryType === 'rock') {
+            return ['earthquake', 'rock_throw', 'mud_slap', 'body_slam'];
+        }
+        if (primaryType === 'psychic') {
+            return ['psychic', 'confusion', 'reflect', 'recover'];
+        }
+        if (primaryType === 'poison') {
+            return ['toxic', 'body_slam', 'poison_sting', 'quick_attack'];
+        }
+        if (primaryType === 'ghost') {
+            return ['confuse_ray', 'body_slam', 'psychic', 'will_o_wisp'];
+        }
+        return ['hyper_beam', 'body_slam', 'quick_attack', 'recover'];
+    }
+    
     if (name === 'charmander') {
         const moves = ['scratch', 'growl'];
         if (level >= 8) moves.push('ember');
@@ -2153,6 +2204,7 @@ export default function GameCanvas({
     const [regNickname, setRegNickname] = useState('');
     const [realTeamBackup, setRealTeamBackup] = useState<any[] | null>(null);
     const [isBattleTowerBattle, setIsBattleTowerBattle] = useState<boolean>(false);
+    const [battleTowerOpponentName, setBattleTowerOpponentName] = useState<string | null>(null);
     const [specSpriteEffect1, setSpecSpriteEffect1] = useState<'none' | 'attack' | 'shake' | 'flash'>('none');
     const [specSpriteEffect2, setSpecSpriteEffect2] = useState<'none' | 'attack' | 'shake' | 'flash'>('none');
     const [specHitEffect1, setSpecHitEffect1] = useState<string | null>(null);
@@ -8178,6 +8230,7 @@ export default function GameCanvas({
                                 setIsBattleAnimating(false);
                                 setRealTeamBackup(null);
                                 setIsBattleTowerBattle(false);
+                                setBattleTowerOpponentName(null);
                                 setShowTournamentView(true);
                                 setActiveTournamentTab('brackets');
                                 
@@ -8567,6 +8620,7 @@ export default function GameCanvas({
                             setIsBattleAnimating(false);
                             setRealTeamBackup(null);
                             setIsBattleTowerBattle(false);
+                            setBattleTowerOpponentName(null);
                             setShowTournamentView(true);
                             setActiveTournamentTab('brackets');
                             
@@ -9543,6 +9597,7 @@ export default function GameCanvas({
                         setIsBattleAnimating(false);
                         setRealTeamBackup(null);
                         setIsBattleTowerBattle(false);
+                        setBattleTowerOpponentName(null);
                         setShowTournamentView(true);
                         setActiveTournamentTab('brackets');
                         
@@ -9637,6 +9692,7 @@ export default function GameCanvas({
                         setIsBattleAnimating(false);
                         setRealTeamBackup(null);
                         setIsBattleTowerBattle(false);
+                        setBattleTowerOpponentName(null);
                         setShowTournamentView(true);
                         setActiveTournamentTab('brackets');
                         
@@ -11602,6 +11658,7 @@ export default function GameCanvas({
                                                             // 6. Start Trainer Battle
                                                             setIsTrainerBattle(true);
                                                             setIsBattleTowerBattle(true);
+                                                            setBattleTowerOpponentName(opponentName);
                                                             
                                                             const firstPoke = npcTeam[0];
                                                             setBattleMessage(`¡Duelo en la Torre contra ${opponentName}! Saca a su primer Pokémon: ${firstPoke.name.toUpperCase()} (Nvl. 99)`);
@@ -17597,7 +17654,11 @@ export default function GameCanvas({
                         fontSize: '11px',
                         letterSpacing: '1px'
                     }}>
-                        {isGymBattle ? `⚔️ Desafío Líder ${gymLeaderName} ⚔️` : "💥 Encuentro Pokémon Salvaje"}
+                        {isGymBattle 
+                            ? `⚔️ Desafío Líder ${gymLeaderName} ⚔️` 
+                            : isBattleTowerBattle 
+                            ? `⚔️ Duelo contra ${battleTowerOpponentName || "Entrenador"} ⚔️` 
+                            : "💥 Encuentro Pokémon Salvaje"}
                     </div>
 
                     {/* Main Arena */}
