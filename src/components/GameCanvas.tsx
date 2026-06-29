@@ -2130,6 +2130,13 @@ export default function GameCanvas({
         }
         return false;
     });
+    const [battleTowerPoints, setBattleTowerPoints] = useState<number>(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('battle_tower_points');
+            return saved ? parseInt(saved, 10) : 4;
+        }
+        return 4;
+    });
     const [registrationStep, setRegistrationStep] = useState(1);
     const [selectedRegPokemon, setSelectedRegPokemon] = useState<any[]>([]);
     const [openedChests, setOpenedChests] = useState<number[]>([]);
@@ -3404,6 +3411,26 @@ export default function GameCanvas({
                         setSpecHp2(0);
                         setSpecSpriteEffect2('flash');
                         setTimeout(() => setSpecSpriteEffect2('none'), 450);
+                    } else if (next === 13) {
+                        const isPlayerWinner = spectatingMatch.winner === playerName;
+                        if (isPlayerWinner) {
+                            setBattleTowerPoints(prevPts => {
+                                const newPts = prevPts + 3;
+                                localStorage.setItem('battle_tower_points', String(newPts));
+                                return newPts;
+                            });
+                            showNotification("¡Victoria en la Arena!", language === 'es' ? "+3 Puntos de Clasificación obtenidos." : "+3 Standings Points gained.");
+                        } else {
+                            const isPlayerP1OrP2 = spectatingMatch.p1 === playerName || spectatingMatch.p2 === playerName;
+                            if (isPlayerP1OrP2) {
+                                setBattleTowerPoints(prevPts => {
+                                    const newPts = Math.max(0, prevPts - 1);
+                                    localStorage.setItem('battle_tower_points', String(newPts));
+                                    return newPts;
+                                });
+                                showNotification("Derrota en la Arena", language === 'es' ? "-1 Punto de Clasificación." : "-1 Standings Point.");
+                            }
+                        }
                     }
                     return next;
                 } else {
@@ -10421,7 +10448,7 @@ export default function GameCanvas({
                                         margin: 0
                                     }}
                                 >
-                                    ← {language === 'es' ? 'Volver a los Brackets' : 'Back to Brackets'}
+                                    ← {language === 'es' ? 'Volver a Duelos' : 'Back to Duels'}
                                 </button>
 
                                 {/* Arena UI Wrapper */}
@@ -11073,6 +11100,7 @@ export default function GameCanvas({
                                                             localStorage.setItem('battle_tower_won_items', JSON.stringify(wonItems));
                                                             
                                                             setBattleTowerRegistered(true);
+                                                            setActiveTournamentTab('brackets');
                                                             showNotification("¡Registro Exitoso!", language === 'es' ? "Tu perfil ha sido registrado en la Torre de Batalla." : "Your profile has been registered in the Battle Tower.");
                                                             
                                                             await saveLocalEconomy(team, pcPokemon, newNick);
@@ -11118,7 +11146,7 @@ export default function GameCanvas({
                                                     margin: 0
                                                 }}
                                             >
-                                                🏆 {language === 'es' ? 'Brackets' : 'Brackets'}
+                                                ⚔️ {language === 'es' ? 'Duelos' : 'Duels'}
                                             </button>
                                             <button 
                                                 onClick={() => setActiveTournamentTab('lobby')}
@@ -11141,87 +11169,186 @@ export default function GameCanvas({
                                         </div>
 
                                 {/* TAB 1: BRACKETS */}
-                                {activeTournamentTab === 'brackets' && (
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '10px' }}>
-                                        <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '16px' }}>
-                                            <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'flex-start', gap: '10px', flexWrap: 'wrap' }}>
-                                                {/* Quarter-finals Column */}
-                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '220px' }}>
-                                                    <span style={{ fontSize: '7px', color: '#94a3b8', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '4px', textTransform: 'uppercase', display: 'block', textAlign: 'center', marginBottom: '6px' }}>
-                                                        {language === 'es' ? 'Cuartos' : 'Quarter-Finals'}
-                                                    </span>
-                                                    
-                                                    {/* Match 1 */}
-                                                    <div style={{ background: '#1e1b4b', border: '1.5px solid #4338ca', padding: '8px', borderRadius: '8px', position: 'relative' }}>
-                                                        <div style={{ fontSize: '8px', color: '#10b981', fontWeight: 'bold' }}>FLOWKING</div>
-                                                        <div style={{ height: '1px', background: 'rgba(255,255,255,0.1)', margin: '4px 0' }} />
-                                                        <div style={{ fontSize: '8px', color: '#cbd5e1' }}>PokeMaster</div>
-                                                    </div>
+                                {/* TAB 1: DUELOS (Round Robin Standing & Live Matches) */}
+                                {activeTournamentTab === 'brackets' && (() => {
+                                    const competitors = [
+                                        { name: playerName || "Tamer", points: battleTowerPoints, isMe: true },
+                                        { name: "Kruschev", points: 5 },
+                                        { name: "EJCC", points: 3 },
+                                        { name: "ElíasCastillo", points: 2 },
+                                        { name: "CryptoTamer", points: 1 },
+                                        { name: "PokeMaster", points: 0 }
+                                    ].sort((a, b) => b.points - a.points);
 
-                                                    {/* Match 2 */}
-                                                    <div style={{ background: '#1e293b', border: '1.5px solid #475569', padding: '8px', borderRadius: '8px', position: 'relative' }}>
-                                                        <div style={{ fontSize: '8px', color: '#cbd5e1' }}>EJCC</div>
-                                                        <div style={{ height: '1px', background: 'rgba(255,255,255,0.1)', margin: '4px 0' }} />
-                                                        <div style={{ fontSize: '8px', color: '#cbd5e1' }}>Tamer_Elite</div>
-                                                        {/* LIVE BADGE */}
-                                                        <button 
-                                                            onClick={() => setSpectatingMatch({ id: "m2", p1: "EJCC", p2: "Tamer_Elite" })}
-                                                            style={{
-                                                                position: 'absolute',
-                                                                right: '-6px',
-                                                                top: '-6px',
-                                                                background: '#ef4444',
-                                                                border: '1.5px solid #fff',
-                                                                color: '#fff',
-                                                                fontSize: '6px',
-                                                                padding: '3px 6px',
-                                                                borderRadius: '10px',
-                                                                cursor: 'pointer',
-                                                                fontWeight: 'bold',
-                                                                fontFamily: "'Press Start 2P', monospace",
-                                                                boxShadow: '0 0 10px rgba(239,68,68,0.5)',
-                                                                margin: 0
-                                                            }}
-                                                        >
-                                                            👁️ LIVE
-                                                        </button>
-                                                    </div>
-
-                                                    {/* Match 3 */}
-                                                    <div style={{ background: '#1e293b', border: '1.5px solid #475569', padding: '8px', borderRadius: '8px', position: 'relative' }}>
-                                                        <div style={{ fontSize: '8px', color: '#cbd5e1' }}>Kruschev</div>
-                                                        <div style={{ height: '1px', background: 'rgba(255,255,255,0.1)', margin: '4px 0' }} />
-                                                        <div style={{ fontSize: '8px', color: '#cbd5e1' }}>CryptoTamer</div>
+                                    return (
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginTop: '10px' }}>
+                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.1fr', gap: '16px' }}>
+                                                {/* Left Column: Standings */}
+                                                <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '16px' }}>
+                                                    <h3 style={{ fontSize: '8px', color: '#fbbf24', textTransform: 'uppercase', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '8px', margin: '0 0 12px 0', fontFamily: "'Press Start 2P', monospace", letterSpacing: '0.5px' }}>
+                                                        📊 {language === 'es' ? 'Clasificación' : 'Standings'}
+                                                    </h3>
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                                        {competitors.map((c, i) => {
+                                                            const isGold = i === 0;
+                                                            return (
+                                                                <div 
+                                                                    key={i}
+                                                                    style={{
+                                                                        display: 'flex',
+                                                                        justifyContent: 'space-between',
+                                                                        alignItems: 'center',
+                                                                        padding: '8px 10px',
+                                                                        background: c.isMe 
+                                                                            ? 'linear-gradient(135deg, rgba(99,102,241,0.2) 0%, rgba(139,92,246,0.1) 100%)' 
+                                                                            : 'rgba(255,255,255,0.03)',
+                                                                        border: c.isMe 
+                                                                            ? '1px solid rgba(139, 92, 246, 0.4)' 
+                                                                            : '1px solid rgba(255,255,255,0.05)',
+                                                                        borderRadius: '8px',
+                                                                        fontSize: '8px'
+                                                                    }}
+                                                                >
+                                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                                        <span style={{ fontWeight: 'bold', color: isGold ? '#fbbf24' : '#94a3b8' }}>
+                                                                            #{i + 1}
+                                                                        </span>
+                                                                        <span style={{ color: c.isMe ? '#a5b4fc' : '#cbd5e1', fontWeight: c.isMe ? 'bold' : 'normal' }}>
+                                                                            {c.name}
+                                                                        </span>
+                                                                    </div>
+                                                                    <span style={{ fontWeight: 'bold', color: c.points >= 0 ? '#10b981' : '#f43f5e' }}>
+                                                                        {c.points} PTS
+                                                                    </span>
+                                                                </div>
+                                                            );
+                                                        })}
                                                     </div>
                                                 </div>
 
-                                                {/* Separator arrow */}
-                                                <div style={{ display: 'flex', alignItems: 'center', height: '100%', color: '#475569', fontSize: '16px', alignSelf: 'center' }}>→</div>
+                                                {/* Right Column: Live & Completed Duels */}
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                                    {/* Live Duels */}
+                                                    <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '16px' }}>
+                                                        <h3 style={{ fontSize: '8px', color: '#ef4444', textTransform: 'uppercase', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '8px', margin: '0 0 12px 0', fontFamily: "'Press Start 2P', monospace", display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                            <span style={{ width: '6px', height: '6px', background: '#ef4444', borderRadius: '50%', display: 'inline-block', animation: 'pulseGeo 1s infinite alternate' }} />
+                                                            {language === 'es' ? 'En Vivo' : 'Live Duels'}
+                                                        </h3>
+                                                        
+                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                                            {/* Live Match 1 */}
+                                                            <div style={{ background: 'rgba(239,68,68,0.03)', border: '1px solid rgba(239,68,68,0.2)', padding: '10px', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                                                                    <span style={{ fontSize: '8px', color: '#cbd5e1', fontWeight: 'bold' }}>EJCC</span>
+                                                                    <span style={{ fontSize: '6px', color: '#64748b' }}>vs</span>
+                                                                    <span style={{ fontSize: '8px', color: '#cbd5e1', fontWeight: 'bold' }}>Tamer_Elite</span>
+                                                                </div>
+                                                                <button 
+                                                                    onClick={() => setSpectatingMatch({
+                                                                        id: "m_live_1_" + Date.now(),
+                                                                        p1: "EJCC",
+                                                                        p2: "Tamer_Elite",
+                                                                        winner: Math.random() > 0.5 ? "EJCC" : "Tamer_Elite"
+                                                                    })}
+                                                                    style={{
+                                                                        background: '#ef4444',
+                                                                        border: 'none',
+                                                                        color: '#fff',
+                                                                        padding: '6px 12px',
+                                                                        borderRadius: '6px',
+                                                                        fontSize: '7px',
+                                                                        fontFamily: "'Press Start 2P', monospace",
+                                                                        cursor: 'pointer',
+                                                                        boxShadow: '0 0 10px rgba(239,68,68,0.4)',
+                                                                        margin: 0
+                                                                    }}
+                                                                >
+                                                                    {language === 'es' ? 'VER' : 'WATCH'}
+                                                                </button>
+                                                            </div>
 
-                                                {/* Semi-finals Column */}
-                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', width: '220px', justifyContent: 'center' }}>
-                                                    <span style={{ fontSize: '7px', color: '#94a3b8', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '4px', textTransform: 'uppercase', display: 'block', textAlign: 'center', marginBottom: '6px' }}>
-                                                        {language === 'es' ? 'Semifinal' : 'Semi-Finals'}
-                                                    </span>
-
-                                                    {/* Semi 1 */}
-                                                    <div style={{ background: 'rgba(255,255,255,0.03)', border: '1.5px dashed rgba(255,255,255,0.2)', padding: '10px', borderRadius: '8px' }}>
-                                                        <div style={{ fontSize: '8px', color: '#a78bfa' }}>FLOWKING</div>
-                                                        <div style={{ height: '1px', background: 'rgba(255,255,255,0.08)', margin: '4px 0' }} />
-                                                        <div style={{ fontSize: '8px', color: '#cbd5e1' }}>{language === 'es' ? 'Ganador Duelo 2' : 'Winner Match 2'}</div>
+                                                            {/* Live Match 2 */}
+                                                            <div style={{ background: 'rgba(239,68,68,0.03)', border: '1px solid rgba(239,68,68,0.2)', padding: '10px', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                                                                    <span style={{ fontSize: '8px', color: '#cbd5e1', fontWeight: 'bold' }}>CryptoTamer</span>
+                                                                    <span style={{ fontSize: '6px', color: '#64748b' }}>vs</span>
+                                                                    <span style={{ fontSize: '8px', color: '#cbd5e1', fontWeight: 'bold' }}>PokeMaster</span>
+                                                                </div>
+                                                                <button 
+                                                                    onClick={() => setSpectatingMatch({
+                                                                        id: "m_live_2_" + Date.now(),
+                                                                        p1: "CryptoTamer",
+                                                                        p2: "PokeMaster",
+                                                                        winner: Math.random() > 0.5 ? "CryptoTamer" : "PokeMaster"
+                                                                    })}
+                                                                    style={{
+                                                                        background: '#ef4444',
+                                                                        border: 'none',
+                                                                        color: '#fff',
+                                                                        padding: '6px 12px',
+                                                                        borderRadius: '6px',
+                                                                        fontSize: '7px',
+                                                                        fontFamily: "'Press Start 2P', monospace",
+                                                                        cursor: 'pointer',
+                                                                        boxShadow: '0 0 10px rgba(239,68,68,0.4)',
+                                                                        margin: 0
+                                                                    }}
+                                                                >
+                                                                    {language === 'es' ? 'VER' : 'WATCH'}
+                                                                </button>
+                                                            </div>
+                                                        </div>
                                                     </div>
 
-                                                    {/* Semi 2 */}
-                                                    <div style={{ background: 'rgba(255,255,255,0.03)', border: '1.5px dashed rgba(255,255,255,0.2)', padding: '10px', borderRadius: '8px' }}>
-                                                        <div style={{ fontSize: '8px', color: '#cbd5e1' }}>Kruschev</div>
-                                                        <div style={{ height: '1px', background: 'rgba(255,255,255,0.08)', margin: '4px 0' }} />
-                                                        <div style={{ fontSize: '8px', color: '#cbd5e1' }}>ElíasCastillo</div>
+                                                    {/* Recent Matches */}
+                                                    <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '16px' }}>
+                                                        <h3 style={{ fontSize: '8px', color: '#94a3b8', textTransform: 'uppercase', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '8px', margin: '0 0 10px 0', fontFamily: "'Press Start 2P', monospace" }}>
+                                                            📜 {language === 'es' ? 'Recientes' : 'Completed'}
+                                                        </h3>
+                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '8px', color: '#cbd5e1' }}>
+                                                            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0' }}>
+                                                                <span>Kruschev vs PokeMaster</span>
+                                                                <span style={{ color: '#10b981' }}>Winner: Kruschev</span>
+                                                            </div>
+                                                            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0' }}>
+                                                                <span>ElíasCastillo vs CryptoTamer</span>
+                                                                <span style={{ color: '#10b981' }}>Winner: ElíasCastillo</span>
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
+
+                                            {/* Exit Button inside Duelos */}
+                                            <button 
+                                                onClick={() => {
+                                                    setShowTournamentView(false);
+                                                    // Move player back 12px to prevent collision re-trigger
+                                                    if (playerRef.current) {
+                                                        playerRef.current.y += 12;
+                                                    }
+                                                }}
+                                                style={{
+                                                    alignSelf: 'center',
+                                                    marginTop: '10px',
+                                                    background: 'rgba(244,63,94,0.1)',
+                                                    border: '1.5px solid rgba(244,63,94,0.3)',
+                                                    borderRadius: '8px',
+                                                    color: '#f43f5e',
+                                                    padding: '10px 24px',
+                                                    fontSize: '8px',
+                                                    fontFamily: "'Press Start 2P', monospace",
+                                                    cursor: 'pointer',
+                                                    textTransform: 'uppercase',
+                                                    transition: 'all 0.2s',
+                                                    margin: 0
+                                                }}
+                                            >
+                                                🚪 {language === 'es' ? 'Salir de la Torre' : 'Exit Battle Tower'}
+                                            </button>
                                         </div>
-                                    </div>
-                                )}
+                                    );
+                                })()}
 
                                 {/* TAB 2: LOBBY & MATCHMAKING */}
                                 {activeTournamentTab === 'lobby' && (
@@ -11276,13 +11403,18 @@ export default function GameCanvas({
                                                         setIsInTournamentQueue(true);
                                                         setTimeout(() => {
                                                             setIsInTournamentQueue(false);
-                                                            // Match with Kruschev automatically!
+                                                            const pNick = playerName || "FLOWKING";
+                                                            const opponent = "Kruschev";
+                                                            const isPlayerWinner = Math.random() > 0.5;
+                                                            const p1 = isPlayerWinner ? pNick : opponent;
+                                                            const p2 = isPlayerWinner ? opponent : pNick;
                                                             setSpectatingMatch({
                                                                 id: "m_match_" + Date.now(),
-                                                                p1: playerName || "FLOWKING",
-                                                                p2: "Kruschev"
+                                                                p1: p1,
+                                                                p2: p2,
+                                                                winner: p1
                                                             });
-                                                            showNotification("¡Combate Encontrado!", "Entrando al estadio contra Kruschev.");
+                                                            showNotification("¡Combate Encontrado!", language === 'es' ? `Entrando al estadio contra ${opponent}.` : `Entering stadium against ${opponent}.`);
                                                         }, 3000);
                                                     }}
                                                     style={{
@@ -11299,7 +11431,7 @@ export default function GameCanvas({
                                                         margin: 0
                                                     }}
                                                 >
-                                                    {language === 'es' ? 'Registrarse al Torneo' : 'Join Matchmaking'}
+                                                    {language === 'es' ? 'Buscar Duelo (Matchmaking)' : 'Find Match (Matchmaking)'}
                                                 </button>
                                             )}
                                         </div>
