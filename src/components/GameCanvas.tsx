@@ -462,7 +462,7 @@ interface TileComponent {
     type: string;
     size: [number, number];
     image: string;
-    imgElement?: HTMLImageElement;
+    imgElement?: HTMLImageElement | HTMLCanvasElement;
     isSolid?: boolean;
 }
 
@@ -1251,6 +1251,14 @@ const makeColorTransparent = (imgElement: HTMLImageElement, colorHex: string) =>
         console.warn("Could not make color transparent:", e);
         return imgElement;
     }
+};
+
+const getShowdownSprite = (name: string, isBack: boolean, isShiny: boolean) => {
+    const cleanName = name.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const folder = isBack 
+        ? (isShiny ? 'ani-back-shiny' : 'ani-back') 
+        : (isShiny ? 'ani-shiny' : 'ani');
+    return `https://play.pokemonshowdown.com/sprites/${folder}/${cleanName}.gif`;
 };
 
 const assetCache: Record<string, any> = {};
@@ -3724,11 +3732,12 @@ export default function GameCanvas({
                         globalComponentCache[cleanPath] = img;
                     }
 
+                    const isTreeOrBush = cleanPath.includes('tree') || cleanPath.includes('bush');
                     tileComponents[comp.type] = {
                         type: comp.type,
                         size: comp.size,
                         image: cleanPath,
-                        imgElement: img,
+                        imgElement: isTreeOrBush ? makeColorTransparent(img, '#000000') : img,
                         isSolid: comp.isSolid ?? false
                     };
                 });
@@ -17578,110 +17587,255 @@ export default function GameCanvas({
                     </div>
 
                     {/* Main Arena */}
-                    <div style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, justifyContent: 'space-between', padding: '0', position: 'relative' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, gap: '4px', position: 'relative' }}>
                         
-                        {/* 1. Opponent Row */}
-                        {(() => {
-                            const opponentSpecies = pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === activeWildBattle.name.toLowerCase());
-                            let opponentClass = "battle-pokemon-sprite";
-                            if (opponentSpriteEffect === 'shake') opponentClass += " battle-shake";
-                            if (opponentSpriteEffect === 'flash') opponentClass += " battle-flash";
-                            if (opponentSpriteEffect === 'bounce') opponentClass += " battle-bounce";
-                            if (opponentSpriteEffect === 'catch-shake' as any) opponentClass += " catch-shake";
-                            if (opponentSpriteEffect === 'catch-success' as any) opponentClass += " catch-success";
-                            if (opponentSpriteEffect === 'catch-fail' as any) opponentClass += " catch-fail";
+                        {/* GBA Stadium Arena background with absolute elements */}
+                        <div style={{
+                            height: '240px',
+                            position: 'relative',
+                            backgroundImage: "url('https://play.pokemonshowdown.com/fx/bg-gen3-arena.png')",
+                            backgroundSize: 'cover',
+                            backgroundPosition: 'bottom',
+                            imageRendering: 'pixelated',
+                            overflow: 'hidden',
+                            border: '2px solid #3e2723',
+                            borderRadius: '8px',
+                            boxShadow: '0 4px 10px rgba(0,0,0,0.3)',
+                            margin: '4px 8px'
+                        }}>
+                            {/* 1. Opponent Row/Elements */}
+                            {(() => {
+                                const opponentSpecies = pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === activeWildBattle.name.toLowerCase());
+                                let opponentClass = "battle-pokemon-sprite";
+                                if (opponentSpriteEffect === 'shake') opponentClass += " battle-shake";
+                                if (opponentSpriteEffect === 'flash') opponentClass += " battle-flash";
+                                if (opponentSpriteEffect === 'bounce') opponentClass += " battle-bounce";
+                                if (opponentSpriteEffect === 'catch-shake' as any) opponentClass += " catch-shake";
+                                if (opponentSpriteEffect === 'catch-success' as any) opponentClass += " catch-success";
+                                if (opponentSpriteEffect === 'catch-fail' as any) opponentClass += " catch-fail";
 
-                            return (
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '0 8px' }}>
-                                    {/* Opponent Info Box (Left) */}
-                                    <div className="pokemon-panel" style={{
-                                        width: '50%',
-                                        padding: '6px',
-                                        background: '#fff',
-                                        border: '2px solid #3e2723',
-                                        borderRadius: '6px',
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        gap: '3px',
-                                        boxShadow: '2px 2px 0 rgba(0,0,0,0.1)'
-                                    }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '10px', textTransform: 'capitalize', color: '#3e2723' }}>
-                                            <span>{activeWildBattle.isShiny && '✨ '}{activeWildBattle.name}</span>
-                                            {(() => {
-                                                const ivSum = activeWildBattle.ivs ? 
-                                                    ((activeWildBattle.ivs.hp ?? 0) + 
-                                                     (activeWildBattle.ivs.attack ?? 0) + 
-                                                     (activeWildBattle.ivs.defense ?? 0) + 
-                                                     (activeWildBattle.ivs.speed ?? 0)) : 60;
-                                                const ivPercentage = Math.round((ivSum / 124) * 100);
-                                                return (
-                                                    <span style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                                                        <span style={{ fontSize: '9px', color: '#795548', fontWeight: 'normal' }}>IV: {ivPercentage}%</span>
-                                                        <span>L:{activeWildBattle.level}</span>
-                                                    </span>
-                                                );
-                                            })()}
-                                        </div>
-                                        <div className="pokemon-hp-bar" style={{ height: '6px', background: '#e0e0e0', borderRadius: '3px', overflow: 'hidden', border: '1px solid #795548', margin: 0, width: '100%' }}>
-                                            <div style={{
-                                                height: '100%',
-                                                width: `${Math.round((activeWildBattle.hp / activeWildBattle.maxHp) * 100)}%`,
-                                                background: activeWildBattle.hp / activeWildBattle.maxHp < 0.2 ? '#f44336' : (activeWildBattle.hp / activeWildBattle.maxHp < 0.5 ? '#ffeb3b' : '#4caf50'),
-                                                transition: 'width 0.3s ease'
-                                            }}></div>
-                                        </div>
-                                        <div style={{ fontSize: '8px', display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', color: '#5d4037' }}>
-                                            <span style={{ display: 'flex', gap: '3px' }}>
-                                                {opponentAtkStage !== 0 && (
-                                                    <span style={{ fontSize: '7px', background: opponentAtkStage > 0 ? '#c8e6c9' : '#ffcdd2', padding: '0px 2px', borderRadius: '2px', color: '#333' }}>
-                                                        A:{opponentAtkStage > 0 ? `+${opponentAtkStage}` : opponentAtkStage}
-                                                    </span>
-                                                )}
-                                                {opponentDefStage !== 0 && (
-                                                    <span style={{ fontSize: '7px', background: opponentDefStage > 0 ? '#c8e6c9' : '#ffcdd2', padding: '0px 2px', borderRadius: '2px', color: '#333' }}>
-                                                        D:{opponentDefStage > 0 ? `+${opponentDefStage}` : opponentDefStage}
-                                                    </span>
-                                                )}
-                                            </span>
-                                            <span>HP: {activeWildBattle.hp}/{activeWildBattle.maxHp}</span>
-                                        </div>
-                                    </div>
+                                const cleanOpponentName = activeWildBattle.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+                                const opponentFolder = activeWildBattle.isShiny ? 'ani-shiny' : 'ani';
+                                const opponentGifUrl = `https://play.pokemonshowdown.com/sprites/${opponentFolder}/${cleanOpponentName}.gif`;
 
-                                    {/* Opponent Sprite (Right) */}
-                                    <div className="battle-sprite-wrapper opponent-sprite-wrapper" style={{ width: '45%', display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'relative', height: '100px' }}>
-                                        <img 
-                                            src={(activeWildBattle.isShiny && opponentSpecies) 
-                                                ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/shiny/${opponentSpecies.id}.png` 
-                                                : (opponentSpecies?.sprite || `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${opponentSpecies?.id || 25}.png`)} 
-                                            alt={activeWildBattle.name} 
-                                            className={`${opponentClass} battle-sprite-img`}
-                                            style={{ width: '80px', height: '80px', objectFit: 'contain', opacity: catchBallState === 'shake' || catchBallState === 'success' ? 0 : 1, transition: 'opacity 0.2s' }}
-                                        />
-                                        {catchBallState && (
-                                            <div className={`pokeball-item ${catchBallState === 'throw' ? 'pokeball-throw' : catchBallState === 'shake' ? 'catch-shake' : catchBallState === 'success' ? 'catch-success' : ''}`} style={{
-                                                position: 'absolute',
-                                                width: '24px', height: '24px',
-                                                background: 'linear-gradient(to bottom, #f44336 45%, #333 45%, #333 55%, #fff 55%)',
-                                                borderRadius: '50%',
-                                                border: '2px solid #333',
-                                                boxShadow: '0 2px 4px rgba(0,0,0,0.4)',
-                                                display: catchBallState === 'fail' ? 'none' : 'block'
-                                            }}>
+                                return (
+                                    <>
+                                        {/* Opponent Info Box (Top Left) */}
+                                        <div className="pokemon-panel" style={{
+                                            position: 'absolute',
+                                            top: '12px',
+                                            left: '12px',
+                                            width: '150px',
+                                            padding: '6px',
+                                            background: '#fff',
+                                            border: '2px solid #3e2723',
+                                            borderRadius: '0px 8px 0px 8px',
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            gap: '3px',
+                                            boxShadow: '0 4px 6px rgba(0,0,0,0.15)',
+                                            zIndex: 10
+                                        }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '9px', textTransform: 'capitalize', color: '#3e2723' }}>
+                                                <span>{activeWildBattle.isShiny && '✨ '}{activeWildBattle.name}</span>
+                                                {(() => {
+                                                    const ivSum = activeWildBattle.ivs ? 
+                                                        ((activeWildBattle.ivs.hp ?? 0) + 
+                                                         (activeWildBattle.ivs.attack ?? 0) + 
+                                                         (activeWildBattle.ivs.defense ?? 0) + 
+                                                         (activeWildBattle.ivs.speed ?? 0)) : 60;
+                                                    const ivPercentage = Math.round((ivSum / 124) * 100);
+                                                    return (
+                                                        <span style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                                                            <span style={{ fontSize: '8px', color: '#795548', fontWeight: 'normal' }}>IV: {ivPercentage}%</span>
+                                                            <span>L:{activeWildBattle.level}</span>
+                                                        </span>
+                                                    );
+                                                })()}
+                                            </div>
+                                            <div className="pokemon-hp-bar" style={{ height: '6px', background: '#e0e0e0', borderRadius: '3px', overflow: 'hidden', border: '1px solid #795548', margin: 0, width: '100%' }}>
                                                 <div style={{
-                                                    position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-                                                    width: '6px', height: '6px', background: '#fff', borderRadius: '50%', border: '2px solid #333'
+                                                    height: '100%',
+                                                    width: `${Math.round((activeWildBattle.hp / activeWildBattle.maxHp) * 100)}%`,
+                                                    background: activeWildBattle.hp / activeWildBattle.maxHp < 0.2 ? '#f44336' : (activeWildBattle.hp / activeWildBattle.maxHp < 0.5 ? '#ffeb3b' : '#4caf50'),
+                                                    transition: 'width 0.3s ease'
                                                 }}></div>
                                             </div>
-                                        )}
-                                        {floatingDamage && floatingDamage.target === 'opponent' && (
-                                            <div className="floating-damage-num" style={{ top: '10px', left: '30%' }}>
-                                                {floatingDamage.value}
+                                            <div style={{ fontSize: '8px', display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', color: '#5d4037' }}>
+                                                <span style={{ display: 'flex', gap: '3px' }}>
+                                                    {opponentAtkStage !== 0 && (
+                                                        <span style={{ fontSize: '7px', background: opponentAtkStage > 0 ? '#c8e6c9' : '#ffcdd2', padding: '0px 2px', borderRadius: '2px', color: '#333' }}>
+                                                            A:{opponentAtkStage > 0 ? `+${opponentAtkStage}` : opponentAtkStage}
+                                                        </span>
+                                                    )}
+                                                    {opponentDefStage !== 0 && (
+                                                        <span style={{ fontSize: '7px', background: opponentDefStage > 0 ? '#c8e6c9' : '#ffcdd2', padding: '0px 2px', borderRadius: '2px', color: '#333' }}>
+                                                            D:{opponentDefStage > 0 ? `+${opponentDefStage}` : opponentDefStage}
+                                                        </span>
+                                                    )}
+                                                </span>
+                                                <span>HP: {activeWildBattle.hp}/{activeWildBattle.maxHp}</span>
                                             </div>
-                                        )}
-                                    </div>
-                                </div>
-                            );
-                        })()}
+                                        </div>
+
+                                        {/* Opponent Sprite (Top Right) */}
+                                        <div className="battle-sprite-wrapper opponent-sprite-wrapper" style={{
+                                            position: 'absolute',
+                                            right: '50px',
+                                            top: '40px',
+                                            width: '100px',
+                                            height: '100px',
+                                            display: 'flex',
+                                            justifyContent: 'center',
+                                            alignItems: 'center',
+                                            zIndex: 5
+                                        }}>
+                                            <img 
+                                                src={opponentGifUrl}
+                                                alt={activeWildBattle.name} 
+                                                className={`${opponentClass} battle-sprite-img`}
+                                                style={{ width: '80px', height: '80px', objectFit: 'contain', opacity: catchBallState === 'shake' || catchBallState === 'success' ? 0 : 1, transition: 'opacity 0.2s' }}
+                                                onError={(e) => {
+                                                    e.currentTarget.src = (activeWildBattle.isShiny && opponentSpecies) 
+                                                        ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/shiny/${opponentSpecies.id}.png` 
+                                                        : (opponentSpecies?.sprite || `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${opponentSpecies?.id || 25}.png`);
+                                                }}
+                                            />
+                                            {catchBallState && (
+                                                <div className={`pokeball-item ${catchBallState === 'throw' ? 'pokeball-throw' : catchBallState === 'shake' ? 'catch-shake' : catchBallState === 'success' ? 'catch-success' : ''}`} style={{
+                                                    position: 'absolute',
+                                                    width: '24px', height: '24px',
+                                                    background: 'linear-gradient(to bottom, #f44336 45%, #333 45%, #333 55%, #fff 55%)',
+                                                    borderRadius: '50%',
+                                                    border: '2px solid #333',
+                                                    boxShadow: '0 2px 4px rgba(0,0,0,0.4)',
+                                                    display: catchBallState === 'fail' ? 'none' : 'block'
+                                                }}>
+                                                    <div style={{
+                                                        position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+                                                        width: '6px', height: '6px', background: '#fff', borderRadius: '50%', border: '2px solid #333'
+                                                    }}></div>
+                                                </div>
+                                            )}
+                                            {floatingDamage && floatingDamage.target === 'opponent' && (
+                                                <div className="floating-damage-num" style={{ top: '10px', left: '30%' }}>
+                                                    {floatingDamage.value}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </>
+                                );
+                            })()}
+
+                            {/* 2. Player Row/Elements */}
+                            {(() => {
+                                const activePoke = team.find((p: any) => p.hp > 0);
+                                if (!activePoke) return <div style={{ color: '#d32f2f', fontWeight: 'bold', textAlign: 'center', position: 'absolute', bottom: '20px', left: '20px' }}>¡No tienes Pokémon activos!</div>;
+                                const pct = Math.round((activePoke.hp / activePoke.maxHp) * 100);
+                                const activePokeSpecies = pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === activePoke.id.toLowerCase());
+                                
+                                let playerClass = "battle-pokemon-sprite";
+                                if (playerSpriteEffect === 'shake') playerClass += " battle-shake";
+                                if (playerSpriteEffect === 'flash') playerClass += " battle-bounce";
+                                if (playerSpriteEffect === 'bounce') playerClass += " battle-bounce";
+
+                                const cleanPlayerName = activePoke.id.toLowerCase().replace(/[^a-z0-9]/g, '');
+                                const playerFolder = activePoke.is_shiny ? 'ani-back-shiny' : 'ani-back';
+                                const playerGifUrl = `https://play.pokemonshowdown.com/sprites/${playerFolder}/${cleanPlayerName}.gif`;
+
+                                return (
+                                    <>
+                                        {/* Player Sprite (Bottom Left) */}
+                                        <div className="battle-sprite-wrapper player-sprite-wrapper" style={{
+                                            position: 'absolute',
+                                            left: '45px',
+                                            bottom: '25px',
+                                            width: '100px',
+                                            height: '100px',
+                                            display: 'flex',
+                                            justifyContent: 'center',
+                                            alignItems: 'center',
+                                            zIndex: 5
+                                        }}>
+                                            <img 
+                                                src={playerGifUrl}
+                                                alt={activePoke.id} 
+                                                className={`${playerClass} battle-sprite-img`}
+                                                style={{ width: '90px', height: '90px', objectFit: 'contain' }}
+                                                onError={(e) => {
+                                                    e.currentTarget.src = (activePoke.is_shiny && activePokeSpecies) 
+                                                        ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/shiny/${activePokeSpecies.id}.png` 
+                                                        : (activePokeSpecies?.sprite || `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${activePokeSpecies?.id || 1}.png`);
+                                                }}
+                                            />
+                                            {floatingDamage && floatingDamage.target === 'player' && (
+                                                <div className="floating-damage-num" style={{ top: '10px', left: '30%' }}>
+                                                    {floatingDamage.value}
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Player Info Box (Bottom Right) */}
+                                        <div className="pokemon-panel" style={{
+                                            position: 'absolute',
+                                            bottom: '12px',
+                                            right: '12px',
+                                            width: '150px',
+                                            padding: '6px',
+                                            background: '#fff',
+                                            border: '2px solid #3e2723',
+                                            borderRadius: '8px 0px 8px 0px',
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            gap: '3px',
+                                            boxShadow: '0 4px 6px rgba(0,0,0,0.15)',
+                                            zIndex: 10
+                                        }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '9px', textTransform: 'capitalize', color: '#3e2723' }}>
+                                                <span>{activePoke.is_shiny && '✨ '}{activePoke.id}</span>
+                                                <span>L:{activePoke.level ?? 1}</span>
+                                            </div>
+                                            <div className="pokemon-hp-bar" style={{ height: '6px', background: '#e0e0e0', borderRadius: '3px', overflow: 'hidden', border: '1px solid #795548', margin: 0, width: '100%' }}>
+                                                <div style={{
+                                                    height: '100%',
+                                                    width: `${pct}%`,
+                                                    background: pct < 20 ? '#f44336' : (pct < 50 ? '#ffeb3b' : '#4caf50'),
+                                                    transition: 'width 0.3s ease'
+                                                }}></div>
+                                            </div>
+                                            <div style={{ fontSize: '8px', display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', color: '#5d4037' }}>
+                                                <span style={{ display: 'flex', gap: '3px' }}>
+                                                    {playerAtkStage !== 0 && (
+                                                        <span style={{ fontSize: '7px', background: playerAtkStage > 0 ? '#c8e6c9' : '#ffcdd2', padding: '0px 2px', borderRadius: '2px', color: '#333' }}>
+                                                            A:{playerAtkStage > 0 ? `+${playerAtkStage}` : playerAtkStage}
+                                                        </span>
+                                                    )}
+                                                    {playerDefStage !== 0 && (
+                                                        <span style={{ fontSize: '7px', background: playerDefStage > 0 ? '#c8e6c9' : '#ffcdd2', padding: '0px 2px', borderRadius: '2px', color: '#333' }}>
+                                                            D:{playerDefStage > 0 ? `+${playerDefStage}` : playerDefStage}
+                                                        </span>
+                                                    )}
+                                                </span>
+                                                <span>HP: {activePoke.hp}/{activePoke.maxHp}</span>
+                                            </div>
+                                            
+                                            {/* XP bar */}
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
+                                                <span style={{ fontSize: '7px', color: '#7e57c2', fontWeight: 'bold' }}>XP</span>
+                                                <div className="pokemon-hp-bar" style={{ flex: 1, height: '3px', background: '#e0e0e0', borderRadius: '1.5px', border: 'none', margin: 0, width: '100%' }}>
+                                                    <div style={{
+                                                        height: '100%',
+                                                        width: `${Math.round(((activePoke.xp ?? 0) / ((activePoke.level ?? 1) * 100)) * 100)}%`,
+                                                        background: '#7e57c2',
+                                                        transition: 'width 0.3s ease'
+                                                    }}></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </>
+                                );
+                            })()}
+                        </div>
 
                         {/* Battle Dialog Log (Historial de Batalla) */}
                         <div 
@@ -17723,94 +17877,6 @@ export default function GameCanvas({
                                 </div>
                             )}
                         </div>
-
-                        {/* 2. Player Row */}
-                        {(() => {
-                            const activePoke = team.find((p: any) => p.hp > 0);
-                            if (!activePoke) return <div style={{ color: '#d32f2f', fontWeight: 'bold', textAlign: 'center' }}>¡No tienes Pokémon activos!</div>;
-                            const pct = Math.round((activePoke.hp / activePoke.maxHp) * 100);
-                            const activePokeSpecies = pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === activePoke.id.toLowerCase());
-                            
-                            let playerClass = "battle-pokemon-sprite";
-                            if (playerSpriteEffect === 'shake') playerClass += " battle-shake";
-                            if (playerSpriteEffect === 'flash') playerClass += " battle-flash";
-                            if (playerSpriteEffect === 'bounce') playerClass += " battle-bounce";
-
-                            return (
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '0 8px', marginTop: '4px' }}>
-                                    {/* Player Sprite (Left) */}
-                                    <div className="battle-sprite-wrapper player-sprite-wrapper" style={{ width: '45%', display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'relative', height: '100px' }}>
-                                        <img 
-                                            src={(activePoke.is_shiny && activePokeSpecies) 
-                                                ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/shiny/${activePokeSpecies.id}.png` 
-                                                : (activePokeSpecies?.sprite || `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${activePokeSpecies?.id || 1}.png`)} 
-                                            alt={activePoke.id} 
-                                            className={`${playerClass} battle-sprite-img`}
-                                            style={{ width: '80px', height: '80px', objectFit: 'contain', transform: 'scaleX(-1)' /* Face right! */ }}
-                                        />
-                                        {floatingDamage && floatingDamage.target === 'player' && (
-                                            <div className="floating-damage-num" style={{ top: '10px', left: '30%' }}>
-                                                {floatingDamage.value}
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* Player Info Box (Right) */}
-                                    <div className="pokemon-panel" style={{
-                                        width: '50%',
-                                        padding: '6px',
-                                        background: '#fff',
-                                        border: '2px solid #3e2723',
-                                        borderRadius: '6px',
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        gap: '3px',
-                                        boxShadow: '2px 2px 0 rgba(0,0,0,0.1)'
-                                    }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '10px', textTransform: 'capitalize', color: '#3e2723' }}>
-                                            <span>{activePoke.is_shiny && '✨ '}{activePoke.id}</span>
-                                            <span>L:{activePoke.level ?? 1}</span>
-                                        </div>
-                                        <div className="pokemon-hp-bar" style={{ height: '6px', background: '#e0e0e0', borderRadius: '3px', overflow: 'hidden', border: '1px solid #795548', margin: 0, width: '100%' }}>
-                                            <div style={{
-                                                height: '100%',
-                                                width: `${pct}%`,
-                                                background: pct < 20 ? '#f44336' : (pct < 50 ? '#ffeb3b' : '#4caf50'),
-                                                transition: 'width 0.3s ease'
-                                            }}></div>
-                                        </div>
-                                        <div style={{ fontSize: '8px', display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', color: '#5d4037' }}>
-                                            <span style={{ display: 'flex', gap: '3px' }}>
-                                                {playerAtkStage !== 0 && (
-                                                    <span style={{ fontSize: '7px', background: playerAtkStage > 0 ? '#c8e6c9' : '#ffcdd2', padding: '0px 2px', borderRadius: '2px', color: '#333' }}>
-                                                        A:{playerAtkStage > 0 ? `+${playerAtkStage}` : playerAtkStage}
-                                                    </span>
-                                                )}
-                                                {playerDefStage !== 0 && (
-                                                    <span style={{ fontSize: '7px', background: playerDefStage > 0 ? '#c8e6c9' : '#ffcdd2', padding: '0px 2px', borderRadius: '2px', color: '#333' }}>
-                                                        D:{playerDefStage > 0 ? `+${playerDefStage}` : playerDefStage}
-                                                    </span>
-                                                )}
-                                            </span>
-                                            <span>HP: {activePoke.hp}/{activePoke.maxHp}</span>
-                                        </div>
-                                        
-                                        {/* XP bar */}
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
-                                            <span style={{ fontSize: '7px', color: '#7e57c2', fontWeight: 'bold' }}>XP</span>
-                                            <div className="pokemon-hp-bar" style={{ flex: 1, height: '3px', background: '#e0e0e0', borderRadius: '1.5px', border: 'none', margin: 0, width: '100%' }}>
-                                                <div style={{
-                                                    height: '100%',
-                                                    width: `${Math.round(((activePoke.xp ?? 0) / ((activePoke.level ?? 1) * 100)) * 100)}%`,
-                                                    background: '#7e57c2',
-                                                    transition: 'width 0.3s ease'
-                                                }}></div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            );
-                        })()}
                     </div>
 
                     {/* Options Panel */}
