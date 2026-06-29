@@ -4234,6 +4234,20 @@ export default function GameCanvas({
                     const tileType = mapData.grid[r][c];
                     const tile = mapData.tileComponents[tileType];
                     if (tile && tile.imgElement) {
+                        // Draw grass G1/G2 underneath tree/bush/transparent tiles so they don't have black backgrounds
+                        const isTransparentTile = tileType === 'T' || tileType === 'W' || tileType === 'CW' || tile.image.toLowerCase().includes('tree') || tile.image.toLowerCase().includes('bush');
+                        if (isTransparentTile) {
+                            const grassTile = mapData.tileComponents['G1'] || mapData.tileComponents['G2'];
+                            if (grassTile && grassTile.imgElement) {
+                                ctx.drawImage(
+                                    grassTile.imgElement,
+                                    c * mapData.tileSize - camX + offsetX,
+                                    r * mapData.tileSize - camY + offsetY,
+                                    mapData.tileSize,
+                                    mapData.tileSize
+                                );
+                            }
+                        }
                         ctx.drawImage(
                             tile.imgElement,
                             c * mapData.tileSize - camX + offsetX,
@@ -17591,7 +17605,8 @@ export default function GameCanvas({
                         
                         {/* GBA Stadium Arena background with absolute elements */}
                         <div style={{
-                            height: '240px',
+                            flex: 1,
+                            minHeight: '280px',
                             position: 'relative',
                             backgroundImage: "url('https://play.pokemonshowdown.com/fx/bg-gen3-arena.png')",
                             backgroundSize: 'cover',
@@ -17681,8 +17696,8 @@ export default function GameCanvas({
                                         {/* Opponent Sprite (Top Right) */}
                                         <div className="battle-sprite-wrapper opponent-sprite-wrapper" style={{
                                             position: 'absolute',
-                                            right: '50px',
-                                            top: '40px',
+                                            right: '65px',
+                                            top: '110px',
                                             width: '100px',
                                             height: '100px',
                                             display: 'flex',
@@ -17694,7 +17709,7 @@ export default function GameCanvas({
                                                 src={opponentGifUrl}
                                                 alt={activeWildBattle.name} 
                                                 className={`${opponentClass} battle-sprite-img`}
-                                                style={{ width: '80px', height: '80px', objectFit: 'contain', opacity: catchBallState === 'shake' || catchBallState === 'success' ? 0 : 1, transition: 'opacity 0.2s' }}
+                                                style={{ width: '100px', height: '100px', objectFit: 'contain', opacity: catchBallState === 'shake' || catchBallState === 'success' ? 0 : 1, transition: 'opacity 0.2s' }}
                                                 onError={(e) => {
                                                     e.currentTarget.src = (activeWildBattle.isShiny && opponentSpecies) 
                                                         ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/shiny/${opponentSpecies.id}.png` 
@@ -17748,10 +17763,10 @@ export default function GameCanvas({
                                         {/* Player Sprite (Bottom Left) */}
                                         <div className="battle-sprite-wrapper player-sprite-wrapper" style={{
                                             position: 'absolute',
-                                            left: '45px',
-                                            bottom: '25px',
-                                            width: '100px',
-                                            height: '100px',
+                                            left: '60px',
+                                            bottom: '35px',
+                                            width: '120px',
+                                            height: '120px',
                                             display: 'flex',
                                             justifyContent: 'center',
                                             alignItems: 'center',
@@ -17761,7 +17776,7 @@ export default function GameCanvas({
                                                 src={playerGifUrl}
                                                 alt={activePoke.id} 
                                                 className={`${playerClass} battle-sprite-img`}
-                                                style={{ width: '90px', height: '90px', objectFit: 'contain' }}
+                                                style={{ width: '120px', height: '120px', objectFit: 'contain' }}
                                                 onError={(e) => {
                                                     e.currentTarget.src = (activePoke.is_shiny && activePokeSpecies) 
                                                         ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/shiny/${activePokeSpecies.id}.png` 
