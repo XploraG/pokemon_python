@@ -2099,7 +2099,7 @@ export default function GameCanvas({
     const [showTournamentView, setShowTournamentView] = useState(false);
     const [spectatingMatch, setSpectatingMatch] = useState<any | null>(null);
     const [insideTournamentBuilding, setInsideTournamentBuilding] = useState(false);
-    const [activeTournamentTab, setActiveTournamentTab] = useState<'brackets' | 'lobby'>('brackets');
+    const [activeTournamentTab, setActiveTournamentTab] = useState<'brackets' | 'lobby'>('lobby');
     const [isInTournamentQueue, setIsInTournamentQueue] = useState(false);
     const [specBattleTurn, setSpecBattleTurn] = useState(0);
     const [specHp1, setSpecHp1] = useState(100);
@@ -2124,6 +2124,21 @@ export default function GameCanvas({
     const [showNurseJoyModal, setShowNurseJoyModal] = useState(false);
     const [showDrFosilModal, setShowDrFosilModal] = useState(false);
     const [showBattleTowerConfirm, setShowBattleTowerConfirm] = useState(false);
+    const [battleTowerRegistered, setBattleTowerRegistered] = useState<boolean>(() => {
+        if (typeof window !== 'undefined') {
+            return localStorage.getItem('battle_tower_registered') === 'true';
+        }
+        return false;
+    });
+    const [registrationStep, setRegistrationStep] = useState(1);
+    const [selectedRegPokemon, setSelectedRegPokemon] = useState<any[]>([]);
+    const [openedChests, setOpenedChests] = useState<number[]>([]);
+    const [wonItems, setWonItems] = useState<string[]>([]);
+    const [regNickname, setRegNickname] = useState('');
+    const [specSpriteEffect1, setSpecSpriteEffect1] = useState<'none' | 'attack' | 'shake' | 'flash'>('none');
+    const [specSpriteEffect2, setSpecSpriteEffect2] = useState<'none' | 'attack' | 'shake' | 'flash'>('none');
+    const [specHitEffect1, setSpecHitEffect1] = useState<string | null>(null);
+    const [specHitEffect2, setSpecHitEffect2] = useState<string | null>(null);
     const [drFosilAttempts, setDrFosilAttempts] = useState(3);
     const [drFosilPokemon, setDrFosilPokemon] = useState<any | null>(null);
     const [drFosilStatus, setDrFosilStatus] = useState<'idle' | 'scanning' | 'ready' | 'caught' | 'failed' | 'throwing'>('idle');
@@ -3327,15 +3342,68 @@ export default function GameCanvas({
                 if (next < logs.length) {
                     setSpecLogs(l => [...l, logs[next]]);
                     
-                    // Update HP bars dynamically based on turn
-                    if (next === 6) {
+                    // Update HP bars and trigger sprite animations dynamically based on turn
+                    if (next === 5) {
+                        // Gengar attacks Onix
+                        setSpecSpriteEffect1('attack');
+                        setTimeout(() => setSpecSpriteEffect1('none'), 400);
+                        setTimeout(() => {
+                            setSpecSpriteEffect2('shake');
+                            setSpecHitEffect2('💥');
+                            setTimeout(() => {
+                                setSpecSpriteEffect2('none');
+                                setSpecHitEffect2(null);
+                            }, 400);
+                        }, 200);
+                    } else if (next === 6) {
                         setSpecHp2(60);
+                        setSpecSpriteEffect2('flash');
+                        setTimeout(() => setSpecSpriteEffect2('none'), 450);
                     } else if (next === 7) {
                         setSpecHp1(70);
+                        // Onix attacks Gengar
+                        setSpecSpriteEffect2('attack');
+                        setTimeout(() => setSpecSpriteEffect2('none'), 400);
+                        setTimeout(() => {
+                            setSpecSpriteEffect1('shake');
+                            setSpecHitEffect1('💥');
+                            setTimeout(() => {
+                                setSpecSpriteEffect1('none');
+                                setSpecHitEffect1(null);
+                            }, 400);
+                        }, 200);
+                    } else if (next === 8) {
+                        // Gengar attacks Onix again
+                        setSpecSpriteEffect1('attack');
+                        setTimeout(() => setSpecSpriteEffect1('none'), 400);
+                        setTimeout(() => {
+                            setSpecSpriteEffect2('shake');
+                            setSpecHitEffect2('💥');
+                            setTimeout(() => {
+                                setSpecSpriteEffect2('none');
+                                setSpecHitEffect2(null);
+                            }, 400);
+                        }, 200);
                     } else if (next === 9) {
                         setSpecHp2(20);
+                        setSpecSpriteEffect2('flash');
+                        setTimeout(() => setSpecSpriteEffect2('none'), 450);
+                    } else if (next === 10) {
+                        // Gengar finishes Onix
+                        setSpecSpriteEffect1('attack');
+                        setTimeout(() => setSpecSpriteEffect1('none'), 400);
+                        setTimeout(() => {
+                            setSpecSpriteEffect2('shake');
+                            setSpecHitEffect2('⚡');
+                            setTimeout(() => {
+                                setSpecSpriteEffect2('none');
+                                setSpecHitEffect2(null);
+                            }, 400);
+                        }, 200);
                     } else if (next === 12) {
                         setSpecHp2(0);
+                        setSpecSpriteEffect2('flash');
+                        setTimeout(() => setSpecSpriteEffect2('none'), 450);
                     }
                     return next;
                 } else {
@@ -10280,6 +10348,9 @@ export default function GameCanvas({
             {showTournamentView && (() => {
                 // If spectator is active, render spectating view
                 if (spectatingMatch) {
+                    const gengarClass = specSpriteEffect1 === 'attack' ? 'spec-attack-ally' : specSpriteEffect1 === 'shake' ? 'spec-shake' : specSpriteEffect1 === 'flash' ? 'spec-flash' : '';
+                    const onixClass = specSpriteEffect2 === 'attack' ? 'spec-attack-enemy' : specSpriteEffect2 === 'shake' ? 'spec-shake' : specSpriteEffect2 === 'flash' ? 'spec-flash' : '';
+
                     return (
                         <div style={{
                             position: 'absolute',
@@ -10295,6 +10366,44 @@ export default function GameCanvas({
                             color: '#ffffff',
                             boxSizing: 'border-box'
                         }}>
+                            <style>{`
+                                @keyframes spec-attack-ally {
+                                    0% { transform: translate(0, 0); }
+                                    40% { transform: translate(30px, -30px); }
+                                    100% { transform: translate(0, 0); }
+                                }
+                                @keyframes spec-attack-enemy {
+                                    0% { transform: translate(0, 0); }
+                                    40% { transform: translate(-30px, 30px); }
+                                    100% { transform: translate(0, 0); }
+                                }
+                                @keyframes spec-shake {
+                                    0%, 100% { transform: translate(0, 0); }
+                                    20%, 60% { transform: translate(-8px, 4px); }
+                                    40%, 80% { transform: translate(8px, -4px); }
+                                }
+                                @keyframes spec-flash {
+                                    0%, 50%, 100% { opacity: 1; }
+                                    25%, 75% { opacity: 0.1; }
+                                }
+                                @keyframes spec-hit-burst {
+                                    0% { transform: scale(0.5); opacity: 0; }
+                                    50% { transform: scale(1.6) rotate(15deg); opacity: 1; }
+                                    100% { transform: scale(1.2); opacity: 0; }
+                                }
+                                .spec-attack-ally {
+                                    animation: spec-attack-ally 0.4s ease-out forwards;
+                                }
+                                .spec-attack-enemy {
+                                    animation: spec-attack-enemy 0.4s ease-out forwards;
+                                }
+                                .spec-shake {
+                                    animation: spec-shake 0.4s ease-in-out forwards;
+                                }
+                                .spec-flash {
+                                    animation: spec-flash 0.4s ease-in-out forwards;
+                                }
+                            `}</style>
                             <div style={{ maxWidth: '600px', width: '100%', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                                 <button 
                                     onClick={() => setSpectatingMatch(null)} 
@@ -10346,7 +10455,7 @@ export default function GameCanvas({
                                     <div style={{
                                         height: '240px',
                                         position: 'relative',
-                                        backgroundImage: "url('https://play.pokemonshowdown.com/fx/bg-stadium.png')",
+                                        backgroundImage: "url('https://play.pokemonshowdown.com/fx/bg-gen3-arena.png')",
                                         backgroundSize: 'cover',
                                         backgroundPosition: 'bottom',
                                         imageRendering: 'pixelated',
@@ -10390,11 +10499,19 @@ export default function GameCanvas({
                                                 </div>
                                             </div>
                                             {/* Animated Front Sprite */}
-                                            <img 
-                                                src="https://play.pokemonshowdown.com/sprites/ani/onix.gif"
-                                                alt="Onix"
-                                                style={{ width: '100px', height: '100px', objectFit: 'contain', marginTop: '4px', filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.3))' }}
-                                            />
+                                            <div style={{ position: 'relative' }}>
+                                                <img 
+                                                    src="https://play.pokemonshowdown.com/sprites/ani/onix.gif"
+                                                    alt="Onix"
+                                                    className={onixClass}
+                                                    style={{ width: '100px', height: '100px', objectFit: 'contain', marginTop: '4px', filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.3))' }}
+                                                />
+                                                {specHitEffect2 && (
+                                                    <div style={{ position: 'absolute', top: '30%', left: '30%', fontSize: '28px', zIndex: 10, animation: 'spec-hit-burst 0.4s ease-out forwards' }}>
+                                                        {specHitEffect2}
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
 
                                         {/* P1: Ally Pokémon (Bottom Left) */}
@@ -10408,11 +10525,19 @@ export default function GameCanvas({
                                             zIndex: 2
                                         }}>
                                             {/* Animated Back Sprite */}
-                                            <img 
-                                                src="https://play.pokemonshowdown.com/sprites/ani-back/gengar.gif"
-                                                alt="Gengar"
-                                                style={{ width: '120px', height: '120px', objectFit: 'contain', marginBottom: '4px', filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.3))' }}
-                                            />
+                                            <div style={{ position: 'relative' }}>
+                                                <img 
+                                                    src="https://play.pokemonshowdown.com/sprites/ani-back/gengar.gif"
+                                                    alt="Gengar"
+                                                    className={gengarClass}
+                                                    style={{ width: '120px', height: '120px', objectFit: 'contain', marginBottom: '4px', filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.3))' }}
+                                                />
+                                                {specHitEffect1 && (
+                                                    <div style={{ position: 'absolute', top: '30%', left: '30%', fontSize: '28px', zIndex: 10, animation: 'spec-hit-burst 0.4s ease-out forwards' }}>
+                                                        {specHitEffect1}
+                                                    </div>
+                                                )}
+                                            </div>
                                             {/* Status Box */}
                                             <div style={{
                                                 background: '#f8fafc',
@@ -10604,45 +10729,416 @@ export default function GameCanvas({
                                     🏟️ {language === 'es' ? 'INTERIOR DE LA TORRE' : 'BATTLE TOWER STADIUM'}
                                 </h2>
 
-                                {/* Custom tabs selector */}
-                                <div style={{ display: 'flex', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', padding: '4px' }}>
-                                    <button 
-                                        onClick={() => setActiveTournamentTab('brackets')}
-                                        style={{
-                                            flex: 1,
-                                            background: activeTournamentTab === 'brackets' ? 'rgba(251,191,36,0.15)' : 'transparent',
-                                            border: activeTournamentTab === 'brackets' ? '1px solid rgba(251,191,36,0.3)' : 'none',
-                                            borderRadius: '8px',
-                                            color: activeTournamentTab === 'brackets' ? '#fbbf24' : '#94a3b8',
-                                            padding: '10px',
-                                            fontSize: '8px',
-                                            fontFamily: "'Press Start 2P', monospace",
-                                            cursor: 'pointer',
-                                            textTransform: 'uppercase',
-                                            margin: 0
-                                        }}
-                                    >
-                                        🏆 {language === 'es' ? 'Brackets' : 'Brackets'}
-                                    </button>
-                                    <button 
-                                        onClick={() => setActiveTournamentTab('lobby')}
-                                        style={{
-                                            flex: 1,
-                                            background: activeTournamentTab === 'lobby' ? 'rgba(139,92,246,0.15)' : 'transparent',
-                                            border: activeTournamentTab === 'lobby' ? '1px solid rgba(139,92,246,0.3)' : 'none',
-                                            borderRadius: '8px',
-                                            color: activeTournamentTab === 'lobby' ? '#c084fc' : '#94a3b8',
-                                            padding: '10px',
-                                            fontSize: '8px',
-                                            fontFamily: "'Press Start 2P', monospace",
-                                            cursor: 'pointer',
-                                            textTransform: 'uppercase',
-                                            margin: 0
-                                        }}
-                                    >
-                                        👥 {language === 'es' ? 'Lobby / Match' : 'Lobby / Match'}
-                                    </button>
-                                </div>
+                                {!battleTowerRegistered ? (
+                                    /* BATTLE TOWER REGISTRATION ONBOARDING FLOW */
+                                    <div style={{ background: 'rgba(30, 27, 75, 0.4)', border: '2px solid #4f46e5', borderRadius: '16px', padding: '24px', boxShadow: '0 10px 30px rgba(0,0,0,0.5)', fontFamily: "'Segoe UI', system-ui, sans-serif", display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                                        {/* Stepper Header */}
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '12px' }}>
+                                            {[
+                                                { step: 1, label: language === 'es' ? '1. Elegir Equipo' : '1. Choose Team' },
+                                                { step: 2, label: language === 'es' ? '2. Cajas Sorpresa' : '2. Surprise Boxes' },
+                                                { step: 3, label: language === 'es' ? '3. Confirmar Apodo' : '3. Confirm Nickname' }
+                                            ].map((s) => (
+                                                <div key={s.step} style={{ fontSize: '9px', fontWeight: 'bold', color: registrationStep === s.step ? '#fbbf24' : '#64748b', textTransform: 'uppercase', fontFamily: "'Press Start 2P', monospace", letterSpacing: '0.5px' }}>
+                                                    {s.label}
+                                                </div>
+                                            ))}
+                                        </div>
+
+                                        {/* STEP 1: CHOOSE TEAM */}
+                                        {registrationStep === 1 && (() => {
+                                            const allOwned = [...team, ...pcPokemon].filter((p: any) => {
+                                                if (!p) return false;
+                                                const name = (p.id || "").toLowerCase();
+                                                return name !== "mew" && name !== "mewtwo";
+                                            });
+
+                                            const displayList = [...allOwned];
+                                            const rentals = [
+                                                { id: 'pikachu', level: 99, is_shiny: false },
+                                                { id: 'charizard', level: 99, is_shiny: false },
+                                                { id: 'blastoise', level: 99, is_shiny: false },
+                                                { id: 'venusaur', level: 99, is_shiny: false },
+                                                { id: 'gengar', level: 99, is_shiny: false },
+                                                { id: 'dragonite', level: 99, is_shiny: false }
+                                            ];
+                                            let rentalIdCounter = 1;
+                                            while (displayList.length < 6) {
+                                                const rent = rentals[(rentalIdCounter - 1) % rentals.length];
+                                                displayList.push({
+                                                    ...rent,
+                                                    id: rent.id,
+                                                    isRental: true,
+                                                    uniqueId: `rental_${rent.id}_${rentalIdCounter++}`
+                                                });
+                                            }
+
+                                            return (
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                                                    <div style={{ background: 'rgba(251,191,36,0.1)', border: '1.5px solid rgba(251,191,36,0.3)', borderRadius: '10px', padding: '12px 16px' }}>
+                                                        <h3 style={{ margin: '0 0 6px 0', fontSize: '11px', color: '#fbbf24', textTransform: 'uppercase', fontFamily: "'Press Start 2P', monospace" }}>
+                                                            📢 {language === 'es' ? 'REGISTRO DE EQUIPO' : 'TEAM REGISTRATION'}
+                                                        </h3>
+                                                        <p style={{ margin: 0, fontSize: '11px', color: '#cbd5e1', lineHeight: '1.5' }}>
+                                                            {language === 'es' 
+                                                                ? '¡Bienvenido a la Torre de Batalla! Selecciona exactamente 6 Pokémon de tu lista para registrar tu equipo a Nivel 99. No se permiten Mew ni Mewtwo.' 
+                                                                : 'Welcome to the Battle Tower! Select exactly 6 Pokémon from your list to register your team at Level 99. Mew and Mewtwo are not allowed.'}
+                                                        </p>
+                                                    </div>
+
+                                                    <div style={{ maxHeight: '220px', overflowY: 'auto', display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px', paddingRight: '4px' }}>
+                                                        {displayList.map((p: any, idx: number) => {
+                                                            const pokemonId = p.uniqueId || p.id_captura || p.id || `poke_${idx}`;
+                                                            const isSelected = selectedRegPokemon.some(x => (x.uniqueId || x.id_captura || x.id) === pokemonId);
+                                                            const species = pokemonSpeciesList.find((s: any) => s.name.toLowerCase() === p.id.toLowerCase());
+                                                            const sprite = species ? (p.is_shiny ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/shiny/${species.id}.png` : species.sprite) : '';
+
+                                                            return (
+                                                                <div 
+                                                                    key={idx}
+                                                                    onClick={() => {
+                                                                        if (isSelected) {
+                                                                            setSelectedRegPokemon(curr => curr.filter(x => (x.uniqueId || x.id_captura || x.id) !== pokemonId));
+                                                                        } else {
+                                                                            if (selectedRegPokemon.length < 6) {
+                                                                                setSelectedRegPokemon(curr => [...curr, p]);
+                                                                            } else {
+                                                                                showNotification("Límite Alcanzado", language === 'es' ? "Solo puedes seleccionar 6 Pokémon." : "You can only select 6 Pokémon.");
+                                                                            }
+                                                                        }
+                                                                    }}
+                                                                    style={{
+                                                                        display: 'flex',
+                                                                        alignItems: 'center',
+                                                                        gap: '10px',
+                                                                        padding: '8px 12px',
+                                                                        background: isSelected ? 'rgba(169,85,247,0.15)' : 'rgba(255,255,255,0.03)',
+                                                                        border: isSelected ? '2px solid #a855f7' : '1px solid rgba(255,255,255,0.08)',
+                                                                        borderRadius: '10px',
+                                                                        cursor: 'pointer',
+                                                                        transition: 'all 0.2s'
+                                                                    }}
+                                                                >
+                                                                    {sprite ? (
+                                                                        <img src={sprite} alt={p.id} style={{ width: '40px', height: '40px', objectFit: 'contain' }} />
+                                                                    ) : (
+                                                                        <span style={{ fontSize: '20px' }}>🥚</span>
+                                                                    )}
+                                                                    <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+                                                                        <span style={{ fontWeight: 'bold', fontSize: '11px', textTransform: 'uppercase', color: isSelected ? '#d8b4fe' : '#e2e8f0' }}>
+                                                                            {p.is_shiny && '✨ '}{p.id}
+                                                                        </span>
+                                                                        <span style={{ fontSize: '9px', color: '#c084fc' }}>
+                                                                            {p.isRental ? (language === 'es' ? 'Préstamo' : 'Rental') : ''} Lvl 99
+                                                                        </span>
+                                                                    </div>
+                                                                    <div style={{
+                                                                        width: '14px',
+                                                                        height: '14px',
+                                                                        border: '1.5px solid #a855f7',
+                                                                        borderRadius: '3px',
+                                                                        display: 'flex',
+                                                                        alignItems: 'center',
+                                                                        justifyContent: 'center',
+                                                                        background: isSelected ? '#a855f7' : 'transparent',
+                                                                        fontSize: '9px',
+                                                                        color: '#fff',
+                                                                        fontWeight: 'bold'
+                                                                    }}>
+                                                                        {isSelected && '✓'}
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px' }}>
+                                                        <span style={{ fontSize: '9px', color: '#94a3b8', fontWeight: 'bold', fontFamily: "'Press Start 2P', monospace" }}>
+                                                            {language === 'es' ? `Seleccionados: ${selectedRegPokemon.length}/6` : `Selected: ${selectedRegPokemon.length}/6`}
+                                                        </span>
+                                                        <button 
+                                                            disabled={selectedRegPokemon.length !== 6}
+                                                            onClick={() => setRegistrationStep(2)}
+                                                            style={{
+                                                                background: selectedRegPokemon.length === 6 ? 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)' : 'rgba(255,255,255,0.05)',
+                                                                border: 'none',
+                                                                borderRadius: '8px',
+                                                                padding: '10px 20px',
+                                                                color: selectedRegPokemon.length === 6 ? '#fff' : '#475569',
+                                                                fontSize: '8px',
+                                                                fontFamily: "'Press Start 2P', monospace",
+                                                                fontWeight: 'bold',
+                                                                textTransform: 'uppercase',
+                                                                cursor: selectedRegPokemon.length === 6 ? 'pointer' : 'not-allowed',
+                                                                margin: 0
+                                                            }}
+                                                        >
+                                                            {language === 'es' ? 'Siguiente' : 'Next'} →
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })()}
+
+                                        {/* STEP 2: SURPRISE CHESTS */}
+                                        {registrationStep === 2 && (() => {
+                                            const itemsPool = [
+                                                { name: "Poción de Vida", label: language === 'es' ? "Hiperpoción (Poción de Vida)" : "Hyper Potion (Life Potion)" },
+                                                { name: "Tamerball", label: language === 'es' ? "Tamerball (No usable en combate)" : "Tamerball (Cannot be used in battle)" },
+                                                { name: "Revivir", label: language === 'es' ? "Revivir (Recupera fainted al 50% HP)" : "Revive (Recovers fainted to 50% HP)" },
+                                                { name: "Baya Zidra", label: language === 'es' ? "Baya Zidra (Baya no de combate)" : "Sitrus Berry (Non-combat Berry)" },
+                                                { name: "Baya Caqui", label: language === 'es' ? "Baya Caqui (Baya no de combate)" : "Persim Berry (Non-combat Berry)" },
+                                                { name: "Baya Atresia", label: language === 'es' ? "Baya Atresia (Baya no de combate)" : "Lum Berry (Non-combat Berry)" },
+                                                { name: "Cura Total", label: language === 'es' ? "Cura Total (Recupera HP al 100%)" : "Full Restore (Recovers HP to 100%)" }
+                                            ];
+
+                                            const handleChestClick = (chestIndex: number) => {
+                                                if (openedChests.includes(chestIndex)) return;
+                                                if (openedChests.length >= 3) return;
+
+                                                const randomItem = itemsPool[Math.floor(Math.random() * itemsPool.length)];
+                                                setOpenedChests(curr => [...curr, chestIndex]);
+                                                setWonItems(curr => [...curr, randomItem.label]);
+                                                showNotification("¡Cofre Abierto!", `${language === 'es' ? 'Has encontrado' : 'You found'}: ${randomItem.name}`);
+                                            };
+
+                                            return (
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                                                    <div style={{ background: 'rgba(59,130,246,0.1)', border: '1.5px solid rgba(59,130,246,0.3)', borderRadius: '10px', padding: '12px 16px' }}>
+                                                        <h3 style={{ margin: '0 0 6px 0', fontSize: '11px', color: '#60a5fa', textTransform: 'uppercase', fontFamily: "'Press Start 2P', monospace" }}>
+                                                            🎁 {language === 'es' ? 'CAJAS SORPRESA' : 'LUCKY SURPRISE CHESTS'}
+                                                        </h3>
+                                                        <p style={{ margin: 0, fontSize: '11px', color: '#cbd5e1', lineHeight: '1.5' }}>
+                                                            {language === 'es' 
+                                                                ? '¡Elige 3 de las 8 cajas sorpresa! Obtendrás objetos útiles al azar. Las Tamerballs no se podrán usar dentro de la Torre de Batalla.' 
+                                                                : 'Choose 3 of the 8 surprise chests! You will receive random useful items. Tamerballs cannot be used inside the Battle Tower.'}
+                                                        </p>
+                                                    </div>
+
+                                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', justifyItems: 'center', padding: '10px 0' }}>
+                                                        {Array.from({ length: 8 }).map((_, idx) => {
+                                                            const isOpened = openedChests.includes(idx);
+                                                            return (
+                                                                <div 
+                                                                    key={idx}
+                                                                    onClick={() => handleChestClick(idx)}
+                                                                    style={{
+                                                                        width: '60px',
+                                                                        height: '60px',
+                                                                        background: isOpened ? 'rgba(16,185,129,0.1)' : 'rgba(255,255,255,0.03)',
+                                                                        border: isOpened ? '2px solid #10b981' : '1px solid rgba(255,255,255,0.1)',
+                                                                        borderRadius: '12px',
+                                                                        display: 'flex',
+                                                                        flexDirection: 'column',
+                                                                        alignItems: 'center',
+                                                                        justifyContent: 'center',
+                                                                        cursor: isOpened || openedChests.length >= 3 ? 'default' : 'pointer',
+                                                                        transition: 'all 0.2s',
+                                                                        fontSize: '24px'
+                                                                    }}
+                                                                >
+                                                                    {isOpened ? '🔓' : '📦'}
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+
+                                                    {wonItems.length > 0 && (
+                                                        <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', padding: '12px' }}>
+                                                            <div style={{ fontSize: '9px', fontWeight: 'bold', color: '#c084fc', textTransform: 'uppercase', marginBottom: '6px', fontFamily: "'Press Start 2P', monospace" }}>
+                                                                🎒 {language === 'es' ? 'Objetos Obtenidos' : 'Items Found'}:
+                                                            </div>
+                                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                                                {wonItems.map((item, idx) => (
+                                                                    <div key={idx} style={{ fontSize: '11px', color: '#34d399' }}>
+                                                                        🎁 {item}
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px' }}>
+                                                        <button 
+                                                            onClick={() => {
+                                                                setOpenedChests([]);
+                                                                setWonItems([]);
+                                                                setRegistrationStep(1);
+                                                            }}
+                                                            style={{
+                                                                background: 'rgba(255,255,255,0.05)',
+                                                                border: '1px solid rgba(255,255,255,0.15)',
+                                                                borderRadius: '8px',
+                                                                padding: '10px 16px',
+                                                                color: '#cbd5e1',
+                                                                fontSize: '8px',
+                                                                fontFamily: "'Press Start 2P', monospace",
+                                                                cursor: 'pointer',
+                                                                margin: 0
+                                                            }}
+                                                        >
+                                                            ← {language === 'es' ? 'Atrás' : 'Back'}
+                                                        </button>
+                                                        <span style={{ fontSize: '9px', color: '#94a3b8', fontWeight: 'bold', fontFamily: "'Press Start 2P', monospace" }}>
+                                                            {language === 'es' ? `Abiertas: ${openedChests.length}/3` : `Opened: ${openedChests.length}/3`}
+                                                        </span>
+                                                        <button 
+                                                            disabled={openedChests.length !== 3}
+                                                            onClick={() => {
+                                                                setRegNickname(playerName || "Tamer");
+                                                                setRegistrationStep(3);
+                                                            }}
+                                                            style={{
+                                                                background: openedChests.length === 3 ? 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)' : 'rgba(255,255,255,0.05)',
+                                                                border: 'none',
+                                                                borderRadius: '8px',
+                                                                padding: '10px 20px',
+                                                                color: openedChests.length === 3 ? '#fff' : '#475569',
+                                                                fontSize: '8px',
+                                                                fontFamily: "'Press Start 2P', monospace",
+                                                                fontWeight: 'bold',
+                                                                textTransform: 'uppercase',
+                                                                cursor: openedChests.length === 3 ? 'pointer' : 'not-allowed',
+                                                                margin: 0
+                                                            }}
+                                                        >
+                                                            {language === 'es' ? 'Siguiente' : 'Next'} →
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })()}
+
+                                        {/* STEP 3: NICKNAME & FINALIZE */}
+                                        {registrationStep === 3 && (
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                                                <div style={{ background: 'rgba(16,185,129,0.1)', border: '1.5px solid rgba(16,185,129,0.3)', borderRadius: '10px', padding: '12px 16px' }}>
+                                                    <h3 style={{ margin: '0 0 6px 0', fontSize: '11px', color: '#10b981', textTransform: 'uppercase', fontFamily: "'Press Start 2P', monospace" }}>
+                                                        ✍️ {language === 'es' ? 'CONFIRMAR ENTRENADOR' : 'CONFIRM TRAINER'}
+                                                    </h3>
+                                                    <p style={{ margin: 0, fontSize: '11px', color: '#cbd5e1', lineHeight: '1.5' }}>
+                                                        {language === 'es' 
+                                                            ? 'Por último, confirma o edita tu nombre de entrenador para aparecer en la tabla de brackets y empezar el emparejamiento.' 
+                                                            : 'Lastly, confirm or edit your trainer name to appear on the brackets board and start matchmaking.'}
+                                                    </p>
+                                                </div>
+
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                                    <label style={{ fontSize: '8px', fontWeight: 'bold', color: '#cbd5e1', textTransform: 'uppercase', fontFamily: "'Press Start 2P', monospace" }}>
+                                                        {language === 'es' ? 'Nombre de Entrenador' : 'Trainer Name'}
+                                                    </label>
+                                                    <input 
+                                                        type="text"
+                                                        value={regNickname}
+                                                        onChange={(e) => setRegNickname(e.target.value.substring(0, 15))}
+                                                        style={{
+                                                            background: 'rgba(0,0,0,0.3)',
+                                                            border: '1.5px solid #10b981',
+                                                            borderRadius: '8px',
+                                                            color: '#fff',
+                                                            padding: '10px 14px',
+                                                            fontSize: '12px',
+                                                            fontWeight: 'bold',
+                                                            outline: 'none',
+                                                            fontFamily: 'monospace'
+                                                        }}
+                                                    />
+                                                </div>
+
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px' }}>
+                                                    <button 
+                                                        onClick={() => setRegistrationStep(2)}
+                                                        style={{
+                                                            background: 'rgba(255,255,255,0.05)',
+                                                            border: '1px solid rgba(255,255,255,0.15)',
+                                                            borderRadius: '8px',
+                                                            padding: '10px 16px',
+                                                            color: '#cbd5e1',
+                                                            fontSize: '8px',
+                                                            fontFamily: "'Press Start 2P', monospace",
+                                                            cursor: 'pointer',
+                                                            margin: 0
+                                                        }}
+                                                    >
+                                                        ← {language === 'es' ? 'Atrás' : 'Back'}
+                                                    </button>
+                                                    <button 
+                                                        disabled={!regNickname.trim()}
+                                                        onClick={async () => {
+                                                            const newNick = regNickname.trim() || "Tamer";
+                                                            setPlayerName(newNick);
+                                                            
+                                                            localStorage.setItem('battle_tower_registered', 'true');
+                                                            localStorage.setItem('battle_tower_registered_team', JSON.stringify(selectedRegPokemon));
+                                                            localStorage.setItem('battle_tower_won_items', JSON.stringify(wonItems));
+                                                            
+                                                            setBattleTowerRegistered(true);
+                                                            showNotification("¡Registro Exitoso!", language === 'es' ? "Tu perfil ha sido registrado en la Torre de Batalla." : "Your profile has been registered in the Battle Tower.");
+                                                            
+                                                            await saveLocalEconomy(team, pcPokemon, newNick);
+                                                        }}
+                                                        style={{
+                                                            background: regNickname.trim() ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : 'rgba(255,255,255,0.05)',
+                                                            border: 'none',
+                                                            borderRadius: '8px',
+                                                            padding: '10px 20px',
+                                                            color: regNickname.trim() ? '#fff' : '#475569',
+                                                            fontSize: '8px',
+                                                            fontFamily: "'Press Start 2P', monospace",
+                                                            fontWeight: 'bold',
+                                                            textTransform: 'uppercase',
+                                                            cursor: regNickname.trim() ? 'pointer' : 'not-allowed',
+                                                            boxShadow: regNickname.trim() ? '0 4px 12px rgba(16,185,129,0.3)' : 'none',
+                                                            margin: 0
+                                                        }}
+                                                    >
+                                                        🏆 {language === 'es' ? 'Finalizar Registro' : 'Finalize Registration'}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <>
+                                        {/* Custom tabs selector */}
+                                        <div style={{ display: 'flex', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', padding: '4px' }}>
+                                            <button 
+                                                onClick={() => setActiveTournamentTab('brackets')}
+                                                style={{
+                                                    flex: 1,
+                                                    background: activeTournamentTab === 'brackets' ? 'rgba(251,191,36,0.15)' : 'transparent',
+                                                    border: activeTournamentTab === 'brackets' ? '1px solid rgba(251,191,36,0.3)' : 'none',
+                                                    borderRadius: '8px',
+                                                    color: activeTournamentTab === 'brackets' ? '#fbbf24' : '#94a3b8',
+                                                    padding: '10px',
+                                                    fontSize: '8px',
+                                                    fontFamily: "'Press Start 2P', monospace",
+                                                    cursor: 'pointer',
+                                                    textTransform: 'uppercase',
+                                                    margin: 0
+                                                }}
+                                            >
+                                                🏆 {language === 'es' ? 'Brackets' : 'Brackets'}
+                                            </button>
+                                            <button 
+                                                onClick={() => setActiveTournamentTab('lobby')}
+                                                style={{
+                                                    flex: 1,
+                                                    background: activeTournamentTab === 'lobby' ? 'rgba(139,92,246,0.15)' : 'transparent',
+                                                    border: activeTournamentTab === 'lobby' ? '1px solid rgba(139,92,246,0.3)' : 'none',
+                                                    borderRadius: '8px',
+                                                    color: activeTournamentTab === 'lobby' ? '#c084fc' : '#94a3b8',
+                                                    padding: '10px',
+                                                    fontSize: '8px',
+                                                    fontFamily: "'Press Start 2P', monospace",
+                                                    cursor: 'pointer',
+                                                    textTransform: 'uppercase',
+                                                    margin: 0
+                                                }}
+                                            >
+                                                👥 {language === 'es' ? 'Lobby / Match' : 'Lobby / Match'}
+                                            </button>
+                                        </div>
 
                                 {/* TAB 1: BRACKETS */}
                                 {activeTournamentTab === 'brackets' && (
@@ -10870,6 +11366,7 @@ export default function GameCanvas({
                                         </div>
                                     </div>
                                 )}
+                            </>)}
                             </div>
                         )}
                     </div>
