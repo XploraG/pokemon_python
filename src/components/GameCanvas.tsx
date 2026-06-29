@@ -2123,6 +2123,7 @@ export default function GameCanvas({
     const [activeGroundMount, setActiveGroundMount] = useState<'bicycle' | 'dragonite'>('bicycle');
     const [showNurseJoyModal, setShowNurseJoyModal] = useState(false);
     const [showDrFosilModal, setShowDrFosilModal] = useState(false);
+    const [showBattleTowerConfirm, setShowBattleTowerConfirm] = useState(false);
     const [drFosilAttempts, setDrFosilAttempts] = useState(3);
     const [drFosilPokemon, setDrFosilPokemon] = useState<any | null>(null);
     const [drFosilStatus, setDrFosilStatus] = useState<'idle' | 'scanning' | 'ready' | 'caught' | 'failed' | 'throwing'>('idle');
@@ -5826,9 +5827,11 @@ export default function GameCanvas({
                     if (isBattleTower) {
                         playerRef.current.isMoving = false;
                         keysPressed.current = {};
-                        setShowTournamentView(true);
-                        setInsideTournamentBuilding(true);
-                        showNotification("Torre de Batalla", "Entrando a la Torre de Batalla...");
+                        if (!showBattleTowerConfirm) {
+                            setDialogName(language === 'es' ? "Torre de Batalla" : "Battle Tower");
+                            setActiveDialog(language === 'es' ? "¿Deseas entrar a la Torre de Batalla?" : "Do you want to enter the Battle Tower?");
+                            setShowBattleTowerConfirm(true);
+                        }
                         return true;
                     }
                     let destMap = '';
@@ -6471,7 +6474,7 @@ export default function GameCanvas({
     // Interaction checks (facing building door or characters)
     const handleInteraction = () => {
         if (activeDialogRef.current !== null) {
-            if (showNurseJoyModal || showDrFosilModal) {
+            if (showNurseJoyModal || showDrFosilModal || showBattleTowerConfirm) {
                 return; // Don't close text bubble with Space while Joy's or Fosil's menu is open
             }
             
@@ -6644,8 +6647,12 @@ export default function GameCanvas({
             ) {
                 const lowerName = entity.name.toLowerCase();
                 
-                // Specific NPC interactions inside buildings
-                if (entity.name === "Nurse Joy") {
+                if (lowerName.includes("battletower")) {
+                    setDialogName(language === 'es' ? "Torre de Batalla" : "Battle Tower");
+                    setActiveDialog(language === 'es' ? "¿Deseas entrar a la Torre de Batalla?" : "Do you want to enter the Battle Tower?");
+                    setShowBattleTowerConfirm(true);
+                }
+                else if (entity.name === "Nurse Joy") {
                     setDialogName(entity.name);
                     setActiveDialog("¡Hola! ¿Qué te gustaría hacer hoy?");
                     setShowNurseJoyModal(true);
@@ -11189,7 +11196,64 @@ export default function GameCanvas({
                                 🎁 Duplicar Recompensa (+{doubleRewardCoins} Coins)
                             </button>
                         )}
-                        <div className="dialogue-footer">Press Space/Enter to close</div>
+                        {showBattleTowerConfirm && (
+                            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginTop: '12px', marginBottom: '4px' }}>
+                                <button
+                                    onClick={() => {
+                                        setShowTournamentView(true);
+                                        setInsideTournamentBuilding(true);
+                                        showNotification("Torre de Batalla", "Entrando a la Torre de Batalla...");
+                                        setActiveDialog(null);
+                                        setShowBattleTowerConfirm(false);
+                                    }}
+                                    className="pokemon-button success"
+                                    style={{
+                                        background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                                        border: 'none',
+                                        borderRadius: '8px',
+                                        color: '#fff',
+                                        fontWeight: 'bold',
+                                        fontSize: '11px',
+                                        padding: '6px 20px',
+                                        cursor: 'pointer',
+                                        boxShadow: '0 4px 12px rgba(16, 185, 129, 0.2)',
+                                        textTransform: 'uppercase',
+                                        fontFamily: "'Segoe UI', monospace"
+                                    }}
+                                >
+                                    {language === 'es' ? 'Aceptar' : 'Accept'}
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setActiveDialog(null);
+                                        setShowBattleTowerConfirm(false);
+                                        playerRef.current.y += 12;
+                                        playerRef.current.targetY = playerRef.current.y;
+                                    }}
+                                    className="pokemon-button danger"
+                                    style={{
+                                        background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                                        border: 'none',
+                                        borderRadius: '8px',
+                                        color: '#fff',
+                                        fontWeight: 'bold',
+                                        fontSize: '11px',
+                                        padding: '6px 20px',
+                                        cursor: 'pointer',
+                                        boxShadow: '0 4px 12px rgba(239, 68, 68, 0.2)',
+                                        textTransform: 'uppercase',
+                                        fontFamily: "'Segoe UI', monospace"
+                                    }}
+                                >
+                                    {language === 'es' ? 'Cancelar' : 'Cancel'}
+                                </button>
+                            </div>
+                        )}
+                        <div className="dialogue-footer">
+                            {showBattleTowerConfirm 
+                                ? (language === 'es' ? 'Selecciona una opción' : 'Select an option') 
+                                : 'Press Space/Enter to close'}
+                        </div>
                     </div>
                 )}
 
