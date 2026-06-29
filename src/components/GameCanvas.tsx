@@ -10775,35 +10775,19 @@ export default function GameCanvas({
 
                                         {/* STEP 1: CHOOSE TEAM */}
                                         {registrationStep === 1 && (() => {
-                                            const displayList = [...team, ...pcPokemon]
-                                                .filter((p: any) => {
-                                                    if (!p) return false;
-                                                    const name = (p.id || "").toLowerCase();
-                                                    return name !== "mew" && name !== "mewtwo";
+                                            const displayList = pokemonSpeciesList
+                                                .filter((s: any) => {
+                                                    if (!s) return false;
+                                                    const name = (s.name || "").toLowerCase();
+                                                    const rarity = (s.rarity || "").toLowerCase();
+                                                    return name !== "mew" && name !== "mewtwo" && rarity !== "legendary";
                                                 })
-                                                .map((p: any, idx: number) => ({
-                                                    ...p,
-                                                    battleTowerUniqueId: p.id_captura || p.uniqueId || `owned_${p.id}_${idx}`
+                                                .map((s: any) => ({
+                                                    id: s.name,
+                                                    level: 99,
+                                                    is_shiny: false,
+                                                    battleTowerUniqueId: `tower_free_${s.name.toLowerCase()}`
                                                 }));
-
-                                            const rentals = [
-                                                { id: 'pikachu', level: 99, is_shiny: false },
-                                                { id: 'charizard', level: 99, is_shiny: false },
-                                                { id: 'blastoise', level: 99, is_shiny: false },
-                                                { id: 'venusaur', level: 99, is_shiny: false },
-                                                { id: 'gengar', level: 99, is_shiny: false },
-                                                { id: 'dragonite', level: 99, is_shiny: false }
-                                            ];
-                                            let rentalIdCounter = 1;
-                                            while (displayList.length < 6) {
-                                                const rent = rentals[(rentalIdCounter - 1) % rentals.length];
-                                                displayList.push({
-                                                    ...rent,
-                                                    id: rent.id,
-                                                    isRental: true,
-                                                    battleTowerUniqueId: `rental_${rent.id}_${rentalIdCounter++}`
-                                                });
-                                            }
 
                                             return (
                                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
